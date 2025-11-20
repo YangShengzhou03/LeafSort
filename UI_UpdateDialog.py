@@ -13,31 +13,31 @@ class Ui_UpdateDialog(object):
     def setupUi(self, UpdateDialog):
         UpdateDialog.setObjectName("UpdateDialog")
         UpdateDialog.resize(512, 320)
-        self.verticalLayout = QtWidgets.QVBoxLayout(UpdateDialog)
-        self.verticalLayout.setContentsMargins(0, 0, 0, 0)
-        self.verticalLayout.setSpacing(0)
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.frame = QtWidgets.QFrame(parent=UpdateDialog)
-        self.frame.setMinimumSize(QtCore.QSize(512, 320))
-        self.frame.setStyleSheet("QFrame#frame{\n"
+        self.layoutMain = QtWidgets.QVBoxLayout(UpdateDialog)
+        self.layoutMain.setContentsMargins(0, 0, 0, 0)
+        self.layoutMain.setSpacing(0)
+        self.layoutMain.setObjectName("layoutMain")
+        self.frameDialog = QtWidgets.QFrame(parent=UpdateDialog)
+        self.frameDialog.setMinimumSize(QtCore.QSize(512, 320))
+        self.frameDialog.setStyleSheet("QFrame#frame{\n"
 "background-color: rgb(245, 249, 254);\n"
 "border-radius:25px;\n"
 "}")
-        self.frame.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
-        self.frame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
-        self.frame.setObjectName("frame")
-        self.horizontalLayout_7 = QtWidgets.QHBoxLayout(self.frame)
-        self.horizontalLayout_7.setContentsMargins(0, 0, 0, 0)
-        self.horizontalLayout_7.setSpacing(12)
-        self.horizontalLayout_7.setObjectName("horizontalLayout_7")
-        self.verticalLayout_6 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_6.setContentsMargins(9, 9, 9, 9)
-        self.verticalLayout_6.setSpacing(0)
-        self.verticalLayout_6.setObjectName("verticalLayout_6")
-        self.widget_3 = QtWidgets.QWidget(parent=self.frame)
-        self.widget_3.setMinimumSize(QtCore.QSize(0, 0))
-        self.widget_3.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        self.widget_3.setStyleSheet(".QWidget{\n"
+        self.frameDialog.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
+        self.frameDialog.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
+        self.frameDialog.setObjectName("frameDialog")
+        self.layoutDialog = QtWidgets.QHBoxLayout(self.frameDialog)
+        self.layoutDialog.setContentsMargins(0, 0, 0, 0)
+        self.layoutDialog.setSpacing(12)
+        self.layoutDialog.setObjectName("layoutDialog")
+        self.layoutContent = QtWidgets.QVBoxLayout()
+        self.layoutContent.setContentsMargins(9, 9, 9, 9)
+        self.layoutContent.setSpacing(0)
+        self.layoutContent.setObjectName("layoutContent")
+        self.widgetHeader = QtWidgets.QWidget(parent=self.frameDialog)
+        self.widgetHeader.setMinimumSize(QtCore.QSize(0, 0))
+        self.widgetHeader.setMaximumSize(QtCore.QSize(16777215, 16777215))
+        self.widgetHeader.setStyleSheet(".QWidget{\n"
 "background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
 "                                  stop:0 rgb(105, 27, 253), \n"
 "                                  stop:1 rgb(200, 160, 240));\n"
@@ -46,47 +46,47 @@ class Ui_UpdateDialog(object):
 "}\n"
 "\n"
 "")
-        self.widget_3.setObjectName("widget_3")
-        self.horizontalLayout_5 = QtWidgets.QHBoxLayout(self.widget_3)
-        self.horizontalLayout_5.setContentsMargins(18, 18, 18, 18)
-        self.horizontalLayout_5.setSpacing(18)
-        self.horizontalLayout_5.setObjectName("horizontalLayout_5")
-        self.horizontalLayout_4 = QtWidgets.QHBoxLayout()
-        self.horizontalLayout_4.setObjectName("horizontalLayout_4")
-        self.verticalLayout_5 = QtWidgets.QVBoxLayout()
-        self.verticalLayout_5.setSpacing(0)
-        self.verticalLayout_5.setObjectName("verticalLayout_5")
-        self.label_title = QtWidgets.QLabel(parent=self.widget_3)
+        self.widgetHeader.setObjectName("widgetHeader")
+        self.layoutHeader = QtWidgets.QHBoxLayout(self.widgetHeader)
+        self.layoutHeader.setContentsMargins(18, 18, 18, 18)
+        self.layoutHeader.setSpacing(18)
+        self.layoutHeader.setObjectName("layoutHeader")
+        self.layoutTitleContent = QtWidgets.QHBoxLayout()
+        self.layoutTitleContent.setObjectName("layoutTitleContent")
+        self.layoutDialogElements = QtWidgets.QVBoxLayout()
+        self.layoutDialogElements.setSpacing(0)
+        self.layoutDialogElements.setObjectName("layoutDialogElements")
+        self.lblTitle = QtWidgets.QLabel(parent=self.widgetHeader)
         font = QtGui.QFont()
         font.setPointSize(22)
         font.setBold(True)
-        self.label_title.setFont(font)
-        self.label_title.setStyleSheet("QLabel {\n"
+        self.lblTitle.setFont(font)
+        self.lblTitle.setStyleSheet("QLabel {\n"
 "    color: rgba(222, 255, 255, 255);\n"
 "    qproperty-alignment: \'AlignCenter\';\n"
 "    margin-bottom: 12px;\n"
 "}")
-        self.label_title.setObjectName("label_title")
-        self.verticalLayout_5.addWidget(self.label_title)
-        self.label_content = QtWidgets.QLabel(parent=self.widget_3)
+        self.lblTitle.setObjectName("lblTitle")
+        self.layoutDialogElements.addWidget(self.lblTitle)
+        self.lblContent = QtWidgets.QLabel(parent=self.widgetHeader)
         font = QtGui.QFont()
         font.setPointSize(12)
         font.setBold(False)
-        self.label_content.setFont(font)
-        self.label_content.setStyleSheet("color: rgb(250, 250, 250)")
-        self.label_content.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeading|QtCore.Qt.AlignmentFlag.AlignLeft|QtCore.Qt.AlignmentFlag.AlignTop)
-        self.label_content.setObjectName("label_content")
-        self.verticalLayout_5.addWidget(self.label_content)
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setContentsMargins(-1, -1, 6, -1)
-        self.horizontalLayout.setSpacing(12)
-        self.horizontalLayout.setObjectName("horizontalLayout")
+        self.lblContent.setFont(font)
+        self.lblContent.setStyleSheet("color: rgb(250, 250, 250)")
+        self.lblContent.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeading|QtCore.Qt.AlignmentFlag.AlignLeft|QtCore.Qt.AlignmentFlag.AlignTop)
+        self.lblContent.setObjectName("lblContent")
+        self.layoutDialogElements.addWidget(self.lblContent)
+        self.layoutButtons = QtWidgets.QHBoxLayout()
+        self.layoutButtons.setContentsMargins(-1, -1, 6, -1)
+        self.layoutButtons.setSpacing(12)
+        self.layoutButtons.setObjectName("layoutButtons")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
-        self.horizontalLayout.addItem(spacerItem)
-        self.pushButton_cancel = QtWidgets.QPushButton(parent=self.widget_3)
-        self.pushButton_cancel.setMinimumSize(QtCore.QSize(88, 30))
-        self.pushButton_cancel.setMaximumSize(QtCore.QSize(88, 30))
-        self.pushButton_cancel.setStyleSheet("QPushButton {\n"
+        self.layoutButtons.addItem(spacerItem)
+        self.btnCancel = QtWidgets.QPushButton(parent=self.widgetHeader)
+        self.btnCancel.setMinimumSize(QtCore.QSize(88, 30))
+        self.btnCancel.setMaximumSize(QtCore.QSize(88, 30))
+        self.btnCancel.setStyleSheet("QPushButton {\n"
 "    background-color: rgba(250, 250, 250, 100);\n"
 "    color: white;\n"
 "    border: none;\n"
@@ -102,12 +102,12 @@ class Ui_UpdateDialog(object):
 "QPushButton:pressed {\n"
 "    background-color: rgba(250, 250, 250,180);\n"
 "}")
-        self.pushButton_cancel.setObjectName("pushButton_cancel")
-        self.horizontalLayout.addWidget(self.pushButton_cancel)
-        self.pushButton_download = QtWidgets.QPushButton(parent=self.widget_3)
-        self.pushButton_download.setMinimumSize(QtCore.QSize(88, 30))
-        self.pushButton_download.setMaximumSize(QtCore.QSize(88, 30))
-        self.pushButton_download.setStyleSheet("QPushButton {\n"
+        self.btnCancel.setObjectName("btnCancel")
+        self.layoutButtons.addWidget(self.btnCancel)
+        self.btnDownload = QtWidgets.QPushButton(parent=self.widgetHeader)
+        self.btnDownload.setMinimumSize(QtCore.QSize(88, 30))
+        self.btnDownload.setMaximumSize(QtCore.QSize(88, 30))
+        self.btnDownload.setStyleSheet("QPushButton {\n"
 "    background-color: rgba(105, 27, 253, 180);\n"
 "    color: white;\n"
 "    border: none;\n"
@@ -123,20 +123,20 @@ class Ui_UpdateDialog(object):
 "QPushButton:pressed {\n"
 "    background-color: rgba(105, 27, 253, 250);\n"
 "}")
-        self.pushButton_download.setObjectName("pushButton_download")
-        self.horizontalLayout.addWidget(self.pushButton_download)
-        self.verticalLayout_5.addLayout(self.horizontalLayout)
-        self.verticalLayout_5.setStretch(0, 1)
-        self.verticalLayout_5.setStretch(1, 3)
-        self.verticalLayout_5.setStretch(2, 1)
-        self.horizontalLayout_4.addLayout(self.verticalLayout_5)
-        self.horizontalLayout_5.addLayout(self.horizontalLayout_4)
-        self.horizontalLayout_5.setStretch(0, 5)
-        self.verticalLayout_6.addWidget(self.widget_3)
-        self.verticalLayout_6.setStretch(0, 9)
-        self.horizontalLayout_7.addLayout(self.verticalLayout_6)
-        self.horizontalLayout_7.setStretch(0, 4)
-        self.verticalLayout.addWidget(self.frame)
+        self.btnDownload.setObjectName("btnDownload")
+        self.layoutButtons.addWidget(self.btnDownload)
+        self.layoutDialogElements.addLayout(self.layoutButtons)
+        self.layoutDialogElements.setStretch(0, 1)
+        self.layoutDialogElements.setStretch(1, 3)
+        self.layoutDialogElements.setStretch(2, 1)
+        self.layoutTitleContent.addLayout(self.layoutDialogElements)
+        self.layoutHeader.addLayout(self.layoutTitleContent)
+        self.layoutHeader.setStretch(0, 5)
+        self.layoutContent.addWidget(self.widgetHeader)
+        self.layoutContent.setStretch(0, 9)
+        self.layoutDialog.addLayout(self.layoutContent)
+        self.layoutDialog.setStretch(0, 4)
+        self.layoutMain.addWidget(self.frameDialog)
 
         self.retranslateUi(UpdateDialog)
         QtCore.QMetaObject.connectSlotsByName(UpdateDialog)
@@ -144,7 +144,7 @@ class Ui_UpdateDialog(object):
     def retranslateUi(self, UpdateDialog):
         _translate = QtCore.QCoreApplication.translate
         UpdateDialog.setWindowTitle(_translate("UpdateDialog", "Dialog"))
-        self.label_title.setText(_translate("UpdateDialog", "Dialog Title"))
-        self.label_content.setText(_translate("UpdateDialog", "Dialog content"))
-        self.pushButton_cancel.setText(_translate("UpdateDialog", "暂不更新"))
-        self.pushButton_download.setText(_translate("UpdateDialog", "立即下载"))
+        self.lblTitle.setText(_translate("UpdateDialog", "Dialog Title"))
+        self.lblContent.setText(_translate("UpdateDialog", "Dialog content"))
+        self.btnCancel.setText(_translate("UpdateDialog", "暂不更新"))
+        self.btnDownload.setText(_translate("UpdateDialog", "立即下载"))

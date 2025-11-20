@@ -13,7 +13,7 @@
   <property name="windowTitle">
    <string>Dialog</string>
   </property>
-  <layout class="QVBoxLayout" name="verticalLayout">
+  <layout class="QVBoxLayout" name="layoutMain">
    <property name="spacing">
     <number>0</number>
    </property>
@@ -30,7 +30,7 @@
     <number>0</number>
    </property>
    <item>
-    <widget class="QFrame" name="frame">
+    <widget class="QFrame" name="frameDialog">
      <property name="minimumSize">
       <size>
        <width>512</width>
@@ -49,7 +49,7 @@ border-radius:25px;
      <property name="frameShadow">
       <enum>QFrame::Raised</enum>
      </property>
-     <layout class="QHBoxLayout" name="horizontalLayout_7" stretch="4">
+     <layout class="QHBoxLayout" name="layoutDialog" stretch="4">
       <property name="spacing">
        <number>12</number>
       </property>
@@ -66,7 +66,7 @@ border-radius:25px;
        <number>0</number>
       </property>
       <item>
-       <layout class="QVBoxLayout" name="verticalLayout_6" stretch="9">
+       <layout class="QVBoxLayout" name="layoutContent" stretch="9">
         <property name="spacing">
          <number>0</number>
         </property>
@@ -83,7 +83,7 @@ border-radius:25px;
          <number>9</number>
         </property>
         <item>
-         <widget class="QWidget" name="widget_3" native="true">
+         <widget class="QWidget" name="widgetHeader" native="true">
           <property name="minimumSize">
            <size>
             <width>0</width>
@@ -107,7 +107,7 @@ color: rgb(255, 255, 255);
 
 </string>
           </property>
-          <layout class="QHBoxLayout" name="horizontalLayout_5" stretch="5">
+          <layout class="QHBoxLayout" name="layoutHeader" stretch="5">
            <property name="spacing">
             <number>18</number>
            </property>
@@ -124,14 +124,14 @@ color: rgb(255, 255, 255);
             <number>18</number>
            </property>
            <item>
-            <layout class="QHBoxLayout" name="horizontalLayout_4">
+            <layout class="QHBoxLayout" name="layoutTitleContent">
              <item>
-              <layout class="QVBoxLayout" name="verticalLayout_5" stretch="1,3,1">
+              <layout class="QVBoxLayout" name="layoutDialogElements" stretch="1,3,1">
                <property name="spacing">
                 <number>0</number>
                </property>
                <item>
-                <widget class="QLabel" name="label_title">
+                <widget class="QLabel" name="lblTitle">
                  <property name="font">
                   <font>
                    <pointsize>22</pointsize>
@@ -151,7 +151,7 @@ color: rgb(255, 255, 255);
                 </widget>
                </item>
                <item>
-                <widget class="QLabel" name="label_content">
+                <widget class="QLabel" name="lblContent">
                  <property name="font">
                   <font>
                    <pointsize>12</pointsize>
@@ -170,7 +170,7 @@ color: rgb(255, 255, 255);
                 </widget>
                </item>
                <item>
-                <layout class="QHBoxLayout" name="horizontalLayout">
+                <layout class="QHBoxLayout" name="layoutButtons">
                  <property name="spacing">
                   <number>12</number>
                  </property>
@@ -178,7 +178,7 @@ color: rgb(255, 255, 255);
                   <number>6</number>
                  </property>
                  <item>
-                  <spacer name="horizontalSpacer_2">
+                  <spacer name="spacerButtons">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>
@@ -191,7 +191,7 @@ color: rgb(255, 255, 255);
                   </spacer>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButton_cancel">
+                  <widget class="QPushButton" name="btnCancel">
                    <property name="minimumSize">
                     <size>
                      <width>88</width>
@@ -228,7 +228,7 @@ QPushButton:pressed {
                   </widget>
                  </item>
                  <item>
-                  <widget class="QPushButton" name="pushButton_download">
+                  <widget class="QPushButton" name="btnDownload">
                    <property name="minimumSize">
                     <size>
                      <width>88</width>
