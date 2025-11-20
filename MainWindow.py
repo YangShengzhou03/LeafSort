@@ -47,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnMinimize.clicked.connect(self.showMinimized)
         
-        self.btnService.clicked.connect(self.feedback)
+        self.btnGithub.clicked.connect(self.feedback)
         self.btnSettings.clicked.connect(author)
         
         # 连接文件夹选择按钮

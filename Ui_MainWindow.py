@@ -324,10 +324,10 @@ class Ui_MainWindow(object):
 "")
         self.widgetVipBadge.setObjectName("widgetVipBadge")
         self.layoutHeaderBar.addWidget(self.widgetVipBadge)
-        self.btnService = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
-        self.btnService.setMinimumSize(QtCore.QSize(36, 36))
-        self.btnService.setMaximumSize(QtCore.QSize(36, 36))
-        self.btnService.setStyleSheet("QToolButton {\n"
+        self.btnGithub = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
+        self.btnGithub.setMinimumSize(QtCore.QSize(36, 36))
+        self.btnGithub.setMaximumSize(QtCore.QSize(36, 36))
+        self.btnGithub.setStyleSheet("QToolButton {\n"
 "    border: none;\n"
 "    padding: 8px;\n"
 "    border-radius: 16px;\n"
@@ -355,13 +355,13 @@ class Ui_MainWindow(object):
 "    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
 "    transform: translateY(0);\n"
 "}")
-        self.btnService.setText("")
+        self.btnGithub.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap("resources/img/窗口控制/服务.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnService.setIcon(icon4)
-        self.btnService.setIconSize(QtCore.QSize(16, 16))
-        self.btnService.setObjectName("btnService")
-        self.layoutHeaderBar.addWidget(self.btnService)
+        icon4.addPixmap(QtGui.QPixmap("resources/img/窗口控制/github.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnGithub.setIcon(icon4)
+        self.btnGithub.setIconSize(QtCore.QSize(18, 18))
+        self.btnGithub.setObjectName("btnGithub")
+        self.layoutHeaderBar.addWidget(self.btnGithub)
         self.btnSettings = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
         self.btnSettings.setMinimumSize(QtCore.QSize(36, 36))
         self.btnSettings.setMaximumSize(QtCore.QSize(36, 36))
