@@ -1,12 +1,9 @@
+import os
+
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import QUrl
 from PyQt6.QtGui import QDesktopServices
 
-from AddFolder import FolderPage
-from SmartArrange import SmartArrange
-from RemoveDuplication import Contrast
-from WriteExif import WriteExif
-from TextRecognition import TextRecognition
 from Ui_MainWindow import Ui_MainWindow
 from UpdateDialog import check_update
 from common import get_resource_path, author
@@ -49,46 +46,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
     def _setup_pages(self):
-        """初始化所有功能页面"""
-        try:
-            # 检查是否有stackedWidget_mainContent
-            if not hasattr(self, 'stackedWidget_mainContent'):
-                self.log("WARNING", "stackedWidget_mainContent not found in UI")
-                return
-            
-            # 清除现有页面（如果有）
-            while self.stackedWidget_mainContent.count() > 0:
-                widget = self.stackedWidget_mainContent.widget(0)
-                self.stackedWidget_mainContent.removeWidget(widget)
-                widget.deleteLater()
-            
-            # 创建各个功能页面
-            self.log("INFO", "Creating application pages...")
-            
-            # 文件夹页面
-            self.folder_page = FolderPage(self)
-            self.stackedWidget_mainContent.addWidget(self.folder_page)
-            
-            # 智能整理页面
-            self.smart_arrange_page = SmartArrange(self)
-            self.stackedWidget_mainContent.addWidget(self.smart_arrange_page)
-            
-            # 去重对比页面
-            self.remove_dup_page = Contrast(self)
-            self.stackedWidget_mainContent.addWidget(self.remove_dup_page)
-            
-            # EXIF编辑页面
-            self.write_exif_page = WriteExif(self)
-            self.stackedWidget_mainContent.addWidget(self.write_exif_page)
-            
-            # 文字识别页面
-            self.text_recog_page = TextRecognition(self)
-            self.stackedWidget_mainContent.addWidget(self.text_recog_page)
-            
-            self.log("INFO", f"Created {self.stackedWidget_mainContent.count()} pages successfully")
-            
-        except Exception as e:
-            self.log("ERROR", f"Error setting up pages: {str(e)}")
+        pass
     
     def _setup_navigation(self):
         """设置导航菜单（仅保留信号连接逻辑）"""
@@ -97,12 +55,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if not hasattr(self, 'listWidget_navigationMenu'):
                 self.log("WARNING", "listWidget_navigationMenu not found in UI")
                 return
-            
-            # 连接导航信号
-            self.listWidget_navigationMenu.currentRowChanged.connect(self._show_page)
-            
-            # 默认选中第一个页面
-            self.listWidget_navigationMenu.setCurrentRow(0)
             
         except Exception as e:
             self.log("ERROR", f"Error setting up navigation: {str(e)}")
@@ -320,25 +272,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _next_page(self):
         """切换到下一页"""
-        current_index = self.stackedWidget_mainContent.currentIndex()
-        next_index = (current_index + 1) % self.stackedWidget_mainContent.count()
+        current_index = self.stackedWidget.currentIndex()
+        next_index = (current_index + 1) % self.stackedWidget.count()
         self._show_page(next_index)
         
     def _prev_page(self):
         """切换到上一页"""
-        current_index = self.stackedWidget_mainContent.currentIndex()
-        prev_index = (current_index - 1) % self.stackedWidget_mainContent.count()
+        current_index = self.stackedWidget.currentIndex()
+        prev_index = (current_index - 1) % self.stackedWidget.count()
         self._show_page(prev_index)
     
     def _show_page(self, page_index):
         """显示指定页面"""
         try:
-            if hasattr(self, 'stackedWidget_mainContent'):
+            if hasattr(self, 'stackedWidget'):
                 # 验证索引有效性
-                if 0 <= page_index < self.stackedWidget_mainContent.count():
-                    self.stackedWidget_mainContent.setCurrentIndex(page_index)
+                if 0 <= page_index < self.stackedWidget.count():
+                    self.stackedWidget.setCurrentIndex(page_index)
                     # 更新导航菜单选中状态
-                    self.listWidget_navigationMenu.setCurrentRow(page_index)
+                    if hasattr(self, 'listNavigationMenu'):  # 使用UI中实际的导航菜单名称
+                        self.listNavigationMenu.setCurrentRow(page_index)
                     self.log("INFO", f"切换到页面: {page_index}")
                     # 刷新当前页面
                     self._refresh_current_page()
@@ -346,7 +299,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 else:
                     self.log("ERROR", f"无效的页面索引: {page_index}")
             else:
-                self.log("ERROR", "stackedWidget_mainContent 不存在")
+                self.log("ERROR", "stackedWidget 不存在")
         except Exception as e:
             self.log("ERROR", f"切换页面时出错: {str(e)}")
             print(f"Error showing page: {str(e)}")
