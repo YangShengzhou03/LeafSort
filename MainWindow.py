@@ -328,8 +328,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
         
-        if folder_path and hasattr(self, 'lineEdit_importSourcePath'):
-            self.lineEdit_importSourcePath.setText(folder_path)
+        if folder_path and hasattr(self, 'inputSourceFolder'):
+            self.inputSourceFolder.setText(folder_path)
 
     def _select_target_folder(self):
         """选择目标文件夹"""
@@ -340,5 +340,5 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             QtWidgets.QFileDialog.Option.ShowDirsOnly
         )
         
-        if folder_path and hasattr(self, 'lineEdit_importTargetPath'):
-            self.lineEdit_importTargetPath.setText(folder_path)
+        if folder_path and hasattr(self, 'inputTargetFolder'):
+            self.inputTargetFolder.setText(folder_path)

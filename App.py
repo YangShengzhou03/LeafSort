@@ -3,19 +3,7 @@ from PyQt6.QtNetwork import QLocalSocket, QLocalServer
 from contextlib import closing
 from MainWindow import MainWindow
 import sys
-import logging
 import traceback
-
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler('leafview.log', encoding='utf-8'),
-        logging.StreamHandler()
-    ]
-)
-logger = logging.getLogger(__name__)
 
 APP_SERVER_NAME = "LeafView_Server"
 SHARED_MEMORY_KEY = "LeafView_SharedMemory"
@@ -32,7 +20,7 @@ def bring_existing_to_front():
                 socket.waitForBytesWritten(1000)
                 return True
     except Exception as e:
-        logger.warning(f"Failed to connect to existing instance: {e}")
+        pass
     return False
 
 
@@ -41,11 +29,9 @@ def setup_local_server():
     try:
         server = QLocalServer()
         if not server.listen(APP_SERVER_NAME):
-            logger.error(f"Failed to start local server: {server.errorString()}")
             return None
         return server
     except Exception as e:
-        logger.error(f"Exception while setting up local server: {e}")
         return None
 
 
@@ -55,7 +41,7 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     
-    logger.critical("Uncaught exception:", exc_info=(exc_type, exc_value, exc_traceback))
+    pass
     
     # Try to show error to user if possible
     try:
@@ -85,25 +71,22 @@ def main():
             shared_memory = QtCore.QSharedMemory(SHARED_MEMORY_KEY)
             if shared_memory.attach():
                 if bring_existing_to_front():
-                    logger.info("Existing instance detected and brought to front")
                     sys.exit(0)
                 else:
-                    logger.warning("Existing instance detected but failed to bring to front")
                     sys.exit(1)
             
             if not shared_memory.create(1):
-                logger.error("Failed to create shared memory segment")
                 QtWidgets.QMessageBox.critical(None, "Startup Error", 
                     "Failed to initialize application. Another instance may be running.")
                 sys.exit(1)
         except Exception as e:
-            logger.error(f"Shared memory initialization failed: {e}")
-            # Continue anyway, but log the error
+            # Continue anyway
+            pass
         
         # Setup local server for inter-process communication
         local_server = setup_local_server()
         if not local_server:
-            logger.warning("Local server setup failed, continuing without IPC")
+            pass
         
         def handle_new_connection():
             try:
@@ -111,7 +94,7 @@ def main():
                 if socket:
                     socket.readyRead.connect(lambda: handle_socket_data(socket))
             except Exception as e:
-                logger.error(f"Error handling new connection: {e}")
+                pass
         
         def handle_socket_data(socket):
             try:
@@ -121,7 +104,7 @@ def main():
                     window.raise_()
                     window.showNormal()
             except Exception as e:
-                logger.error(f"Error handling socket data: {e}")
+                pass
             finally:
                 try:
                     socket.deleteLater()
@@ -140,7 +123,7 @@ def main():
         try:
             window.log("WARNING", "文件整理、重命名和属性写入等操作一旦执行无法恢复，操作前请务必备份好原数据。")
         except Exception as e:
-            logger.warning(f"Failed to show warning message: {e}")
+            pass
         
         # Start event loop
         exit_code = app.exec()
@@ -150,12 +133,11 @@ def main():
             if 'shared_memory' in locals() and shared_memory.isAttached():
                 shared_memory.detach()
         except Exception as e:
-            logger.error(f"Error during cleanup: {e}")
+            pass
         
         sys.exit(exit_code)
         
     except Exception as e:
-        logger.critical(f"Fatal error in main(): {e}", exc_info=True)
         QtWidgets.QMessageBox.critical(None, "Fatal Error", 
             f"Application failed to start: {str(e)}")
         sys.exit(1)
