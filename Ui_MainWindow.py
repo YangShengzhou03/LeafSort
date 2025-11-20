@@ -42,7 +42,7 @@ class Ui_MainWindow(object):
         self.layoutMainContainer.setObjectName("layoutMainContainer")
         self.frameSidebarNavigation = QtWidgets.QFrame(parent=self.mainContainer)
         self.frameSidebarNavigation.setMinimumSize(QtCore.QSize(162, 0))
-        self.frameSidebarNavigation.setMaximumSize(QtCore.QSize(240, 16777215))
+        self.frameSidebarNavigation.setMaximumSize(QtCore.QSize(162, 16777215))
         self.frameSidebarNavigation.setStyleSheet("background: rgba(255, 255, 255, 90);\n"
 "background-blur: 16px;\n"
 "border: 1px solid rgba(255, 255, 255, 70);\n"

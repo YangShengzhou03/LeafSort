@@ -79,7 +79,7 @@ box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08),
          </property>
          <property name="maximumSize">
           <size>
-           <width>240</width>
+           <width>162</width>
            <height>16777215</height>
           </size>
          </property>
