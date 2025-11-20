@@ -86,7 +86,7 @@ class FolderPage(QtWidgets.QWidget):
         remove_button.setFixedSize(60, 30)
         remove_button.setFont(QtGui.QFont("微软雅黑", 9))
         remove_button.setStyleSheet(
-            "QPushButton {background-color: #FF5A5F; color: white; border: none; border-radius: 6px; font-weight: 500; box-shadow: 0 2px 4px rgba(255, 90, 95, 0.2);} QPushButton:hover {background-color: #FF3B30; box-shadow: 0 4px 8px rgba(255, 59, 48, 0.3);} QPushButton:pressed {background-color: #E03530; box-shadow: 0 1px 2px rgba(224, 53, 48, 0.2);}")
+            "QPushButton {background-color: #FF5A5F; color: white; border: none; border-radius: 6px; font-weight: 500;} QPushButton:hover {background-color: #FF3B30;} QPushButton:pressed {background-color: #E03530;}")
         remove_button.hide()
 
         layout.addWidget(icon_widget)
@@ -96,7 +96,7 @@ class FolderPage(QtWidgets.QWidget):
         layout.addWidget(remove_button)
 
         folder_frame.setStyleSheet(
-            "QFrame {background-color: #F5F7FA; border: 1px solid #E0E3E9; border-radius: 8px; margin: 2px; box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);} QFrame:hover {background-color: #EBEFF5; border-color: #C2C9D6; box-shadow: 0 4px 8px rgba(0, 0, 0, 0.08);}")
+            "QFrame {background-color: #F5F7FA; border: 1px solid #E0E3E9; border-radius: 8px; margin: 2px;} QFrame:hover {background-color: #EBEFF5; border-color: #C2C9D6;}")
 
         def enter_event(event):
             remove_button.show()

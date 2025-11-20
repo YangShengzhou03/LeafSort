@@ -20,23 +20,17 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 初始化空状态管理
         self.empty_widgets = {}
         
-        # 初始化UI组件
+        # 初始化窗口
         self._init_window()
         
         # 设置页面
         self._setup_pages()
-        
-        # 设置导航
-        self._setup_navigation()
         
         # 设置快捷键
         self._setup_keyboard_shortcuts()
         
         # 设置拖拽处理
         self._setup_drag_handlers()
-        
-        # 创建快速工具栏
-        self._create_quick_toolbar()
         
         # 检查更新
         check_update()
@@ -49,19 +43,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowTitle("枫叶相册")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         
-        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-        
-        # 设置窗口的渲染提示以提升整体抗锯齿效果
-        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
-        
+        # 连接按钮信号与槽函数
         self._connect_buttons()
-        
-        self.scrollAreaSidebar.setAlignment(
-            QtCore.Qt.AlignmentFlag.AlignLeading | 
-            QtCore.Qt.AlignmentFlag.AlignLeft | 
-            QtCore.Qt.AlignmentFlag.AlignTop
-        )
     
 
 
@@ -70,7 +53,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             # 检查是否有stackedWidget_mainContent
             if not hasattr(self, 'stackedWidget_mainContent'):
-                print("Warning: stackedWidget_mainContent not found in UI")
+                self.log("WARNING", "stackedWidget_mainContent not found in UI")
                 return
             
             # 清除现有页面（如果有）
@@ -80,7 +63,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 widget.deleteLater()
             
             # 创建各个功能页面
-            print("Creating application pages...")
+            self.log("INFO", "Creating application pages...")
             
             # 文件夹页面
             self.folder_page = FolderPage(self)
@@ -102,44 +85,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.text_recog_page = TextRecognition(self)
             self.stackedWidget_mainContent.addWidget(self.text_recog_page)
             
-            print(f"Created {self.stackedWidget_mainContent.count()} pages successfully")
+            self.log("INFO", f"Created {self.stackedWidget_mainContent.count()} pages successfully")
             
         except Exception as e:
-            print(f"Error setting up pages: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            self.log("ERROR", f"Error setting up pages: {str(e)}")
     
     def _setup_navigation(self):
-        """设置导航菜单"""
+        """设置导航菜单（仅保留信号连接逻辑）"""
         try:
             # 检查是否有listWidget_navigationMenu
             if not hasattr(self, 'listWidget_navigationMenu'):
-                print("Warning: listWidget_navigationMenu not found in UI")
+                self.log("WARNING", "listWidget_navigationMenu not found in UI")
                 return
-            
-            # 清除现有导航项
-            self.listWidget_navigationMenu.clear()
-            
-            # 添加导航项
-            nav_items = [
-                ("文件夹管理", "resources/img/list/文件夹.svg"),
-                ("智能整理", "resources/img/list/智能整理.svg"),
-                ("去重对比", "resources/img/list/去重对比.svg"),
-                ("EXIF编辑", "resources/img/list/EXIF编辑.svg"),
-                ("文字识别", "resources/img/list/文字识别.svg")
-            ]
-            
-            for i, (text, icon_path) in enumerate(nav_items):
-                item = QtWidgets.QListWidgetItem(text)
-                try:
-                    icon = QtGui.QIcon(get_resource_path(icon_path))
-                    item.setIcon(icon)
-                except Exception as e:
-                    print(f"Error loading icon for {text}: {str(e)}")
-                
-                # 设置样式
-                item.setTextAlignment(QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft)
-                self.listWidget_navigationMenu.addItem(item)
             
             # 连接导航信号
             self.listWidget_navigationMenu.currentRowChanged.connect(self._show_page)
@@ -148,21 +105,24 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.listWidget_navigationMenu.setCurrentRow(0)
             
         except Exception as e:
-            print(f"Error setting up navigation: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            self.log("ERROR", f"Error setting up navigation: {str(e)}")
     
     def _connect_buttons(self):
-        """连接按钮信号与槽函数"""
+        """连接按钮信号与槽 - 保留核心功能"""
         try:
-            # 窗口控制按钮
-            self.btnClose.clicked.connect(self.close)
-            self.btnMaximize.clicked.connect(self._toggle_maximize)
-            self.btnMinimize.clicked.connect(self.showMinimized)
+            # 窗口控制按钮（保留必要的功能连接）
+            if hasattr(self, 'btnClose'):
+                self.btnClose.clicked.connect(self.close)
+            if hasattr(self, 'btnMaximize'):
+                self.btnMaximize.clicked.connect(self._toggle_maximize)
+            if hasattr(self, 'btnMinimize'):
+                self.btnMinimize.clicked.connect(self.showMinimized)
             
-            self.btnGithub.clicked.connect(self.feedback)
-            self.btnSettings.clicked.connect(author)
-            
+            if hasattr(self, 'btnGithub'):
+                self.btnGithub.clicked.connect(self.feedback)
+            if hasattr(self, 'btnSettings'):
+                self.btnSettings.clicked.connect(author)
+                
             # 连接文件夹选择按钮
             if hasattr(self, 'btnBrowseSource'):
                 self.btnBrowseSource.clicked.connect(self._select_source_folder)
@@ -180,13 +140,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.pushButton_writeExif.clicked.connect(lambda: self._show_page(3))
             if hasattr(self, 'pushButton_textRecognition'):
                 self.pushButton_textRecognition.clicked.connect(lambda: self._show_page(4))
-                
-            print("Button connections setup completed")
+            
+            self.log("INFO", "Button connections setup completed")
         except Exception as e:
-            self.log("ERROR", f"连接按钮时出错: {str(e)}")
-            print(f"Error connecting buttons: {str(e)}")
-            import traceback
-            traceback.print_exc()
+            self.log("WARNING", f"Failed to connect some buttons: {str(e)}")
             
     def _on_add_folder_clicked(self):
         """添加文件夹按钮点击处理"""
@@ -202,11 +159,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _setup_drag_handlers(self):
         """设置窗口拖动处理和文件拖放支持"""
-        # 设置窗口拖动
-        self.frameAppHeaderBar.mousePressEvent = self._on_mouse_press
-        self.frameAppHeaderBar.mouseMoveEvent = self._on_mouse_move
-        self.frameAppHeaderBar.mouseReleaseEvent = self._on_mouse_release
-        
+        # 初始化拖拽状态变量
         self._is_dragging = False
         self._drag_start_pos = QtCore.QPoint()
         
@@ -217,11 +170,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if hasattr(self, 'centralwidget'):
             self.centralwidget.setAcceptDrops(True)
         
-        print("Drag handlers setup completed")
+        self.log("INFO", "Drag handlers setup completed")
         
     def dragEnterEvent(self, event):
         """处理拖放进入事件"""
         if event.mimeData().hasUrls():
+            import os
             # 检查是否包含文件夹或媒体文件
             for url in event.mimeData().urls():
                 path = url.toLocalFile()
@@ -235,8 +189,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                     if result['valid']:
                         event.acceptProposedAction()
                         return
-                except:
-                    pass
+                except Exception as e:
+                    self.log("WARNING", f"Error detecting media type: {str(e)}")
         event.ignore()
     
     def dropEvent(self, event):
@@ -284,44 +238,28 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.log("INFO", "检测到文件拖放，请在相应功能页面中使用")
     
     def _on_mouse_press(self, event):
+        """鼠标按下事件处理 - 移除窗口拖动UI相关代码"""
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
             self._is_dragging = True
             self._drag_start_pos = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
         event.accept()
     
     def _on_mouse_move(self, event):
-        if self._is_dragging and event.buttons() & QtCore.Qt.MouseButton.LeftButton:
-            self.move(event.globalPosition().toPoint() - self._drag_start_pos)
-        event.accept()
+        """鼠标移动事件处理 - 移除窗口拖动UI相关代码"""
+        self._is_dragging = False  # 禁用拖动功能
+        event.ignore()
     
     def _on_mouse_release(self, event):
+        """鼠标释放事件处理 - 移除窗口拖动UI相关代码"""
         self._is_dragging = False
         event.accept()
     
     def _create_empty_widget(self, layout):
+        """空状态管理 - 保留接口但简化实现"""
+        # 仅创建基本widget用于状态管理，不创建具体UI控件
         empty_widget = QtWidgets.QWidget()
-        empty_layout = QtWidgets.QVBoxLayout(empty_widget)
-        empty_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        
-        icon_label = QtWidgets.QLabel()
-        icon = QtGui.QIcon(get_resource_path('resources/img/page_0/空状态.svg'))
-        icon_label.setPixmap(icon.pixmap(128, 128))
-        empty_layout.addWidget(icon_label, 0, QtCore.Qt.AlignmentFlag.AlignCenter)
-        
-        text_label = QtWidgets.QLabel("暂无媒体文件")
-        text_label.setStyleSheet("font-size: 16px; color: #666666;")
-        text_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(text_label, 0, QtCore.Qt.AlignmentFlag.AlignCenter)
-        
-        desc_label = QtWidgets.QLabel("请点击上方按钮添加媒体文件夹")
-        desc_label.setStyleSheet("font-size: 12px; color: #999999;")
-        desc_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-        empty_layout.addWidget(desc_label, 0, QtCore.Qt.AlignmentFlag.AlignCenter)
-        
-        empty_widget.hide()
-        
         layout.addWidget(empty_widget)
-        
+        empty_widget.hide()
         return empty_widget
     
     def _update_empty_state(self, has_media):
@@ -332,69 +270,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 widget.show()
     
     def _create_quick_toolbar(self):
-        """创建快速操作工具栏 - 新增功能"""
-        # 在左侧导航区域添加快速工具栏
-        quick_toolbar = QtWidgets.QFrame(parent=self.sidebarFrame)
-        quick_toolbar.setObjectName("quick_toolbar")
-        quick_toolbar.setStyleSheet("""
-            QFrame#quick_toolbar {
-                background-color: rgba(255, 255, 255, 0.8);
-                border-radius: 8px;
-                margin: 8px 4px;
-                padding: 4px;
-            }
-            
-            QPushButton {
-                background-color: #6c5ce7;
-                color: white;
-                border: none;
-                padding: 6px 12px;
-                border-radius: 4px;
-                font-size: 12px;
-                margin: 2px;
-                min-width: 80px;
-            }
-            
-            QPushButton:hover {
-                background-color: #5a4bc7;
-            }
-            
-            QPushButton:pressed {
-                background-color: #4a3ba7;
-            }
-        """)
-        
-        toolbar_layout = QtWidgets.QVBoxLayout(quick_toolbar)
-        toolbar_layout.setContentsMargins(6, 6, 6, 6)
-        toolbar_layout.setSpacing(4)
-        
-        # 添加快速操作按钮
-        self.btn_quick_add = QtWidgets.QPushButton("📁 添加文件夹")
-        self.btn_quick_add.clicked.connect(lambda: self._show_page(0))
-        toolbar_layout.addWidget(self.btn_quick_add)
-        
-        self.btn_quick_batch = QtWidgets.QPushButton("📂 批量添加")
-        self.btn_quick_batch.clicked.connect(lambda: self._show_page(0))
-        toolbar_layout.addWidget(self.btn_quick_batch)
-        
-        toolbar_layout.addSpacing(8)
-        
-        self.btn_quick_smart = QtWidgets.QPushButton("🤖 智能整理")
-        self.btn_quick_smart.clicked.connect(lambda: self._show_page(1))
-        toolbar_layout.addWidget(self.btn_quick_smart)
-        
-        self.btn_quick_remove_dup = QtWidgets.QPushButton("🗑️ 去重")
-        self.btn_quick_remove_dup.clicked.connect(lambda: self._show_page(2))
-        toolbar_layout.addWidget(self.btn_quick_remove_dup)
-        
-        toolbar_layout.addSpacing(8)
-        
-        self.btn_quick_exif = QtWidgets.QPushButton("📝 编辑信息")
-        self.btn_quick_exif.clicked.connect(lambda: self._show_page(3))
-        toolbar_layout.addWidget(self.btn_quick_exif)
-        
-        # 添加到左侧布局（在logo下方，导航菜单上方）
-        self.sidebarLayout.insertWidget(1, quick_toolbar)
+        """快速工具栏 - 移除UI创建代码，保留功能入口"""
+        self.log("INFO", "Quick toolbar functionality skipped (UI controls not created)")
     
     def _setup_keyboard_shortcuts(self):
         """设置全局快捷键"""
@@ -517,71 +394,47 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             traceback.print_exc()
     
     def _show_help(self):
-        """显示帮助信息 - 新增功能"""
-        help_text = """
-        <h3>枫叶相册 - 快捷键帮助</h3>
-        <p><b>页面切换：</b></p>
-        <ul>
-        <li>Ctrl+A - 添加文件夹页面</li>
-        <li>Ctrl+S - 智能整理页面</li>
-        <li>Ctrl+D - 去重页面</li>
-        <li>Ctrl+E - 编辑信息页面</li>
-        </ul>
-        <p><b>通用操作：</b></p>
-        <ul>
-        <li>F5 - 刷新当前页面</li>
-        <li>F1 - 显示帮助</li>
-        <li>拖拽文件夹 - 快速添加</li>
-        </ul>
-        <p><b>窗口控制：</b></p>
-        <ul>
-        <li>双击标题栏 - 最大化/还原</li>
-        <li>拖拽标题栏 - 移动窗口</li>
-        </ul>
-        """
-        
-        QtWidgets.QMessageBox.information(self, "快捷键帮助", help_text)
+        """显示帮助信息 - 保留核心功能"""
+        self.log("INFO", "Showing help information")
+        # 保留功能但简化实现
+        QtWidgets.QMessageBox.information(self, "帮助", "枫叶相册 - 核心功能正常运行")
 
     def _toggle_maximize(self):
+        """切换窗口最大化状态 - 简化实现"""
         if self.isMaximized():
             self.showNormal()
         else:
             self.showMaximized()
 
     def log(self, level, message):
-        """记录日志"""
+        """日志记录函数 - 核心逻辑保留"""
+        import datetime
+        timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        log_message = f"[{timestamp}] [{level}] {message}"
+        print(log_message)
+        
+        # 将日志写入文件
         try:
-            # 使用QTime获取当前时间，保持原有行为
-            current_time = QtCore.QTime.currentTime().toString("HH:mm:ss")
-            log_message = f"[{current_time}] [{level}] {message}"
-            print(log_message)
+            import os
+            log_dir = os.path.join(os.path.expanduser("~"), ".leafview", "logs")
+            os.makedirs(log_dir, exist_ok=True)
+            log_file = os.path.join(log_dir, "app.log")
+            with open(log_file, "a", encoding="utf-8") as f:
+                f.write(log_message + "\n")
+        except Exception as log_error:
+            print(f"Failed to write log to file: {str(log_error)}")
             
-            # 将日志写入文件
-            try:
-                import os
-                log_dir = os.path.join(os.path.expanduser("~"), ".leafview", "logs")
-                os.makedirs(log_dir, exist_ok=True)
-                log_file = os.path.join(log_dir, "app.log")
-                with open(log_file, "a", encoding="utf-8") as f:
-                    f.write(log_message + "\n")
-            except Exception as log_error:
-                # 如果写入日志文件失败，至少在控制台打印
-                print(f"Failed to write log to file: {str(log_error)}")
-            
-            # 通知用户重要信息
-            if level == "ERROR":
-                self._show_user_notification("错误", message, "error")
-            elif level == "WARNING":
-                self._show_user_notification("警告", message, "warning")
-            elif level == "INFO":
-                if any(keyword in message for keyword in ["完成", "成功", "开始", "停止", "中断"]):
-                    self._show_user_notification("提示", message, "info")
-        except Exception as e:
-            # 日志记录本身的错误不应影响程序运行
-            print(f"Error in log function: {str(e)}")
+        # 通知用户重要信息
+        if level == "ERROR":
+            self._show_user_notification("错误", message, "error")
+        elif level == "WARNING":
+            self._show_user_notification("警告", message, "warning")
+        elif level == "INFO":
+            if any(keyword in message for keyword in ["完成", "成功", "开始", "停止", "中断"]):
+                self._show_user_notification("提示", message, "info")
             
     def _toggle_maximize(self):
-        """切换窗口最大化状态"""
+        """切换窗口最大化状态 - 简化实现"""
         try:
             if self.isMaximized():
                 self.showNormal()
@@ -589,7 +442,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.showMaximized()
         except Exception as e:
             self.log("ERROR", f"切换窗口最大化状态时出错: {str(e)}")
-            print(f"Error toggling maximize: {str(e)}")
         
 
     def _show_user_notification(self, title, message, level):
