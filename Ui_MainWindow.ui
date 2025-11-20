@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>890</width>
+    <width>894</width>
     <height>520</height>
    </rect>
   </property>
@@ -205,8 +205,8 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>156</width>
-               <height>468</height>
+               <width>152</width>
+               <height>464</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="layoutSidebarContent">
@@ -827,7 +827,7 @@ box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
               <number>0</number>
              </property>
              <item>
-              <widget class="QStackedWidget" name="mainContentStack">
+              <widget class="QStackedWidget" name="stackedWidget">
                <property name="styleSheet">
                 <string notr="true">${
 	background-color: rgba(255, 255, 255, 0);
@@ -1048,9 +1048,11 @@ border-bottom-left-radius:0px;</string>
         stop:0.7 rgba(129, 121, 255, 220),
         stop:1 rgba(108, 97, 224, 200)
     );
-    background: rgb(245, 249, 254);
+    background: rgba(255, 255, 255, 85);
+    backdrop-filter: blur(8px);
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
 QFrame:focus {
@@ -1061,7 +1063,7 @@ QFrame:focus {
         stop:0 rgba(154, 139, 255, 255),
         stop:1 rgba(139, 131, 255, 240)
     );
-    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);
+    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
 }</string>
                       </property>
                       <layout class="QHBoxLayout" name="layoutSourceFolder">
@@ -1093,14 +1095,17 @@ QFrame:focus {
                           </font>
                          </property>
                          <property name="styleSheet">
-                          <string notr="true">border: 1px solid #d1d5db;
-border-radius: 4px;
+                          <string notr="true">border: 1px solid rgba(221, 225, 229, 0.8);
+border-radius: 8px;
 padding: 6px 8px;
-background: white;
+background-color: rgba(255, 255, 255, 85);
 color: #374151;
 font-size: 14px;
 selection-background-color: rgba(134, 119, 253, 0.3);
-selection-color: #1f2937;</string>
+selection-color: #1f2937;
+transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+backdrop-filter: blur(8px);
+box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
                          </property>
                          <property name="placeholderText">
                           <string>请选择源文件夹路径</string>
@@ -1124,21 +1129,35 @@ selection-color: #1f2937;</string>
                          </property>
                          <property name="styleSheet">
                           <string notr="true">QPushButton {
-    background-color: rgba(134, 119, 253, 255);
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(144, 129, 255, 255),
+        stop:1 rgba(134, 119, 253, 255)
+    );
     color: white;
-    border: none;
-    border-radius: 4px;
+    border: 1px solid rgba(164, 149, 255, 0.5);
+    border-radius: 8px;
     padding: 6px 12px;
     font-weight: 500;
-    transition: background-color 0.2s;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 2px 6px rgba(134, 119, 253, 0.3), 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
 QPushButton:hover {
-    background-color: rgba(154, 139, 255, 255);
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(164, 149, 255, 255),
+        stop:1 rgba(154, 139, 255, 255)
+    );
+    box-shadow: 0 4px 12px rgba(134, 119, 253, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);
+    transform: translateY(-1px);
 }
 
 QPushButton:pressed {
-    background-color: rgba(94, 79, 253, 255);
+    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(114, 99, 253, 255),
+        stop:1 rgba(94, 79, 253, 255)
+    );
+    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);
+    transform: translateY(0);
 }</string>
                          </property>
                          <property name="text">
@@ -1161,9 +1180,11 @@ QPushButton:pressed {
         stop:0.7 rgba(129, 121, 255, 220),
         stop:1 rgba(108, 97, 224, 200)
     );
-    background: rgb(245, 249, 254);
+    background: rgba(255, 255, 255, 85);
+    backdrop-filter: blur(8px);
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 8px;
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
 QFrame:focus {
@@ -1174,7 +1195,7 @@ QFrame:focus {
         stop:0 rgba(154, 139, 255, 255),
         stop:1 rgba(139, 131, 255, 240)
     );
-    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);
+    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
 }</string>
                       </property>
                       <layout class="QHBoxLayout" name="layoutTargetFolder">
@@ -1339,13 +1360,19 @@ border-radius: 0px;</string>
                        <widget class="QLabel" name="lblClassification">
                         <property name="font">
                          <font>
+                          <family>Microsoft YaHei</family>
                           <pointsize>12</pointsize>
+                          <bold>false</bold>
                          </font>
                         </property>
                         <property name="styleSheet">
                          <string notr="true">QLabel {
     color: #333333;
     border: none;
+    background: transparent;
+    padding: 2px 4px;
+    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-weight: 400;
 }</string>
                         </property>
                         <property name="text">
@@ -1405,9 +1432,9 @@ border-radius: 0px;</string>
                         </property>
                         <property name="styleSheet">
                          <string notr="true">QComboBox {
-    background-color: #ffffff;
-    border: 1px solid #d1d5db;
-    border-radius: 6px;
+    background-color: rgba(255, 255, 255, 85);
+    border: 1px solid rgba(255, 255, 255, 60);
+    border-radius: 8px;
     padding: 6px 12px;
     color: #374151;
     font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
@@ -1416,7 +1443,9 @@ border-radius: 0px;</string>
     min-height: 16px;
     selection-background-color: #6d28d9;
     selection-color: white;
-    transition: all 0.2s ease-out;
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    backdrop-filter: blur(8px);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
 }
 
 QComboBox::drop-down {
@@ -1431,39 +1460,43 @@ QComboBox::down-arrow {
 
 QComboBox:hover {
     border-color: #a5b4fc;
-    background-color: #f8fafc;
-    box-shadow: 0 1px 3px rgba(166, 175, 195, 0.2);
+    background-color: rgba(255, 255, 255, 95);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12);
+    transform: translateY(-1px);
 }
 
 QComboBox:on {
-    background-color: #f5f3ff;
+    background-color: rgba(255, 255, 255, 95);
     border-bottom-left-radius: 0;
     border-bottom-right-radius: 0;
-    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12);
 }
 
 QComboBox:pressed {
-    background-color: #ede9fe;
+    background-color: rgba(237, 233, 254, 0.9);
     transform: translateY(1px);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 QComboBox:disabled {
-    background-color: #f3f4f6;
+    background-color: rgba(243, 244, 246, 0.8);
     color: #9ca3af;
-    border-color: #e5e7eb;
+    border-color: rgba(229, 231, 235, 0.8);
+    backdrop-filter: blur(4px);
 }
 
 QComboBox QAbstractItemView {
-    border: 1px solid #e5e7eb;
+    border: 1px solid rgba(229, 231, 235, 0.8);
     border-top: none;
-    border-radius: 0 0 6px 6px;
-    background: white;
+    border-radius: 0 0 8px 8px;
+    background-color: rgba(255, 255, 255, 95);
+    backdrop-filter: blur(8px);
     padding: 4px 0;
     margin-top: -1px;
     selection-background-color: #6d28d9;
     selection-color: white;
     outline: none;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     min-width: 88px;
     font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
     font-size: 13px;
@@ -1505,7 +1538,7 @@ QComboBox:!editable {
 QComboBox:focus {
     border: 1px solid #8b5cf6;
     outline: none;
-    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);
+    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08);
 }</string>
                         </property>
                         <item>
@@ -2613,30 +2646,42 @@ QPushButton:pressed {
                               </property>
                               <property name="styleSheet">
                                <string notr="true">QPushButton {
-  background-color: #ffffff;
+  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 rgba(255, 255, 255, 95),
+      stop:1 rgba(248, 248, 250, 95)
+  );
   color: #2c3e50;
-  border: 1px solid #d4d4d4;
+  border: 1px solid rgba(220, 220, 225, 0.8);
   text-align: center;
   font-size: 14px;
   cursor: pointer;
   border-radius: 12px;
   padding: 4px 8px;
-  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;
-  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);
   text-transform: uppercase;
+  backdrop-filter: blur(4px);
 }
 
 QPushButton:hover {
-  background-color: #f7f7f7;
+  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 rgba(255, 255, 255, 100),
+      stop:1 rgba(250, 250, 252, 100)
+  );
   color: #2c3e50;
-  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);
+  transform: translateY(-1px);
+  border-color: rgba(134, 119, 253, 0.2);
 }
 
 QPushButton:pressed {
-  background-color: #ececec;
+  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,
+      stop:0 rgba(235, 235, 240, 95),
+      stop:1 rgba(230, 230, 235, 95)
+  );
   color: #34495e;
-  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);
-  transform: translateY(2px);
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);
+  transform: translateY(0);
 }</string>
                               </property>
                               <property name="text">
@@ -5662,5 +5707,22 @@ QTextEdit:focus {
   </widget>
  </widget>
  <resources/>
- <connections/>
+ <connections>
+  <connection>
+   <sender>listNavigationMenu</sender>
+   <signal>currentRowChanged(int)</signal>
+   <receiver>stackedWidget</receiver>
+   <slot>setCurrentIndex(int)</slot>
+   <hints>
+    <hint type="sourcelabel">
+     <x>143</x>
+     <y>234</y>
+    </hint>
+    <hint type="destinationlabel">
+     <x>166</x>
+     <y>232</y>
+    </hint>
+   </hints>
+  </connection>
+ </connections>
 </ui>

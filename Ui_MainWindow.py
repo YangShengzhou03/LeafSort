@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(890, 520)
+        MainWindow.resize(894, 520)
         self.centralWidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.layoutMainGrid = QtWidgets.QGridLayout(self.centralWidget)
@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         self.sidebarScrollArea.setWidgetResizable(True)
         self.sidebarScrollArea.setObjectName("sidebarScrollArea")
         self.sidebarScrollContent = QtWidgets.QWidget()
-        self.sidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 156, 468))
+        self.sidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 152, 464))
         self.sidebarScrollContent.setObjectName("sidebarScrollContent")
         self.layoutSidebarContent = QtWidgets.QVBoxLayout(self.sidebarScrollContent)
         self.layoutSidebarContent.setContentsMargins(0, 12, 0, 0)
@@ -465,8 +465,8 @@ class Ui_MainWindow(object):
         self.mainContentLayout.setContentsMargins(0, 0, 0, 0)
         self.mainContentLayout.setSpacing(0)
         self.mainContentLayout.setObjectName("mainContentLayout")
-        self.mainContentStack = QtWidgets.QStackedWidget(parent=self.mainContentFrame)
-        self.mainContentStack.setStyleSheet("${\n"
+        self.stackedWidget = QtWidgets.QStackedWidget(parent=self.mainContentFrame)
+        self.stackedWidget.setStyleSheet("${\n"
 "    background-color: rgba(255, 255, 255, 0);\n"
 "    border-bottom-right-radius:20px;\n"
 "}\n"
@@ -507,7 +507,7 @@ class Ui_MainWindow(object):
 "    background:rgba(0,0,0,0%);\n"
 "    border-radius:4px;\n"
 "}")
-        self.mainContentStack.setObjectName("mainContentStack")
+        self.stackedWidget.setObjectName("stackedWidget")
         self.pagePreview = QtWidgets.QWidget()
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
         sizePolicy.setHorizontalStretch(0)
@@ -592,9 +592,11 @@ class Ui_MainWindow(object):
 "        stop:0.7 rgba(129, 121, 255, 220),\n"
 "        stop:1 rgba(108, 97, 224, 200)\n"
 "    );\n"
-"    background: rgb(245, 249, 254);\n"
+"    background: rgba(255, 255, 255, 85);\n"
+"    backdrop-filter: blur(8px);\n"
 "    padding: 8px;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 8px;\n"
+"    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);\n"
 "}\n"
 "\n"
 "QFrame:focus {\n"
@@ -605,7 +607,7 @@ class Ui_MainWindow(object):
 "        stop:0 rgba(154, 139, 255, 255),\n"
 "        stop:1 rgba(139, 131, 255, 240)\n"
 "    );\n"
-"    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);\n"
+"    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);\n"
 "}")
         self.frameSourceFolderGroup.setObjectName("frameSourceFolderGroup")
         self.layoutSourceFolder = QtWidgets.QHBoxLayout(self.frameSourceFolderGroup)
@@ -623,14 +625,17 @@ class Ui_MainWindow(object):
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(-1)
         self.inputSourceFolder.setFont(font)
-        self.inputSourceFolder.setStyleSheet("border: 1px solid #d1d5db;\n"
-"border-radius: 4px;\n"
+        self.inputSourceFolder.setStyleSheet("border: 1px solid rgba(221, 225, 229, 0.8);\n"
+"border-radius: 8px;\n"
 "padding: 6px 8px;\n"
-"background: white;\n"
+"background-color: rgba(255, 255, 255, 85);\n"
 "color: #374151;\n"
 "font-size: 14px;\n"
 "selection-background-color: rgba(134, 119, 253, 0.3);\n"
-"selection-color: #1f2937;")
+"selection-color: #1f2937;\n"
+"transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"backdrop-filter: blur(8px);\n"
+"box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);")
         self.inputSourceFolder.setObjectName("inputSourceFolder")
         self.layoutSourceFolder.addWidget(self.inputSourceFolder)
         self.btnBrowseSource = QtWidgets.QPushButton(parent=self.frameSourceFolderGroup)
@@ -641,21 +646,35 @@ class Ui_MainWindow(object):
         font.setBold(False)
         self.btnBrowseSource.setFont(font)
         self.btnBrowseSource.setStyleSheet("QPushButton {\n"
-"    background-color: rgba(134, 119, 253, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(144, 129, 255, 255),\n"
+"        stop:1 rgba(134, 119, 253, 255)\n"
+"    );\n"
 "    color: white;\n"
-"    border: none;\n"
-"    border-radius: 4px;\n"
+"    border: 1px solid rgba(164, 149, 255, 0.5);\n"
+"    border-radius: 8px;\n"
 "    padding: 6px 12px;\n"
 "    font-weight: 500;\n"
-"    transition: background-color 0.2s;\n"
+"    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    box-shadow: 0 2px 6px rgba(134, 119, 253, 0.3), 0 1px 3px rgba(0, 0, 0, 0.1);\n"
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    background-color: rgba(154, 139, 255, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(164, 149, 255, 255),\n"
+"        stop:1 rgba(154, 139, 255, 255)\n"
+"    );\n"
+"    box-shadow: 0 4px 12px rgba(134, 119, 253, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
-"    background-color: rgba(94, 79, 253, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(114, 99, 253, 255),\n"
+"        stop:1 rgba(94, 79, 253, 255)\n"
+"    );\n"
+"    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnBrowseSource.setObjectName("btnBrowseSource")
         self.layoutSourceFolder.addWidget(self.btnBrowseSource)
@@ -670,9 +689,11 @@ class Ui_MainWindow(object):
 "        stop:0.7 rgba(129, 121, 255, 220),\n"
 "        stop:1 rgba(108, 97, 224, 200)\n"
 "    );\n"
-"    background: rgb(245, 249, 254);\n"
+"    background: rgba(255, 255, 255, 85);\n"
+"    backdrop-filter: blur(8px);\n"
 "    padding: 8px;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 8px;\n"
+"    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);\n"
 "}\n"
 "\n"
 "QFrame:focus {\n"
@@ -683,7 +704,7 @@ class Ui_MainWindow(object):
 "        stop:0 rgba(154, 139, 255, 255),\n"
 "        stop:1 rgba(139, 131, 255, 240)\n"
 "    );\n"
-"    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);\n"
+"    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);\n"
 "}")
         self.frameTargetFolderGroup.setObjectName("frameTargetFolderGroup")
         self.layoutTargetFolder = QtWidgets.QHBoxLayout(self.frameTargetFolderGroup)
@@ -741,7 +762,7 @@ class Ui_MainWindow(object):
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.layoutImportContainer.addItem(spacerItem2)
         self.layoutImport.addWidget(self.importContainer)
-        self.mainContentStack.addWidget(self.pagePreview)
+        self.stackedWidget.addWidget(self.pagePreview)
         self.pageClassification = QtWidgets.QWidget()
         self.pageClassification.setStyleSheet("border: none;")
         self.pageClassification.setObjectName("pageClassification")
@@ -765,11 +786,17 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.setObjectName("layoutClassificationHeader")
         self.lblClassification = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei")
         font.setPointSize(12)
+        font.setBold(False)
         self.lblClassification.setFont(font)
         self.lblClassification.setStyleSheet("QLabel {\n"
 "    color: #333333;\n"
 "    border: none;\n"
+"    background: transparent;\n"
+"    padding: 2px 4px;\n"
+"    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+"    font-weight: 400;\n"
 "}")
         self.lblClassification.setObjectName("lblClassification")
         self.layoutClassificationHeader.addWidget(self.lblClassification)
@@ -800,9 +827,9 @@ class Ui_MainWindow(object):
         font.setPointSize(-1)
         self.comboClassificationLevel1.setFont(font)
         self.comboClassificationLevel1.setStyleSheet("QComboBox {\n"
-"    background-color: #ffffff;\n"
-"    border: 1px solid #d1d5db;\n"
-"    border-radius: 6px;\n"
+"    background-color: rgba(255, 255, 255, 85);\n"
+"    border: 1px solid rgba(255, 255, 255, 60);\n"
+"    border-radius: 8px;\n"
 "    padding: 6px 12px;\n"
 "    color: #374151;\n"
 "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
@@ -811,7 +838,9 @@ class Ui_MainWindow(object):
 "    min-height: 16px;\n"
 "    selection-background-color: #6d28d9;\n"
 "    selection-color: white;\n"
-"    transition: all 0.2s ease-out;\n"
+"    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    backdrop-filter: blur(8px);\n"
+"    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);\n"
 "}\n"
 "\n"
 "QComboBox::drop-down {\n"
@@ -826,39 +855,43 @@ class Ui_MainWindow(object):
 "\n"
 "QComboBox:hover {\n"
 "    border-color: #a5b4fc;\n"
-"    background-color: #f8fafc;\n"
-"    box-shadow: 0 1px 3px rgba(166, 175, 195, 0.2);\n"
+"    background-color: rgba(255, 255, 255, 95);\n"
+"    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QComboBox:on {\n"
-"    background-color: #f5f3ff;\n"
+"    background-color: rgba(255, 255, 255, 95);\n"
 "    border-bottom-left-radius: 0;\n"
 "    border-bottom-right-radius: 0;\n"
-"    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);\n"
+"    box-shadow: 0 2px 6px rgba(139, 92, 246, 0.12);\n"
 "}\n"
 "\n"
 "QComboBox:pressed {\n"
-"    background-color: #ede9fe;\n"
+"    background-color: rgba(237, 233, 254, 0.9);\n"
 "    transform: translateY(1px);\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.05);\n"
 "}\n"
 "\n"
 "QComboBox:disabled {\n"
-"    background-color: #f3f4f6;\n"
+"    background-color: rgba(243, 244, 246, 0.8);\n"
 "    color: #9ca3af;\n"
-"    border-color: #e5e7eb;\n"
+"    border-color: rgba(229, 231, 235, 0.8);\n"
+"    backdrop-filter: blur(4px);\n"
 "}\n"
 "\n"
 "QComboBox QAbstractItemView {\n"
-"    border: 1px solid #e5e7eb;\n"
+"    border: 1px solid rgba(229, 231, 235, 0.8);\n"
 "    border-top: none;\n"
-"    border-radius: 0 0 6px 6px;\n"
-"    background: white;\n"
+"    border-radius: 0 0 8px 8px;\n"
+"    background-color: rgba(255, 255, 255, 95);\n"
+"    backdrop-filter: blur(8px);\n"
 "    padding: 4px 0;\n"
 "    margin-top: -1px;\n"
 "    selection-background-color: #6d28d9;\n"
 "    selection-color: white;\n"
 "    outline: none;\n"
-"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
+"    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n"
 "    min-width: 88px;\n"
 "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
 "    font-size: 13px;\n"
@@ -900,7 +933,7 @@ class Ui_MainWindow(object):
 "QComboBox:focus {\n"
 "    border: 1px solid #8b5cf6;\n"
 "    outline: none;\n"
-"    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2);\n"
+"    box-shadow: 0 0 0 2px rgba(139, 92, 246, 0.2), 0 2px 6px rgba(0, 0, 0, 0.08);\n"
 "}")
         self.comboClassificationLevel1.setObjectName("comboClassificationLevel1")
         self.comboClassificationLevel1.addItem("")
@@ -1588,30 +1621,42 @@ class Ui_MainWindow(object):
         self.btnAddYearTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
         self.btnAddYearTag.setMaximumSize(QtCore.QSize(46, 28))
         self.btnAddYearTag.setStyleSheet("QPushButton {\n"
-"  background-color: #ffffff;\n"
+"  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
+"      stop:0 rgba(255, 255, 255, 95),\n"
+"      stop:1 rgba(248, 248, 250, 95)\n"
+"  );\n"
 "  color: #2c3e50;\n"
-"  border: 1px solid #d4d4d4;\n"
+"  border: 1px solid rgba(220, 220, 225, 0.8);\n"
 "  text-align: center;\n"
 "  font-size: 14px;\n"
 "  cursor: pointer;\n"
 "  border-radius: 12px;\n"
 "  padding: 4px 8px;\n"
-"  transition: background-color 0.3s ease, color 0.3s ease, box-shadow 0.3s ease, transform 0.15s ease;\n"
-"  box-shadow: 0 3px 6px rgba(0, 0, 0, 0.1);\n"
+"  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.04);\n"
 "  text-transform: uppercase;\n"
+"  backdrop-filter: blur(4px);\n"
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"  background-color: #f7f7f7;\n"
+"  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
+"      stop:0 rgba(255, 255, 255, 100),\n"
+"      stop:1 rgba(250, 250, 252, 100)\n"
+"  );\n"
 "  color: #2c3e50;\n"
-"  box-shadow: 0 5px 10px rgba(0, 0, 0, 0.2);\n"
+"  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.12), 0 2px 4px rgba(0, 0, 0, 0.08);\n"
+"  transform: translateY(-1px);\n"
+"  border-color: rgba(134, 119, 253, 0.2);\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
-"  background-color: #ececec;\n"
+"  background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
+"      stop:0 rgba(235, 235, 240, 95),\n"
+"      stop:1 rgba(230, 230, 235, 95)\n"
+"  );\n"
 "  color: #34495e;\n"
-"  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);\n"
-"  transform: translateY(2px);\n"
+"  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.12), 0 1px 2px rgba(0, 0, 0, 0.04);\n"
+"  transform: translateY(0);\n"
 "}")
         self.btnAddYearTag.setObjectName("btnAddYearTag")
         self.layoutTagsInput.addWidget(self.btnAddYearTag)
@@ -2312,7 +2357,7 @@ class Ui_MainWindow(object):
         self.logLayout.addWidget(self.smartArrangeLogOutputTextEdit)
         self.layoutClassificationContent.addWidget(self.horizontalFrame_2)
         self.layoutClassificationPage.addLayout(self.layoutClassificationContent)
-        self.mainContentStack.addWidget(self.pageClassification)
+        self.stackedWidget.addWidget(self.pageClassification)
         self.viewerPage = QtWidgets.QWidget()
         self.viewerPage.setObjectName("viewerPage")
         self.viewerPageLayout = QtWidgets.QHBoxLayout(self.viewerPage)
@@ -2433,7 +2478,7 @@ class Ui_MainWindow(object):
         self.viewerContentLayout.setStretch(1, 3)
         self.viewerPageLayout.addWidget(self.verticalWidget)
         self.viewerPageLayout.setStretch(0, 1)
-        self.mainContentStack.addWidget(self.viewerPage)
+        self.stackedWidget.addWidget(self.viewerPage)
         self.imageDetailsPage = QtWidgets.QWidget()
         self.imageDetailsPage.setStyleSheet("background:rgb(255, 255, 255);")
         self.imageDetailsPage.setObjectName("imageDetailsPage")
@@ -3564,8 +3609,8 @@ class Ui_MainWindow(object):
         self.textEdit_WriteEXIF_Log.setObjectName("textEdit_WriteEXIF_Log")
         self.exifToolbarLayout.addWidget(self.textEdit_WriteEXIF_Log)
         self.detailsPageLayout.addWidget(self.horizontalFrame_log)
-        self.mainContentStack.addWidget(self.imageDetailsPage)
-        self.mainContentLayout.addWidget(self.mainContentStack)
+        self.stackedWidget.addWidget(self.imageDetailsPage)
+        self.mainContentLayout.addWidget(self.stackedWidget)
         self.layoutContent.addWidget(self.mainContentFrame)
         self.layoutContent.setStretch(1, 12)
         self.layoutMainContainer.addWidget(self.frameContentArea)
@@ -3575,7 +3620,8 @@ class Ui_MainWindow(object):
 
         self.retranslateUi(MainWindow)
         self.listNavigationMenu.setCurrentRow(0)
-        self.mainContentStack.setCurrentIndex(0)
+        self.stackedWidget.setCurrentIndex(0)
+        self.listNavigationMenu.currentRowChanged['int'].connect(self.stackedWidget.setCurrentIndex) # type: ignore
         QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
