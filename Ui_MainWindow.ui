@@ -441,15 +441,18 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
             </property>
             <property name="styleSheet">
              <string notr="true">QFrame{
-background-color: qradialgradient(
-cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-stop:0.66 rgba(134, 119, 253, 255),
-stop:1 rgba(119, 111, 252, 255)
+background: qlineargradient(
+spread:pad, x1:0, y1:0, x2:1, y2:0,
+stop:0 rgba(134, 119, 253, 255),
+stop:0.3 rgba(119, 111, 252, 255),
+stop:0.7 rgba(108, 92, 231, 255),
+stop:1 rgba(94, 73, 210, 255)
 );
 border-top-left-radius:0px;
 border-top-right-radius:12px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;
+box-shadow: 0 2px 12px rgba(108, 92, 231, 0.3);
 }</string>
             </property>
             <property name="frameShape">

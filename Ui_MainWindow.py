@@ -250,15 +250,18 @@ class Ui_MainWindow(object):
         self.frameAppHeaderBar = QtWidgets.QFrame(parent=self.frameContentArea)
         self.frameAppHeaderBar.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.frameAppHeaderBar.setStyleSheet("QFrame{\n"
-"background-color: qradialgradient(\n"
-"cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
-"stop:0.66 rgba(134, 119, 253, 255),\n"
-"stop:1 rgba(119, 111, 252, 255)\n"
+"background: qlineargradient(\n"
+"spread:pad, x1:0, y1:0, x2:1, y2:0,\n"
+"stop:0 rgba(134, 119, 253, 255),\n"
+"stop:0.3 rgba(119, 111, 252, 255),\n"
+"stop:0.7 rgba(108, 92, 231, 255),\n"
+"stop:1 rgba(94, 73, 210, 255)\n"
 ");\n"
 "border-top-left-radius:0px;\n"
 "border-top-right-radius:12px;\n"
 "border-bottom-right-radius:0px;\n"
 "border-bottom-left-radius:0px;\n"
+"box-shadow: 0 2px 12px rgba(108, 92, 231, 0.3);\n"
 "}")
         self.frameAppHeaderBar.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.frameAppHeaderBar.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
