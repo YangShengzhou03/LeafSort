@@ -31,7 +31,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         self._connect_buttons()
         
-        self.navigationScrollArea.setAlignment(
+        self.scrollAreaSidebar.setAlignment(
             QtCore.Qt.AlignmentFlag.AlignLeading | 
             QtCore.Qt.AlignmentFlag.AlignLeft | 
             QtCore.Qt.AlignmentFlag.AlignTop
@@ -40,12 +40,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
     def _connect_buttons(self):
-        self.closeButton.clicked.connect(self.close)
-        self.maximizeButton.clicked.connect(self._toggle_maximize)
-        self.minimizeButton.clicked.connect(self.showMinimized)
+        self.btnClose.clicked.connect(self.close)
+        self.btnMaximize.clicked.connect(self._toggle_maximize)
+        self.btnMinimize.clicked.connect(self.showMinimized)
         
-        self.serviceButton.clicked.connect(self.feedback)
-        self.settingsButton.clicked.connect(author)
+        self.btnService.clicked.connect(self.feedback)
+        self.btnSettings.clicked.connect(author)
         
         # 连接文件夹选择按钮
         if hasattr(self, 'btn_importBrowseSource'):
@@ -54,9 +54,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.btn_importBrowseTarget.clicked.connect(self._select_target_folder)
 
     def _setup_drag_handlers(self):
-        self.headerFrame.mousePressEvent = self._on_mouse_press
-        self.headerFrame.mouseMoveEvent = self._on_mouse_move
-        self.headerFrame.mouseReleaseEvent = self._on_mouse_release
+        self.frameAppHeaderBar.mousePressEvent = self._on_mouse_press
+        self.frameAppHeaderBar.mouseMoveEvent = self._on_mouse_move
+        self.frameAppHeaderBar.mouseReleaseEvent = self._on_mouse_release
         
         self._is_dragging = False
         self._drag_start_pos = QtCore.QPoint()
