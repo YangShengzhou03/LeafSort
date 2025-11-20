@@ -51,10 +51,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnSettings.clicked.connect(author)
         
         # 连接文件夹选择按钮
-        if hasattr(self, 'btn_importBrowseSource'):
-            self.btn_importBrowseSource.clicked.connect(self._select_source_folder)
-        if hasattr(self, 'btn_importBrowseTarget'):
-            self.btn_importBrowseTarget.clicked.connect(self._select_target_folder)
+        if hasattr(self, 'btnBrowseSource'):
+            self.btnBrowseSource.clicked.connect(self._select_source_folder)
+        if hasattr(self, 'btnBrowseTarget'):
+            self.btnBrowseTarget.clicked.connect(self._select_target_folder)
 
     def _setup_drag_handlers(self):
         self.frameAppHeaderBar.mousePressEvent = self._on_mouse_press

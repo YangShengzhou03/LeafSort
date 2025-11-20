@@ -2,6 +2,8 @@ from datetime import datetime
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QInputDialog, QMessageBox, QFileDialog
+import os
+from pathlib import Path
 
 from SmartArrangeThread import SmartArrangeThread
 

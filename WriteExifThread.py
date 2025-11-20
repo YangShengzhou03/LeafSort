@@ -93,7 +93,7 @@ class WriteExifThread(QThread):
                                 for f in futures:
                                     f.cancel()
                                 time.sleep(0.1)
-                                self.log.emit("DEBUG", "EXIF写入操作已成功中止")
+                                self.log_signal.emit("DEBUG", "EXIF写入操作已成功中止")
                                 break
                             try:
                                 future.result(timeout=30)
