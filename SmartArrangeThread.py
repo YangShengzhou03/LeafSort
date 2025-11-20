@@ -14,7 +14,6 @@ import pillow_heif
 from PIL import Image
 from PyQt6 import QtCore
 
-from ReverseGeocoding import get_address_from_coordinates
 from common import get_resource_path
 
 # 配置日志记录
