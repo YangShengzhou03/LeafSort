@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(954, 580)
+        MainWindow.resize(942, 580)
         self.centralWidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.layoutMainGrid = QtWidgets.QGridLayout(self.centralWidget)
@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         self.scrollAreaSidebar.setWidgetResizable(True)
         self.scrollAreaSidebar.setObjectName("scrollAreaSidebar")
         self.widgetSidebarScrollContent = QtWidgets.QWidget()
-        self.widgetSidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 170, 467))
+        self.widgetSidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 158, 467))
         self.widgetSidebarScrollContent.setObjectName("widgetSidebarScrollContent")
         self.layoutSidebarContent = QtWidgets.QVBoxLayout(self.widgetSidebarScrollContent)
         self.layoutSidebarContent.setContentsMargins(4, 8, 4, 8)
@@ -793,14 +793,17 @@ class Ui_MainWindow(object):
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(-1)
         self.inputTargetFolder.setFont(font)
-        self.inputTargetFolder.setStyleSheet("border: 1px solid #d1d5db;\n"
-"border-radius: 4px;\n"
+        self.inputTargetFolder.setStyleSheet("border: 1px solid rgba(221, 225, 229, 0.8);\n"
+"border-radius: 8px;\n"
 "padding: 6px 8px;\n"
-"background: white;\n"
+"background-color: rgba(255, 255, 255, 85);\n"
 "color: #374151;\n"
 "font-size: 14px;\n"
 "selection-background-color: rgba(134, 119, 253, 0.3);\n"
-"selection-color: #1f2937;")
+"selection-color: #1f2937;\n"
+"transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"backdrop-filter: blur(8px);\n"
+"box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);")
         self.inputTargetFolder.setObjectName("inputTargetFolder")
         self.layoutTargetFolder.addWidget(self.inputTargetFolder)
         self.btnBrowseTarget = QtWidgets.QPushButton(parent=self.frameTargetFolderGroup)
@@ -811,21 +814,35 @@ class Ui_MainWindow(object):
         font.setBold(False)
         self.btnBrowseTarget.setFont(font)
         self.btnBrowseTarget.setStyleSheet("QPushButton {\n"
-"    background-color: rgba(134, 119, 253, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(144, 129, 255, 255),\n"
+"        stop:1 rgba(134, 119, 253, 255)\n"
+"    );\n"
 "    color: white;\n"
-"    border: none;\n"
-"    border-radius: 4px;\n"
+"    border: 1px solid rgba(164, 149, 255, 0.5);\n"
+"    border-radius: 8px;\n"
 "    padding: 6px 12px;\n"
 "    font-weight: 500;\n"
-"    transition: background-color 0.2s;\n"
+"    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    box-shadow: 0 2px 6px rgba(134, 119, 253, 0.3), 0 1px 3px rgba(0, 0, 0, 0.1);\n"
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    background-color: rgba(154, 139, 255, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(164, 149, 255, 255),\n"
+"        stop:1 rgba(154, 139, 255, 255)\n"
+"    );\n"
+"    box-shadow: 0 4px 12px rgba(134, 119, 253, 0.4), 0 2px 6px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QPushButton:pressed {\n"
-"    background-color: rgba(94, 79, 253, 255);\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(114, 99, 253, 255),\n"
+"        stop:1 rgba(94, 79, 253, 255)\n"
+"    );\n"
+"    box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.1);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnBrowseTarget.setObjectName("btnBrowseTarget")
         self.layoutTargetFolder.addWidget(self.btnBrowseTarget)
