@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>894</width>
+    <width>925</width>
     <height>520</height>
    </rect>
   </property>
@@ -37,14 +37,14 @@
 background: qlineargradient(
     spread:pad, x1:0, y1:0, x2:1, y2:1,
     stop:0 rgba(255, 255, 255, 255),
-    stop:0.5 rgba(249, 250, 251, 255),
-    stop:1 rgba(243, 244, 246, 255)
+    stop:0.5 rgba(251, 252, 253, 255),
+    stop:1 rgba(248, 249, 250, 255)
 );
 border:none;
-border-radius:12px;
-box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 
-            0 2px 8px rgba(0, 0, 0, 0.04),
-            inset 0 1px 0 rgba(255, 255, 255, 0.8);
+border-radius:16px;
+box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), 
+            0 4px 12px rgba(0, 0, 0, 0.04),
+            inset 0 1px 0 rgba(255, 255, 255, 0.9);
 }</string>
       </property>
       <property name="frameShape">
@@ -79,33 +79,33 @@ box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06),
          </property>
          <property name="maximumSize">
           <size>
-           <width>162</width>
+           <width>240</width>
            <height>16777215</height>
           </size>
          </property>
          <property name="styleSheet">
-          <string notr="true">background: rgba(255, 255, 255, 80);
-background-blur: 12px;
-border: 1px solid rgba(255, 255, 255, 50);
-backdrop-filter: blur(12px);
-border-radius: 8px;
+          <string notr="true">background: rgba(255, 255, 255, 90);
+background-blur: 16px;
+border: 1px solid rgba(255, 255, 255, 70);
+backdrop-filter: blur(16px);
+border-radius: 12px;
 </string>
          </property>
          <layout class="QVBoxLayout" name="layoutSidebar" stretch="0,9">
           <property name="spacing">
-           <number>0</number>
+           <number>16</number>
           </property>
           <property name="leftMargin">
-           <number>6</number>
+           <number>0</number>
           </property>
           <property name="topMargin">
-           <number>9</number>
+           <number>16</number>
           </property>
           <property name="rightMargin">
            <number>0</number>
           </property>
           <property name="bottomMargin">
-           <number>0</number>
+           <number>16</number>
           </property>
           <item>
            <widget class="QFrame" name="sidebarLogo">
@@ -205,25 +205,25 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>152</width>
-               <height>464</height>
+               <width>159</width>
+               <height>425</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="layoutSidebarContent">
               <property name="spacing">
-               <number>12</number>
+               <number>8</number>
               </property>
               <property name="leftMargin">
-               <number>0</number>
+               <number>4</number>
               </property>
               <property name="topMargin">
-               <number>12</number>
+               <number>8</number>
               </property>
               <property name="rightMargin">
-               <number>0</number>
+               <number>4</number>
               </property>
               <property name="bottomMargin">
-               <number>0</number>
+               <number>8</number>
               </property>
               <item>
                <widget class="QListWidget" name="listNavigationMenu">
@@ -259,68 +259,78 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
     show-decoration-selected: 1;
     background-color: rgba(0, 0, 0, 0);
     border: none;
-    border-radius: 8px;
-    padding: 2px;
+    border-radius: 12px;
+    padding: 4px;
     outline: 0;
     font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
 }
 
 QListView::item {
     background-color: transparent;
-    padding: 10px 2px;
-    margin: 2px 0;
-    border-radius: 6px;
-    color: #333333;
+    padding: 12px 16px;
+    margin: 3px 0;
+    border-radius: 8px;
+    color: #4b5563;
     font-size: 14px;
     border: 1px solid transparent;
-    transition: all 0.2s ease;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 QListView::item:hover {
-    background-color: #e9ecef;
-    border-color: #dee2e6;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+    background-color: #f3f4f6;
+    border-color: #e5e7eb;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
     transform: translateY(-1px);
 }
 
 QListView::item:selected {
-    background-color: #f0f2ff;
-    color: #6c5ce7;
-    font-weight: 500;
-    border-left: 3px solid #6c5ce7;
-    padding-left: 8px;
-    box-shadow: 0 3px 8px rgba(108, 92, 231, 0.15);
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(139, 92, 246, 0.15),
+        stop:1 rgba(139, 92, 246, 0.05)
+    );
+    color: #6d28d9;
+    font-weight: 600;
+    border-left: 3px solid #8b5cf6;
+    padding-left: 14px;
+    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.12);
 }
 
 QListView::item:selected:hover {
-    background-color: #e6e9ff;
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(139, 92, 246, 0.2),
+        stop:1 rgba(139, 92, 246, 0.1)
+    );
 }
 
 QListView::item:disabled {
-    color: #adb5bd;
+    color: #9ca3af;
     background-color: transparent;
 }
 
 QListView::item:focus {
     outline: none;
-    border: 1px dotted #6c5ce7;
+    border: 1px dotted #8b5cf6;
 }
 
 QScrollBar:vertical {
     border: none;
-    background: #f1f1f1;
-    width: 10px;
-    margin: 0;
+    background: #f3f4f6;
+    width: 6px;
+    margin: 4px;
+    border-radius: 3px;
 }
 
 QScrollBar::handle:vertical {
-    background: #d1d1d1;
-    min-height: 20px;
-    border-radius: 5px;
+    background: #cbd5e1;
+    min-height: 24px;
+    border-radius: 3px;
+    transition: background 0.2s ease;
 }
 
 QScrollBar::handle:vertical:hover {
-    background: #c1c1c1;
+    background: #94a3b8;
 }
 
 QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
@@ -336,8 +346,8 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
                 </property>
                 <property name="iconSize">
                  <size>
-                  <width>22</width>
-                  <height>22</height>
+                  <width>24</width>
+                  <height>24</height>
                  </size>
                 </property>
                 <property name="currentRow">
@@ -455,18 +465,18 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
             <property name="styleSheet">
              <string notr="true">QFrame{
 background: qlineargradient(
-spread:pad, x1:0, y1:0, x2:1, y2:1,
-stop:0 rgba(134, 119, 253, 255),
-stop:0.3 rgba(119, 111, 252, 255),
-stop:0.7 rgba(108, 92, 231, 255),
-stop:1 rgba(94, 73, 210, 255)
+spread:pad, x1:0, y1:0, x2:1, y2:0,
+stop:0 rgba(139, 92, 246, 255),
+stop:0.3 rgba(124, 58, 237, 255),
+stop:0.7 rgba(107, 33, 168, 255),
+stop:1 rgba(91, 33, 182, 255)
 );
 border-top-left-radius:0px;
-border-top-right-radius:12px;
+border-top-right-radius:16px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;
-box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4),
-            inset 0 1px 0 rgba(255, 255, 255, 0.2);
+box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45),
+            inset 0 1px 0 rgba(255, 255, 255, 0.25);
 }</string>
             </property>
             <property name="frameShape">
@@ -533,7 +543,17 @@ box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4),
                <property name="styleSheet">
                 <string notr="true">image: url(resources/img/头标/头标-银色标准会员.svg);
 background-color: rgba(0, 0, 0,0);
-border-radius:0px;</string>
+border-radius:12px;
+padding: 4px;
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+image-rendering: smooth;
+}
+
+QWidget:hover {
+    transform: scale(1.05);
+    background-color: rgba(139, 92, 246, 0.1);
+}
+</string>
                </property>
               </widget>
              </item>
@@ -554,30 +574,30 @@ border-radius:0px;</string>
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-    padding: 4px;
-    border-radius: 12px;
+    padding: 8px;
+    border-radius: 16px;
     background: rgba(255, 255, 255, 0);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
 QToolButton:hover {
     background: qlineargradient(
         spread:pad, x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(255, 255, 255, 30),
-        stop:1 rgba(255, 255, 255, 10)
+        stop:0 rgba(255, 255, 255, 40),
+        stop:1 rgba(255, 255, 255, 20)
     );
-    border: 1px solid rgba(255, 255, 255, 40);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(255, 255, 255, 50);
+    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
     transform: translateY(-1px);
 }
 
 QToolButton:pressed {
     background: qlineargradient(
         spread:pad, x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(255, 255, 255, 60),
-        stop:1 rgba(255, 255, 255, 30)
+        stop:0 rgba(255, 255, 255, 70),
+        stop:1 rgba(255, 255, 255, 40)
     );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
     transform: translateY(0);
 }</string>
                </property>
@@ -672,17 +692,21 @@ QToolButton:pressed {
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-	padding: 4px;
-	border-radius: 12px;
+	padding: 8px;
+	border-radius: 16px;
     background-color: rgba(255, 255, 255, 0);
+    transition: all 0.2s ease;
 }
 
 QToolButton:hover {
-    background-color: rgba(255, 255, 255, 20);
+    background-color: rgba(255, 255, 255, 30);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 50);
+    background-color: rgba(255, 255, 255, 60);
+    transform: translateY(0);
 }</string>
                </property>
                <property name="text">
@@ -694,8 +718,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>14</width>
-                 <height>14</height>
+                 <width>16</width>
+                 <height>16</height>
                 </size>
                </property>
               </widget>
@@ -717,17 +741,21 @@ QToolButton:pressed {
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-	padding: 4px;
-	border-radius: 12px;
+	padding: 8px;
+	border-radius: 16px;
     background-color: rgba(255, 255, 255, 0);
+    transition: all 0.2s ease;
 }
 
 QToolButton:hover {
-    background-color: rgba(255, 255, 255, 20);
+    background-color: rgba(255, 255, 255, 30);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 50);
+    background-color: rgba(255, 255, 255, 60);
+    transform: translateY(0);
 }</string>
                </property>
                <property name="text">
@@ -739,8 +767,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>14</width>
-                 <height>14</height>
+                 <width>16</width>
+                 <height>16</height>
                 </size>
                </property>
               </widget>
@@ -762,17 +790,21 @@ QToolButton:pressed {
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-	padding: 4px;
-	border-radius: 12px;
+	padding: 8px;
+	border-radius: 16px;
     background-color: rgba(255, 255, 255, 0);
+    transition: all 0.2s ease;
 }
 
 QToolButton:hover {
-    background-color: rgba(255, 255, 255, 20);
+    background-color: rgba(255, 87, 87, 0.2);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(255, 87, 87, 0.3);
 }
 
 QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 50);
+    background-color: rgba(255, 87, 87, 0.3);
+    transform: translateY(0);
 }</string>
                </property>
                <property name="text">
@@ -784,8 +816,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>14</width>
-                 <height>14</height>
+                 <width>16</width>
+                 <height>16</height>
                 </size>
                </property>
               </widget>
@@ -795,13 +827,20 @@ QToolButton:pressed {
           </item>
           <item>
            <widget class="QFrame" name="mainContentFrame">
+            <property name="sizePolicy">
+             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
+              <horstretch>1</horstretch>
+              <verstretch>1</verstretch>
+             </sizepolicy>
+            </property>
             <property name="styleSheet">
-             <string notr="true">border-radius: 20px;
-background: rgba(255, 255, 255, 90);
-background-blur: 10px;
-border: 1px solid rgba(255, 255, 255, 60);
-backdrop-filter: blur(10px);
-box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+             <string notr="true">border-radius: 16px;
+background: rgba(255, 255, 255, 95);
+background-blur: 16px;
+border: 1px solid rgba(255, 255, 255, 80);
+backdrop-filter: blur(16px);
+box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);
+transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 </string>
             </property>
             <property name="frameShape">
@@ -922,16 +961,16 @@ border-bottom-left-radius:0px;</string>
                    </property>
                    <layout class="QHBoxLayout" name="layoutImportHeader">
                     <property name="leftMargin">
-                     <number>18</number>
+                     <number>24</number>
                     </property>
                     <property name="topMargin">
-                     <number>18</number>
+                     <number>24</number>
                     </property>
                     <property name="rightMargin">
-                     <number>18</number>
+                     <number>24</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>18</number>
+                     <number>24</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="lblImportTitle">
@@ -1342,19 +1381,19 @@ border-radius: 0px;</string>
                      </property>
                      <layout class="QHBoxLayout" name="layoutClassificationHeader">
                       <property name="spacing">
-                       <number>6</number>
+                       <number>12</number>
                       </property>
                       <property name="leftMargin">
-                       <number>9</number>
+                       <number>16</number>
                       </property>
                       <property name="topMargin">
-                       <number>9</number>
+                       <number>16</number>
                       </property>
                       <property name="rightMargin">
-                       <number>9</number>
+                       <number>16</number>
                       </property>
                       <property name="bottomMargin">
-                       <number>9</number>
+                       <number>16</number>
                       </property>
                       <item>
                        <widget class="QLabel" name="lblClassification">

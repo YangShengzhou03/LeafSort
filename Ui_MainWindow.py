@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(894, 520)
+        MainWindow.resize(925, 520)
         self.centralWidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.layoutMainGrid = QtWidgets.QGridLayout(self.centralWidget)
@@ -24,14 +24,14 @@ class Ui_MainWindow(object):
 "background: qlineargradient(\n"
 "    spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
 "    stop:0 rgba(255, 255, 255, 255),\n"
-"    stop:0.5 rgba(249, 250, 251, 255),\n"
-"    stop:1 rgba(243, 244, 246, 255)\n"
+"    stop:0.5 rgba(251, 252, 253, 255),\n"
+"    stop:1 rgba(248, 249, 250, 255)\n"
 ");\n"
 "border:none;\n"
-"border-radius:12px;\n"
-"box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), \n"
-"            0 2px 8px rgba(0, 0, 0, 0.04),\n"
-"            inset 0 1px 0 rgba(255, 255, 255, 0.8);\n"
+"border-radius:16px;\n"
+"box-shadow: 0 12px 40px rgba(0, 0, 0, 0.08), \n"
+"            0 4px 12px rgba(0, 0, 0, 0.04),\n"
+"            inset 0 1px 0 rgba(255, 255, 255, 0.9);\n"
 "}")
         self.mainContainer.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.mainContainer.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -42,17 +42,17 @@ class Ui_MainWindow(object):
         self.layoutMainContainer.setObjectName("layoutMainContainer")
         self.sidebarNavigation = QtWidgets.QFrame(parent=self.mainContainer)
         self.sidebarNavigation.setMinimumSize(QtCore.QSize(162, 0))
-        self.sidebarNavigation.setMaximumSize(QtCore.QSize(162, 16777215))
-        self.sidebarNavigation.setStyleSheet("background: rgba(255, 255, 255, 80);\n"
-"background-blur: 12px;\n"
-"border: 1px solid rgba(255, 255, 255, 50);\n"
-"backdrop-filter: blur(12px);\n"
-"border-radius: 8px;\n"
+        self.sidebarNavigation.setMaximumSize(QtCore.QSize(240, 16777215))
+        self.sidebarNavigation.setStyleSheet("background: rgba(255, 255, 255, 90);\n"
+"background-blur: 16px;\n"
+"border: 1px solid rgba(255, 255, 255, 70);\n"
+"backdrop-filter: blur(16px);\n"
+"border-radius: 12px;\n"
 "")
         self.sidebarNavigation.setObjectName("sidebarNavigation")
         self.layoutSidebar = QtWidgets.QVBoxLayout(self.sidebarNavigation)
-        self.layoutSidebar.setContentsMargins(6, 9, 0, 0)
-        self.layoutSidebar.setSpacing(0)
+        self.layoutSidebar.setContentsMargins(0, 16, 0, 16)
+        self.layoutSidebar.setSpacing(16)
         self.layoutSidebar.setObjectName("layoutSidebar")
         self.sidebarLogo = QtWidgets.QFrame(parent=self.sidebarNavigation)
         self.sidebarLogo.setStyleSheet("border: none;")
@@ -116,11 +116,11 @@ class Ui_MainWindow(object):
         self.sidebarScrollArea.setWidgetResizable(True)
         self.sidebarScrollArea.setObjectName("sidebarScrollArea")
         self.sidebarScrollContent = QtWidgets.QWidget()
-        self.sidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 152, 464))
+        self.sidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 159, 425))
         self.sidebarScrollContent.setObjectName("sidebarScrollContent")
         self.layoutSidebarContent = QtWidgets.QVBoxLayout(self.sidebarScrollContent)
-        self.layoutSidebarContent.setContentsMargins(0, 12, 0, 0)
-        self.layoutSidebarContent.setSpacing(12)
+        self.layoutSidebarContent.setContentsMargins(4, 8, 4, 8)
+        self.layoutSidebarContent.setSpacing(8)
         self.layoutSidebarContent.setObjectName("layoutSidebarContent")
         self.listNavigationMenu = QtWidgets.QListWidget(parent=self.sidebarScrollContent)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
@@ -139,68 +139,78 @@ class Ui_MainWindow(object):
 "    show-decoration-selected: 1;\n"
 "    background-color: rgba(0, 0, 0, 0);\n"
 "    border: none;\n"
-"    border-radius: 8px;\n"
-"    padding: 2px;\n"
+"    border-radius: 12px;\n"
+"    padding: 4px;\n"
 "    outline: 0;\n"
 "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
 "}\n"
 "\n"
 "QListView::item {\n"
 "    background-color: transparent;\n"
-"    padding: 10px 2px;\n"
-"    margin: 2px 0;\n"
-"    border-radius: 6px;\n"
-"    color: #333333;\n"
+"    padding: 12px 16px;\n"
+"    margin: 3px 0;\n"
+"    border-radius: 8px;\n"
+"    color: #4b5563;\n"
 "    font-size: 14px;\n"
 "    border: 1px solid transparent;\n"
-"    transition: all 0.2s ease;\n"
+"    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
 "}\n"
 "\n"
 "QListView::item:hover {\n"
-"    background-color: #e9ecef;\n"
-"    border-color: #dee2e6;\n"
-"    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);\n"
+"    background-color: #f3f4f6;\n"
+"    border-color: #e5e7eb;\n"
+"    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);\n"
 "    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QListView::item:selected {\n"
-"    background-color: #f0f2ff;\n"
-"    color: #6c5ce7;\n"
-"    font-weight: 500;\n"
-"    border-left: 3px solid #6c5ce7;\n"
-"    padding-left: 8px;\n"
-"    box-shadow: 0 3px 8px rgba(108, 92, 231, 0.15);\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(139, 92, 246, 0.15),\n"
+"        stop:1 rgba(139, 92, 246, 0.05)\n"
+"    );\n"
+"    color: #6d28d9;\n"
+"    font-weight: 600;\n"
+"    border-left: 3px solid #8b5cf6;\n"
+"    padding-left: 14px;\n"
+"    box-shadow: 0 4px 16px rgba(139, 92, 246, 0.12);\n"
 "}\n"
 "\n"
 "QListView::item:selected:hover {\n"
-"    background-color: #e6e9ff;\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(139, 92, 246, 0.2),\n"
+"        stop:1 rgba(139, 92, 246, 0.1)\n"
+"    );\n"
 "}\n"
 "\n"
 "QListView::item:disabled {\n"
-"    color: #adb5bd;\n"
+"    color: #9ca3af;\n"
 "    background-color: transparent;\n"
 "}\n"
 "\n"
 "QListView::item:focus {\n"
 "    outline: none;\n"
-"    border: 1px dotted #6c5ce7;\n"
+"    border: 1px dotted #8b5cf6;\n"
 "}\n"
 "\n"
 "QScrollBar:vertical {\n"
 "    border: none;\n"
-"    background: #f1f1f1;\n"
-"    width: 10px;\n"
-"    margin: 0;\n"
+"    background: #f3f4f6;\n"
+"    width: 6px;\n"
+"    margin: 4px;\n"
+"    border-radius: 3px;\n"
 "}\n"
 "\n"
 "QScrollBar::handle:vertical {\n"
-"    background: #d1d1d1;\n"
-"    min-height: 20px;\n"
-"    border-radius: 5px;\n"
+"    background: #cbd5e1;\n"
+"    min-height: 24px;\n"
+"    border-radius: 3px;\n"
+"    transition: background 0.2s ease;\n"
 "}\n"
 "\n"
 "QScrollBar::handle:vertical:hover {\n"
-"    background: #c1c1c1;\n"
+"    background: #94a3b8;\n"
 "}\n"
 "\n"
 "QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {\n"
@@ -209,7 +219,7 @@ class Ui_MainWindow(object):
 "}")
         self.listNavigationMenu.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.listNavigationMenu.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.listNavigationMenu.setIconSize(QtCore.QSize(22, 22))
+        self.listNavigationMenu.setIconSize(QtCore.QSize(24, 24))
         self.listNavigationMenu.setObjectName("listNavigationMenu")
         item = QtWidgets.QListWidgetItem()
         icon = QtGui.QIcon()
@@ -264,18 +274,18 @@ class Ui_MainWindow(object):
         self.frameAppHeaderBar.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.frameAppHeaderBar.setStyleSheet("QFrame{\n"
 "background: qlineargradient(\n"
-"spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"stop:0 rgba(134, 119, 253, 255),\n"
-"stop:0.3 rgba(119, 111, 252, 255),\n"
-"stop:0.7 rgba(108, 92, 231, 255),\n"
-"stop:1 rgba(94, 73, 210, 255)\n"
+"spread:pad, x1:0, y1:0, x2:1, y2:0,\n"
+"stop:0 rgba(139, 92, 246, 255),\n"
+"stop:0.3 rgba(124, 58, 237, 255),\n"
+"stop:0.7 rgba(107, 33, 168, 255),\n"
+"stop:1 rgba(91, 33, 182, 255)\n"
 ");\n"
 "border-top-left-radius:0px;\n"
-"border-top-right-radius:12px;\n"
+"border-top-right-radius:16px;\n"
 "border-bottom-right-radius:0px;\n"
 "border-bottom-left-radius:0px;\n"
-"box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4),\n"
-"            inset 0 1px 0 rgba(255, 255, 255, 0.2);\n"
+"box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45),\n"
+"            inset 0 1px 0 rgba(255, 255, 255, 0.25);\n"
 "}")
         self.frameAppHeaderBar.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.frameAppHeaderBar.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -298,7 +308,17 @@ class Ui_MainWindow(object):
         self.widgetVipBadge.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
         self.widgetVipBadge.setStyleSheet("image: url(resources/img/头标/头标-银色标准会员.svg);\n"
 "background-color: rgba(0, 0, 0,0);\n"
-"border-radius:0px;")
+"border-radius:12px;\n"
+"padding: 4px;\n"
+"transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"image-rendering: smooth;\n"
+"}\n"
+"\n"
+"QWidget:hover {\n"
+"    transform: scale(1.05);\n"
+"    background-color: rgba(139, 92, 246, 0.1);\n"
+"}\n"
+"")
         self.widgetVipBadge.setObjectName("widgetVipBadge")
         self.layoutHeaderBar.addWidget(self.widgetVipBadge)
         self.btnService = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
@@ -306,30 +326,30 @@ class Ui_MainWindow(object):
         self.btnService.setMaximumSize(QtCore.QSize(36, 36))
         self.btnService.setStyleSheet("QToolButton {\n"
 "    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
+"    padding: 8px;\n"
+"    border-radius: 16px;\n"
 "    background: rgba(255, 255, 255, 0);\n"
-"    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
+"    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
 "    background: qlineargradient(\n"
 "        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 30),\n"
-"        stop:1 rgba(255, 255, 255, 10)\n"
+"        stop:0 rgba(255, 255, 255, 40),\n"
+"        stop:1 rgba(255, 255, 255, 20)\n"
 "    );\n"
-"    border: 1px solid rgba(255, 255, 255, 40);\n"
-"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
+"    border: 1px solid rgba(255, 255, 255, 50);\n"
+"    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);\n"
 "    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
 "    background: qlineargradient(\n"
 "        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 60),\n"
-"        stop:1 rgba(255, 255, 255, 30)\n"
+"        stop:0 rgba(255, 255, 255, 70),\n"
+"        stop:1 rgba(255, 255, 255, 40)\n"
 "    );\n"
-"    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
 "    transform: translateY(0);\n"
 "}")
         self.btnService.setText("")
@@ -382,23 +402,27 @@ class Ui_MainWindow(object):
         self.btnMinimize.setMaximumSize(QtCore.QSize(36, 36))
         self.btnMinimize.setStyleSheet("QToolButton {\n"
 "    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
+"    padding: 8px;\n"
+"    border-radius: 16px;\n"
 "    background-color: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.2s ease;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
-"    background-color: rgba(255, 255, 255, 20);\n"
+"    background-color: rgba(255, 255, 255, 30);\n"
+"    transform: translateY(-1px);\n"
+"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
-"    background-color: rgba(255, 255, 255, 50);\n"
+"    background-color: rgba(255, 255, 255, 60);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnMinimize.setText("")
         icon6 = QtGui.QIcon()
         icon6.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最小化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMinimize.setIcon(icon6)
-        self.btnMinimize.setIconSize(QtCore.QSize(14, 14))
+        self.btnMinimize.setIconSize(QtCore.QSize(16, 16))
         self.btnMinimize.setObjectName("btnMinimize")
         self.layoutHeaderBar.addWidget(self.btnMinimize)
         self.btnMaximize = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
@@ -406,23 +430,27 @@ class Ui_MainWindow(object):
         self.btnMaximize.setMaximumSize(QtCore.QSize(36, 36))
         self.btnMaximize.setStyleSheet("QToolButton {\n"
 "    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
+"    padding: 8px;\n"
+"    border-radius: 16px;\n"
 "    background-color: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.2s ease;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
-"    background-color: rgba(255, 255, 255, 20);\n"
+"    background-color: rgba(255, 255, 255, 30);\n"
+"    transform: translateY(-1px);\n"
+"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
-"    background-color: rgba(255, 255, 255, 50);\n"
+"    background-color: rgba(255, 255, 255, 60);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnMaximize.setText("")
         icon7 = QtGui.QIcon()
         icon7.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最大化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMaximize.setIcon(icon7)
-        self.btnMaximize.setIconSize(QtCore.QSize(14, 14))
+        self.btnMaximize.setIconSize(QtCore.QSize(16, 16))
         self.btnMaximize.setObjectName("btnMaximize")
         self.layoutHeaderBar.addWidget(self.btnMaximize)
         self.btnClose = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
@@ -430,33 +458,43 @@ class Ui_MainWindow(object):
         self.btnClose.setMaximumSize(QtCore.QSize(36, 36))
         self.btnClose.setStyleSheet("QToolButton {\n"
 "    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
+"    padding: 8px;\n"
+"    border-radius: 16px;\n"
 "    background-color: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.2s ease;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
-"    background-color: rgba(255, 255, 255, 20);\n"
+"    background-color: rgba(255, 87, 87, 0.2);\n"
+"    transform: translateY(-1px);\n"
+"    box-shadow: 0 2px 8px rgba(255, 87, 87, 0.3);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
-"    background-color: rgba(255, 255, 255, 50);\n"
+"    background-color: rgba(255, 87, 87, 0.3);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnClose.setText("")
         icon8 = QtGui.QIcon()
         icon8.addPixmap(QtGui.QPixmap("resources/img/窗口控制/关闭.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnClose.setIcon(icon8)
-        self.btnClose.setIconSize(QtCore.QSize(14, 14))
+        self.btnClose.setIconSize(QtCore.QSize(16, 16))
         self.btnClose.setObjectName("btnClose")
         self.layoutHeaderBar.addWidget(self.btnClose)
         self.layoutContent.addWidget(self.frameAppHeaderBar)
         self.mainContentFrame = QtWidgets.QFrame(parent=self.frameContentArea)
-        self.mainContentFrame.setStyleSheet("border-radius: 20px;\n"
-"background: rgba(255, 255, 255, 90);\n"
-"background-blur: 10px;\n"
-"border: 1px solid rgba(255, 255, 255, 60);\n"
-"backdrop-filter: blur(10px);\n"
-"box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);\n"
+        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Expanding)
+        sizePolicy.setHorizontalStretch(1)
+        sizePolicy.setVerticalStretch(1)
+        sizePolicy.setHeightForWidth(self.mainContentFrame.sizePolicy().hasHeightForWidth())
+        self.mainContentFrame.setSizePolicy(sizePolicy)
+        self.mainContentFrame.setStyleSheet("border-radius: 16px;\n"
+"background: rgba(255, 255, 255, 95);\n"
+"background-blur: 16px;\n"
+"border: 1px solid rgba(255, 255, 255, 80);\n"
+"backdrop-filter: blur(16px);\n"
+"box-shadow: 0 6px 20px rgba(0, 0, 0, 0.06);\n"
+"transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
 "")
         self.mainContentFrame.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.mainContentFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -534,7 +572,7 @@ class Ui_MainWindow(object):
 "border-bottom-left-radius:0px;")
         self.frameImportHeader.setObjectName("frameImportHeader")
         self.layoutImportHeader = QtWidgets.QHBoxLayout(self.frameImportHeader)
-        self.layoutImportHeader.setContentsMargins(18, 18, 18, 18)
+        self.layoutImportHeader.setContentsMargins(24, 24, 24, 24)
         self.layoutImportHeader.setObjectName("layoutImportHeader")
         self.lblImportTitle = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
@@ -781,8 +819,8 @@ class Ui_MainWindow(object):
 "border-radius: 0px;")
         self.frameClassificationHeader.setObjectName("frameClassificationHeader")
         self.layoutClassificationHeader = QtWidgets.QHBoxLayout(self.frameClassificationHeader)
-        self.layoutClassificationHeader.setContentsMargins(9, 9, 9, 9)
-        self.layoutClassificationHeader.setSpacing(6)
+        self.layoutClassificationHeader.setContentsMargins(16, 16, 16, 16)
+        self.layoutClassificationHeader.setSpacing(12)
         self.layoutClassificationHeader.setObjectName("layoutClassificationHeader")
         self.lblClassification = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
