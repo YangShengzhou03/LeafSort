@@ -731,8 +731,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>16</width>
-                 <height>16</height>
+                 <width>12</width>
+                 <height>12</height>
                 </size>
                </property>
               </widget>
@@ -790,8 +790,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>16</width>
-                 <height>16</height>
+                 <width>12</width>
+                 <height>12</height>
                 </size>
                </property>
               </widget>
@@ -849,8 +849,8 @@ QToolButton:pressed {
                </property>
                <property name="iconSize">
                 <size>
-                 <width>16</width>
-                 <height>16</height>
+                 <width>12</width>
+                 <height>12</height>
                 </size>
                </property>
               </widget>
