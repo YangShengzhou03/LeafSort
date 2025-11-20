@@ -1,23 +1,30 @@
 import os
 import json
+import threading
 from pathlib import Path
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Union
 import logging
+from datetime import datetime
 
 logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
     
+    CONFIG_VERSION = "1.0.0"
+    
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
         self.config_file = Path(config_file)
         self.cache_file = Path(cache_file)
+        self._lock = threading.RLock()  # 使用可重入锁提供线程安全
         self.config = self._load_config()
         self.location_cache = self._load_location_cache()
+        self._validate_and_migrate_config()
     
     def _load_config(self) -> Dict[str, Any]:
         default_config = {
+            "version": self.CONFIG_VERSION,
             "folders": [],
             "api_limits": {
                 "gaode": {
@@ -26,13 +33,15 @@ class ConfigManager:
                     "max_daily_calls": 500
                 }
             },
-            "settings": {}
+            "settings": {},
+            "last_modified": datetime.now().isoformat()
         }
         
         try:
             if self.config_file.exists():
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
+                    # 确保所有必需的键存在
                     for key in default_config:
                         if key not in config:
                             config[key] = default_config[key]
@@ -51,6 +60,29 @@ class ConfigManager:
         
         return default_config
     
+    def _validate_and_migrate_config(self):
+        """验证配置并进行必要的迁移"""
+        with self._lock:
+            # 更新配置版本
+            self.config["version"] = self.CONFIG_VERSION
+            
+            # 确保last_modified字段存在
+            if "last_modified" not in self.config:
+                self.config["last_modified"] = datetime.now().isoformat()
+            
+            # 检查并清理重复的文件夹路径
+            seen_paths = set()
+            unique_folders = []
+            for folder in self.config["folders"]:
+                if folder.get("path") not in seen_paths:
+                    seen_paths.add(folder.get("path"))
+                    unique_folders.append(folder)
+            
+            if len(unique_folders) != len(self.config["folders"]):
+                self.config["folders"] = unique_folders
+                logger.info(f"已清理 {len(seen_paths) - len(unique_folders)} 个重复的文件夹路径")
+                self.save_config()
+    
     def _load_location_cache(self) -> Dict[str, Any]:
         default_cache = {}
         
@@ -64,179 +96,525 @@ class ConfigManager:
         return default_cache
     
     def save_config(self) -> bool:
-        try:
-            self.config_file.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, ensure_ascii=False, indent=2)
-            return True
-        except IOError as e:
-            logger.error(f"保存配置文件时出错了: {e}")
-            return False
+        with self._lock:
+            try:
+                # 更新最后修改时间
+                self.config["last_modified"] = datetime.now().isoformat()
+                
+                # 确保父目录存在
+                self.config_file.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(self.config_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.config, f, ensure_ascii=False, indent=2)
+                return True
+            except IOError as e:
+                logger.error(f"保存配置文件时出错了: {e}")
+                return False
     
     def save_location_cache(self) -> bool:
-        try:
-            self.cache_file.parent.mkdir(parents=True, exist_ok=True)
-            
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
-                json.dump(self.location_cache, f, ensure_ascii=False, indent=2)
-            return True
-        except IOError as e:
-            logger.error(f"保存位置缓存文件时出错了: {e}")
-            return False
+        with self._lock:
+            try:
+                # 确保父目录存在
+                self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+                
+                with open(self.cache_file, 'w', encoding='utf-8') as f:
+                    json.dump(self.location_cache, f, ensure_ascii=False, indent=2)
+                return True
+            except IOError as e:
+                logger.error(f"保存位置缓存文件时出错了: {e}")
+                return False
     
     def add_folder(self, folder_path: str, include_sub: bool = True) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        for folder in self.config["folders"]:
-            if folder["path"] == folder_path:
+        with self._lock:
+            folder_path = os.path.normpath(folder_path)
+            
+            # 检查文件夹是否存在且是有效目录
+            if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+                logger.warning(f"尝试添加无效文件夹: {folder_path}")
                 return False
-        
-        self.config["folders"].append({
-            "path": folder_path,
-            "include_sub": include_sub
-        })
-        
-        return self.save_config()
+            
+            # 检查是否已存在
+            for folder in self.config["folders"]:
+                if folder["path"] == folder_path:
+                    return False
+            
+            self.config["folders"].append({
+                "path": folder_path,
+                "include_sub": include_sub,
+                "added_time": datetime.now().isoformat()
+            })
+            
+            return self.save_config()
+    
+    def add_folders(self, folders: List[Dict[str, Any]]) -> int:
+        """批量添加文件夹，返回成功添加的数量"""
+        with self._lock:
+            added_count = 0
+            for folder in folders:
+                folder_path = os.path.normpath(folder.get("path", ""))
+                include_sub = folder.get("include_sub", True)
+                
+                if folder_path and self.add_folder(folder_path, include_sub):
+                    added_count += 1
+            return added_count
     
     def remove_folder(self, folder_path: str) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        for i, folder in enumerate(self.config["folders"]):
-            if folder["path"] == folder_path:
-                self.config["folders"].pop(i)
-                return self.save_config()
-        
-        return False
+        with self._lock:
+            folder_path = os.path.normpath(folder_path)
+            
+            for i, folder in enumerate(self.config["folders"]):
+                if folder["path"] == folder_path:
+                    self.config["folders"].pop(i)
+                    return self.save_config()
+            
+            return False
     
     def update_folder_include_sub(self, folder_path: str, include_sub: bool) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        for folder in self.config["folders"]:
-            if folder["path"] == folder_path:
-                folder["include_sub"] = include_sub
-                return self.save_config()
-        
-        return False
+        with self._lock:
+            folder_path = os.path.normpath(folder_path)
+            
+            for folder in self.config["folders"]:
+                if folder["path"] == folder_path:
+                    folder["include_sub"] = include_sub
+                    folder["updated_time"] = datetime.now().isoformat()
+                    return self.save_config()
+            
+            return False
     
     def get_folders(self) -> List[Dict[str, Any]]:
-        return self.config["folders"]
+        with self._lock:
+            # 返回副本以避免外部修改
+            return self.config["folders"].copy()
     
     def get_valid_folders(self) -> List[Dict[str, Any]]:
-        valid_folders = []
-        for folder in self.config["folders"]:
-            if os.path.exists(folder["path"]) and os.path.isdir(folder["path"]):
-                valid_folders.append(folder)
-        return valid_folders
+        with self._lock:
+            valid_folders = []
+            for folder in self.config["folders"]:
+                if os.path.exists(folder["path"]) and os.path.isdir(folder["path"]):
+                    valid_folders.append(folder.copy())
+            return valid_folders
     
     def clear_invalid_folders(self) -> int:
-        original_count = len(self.config["folders"])
-        self.config["folders"] = self.get_valid_folders()
-        removed_count = original_count - len(self.config["folders"])
-        
-        if removed_count > 0:
-            self.save_config()
-        
-        return removed_count
+        with self._lock:
+            original_count = len(self.config["folders"])
+            valid_folders = []
+            for folder in self.config["folders"]:
+                if os.path.exists(folder["path"]) and os.path.isdir(folder["path"]):
+                    valid_folders.append(folder)
+            self.config["folders"] = valid_folders
+            removed_count = original_count - len(self.config["folders"])
+            
+            if removed_count > 0:
+                logger.info(f"已移除 {removed_count} 个无效文件夹")
+                self.save_config()
+            
+            return removed_count
     
     def cache_location(self, latitude: float, longitude: float, address: str) -> bool:
-        cache_key = f"{latitude:.6f},{longitude:.6f}"
-        self.location_cache[cache_key] = {
-            "address": address,
-            "timestamp": int(os.path.getctime(self.cache_file)) if self.cache_file.exists() else 0
-        }
-        
-        if len(self.location_cache) > 50000:
-            cache_items = list(self.location_cache.items())
-            cache_items.sort(key=lambda x: x[1].get("timestamp", 0), reverse=True)
-            self.location_cache = dict(cache_items[:25000])
-        
-        return self.save_location_cache()
+        with self._lock:
+            cache_key = f"{latitude:.6f},{longitude:.6f}"
+            self.location_cache[cache_key] = {
+                "address": address,
+                "timestamp": datetime.now().timestamp(),
+                "last_accessed": datetime.now().timestamp()
+            }
+            
+            # 使用配置中的缓存大小限制
+            max_cache_size = self.config.get("cache_settings", {}).get("max_location_cache_size", 50000)
+            if len(self.location_cache) > max_cache_size:
+                cache_items = list(self.location_cache.items())
+                cache_items.sort(key=lambda x: x[1].get("last_accessed", 0), reverse=True)
+                self.location_cache = dict(cache_items[:max(10000, max_cache_size // 2)])
+                logger.debug(f"位置缓存已清理，当前大小: {len(self.location_cache)}/{max_cache_size}")
+            
+            return self.save_location_cache()
     
     def get_cached_location(self, latitude: float, longitude: float) -> Optional[str]:
-        cache_key = f"{latitude:.6f},{longitude:.6f}"
-        cached_data = self.location_cache.get(cache_key)
-        
-        if cached_data:
-            return cached_data["address"]
-        
-        return None
+        with self._lock:
+            cache_key = f"{latitude:.6f},{longitude:.6f}"
+            cached_data = self.location_cache.get(cache_key)
+            
+            if cached_data:
+                # 更新最后访问时间
+                cached_data["last_accessed"] = datetime.now().timestamp()
+                return cached_data["address"]
+            
+            return None
     
     def get_cached_location_with_tolerance(self, latitude: float, longitude: float, tolerance: float = 0.01) -> Optional[str]:
-        exact_match = self.get_cached_location(latitude, longitude)
-        if exact_match:
-            return exact_match
-        
-        for cache_key, cached_data in self.location_cache.items():
-            try:
-                cached_lat, cached_lon = map(float, cache_key.split(','))
-                distance = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2) ** 0.5
-                if distance <= tolerance:
-                    return cached_data["address"]
-            except (ValueError, IndexError):
-                continue
-        
-        return None
+        with self._lock:
+            exact_match = self.get_cached_location(latitude, longitude)
+            if exact_match:
+                return exact_match
+            
+            for cache_key, cached_data in self.location_cache.items():
+                try:
+                    cached_lat, cached_lon = map(float, cache_key.split(','))
+                    distance = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2) ** 0.5
+                    if distance <= tolerance:
+                        # 更新最后访问时间
+                        cached_data["last_accessed"] = datetime.now().timestamp()
+                        return cached_data["address"]
+                except (ValueError, IndexError):
+                    logger.warning(f"无效的缓存键: {cache_key}")
+                    continue
+            
+            return None
     
     def clear_location_cache(self) -> bool:
-        self.location_cache = {}
-        return self.save_location_cache()
+        with self._lock:
+            cache_size = len(self.location_cache)
+            self.location_cache = {}
+            logger.info(f"已清空位置缓存，共删除 {cache_size} 条记录")
+            return self.save_location_cache()
+    
+    def get_cache_stats(self) -> Dict[str, Any]:
+        """获取缓存统计信息"""
+        with self._lock:
+            if not self.location_cache:
+                return {"count": 0, "oldest": None, "newest": None}
+            
+            timestamps = [entry.get("timestamp", 0) for entry in self.location_cache.values()]
+            oldest = min(timestamps)
+            newest = max(timestamps)
+            max_size = self.config.get("cache_settings", {}).get("max_location_cache_size", 50000)
+            
+            return {
+                "count": len(self.location_cache),
+                "oldest": datetime.fromtimestamp(oldest).isoformat() if oldest > 0 else None,
+                "newest": datetime.fromtimestamp(newest).isoformat() if newest > 0 else None,
+                "capacity": max_size,
+                "usage_percent": round((len(self.location_cache) / max_size) * 100, 2)
+            }
     
     def clear_folders(self) -> bool:
-        self.config["folders"] = []
-        return self.save_config()
+        with self._lock:
+            folder_count = len(self.config["folders"])
+            self.config["folders"] = []
+            logger.info(f"已清空所有文件夹配置，共删除 {folder_count} 个文件夹")
+            return self.save_config()
     
     def clear_locations(self) -> bool:
-        self.location_cache = {}
-        return self.save_location_cache()
+        return self.clear_location_cache()
     
     def update_setting(self, key: str, value: Any) -> bool:
-        self.config["settings"][key] = value
-        return self.save_config()
+        with self._lock:
+            # 验证设置值
+            if not self._validate_setting(key, value):
+                logger.warning(f"设置验证失败: {key} = {value}")
+                return False
+            
+            old_value = self.config["settings"].get(key)
+            self.config["settings"][key] = value
+            
+            # 记录设置变更
+            if old_value != value:
+                logger.info(f"设置已更新: {key} = {value} (原值: {old_value})")
+                
+                # 如果是重要设置变更，触发特定处理
+                self._handle_setting_change(key, old_value, value)
+            
+            return self.save_config()
+    
+    def update_settings(self, settings_dict: Dict[str, Any]) -> bool:
+        """批量更新设置"""
+        with self._lock:
+            changes_made = False
+            for key, value in settings_dict.items():
+                if self._validate_setting(key, value):
+                    old_value = self.config["settings"].get(key)
+                    if old_value != value:
+                        self.config["settings"][key] = value
+                        logger.info(f"批量设置更新: {key} = {value}")
+                        changes_made = True
+                else:
+                    logger.warning(f"批量设置验证失败: {key} = {value}")
+            
+            if changes_made:
+                return self.save_config()
+            return True
     
     def get_setting(self, key: str, default: Any = None) -> Any:
-        return self.config["settings"].get(key, default)
+        with self._lock:
+            return self.config["settings"].get(key, default)
     
+    def get_settings(self, keys: List[str] = None) -> Dict[str, Any]:
+        """获取多个设置值"""
+        with self._lock:
+            if keys:
+                # 只返回指定的设置
+                return {key: self.config["settings"].get(key) for key in keys}
+            else:
+                # 返回所有设置的副本
+                return self.config["settings"].copy()
+    
+    def reset_settings(self, keys: List[str] = None) -> bool:
+        """重置设置到默认值"""
+        with self._lock:
+            default_config = self._get_default_config()
+            changes_made = False
+            
+            if keys:
+                # 重置指定的设置
+                for key in keys:
+                    if key in default_config["settings"]:
+                        old_value = self.config["settings"].get(key)
+                        self.config["settings"][key] = default_config["settings"][key]
+                        changes_made = True
+                        logger.info(f"设置已重置: {key} = {default_config['settings'][key]}")
+            else:
+                # 重置所有设置
+                old_settings = self.config["settings"].copy()
+                self.config["settings"] = default_config["settings"].copy()
+                changes_made = True
+                logger.info("所有设置已重置为默认值")
+            
+            if changes_made:
+                return self.save_config()
+            return True
+    
+    def _validate_setting(self, key: str, value: Any) -> bool:
+        """验证设置值是否有效"""
+        # 类型验证规则
+        validation_rules = {
+            "thumbnail_size": lambda v: isinstance(v, int) and v > 0 and v <= 2000,
+            "max_cache_size": lambda v: isinstance(v, int) and v >= 0,
+            "default_view": lambda v: isinstance(v, str) and v in ["grid", "list"],
+            "dark_mode": lambda v: isinstance(v, bool),
+            "auto_update_metadata": lambda v: isinstance(v, bool),
+            "use_gps_cache": lambda v: isinstance(v, bool),
+            "map_provider": lambda v: isinstance(v, str) and v in ["gaode", "baidu", "bing", "google"]
+        }
+        
+        if key in validation_rules:
+            return validation_rules[key](value)
+        
+        # 默认允许任何值，但记录未知设置
+        logger.debug(f"未知设置键: {key}")
+        return True
+    
+    def _handle_setting_change(self, key: str, old_value: Any, new_value: Any) -> None:
+        """处理设置变更后的特殊逻辑"""
+        if key == "map_provider" and new_value != old_value:
+            logger.info(f"地图提供商已更改: {old_value} -> {new_value}")
+        elif key == "max_cache_size" and isinstance(new_value, int):
+            # 调整缓存大小
+            self._max_cache_size = new_value
+            logger.info(f"缓存大小已设置为: {new_value}")
+        elif key == "use_gps_cache":
+            self._cache_enabled = bool(new_value)
+            logger.info(f"GPS缓存已{'启用' if new_value else '禁用'}")
+    
+    def _get_default_config(self) -> Dict[str, Any]:
+        """获取默认配置，用于初始化或重置"""
+        return {
+            "version": self.CONFIG_VERSION,
+            "last_modified": datetime.now().isoformat(),
+            "folders": [],
+            "settings": {
+                "thumbnail_size": 200,
+                "max_cache_size": 10000,
+                "default_view": "grid",
+                "dark_mode": False,
+                "auto_update_metadata": True,
+                "use_gps_cache": True,
+                "map_provider": "gaode",
+                "show_thumbnails": True,
+                "enable_exif_edit": True,
+                "remember_window_size": True
+            },
+            "api_limits": {
+                "gaode": {
+                    "daily_calls": 0,
+                    "max_daily_calls": 500,
+                    "last_reset_date": datetime.now().strftime("%Y-%m-%d"),
+                    "last_call_time": None
+                }
+            },
+            "cache_settings": {
+                "max_location_cache_size": 50000,
+                "cache_expiry_days": 30
+            }
+        }
+    
+    def export_config(self, export_file: str = None) -> str:
+        """导出配置到文件"""
+        with self._lock:
+            if not export_file:
+                # 生成默认导出文件名
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                export_file = os.path.join(os.path.expanduser("~"), f"leafview_config_export_{timestamp}.json")
+            
+            try:
+                # 创建导出数据，不包含敏感信息
+                export_data = {
+                    "version": self.config.get("version"),
+                    "export_time": datetime.now().isoformat(),
+                    "folders": self.config["folders"],
+                    "settings": self.config["settings"],
+                    # 不导出缓存和API密钥等敏感信息
+                }
+                
+                with open(export_file, 'w', encoding='utf-8') as f:
+                    json.dump(export_data, f, ensure_ascii=False, indent=2)
+                
+                logger.info(f"配置已导出到: {export_file}")
+                return export_file
+            except Exception as e:
+                logger.error(f"导出配置失败: {str(e)}")
+                return None
+    
+    def import_config(self, import_file: str) -> bool:
+        """从文件导入配置"""
+        with self._lock:
+            try:
+                if not os.path.exists(import_file):
+                    logger.error(f"导入文件不存在: {import_file}")
+                    return False
+                
+                with open(import_file, 'r', encoding='utf-8') as f:
+                    import_data = json.load(f)
+                
+                # 验证导入数据
+                if "folders" in import_data:
+                    self.config["folders"] = import_data["folders"]
+                if "settings" in import_data:
+                    # 只导入有效的设置项
+                    for key, value in import_data["settings"].items():
+                        if self._validate_setting(key, value):
+                            self.config["settings"][key] = value
+                
+                logger.info(f"配置已从 {import_file} 导入")
+                return self.save_config()
+            except Exception as e:
+                logger.error(f"导入配置失败: {str(e)}")
+                return False
+    
+    def can_call_api(self, api_name: str = "gaode") -> bool:
+        """检查是否可以调用指定API（通用方法）"""
+        with self._lock:
+            # 确保API配置存在
+            if api_name not in self.config["api_limits"]:
+                logger.warning(f"API配置不存在: {api_name}")
+                # 创建默认配置
+                self._ensure_api_config_exists(api_name)
+            
+            api_config = self.config["api_limits"][api_name]
+            current_date = datetime.now().strftime("%Y-%m-%d")
+            
+            # 检查是否需要重置计数器
+            if api_config["last_reset_date"] != current_date:
+                # 重置计数器
+                api_config["daily_calls"] = 0
+                api_config["last_reset_date"] = current_date
+                self.save_config()
+            
+            # 检查是否超过限制
+            if api_config["daily_calls"] >= api_config["max_daily_calls"]:
+                logger.warning(f"{api_name} API每日调用次数已达上限: {api_config['daily_calls']}/{api_config['max_daily_calls']}")
+                return False
+            
+            return True
+    
+    def record_api_call(self, api_name: str = "gaode") -> bool:
+        """记录一次API调用（通用方法）"""
+        with self._lock:
+            # 确保API配置存在
+            if api_name not in self.config["api_limits"]:
+                self._ensure_api_config_exists(api_name)
+            
+            api_config = self.config["api_limits"][api_name]
+            current_date = datetime.now().strftime("%Y-%m-%d")
+            
+            # 检查是否需要重置计数器
+            if api_config["last_reset_date"] != current_date:
+                api_config["daily_calls"] = 0
+                api_config["last_reset_date"] = current_date
+            
+            # 检查是否超过限制
+            if api_config["daily_calls"] >= api_config["max_daily_calls"]:
+                logger.error(f"尝试超出{api_name} API调用限制")
+                return False
+            
+            # 增加调用计数
+            api_config["daily_calls"] += 1
+            api_config["last_call_time"] = datetime.now().isoformat()
+            
+            # 记录调用历史（最近100次）
+            if "call_history" not in api_config:
+                api_config["call_history"] = []
+            api_config["call_history"].append({
+                "timestamp": datetime.now().timestamp(),
+                "datetime": datetime.now().isoformat()
+            })
+            # 只保留最近100条记录
+            if len(api_config["call_history"]) > 100:
+                api_config["call_history"] = api_config["call_history"][-100:]
+            
+            return self.save_config()
+    
+    def get_api_stats(self, api_name: str = "gaode") -> Dict[str, Any]:
+        """获取API调用统计信息（通用方法）"""
+        with self._lock:
+            if api_name not in self.config["api_limits"]:
+                logger.warning(f"API配置不存在: {api_name}")
+                return {"error": "API配置不存在"}
+            
+            # 返回副本，不包含敏感信息
+            stats = self.config["api_limits"][api_name].copy()
+            # 移除详细的调用历史，只保留基本统计
+            if "call_history" in stats:
+                stats["call_history_count"] = len(stats["call_history"])
+                del stats["call_history"]
+            
+            return stats
+    
+    def reset_api_limits(self, api_name: str = None) -> bool:
+        """重置指定API或所有API的调用限制"""
+        with self._lock:
+            if api_name:
+                # 重置特定API
+                if api_name in self.config["api_limits"]:
+                    self.config["api_limits"][api_name]["daily_calls"] = 0
+                    self.config["api_limits"][api_name]["last_reset_date"] = datetime.now().strftime("%Y-%m-%d")
+                    logger.info(f"已重置 {api_name} API调用限制")
+                else:
+                    return False
+            else:
+                # 重置所有API
+                for api_key in self.config["api_limits"]:
+                    self.config["api_limits"][api_key]["daily_calls"] = 0
+                    self.config["api_limits"][api_key]["last_reset_date"] = datetime.now().strftime("%Y-%m-%d")
+                logger.info("已重置所有API调用限制")
+            
+            return self.save_config()
+    
+    def _ensure_api_config_exists(self, api_name: str) -> None:
+        """确保API配置存在，如果不存在则创建默认配置"""
+        if api_name not in self.config["api_limits"]:
+            default_limits = {
+                "gaode": 500,
+                "baidu": 3000,
+                "bing": 2500,
+                "google": 2500
+            }
+            self.config["api_limits"][api_name] = {
+                "daily_calls": 0,
+                "max_daily_calls": default_limits.get(api_name, 1000),
+                "last_reset_date": datetime.now().strftime("%Y-%m-%d"),
+                "last_call_time": None
+            }
+            logger.info(f"已创建 {api_name} API默认配置")
+    
+    # 保持向后兼容的方法
     def can_call_gaode_api(self) -> bool:
-        """检查是否可以调用高德API（每日限制500次）"""
-        import datetime
-        
-        # 获取当前日期
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        
-        # 检查是否需要重置计数器
-        gaode_config = self.config["api_limits"]["gaode"]
-        if gaode_config["last_reset_date"] != current_date:
-            # 重置计数器
-            gaode_config["daily_calls"] = 0
-            gaode_config["last_reset_date"] = current_date
-            self.save_config()
-        
-        # 检查是否超过限制
-        return gaode_config["daily_calls"] < gaode_config["max_daily_calls"]
+        return self.can_call_api("gaode")
     
     def record_gaode_api_call(self) -> bool:
-        """记录一次高德API调用"""
-        import datetime
-        
-        # 获取当前日期
-        current_date = datetime.datetime.now().strftime("%Y-%m-%d")
-        
-        # 检查是否需要重置计数器
-        gaode_config = self.config["api_limits"]["gaode"]
-        if gaode_config["last_reset_date"] != current_date:
-            # 重置计数器
-            gaode_config["daily_calls"] = 0
-            gaode_config["last_reset_date"] = current_date
-        
-        # 增加调用计数
-        gaode_config["daily_calls"] += 1
-        
-        return self.save_config()
+        return self.record_api_call("gaode")
     
     def get_gaode_api_stats(self) -> Dict[str, Any]:
-        """获取高德API调用统计信息"""
-        return self.config["api_limits"]["gaode"].copy()
+        return self.get_api_stats("gaode")
 
 
 config_manager = ConfigManager()

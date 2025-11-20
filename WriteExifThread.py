@@ -452,7 +452,7 @@ class WriteExifThread(QThread):
             from pillow_heif import open_heif, register_heif_opener
             register_heif_opener()
         except ImportError:
-            self.log.emit("ERROR", f"处理 {os.path.basename(image_path)} 需要 pillow-heif")
+            self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 需要 pillow-heif")
             return
         
         try:
@@ -595,21 +595,21 @@ class WriteExifThread(QThread):
                     exif_bytes = piexif.dump(exif_dict)
                     image.save(temp_path, format="HEIF", exif=exif_bytes)
                     os.replace(temp_path, image_path)
-                    self.log.emit("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+                    self.log_signal.emit("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
                 except Exception as e:
-                    self.log.emit("ERROR", f"写入EXIF数据失败: {str(e)}")
+                    self.log_signal.emit("ERROR", f"写入EXIF数据失败: {str(e)}")
                     if os.path.exists(temp_path):
                         try:
                             os.remove(temp_path)
                         except:
                             pass
             else:
-                self.log.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改\n\n"
+                self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改\n\n"
                                  "可能的原因：\n"
                                  "• 所有EXIF字段均为空")
                 
         except Exception as e:
-            self.log.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
 
     def _process_video_format(self, image_path):
         file_ext = os.path.splitext(image_path)[1].lower()
@@ -617,12 +617,12 @@ class WriteExifThread(QThread):
         if file_ext in ('.mov', '.mp4', '.avi', '.mkv'):
             self._process_video_with_exiftool(image_path)
         else:
-            self.log.emit("WARNING", f"不支持的视频格式: {file_ext}")
+            self.log_signal.emit("WARNING", f"不支持的视频格式: {file_ext}")
     
     def _process_video_with_exiftool(self, image_path):
         
         if not os.path.exists(image_path):
-            self.log.emit("ERROR", f"文件不存在: {image_path}")
+            self.log_signal.emit("ERROR", f"文件不存在: {image_path}")
             return
         temp_file_path = None
         original_file_path = image_path
@@ -685,7 +685,7 @@ class WriteExifThread(QThread):
                     cmd_parts.append(f'-DateTimeOriginal={actual_write_time}{timezone_suffix}')
                     updated_fields.append(f"拍摄时间: {self.shootTime} (已调整为UTC时间)")
                 except ValueError:
-                    self.log.emit("ERROR", f"拍摄时间格式无效: {self.shootTime}，请使用 YYYY:MM:DD HH:MM:SS 格式")
+                    self.log_signal.emit("ERROR", f"拍摄时间格式无效: {self.shootTime}，请使用 YYYY:MM:DD HH:MM:SS 格式")
         
         try:
             cmd_parts.append(file_path_normalized)
@@ -693,11 +693,11 @@ class WriteExifThread(QThread):
             result = subprocess.run(cmd_parts, capture_output=True, text=True, shell=False)
             
             if result.returncode != 0:
-                self.log.emit("ERROR", f"写入EXIF数据失败: {result.stderr}")
+                self.log_signal.emit("ERROR", f"写入EXIF数据失败: {result.stderr}")
                 return False
 
             if updated_fields:
-                self.log.emit("INFO", f"写入成功 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
+                self.log_signal.emit("INFO", f"写入成功 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
             
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
             subprocess.run(verify_cmd, capture_output=True, text=True, shell=False)
@@ -705,36 +705,36 @@ class WriteExifThread(QThread):
             return True
             
         except Exception as e:
-            self.log.emit("ERROR", f"执行exiftool命令时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"执行exiftool命令时出错: {str(e)}")
             return False
         finally:
             if temp_file_path and os.path.exists(temp_file_path) and original_file_path != image_path:
                 try:
                     shutil.copy2(temp_file_path, original_file_path)
                 except Exception as e:
-                    self.log.emit("ERROR", f"复制文件回原始路径失败: {str(e)}")
+                    self.log_signal.emit("ERROR", f"复制文件回原始路径失败: {str(e)}")
             
             if temp_file_path and os.path.exists(temp_file_path):
                 try:
                     os.remove(temp_file_path)
                 except Exception as e:
-                    self.log.emit("WARNING", f"无法删除临时文件: {str(e)}")
+                    self.log_signal.emit("WARNING", f"无法删除临时文件: {str(e)}")
             
             if temp_dir and os.path.exists(temp_dir):
                 try:
                     shutil.rmtree(temp_dir)
                 except Exception as e:
-                    self.log.emit("WARNING", f"无法删除临时目录: {str(e)}")
+                    self.log_signal.emit("WARNING", f"无法删除临时目录: {str(e)}")
 
     def _process_raw_format(self, image_path):
         if not os.path.exists(image_path):
-            self.log.emit("ERROR", f"文件不存在: {os.path.basename(image_path)}")
+            self.log_signal.emit("ERROR", f"文件不存在: {os.path.basename(image_path)}")
             return
         
         exiftool_path = os.path.join(os.path.dirname(__file__), "resources", "exiftool", "exiftool.exe")
         
         if not os.path.exists(exiftool_path):
-            self.log.emit("ERROR", "exiftool工具不存在，无法处理RAW格式文件")
+            self.log_signal.emit("ERROR", "exiftool工具不存在，无法处理RAW格式文件")
             return
         
         exif_data = {}
@@ -756,7 +756,7 @@ class WriteExifThread(QThread):
                     exif_data['ModifyDate'] = self.shootTime
                     updated_fields.append(f"拍摄时间: {self.shootTime}")
                 except ValueError:
-                    self.log.emit("ERROR", f"拍摄时间格式无效: {self.shootTime}")
+                    self.log_signal.emit("ERROR", f"拍摄时间格式无效: {self.shootTime}")
         
         if self.title:
             exif_data['ImageDescription'] = self.title
@@ -792,7 +792,7 @@ class WriteExifThread(QThread):
             updated_fields.append(f"GPS坐标: {self.lat:.6f}, {self.lon:.6f}")
         
         if not exif_data:
-            self.log.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
+            self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
             return
         
         commands = []
@@ -809,17 +809,17 @@ class WriteExifThread(QThread):
             
             if result.returncode == 0:
                 if updated_fields:
-                    self.log.emit("INFO", f"成功写入 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+                    self.log_signal.emit("INFO", f"成功写入 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
                 else:
-                    self.log.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
+                    self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
             else:
                 error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
-                self.log.emit("ERROR", f"写入 {os.path.basename(image_path)} 失败: {error_msg}")
+                self.log_signal.emit("ERROR", f"写入 {os.path.basename(image_path)} 失败: {error_msg}")
                 
         except subprocess.TimeoutExpired:
-            self.log.emit("ERROR", f"处理 {os.path.basename(image_path)} 超时")
+            self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 超时")
         except Exception as e:
-            self.log.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
 
     def stop(self):
         self._stop_requested = True
@@ -838,7 +838,7 @@ class WriteExifThread(QThread):
             
             return dms_str
         except Exception as e:
-            self.log.emit("ERROR", f"坐标转换错误: {str(e)}")
+            self.log_signal.emit("ERROR", f"坐标转换错误: {str(e)}")
             return str(decimal)
 
     def convert_dms_to_decimal(self, dms_str):
@@ -867,7 +867,7 @@ class WriteExifThread(QThread):
                     return None
                     
         except Exception as e:
-            self.log.emit("ERROR", f"GPS坐标转换错误: {str(e)}")
+            self.log_signal.emit("ERROR", f"GPS坐标转换错误: {str(e)}")
             return None
 
     def _create_gps_data(self, lat, lon):
