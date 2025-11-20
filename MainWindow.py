@@ -29,6 +29,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         
+        # 设置窗口的渲染提示以提升整体抗锯齿效果
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
+        
         self._connect_buttons()
         
         self.scrollAreaSidebar.setAlignment(

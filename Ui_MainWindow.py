@@ -284,6 +284,9 @@ class Ui_MainWindow(object):
 "border-top-right-radius:16px;\n"
 "border-bottom-right-radius:0px;\n"
 "border-bottom-left-radius:0px;\n"
+"border-style: solid;\n"
+"border-width: 0px;\n"
+"border-color: rgba(139, 92, 246, 255);\n"
 "box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45),\n"
 "            inset 0 1px 0 rgba(255, 255, 255, 0.25);\n"
 "}")
