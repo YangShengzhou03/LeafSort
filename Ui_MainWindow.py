@@ -12,7 +12,7 @@ from PyQt6 import QtCore, QtGui, QtWidgets
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
-        MainWindow.resize(925, 520)
+        MainWindow.resize(942, 580)
         self.centralWidget = QtWidgets.QWidget(parent=MainWindow)
         self.centralWidget.setObjectName("centralWidget")
         self.layoutMainGrid = QtWidgets.QGridLayout(self.centralWidget)
@@ -116,7 +116,7 @@ class Ui_MainWindow(object):
         self.scrollAreaSidebar.setWidgetResizable(True)
         self.scrollAreaSidebar.setObjectName("scrollAreaSidebar")
         self.widgetSidebarScrollContent = QtWidgets.QWidget()
-        self.widgetSidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 158, 407))
+        self.widgetSidebarScrollContent.setGeometry(QtCore.QRect(0, 0, 158, 467))
         self.widgetSidebarScrollContent.setObjectName("widgetSidebarScrollContent")
         self.layoutSidebarContent = QtWidgets.QVBoxLayout(self.widgetSidebarScrollContent)
         self.layoutSidebarContent.setContentsMargins(4, 8, 4, 8)
