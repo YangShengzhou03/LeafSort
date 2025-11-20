@@ -16,19 +16,19 @@
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="layoutMainGrid">
     <property name="leftMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="topMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="rightMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="bottomMargin">
-     <number>0</number>
+     <number>9</number>
     </property>
     <property name="spacing">
-     <number>0</number>
+     <number>9</number>
     </property>
     <item row="0" column="0">
      <widget class="QFrame" name="mainContainer">
@@ -205,8 +205,8 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
               <rect>
                <x>0</x>
                <y>0</y>
-               <width>159</width>
-               <height>425</height>
+               <width>158</width>
+               <height>407</height>
               </rect>
              </property>
              <layout class="QVBoxLayout" name="layoutSidebarContent">
@@ -436,7 +436,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
        <item>
         <widget class="QFrame" name="frameContentArea">
          <property name="styleSheet">
-          <string notr="true">border-radius: 12px;</string>
+          <string notr="true">border-radius: 16px;</string>
          </property>
          <layout class="QVBoxLayout" name="layoutContent" stretch="0,12">
           <property name="spacing">
