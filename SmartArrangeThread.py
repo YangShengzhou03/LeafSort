@@ -1233,9 +1233,19 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data = self.get_exif_data(file_path)
         
         parts = []
+        # 严格按照用户点击tag的顺序构建文件名
         for tag in self.file_name_structure:
-            parts.append(self.get_file_name_part(tag, file_path, file_time, original_name, exif_data))
+            # 调用get_file_name_part获取每个标签对应的值
+            file_part = self.get_file_name_part(tag, file_path, file_time, original_name, exif_data)
+            # 只添加非空的部分
+            if file_part:
+                parts.append(file_part)
         
+        # 确保文件名不为空
+        if not parts:
+            return original_name
+        
+        # 用指定的分隔符连接各部分
         return self.separator.join(parts)
         
     def process_single_file(self, file_path, base_folder=None):

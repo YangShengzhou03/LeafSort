@@ -182,50 +182,59 @@ class SmartArrange(QtWidgets.QWidget):
             
     def _start_smart_arrange_thread(self, folders):
         """启动智能整理线程"""
-        SmartArrange_structure = [
+        # 构建分类结构
+        classification_structure = [
             getattr(self.parent, f'comboBox_level_{i}').currentText()
             for i in range(1, 6)
             if getattr(self.parent, f'comboBox_level_{i}').isEnabled() and
                getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类"
         ]
 
-        file_name_parts = []
+        # 获取用户选择的标签结构，严格按照用户点击顺序
+        file_name_structure = []
+        
+        # 遍历layout中的所有项目，确保按添加顺序获取（即用户点击顺序）
         for i in range(self.selected_layout.count()):
-            button = self.selected_layout.itemAt(i).widget()
-            if isinstance(button, QtWidgets.QPushButton):
-                tag_name = button.text()
-                if button.property('original_text') == '自定义' and button.property('custom_content') is not None:
-                    file_name_parts.append({
-                        'tag': tag_name,
-                        'content': button.property('custom_content')
+            widget = self.selected_layout.itemAt(i).widget()
+            if isinstance(widget, QtWidgets.QPushButton):
+                original_text = widget.property('original_text') or widget.text()
+                
+                if original_text == '自定义' and widget.property('custom_content') is not None:
+                    file_name_structure.append({
+                        'tag': original_text,
+                        'content': widget.property('custom_content')
                     })
                 else:
-                    file_name_parts.append({
-                        'tag': tag_name,
+                    # 使用标签的原始文本而不是显示文本，确保一致性
+                    file_name_structure.append({
+                        'tag': original_text,
                         'content': None
                     })
 
+        # 记录日志，确认文件名结构顺序
+        self.log("INFO", f"文件名结构（按点击顺序）: {file_name_structure}")
+        
         separator_text = self.parent.comboBox_separator.currentText()
         separator = self.separator_mapping.get(separator_text, "-")
         
         operation_type = self.parent.comboBox_operation.currentIndex()
         operation_text = "移动" if operation_type == 0 else "复制"
         
-        if not SmartArrange_structure and not file_name_parts:
+        if not classification_structure and not file_name_structure:
             self.log("WARNING", f"执行{operation_text}操作：将文件夹中的所有文件提取到顶层目录")
-        elif not SmartArrange_structure:
+        elif not classification_structure:
             self.log("WARNING", f"执行{operation_text}操作：仅重命名文件，不进行分类")
-        elif not file_name_parts:
+        elif not file_name_structure:
             self.log("WARNING", f"执行{operation_text}操作：仅进行分类，不重命名文件")
         else:
             self.log("WARNING", f"执行{operation_text}操作：进行分类和重命名")
         
         operation_summary = f"操作类型: {operation_text}"
-        if SmartArrange_structure:
-            operation_summary += f", 分类结构: {' → '.join(SmartArrange_structure)}"
-        if file_name_parts:
+        if classification_structure:
+            operation_summary += f", 分类结构: {' → '.join(classification_structure)}"
+        if file_name_structure:
             filename_tags = []
-            for tag_info in file_name_parts:
+            for tag_info in file_name_structure:
                 if tag_info['content'] is not None:
                     filename_tags.append(tag_info['content'])
                 else:
@@ -239,8 +248,8 @@ class SmartArrange(QtWidgets.QWidget):
         self.SmartArrange_thread = SmartArrangeThread(
             parent=self,
             folders=folders,
-            classification_structure=SmartArrange_structure or None,
-            file_name_structure=file_name_parts or None,
+            classification_structure=classification_structure or None,
+            file_name_structure=file_name_structure or None,
             destination_root=self.destination_root,
             separator=separator,
             time_derive=self.parent.comboBox_timeSource.currentText()
@@ -325,9 +334,12 @@ class SmartArrange(QtWidgets.QWidget):
         self.update_operation_display()
     
     def update_operation_display(self):
+        # 获取选择的标签数量
+        selected_tags_count = self.selected_layout.count()
+        
         has_SmartArrange = len(self.SmartArrange_settings) > 0
         
-        has_filename = self.selected_layout.count() > 0
+        has_filename = selected_tags_count > 0
         
         if has_SmartArrange and has_filename:
             operation_type = "分类并重命名"
@@ -398,15 +410,20 @@ class SmartArrange(QtWidgets.QWidget):
         return True
     
     def move_tag(self, button):
+        # 限制最多选择5个标签
         if self.selected_layout.count() >= 5:
+            QMessageBox.information(self, "提示", "最多只能选择5个标签")
             return
         
+        # 保存按钮的原始样式
         original_style = button.styleSheet()
         button.setProperty('original_style', original_style)
         
+        # 保存按钮的原始文本
         original_text = button.text()
         button.setProperty('original_text', original_text)
         
+        # 处理自定义标签
         if original_text == '自定义':
             input_dialog = QInputDialog(self)
             input_dialog.setWindowTitle("自定义标签")
@@ -421,8 +438,8 @@ class SmartArrange(QtWidgets.QWidget):
             if ok and custom_text:
                 if not self.is_valid_windows_filename(custom_text):
                     QMessageBox.warning(
-                        self, 
-                        "文件名无效", 
+                        self,
+                        "文件名无效",
                         f"输入的文件名 '{custom_text}' 不符合Windows命名规范！\n\n"
                         "不允许的字符"
                         "不能使用保留文件名: CON, PRN, AUX, NUL, COM1-9, LPT1-9\n"
@@ -432,59 +449,89 @@ class SmartArrange(QtWidgets.QWidget):
                     )
                     return
                 
+                # 显示简短版本，但保存完整内容
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
                 button.setText(display_text)
                 button.setProperty('custom_content', custom_text)
             else:
                 return
         
+        # 从待选区域移除
         self.available_layout.removeWidget(button)
         
+        # 添加到已选区域（按点击顺序）
         self.selected_layout.addWidget(button)
         
-        button.clicked.disconnect()
+        # 更改按钮的点击事件处理函数
+        try:
+            button.clicked.disconnect()
+        except TypeError:
+            pass  # 如果没有连接的信号，忽略错误
         button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
         
+        # 更新示例和操作显示
         self.update_example_label()
-        
         self.update_operation_display()
         
+        # 如果已选满5个标签，禁用剩余的可用标签
         if self.selected_layout.count() >= 5:
             for btn in self.tag_buttons.values():
                 if btn.parent() == self.available_layout:
                     btn.setEnabled(False)
     
+    def _get_weekday(self, date):
+        weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        return weekdays[date.weekday()]
+    
     def update_example_label(self):
         now = datetime.now()
-        selected_buttons = [self.selected_layout.itemAt(i).widget() for i in range(self.selected_layout.count())
-                    if isinstance(self.selected_layout.itemAt(i).widget(), QtWidgets.QPushButton)]
-        current_separator = self.separator_mapping.get(self.parent.comboBox_separator.currentText(), "")
+        current_separator = self.separator_mapping.get(self.parent.comboBox_separator.currentText(), "-")
         
         example_parts = []
-        for button in selected_buttons:
-            button_text = button.text()
-            if button.property('original_text') == '自定义' and button.property('custom_content') is not None:
-                custom_content = button.property('custom_content')
-                display_content = custom_content[:3] if len(custom_content) > 3 else custom_content
-                example_parts.append(display_content)
-            else:
-                parts = {
-                    "原名": "IMG_1234",
-                    "年份": f"{now.year}",
-                    "月份": f"{now.month:02d}",
-                    "日": f"{now.day:02d}",
-                    "星期": f"{self._get_weekday(now)}",
-                    "时间": f"{now.strftime('%H%M%S')}",
-                    "品牌": "佳能",
-                    "型号": "EOS 5D Mark IV",
-                    "位置": "浙大",
-                    "自定义": "自定义内容"
-                }
-                full_text = parts.get(button_text, button_text)
-                example_parts.append(full_text)
+        # 严格按照布局中的顺序获取标签，确保与用户点击顺序一致
+        for i in range(self.selected_layout.count()):
+            try:
+                widget = self.selected_layout.itemAt(i).widget()
+                if isinstance(widget, QtWidgets.QPushButton):
+                    # 获取原始标签名（而不是显示的截断文本）
+                    original_text = widget.property('original_text') or widget.text()
+                    
+                    # 处理自定义标签的特殊情况
+                    if original_text == '自定义':
+                        custom_content = widget.property('custom_content')
+                        if custom_content is not None:
+                            # 使用完整的自定义内容作为示例，更好地展示实际效果
+                            example_parts.append(custom_content)
+                        else:
+                            example_parts.append("自定义内容")
+                    else:
+                        # 根据原始标签名获取对应的示例文本
+                        parts = {
+                            "原名": "IMG_1234",
+                            "年份": f"{now.year}",
+                            "月份": f"{now.month:02d}",
+                            "日": f"{now.day:02d}",
+                            "星期": f"{self._get_weekday(now)}",
+                            "时间": f"{now.strftime('%H%M%S')}",
+                            "品牌": "佳能",
+                            "型号": "EOS 5D Mark IV",
+                            "位置": "浙大"
+                        }
+                        # 使用get方法避免KeyError，并提供默认值
+                        example_parts.append(parts.get(original_text, original_text))
+            except Exception as e:
+                # 添加错误处理，确保即使出现异常也不会影响整个功能
+                self.log("WARNING", f"更新文件名预览时出错: {str(e)}")
         
+        # 过滤掉空部分，确保文件名预览不会出现多余的分隔符
+        example_parts = [part for part in example_parts if part]
+        
+        # 使用分隔符连接各部分，生成最终的示例文本
         example_text = current_separator.join(example_parts) if example_parts else "请点击标签以组成文件名"
-        self.parent.label_PreviewName.setText(example_text)
+        
+        # 确保预览文本在UI中正确显示
+        if hasattr(self.parent, 'label_PreviewName'):
+            self.parent.label_PreviewName.setText(example_text)
 
     @staticmethod
     def _get_weekday(date):
@@ -508,22 +555,38 @@ class SmartArrange(QtWidgets.QWidget):
         self.log_signal.emit(level, log_message)
 
     def move_tag_back(self, button):
+        # 从已选区域移除
         self.selected_layout.removeWidget(button)
         
+        # 添加回待选区域
         self.available_layout.addWidget(button)
         
+        # 恢复原始样式
         if button.property('original_style') is not None:
-            button.setStyleSheet(button.property('original_style'))
+            try:
+                button.setStyleSheet(button.property('original_style'))
+            except Exception:
+                pass  # 忽略样式恢复错误
         
+        # 恢复原始文本
         if button.property('original_text') is not None:
             button.setText(button.property('original_text'))
         
-        button.clicked.disconnect()
+        # 清除自定义内容属性
+        button.setProperty('custom_content', None)
+        
+        # 更改按钮的点击事件处理函数
+        try:
+            button.clicked.disconnect()
+        except TypeError:
+            pass  # 如果没有连接的信号，忽略错误
         button.clicked.connect(lambda checked, b=button: self.move_tag(b))
         
+        # 更新示例和操作显示
         self.update_example_label()
-        
         self.update_operation_display()
         
+        # 重新启用所有可用标签
         for btn in self.tag_buttons.values():
-            btn.setEnabled(True)
+            if btn.parent() == self.available_layout:
+                btn.setEnabled(True)
