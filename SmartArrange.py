@@ -8,13 +8,14 @@ from pathlib import Path
 from SmartArrangeThread import SmartArrangeThread
 
 
-class SmartArrange(QtWidgets.QWidget):
+class SmartArrangePage(QtWidgets.QWidget):
     log_signal = pyqtSignal(str, str)
 
-    def __init__(self, parent=None, folder_page=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.folder_page = folder_page
+        # 从parent获取folder_page引用，确保与MainWindow中的初始化方式一致
+        self.folder_page = None
         self.last_selected_button_index = -1
         self.destination_root = None
         
@@ -54,18 +55,29 @@ class SmartArrange(QtWidgets.QWidget):
         self.log("INFO", "欢迎使用智能整理，可以为您整理目录、重命名媒体。请注意，操作一旦执行将无法恢复。")
 
     def init_page(self):
+        # 从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+            self.log("INFO", "成功获取文件夹页面引用")
+        else:
+            self.log("WARNING", "无法获取文件夹页面引用")
+        
         self.connect_signals()
         
         for i in range(1, 6):
-            getattr(self.parent, f'comboBox_level_{i}').currentIndexChanged.connect(
-                lambda index, level=i: self.handle_combobox_selection(level, index))
+            if hasattr(self.parent, f'comboBox_level_{i}'):
+                getattr(self.parent, f'comboBox_level_{i}').currentIndexChanged.connect(
+                    lambda index, level=i: self.handle_combobox_selection(level, index))
         
         for button in self.tag_buttons.values():
-            button.clicked.connect(lambda checked, b=button: self.move_tag(b))
+            if button and hasattr(button, 'clicked'):
+                button.clicked.connect(lambda checked, b=button: self.move_tag(b))
         
-        self.parent.comboBox_operation.currentIndexChanged.connect(self.handle_operation_change)
+        if hasattr(self.parent, 'comboBox_operation'):
+            self.parent.comboBox_operation.currentIndexChanged.connect(self.handle_operation_change)
         
-        self.parent.comboBox_separator.currentIndexChanged.connect(self.update_example_label)
+        if hasattr(self.parent, 'comboBox_separator'):
+            self.parent.comboBox_separator.currentIndexChanged.connect(self.update_example_label)
         
         self.log("DEBUG", "欢迎使用图像分类整理，您可在上方构建文件路径与文件名结构。")
 
@@ -590,3 +602,59 @@ class SmartArrange(QtWidgets.QWidget):
         for btn in self.tag_buttons.values():
             if btn.parent() == self.available_layout:
                 btn.setEnabled(True)
+                
+    def refresh(self):
+        """刷新智能整理页面"""
+        try:
+            self.log("INFO", "正在刷新智能整理页面")
+            
+            # 重置状态
+            self._reset_state()
+            
+            # 重新检查文件夹页面引用
+            if hasattr(self.parent, 'folder_page'):
+                self.folder_page = self.parent.folder_page
+                self.log("INFO", "已重新获取文件夹页面引用")
+                
+            # 重置组合框状态
+            self.set_combo_box_states()
+            
+            # 清除所有已选标签并恢复到可用区域
+            selected_buttons = []
+            for i in range(self.selected_layout.count()):
+                widget = self.selected_layout.itemAt(i).widget()
+                if isinstance(widget, QtWidgets.QPushButton):
+                    selected_buttons.append(widget)
+            
+            for button in selected_buttons:
+                self.move_tag_back(button)
+                
+            self.log("INFO", "智能整理页面刷新完成")
+        except Exception as e:
+            self.log("ERROR", f"刷新智能整理页面时出错: {str(e)}")
+    
+    def _reset_state(self):
+        """重置页面状态"""
+        try:
+            # 停止正在运行的线程
+            if self.SmartArrange_thread and self.SmartArrange_thread.isRunning():
+                self.SmartArrange_thread.stop()
+                self.SmartArrange_thread = None
+                
+            # 重置进度条
+            if hasattr(self.parent, 'progressBar_classification'):
+                self.parent.progressBar_classification.setValue(0)
+                
+            # 重置操作按钮
+            if hasattr(self.parent, 'toolButton_startSmartArrange'):
+                self.parent.toolButton_startSmartArrange.setText("开始整理")
+                
+            # 重置操作类型
+            if hasattr(self.parent, 'comboBox_operation'):
+                self.parent.comboBox_operation.setCurrentIndex(0)
+                
+            # 重置目标路径
+            self.destination_root = None
+            
+        except Exception as e:
+            self.log("ERROR", f"重置状态时出错: {str(e)}")

@@ -46,7 +46,75 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
 
     def _setup_pages(self):
-        pass
+        """设置各个功能页面"""
+        try:
+            self.log("INFO", "开始初始化功能页面")
+            
+            # 导入所有功能页面模块
+            from AddFolder import FolderPage
+            from SmartArrange import SmartArrangePage
+            from RemoveDuplication import RemoveDuplicationPage
+            from WriteExif import WriteExifPage
+            from TextRecognition import TextRecognitionPage
+            
+            # 创建功能页面实例
+            self.folder_page = FolderPage(parent=self)
+            self.log("INFO", "FolderPage实例创建成功")
+            
+            self.smart_arrange_page = SmartArrangePage(parent=self)
+            self.log("INFO", "SmartArrangePage实例创建成功")
+            
+            self.remove_duplication_page = RemoveDuplicationPage(parent=self)
+            self.log("INFO", "RemoveDuplicationPage实例创建成功")
+            
+            self.write_exif_page = WriteExifPage(parent=self)
+            self.log("INFO", "WriteExifPage实例创建成功")
+            
+            self.text_recognition_page = TextRecognitionPage(parent=self)
+            self.log("INFO", "TextRecognitionPage实例创建成功")
+            
+            # 将页面添加到stackedWidget
+            if hasattr(self, 'stackedWidget'):
+                self.stackedWidget.addWidget(self.folder_page)
+                self.stackedWidget.addWidget(self.smart_arrange_page)
+                self.stackedWidget.addWidget(self.remove_duplication_page)
+                self.stackedWidget.addWidget(self.write_exif_page)
+                self.stackedWidget.addWidget(self.text_recognition_page)
+                self.log("INFO", "所有页面已添加到stackedWidget")
+            else:
+                self.log("ERROR", "stackedWidget不存在，无法添加页面")
+                return
+            
+            # 初始化各个页面
+            self.folder_page.init_page()
+            self.log("INFO", "FolderPage初始化完成")
+            
+            self.smart_arrange_page.init_page()
+            self.log("INFO", "SmartArrangePage初始化完成")
+            
+            self.remove_duplication_page.init_page()
+            self.log("INFO", "RemoveDuplicationPage初始化完成")
+            
+            self.write_exif_page.init_page()
+            self.log("INFO", "WriteExifPage初始化完成")
+            
+            self.text_recognition_page.init_page()
+            self.log("INFO", "TextRecognitionPage初始化完成")
+            
+            # 初始显示第一个页面
+            self._show_page(0)
+            self.log("INFO", "初始页面已设置为FolderPage")
+            
+            self.log("INFO", "所有功能页面已初始化完成")
+            
+        except ImportError as e:
+            self.log("ERROR", f"导入模块失败: {str(e)}")
+            self.log("ERROR", "某些功能页面可能无法使用")
+            print(f"Import error setting up pages: {str(e)}")
+        except Exception as e:
+            self.log("ERROR", f"初始化功能页面时出错: {str(e)}")
+            self.log("ERROR", "请检查程序配置和依赖")
+            print(f"Error setting up pages: {str(e)}")
     
     def _setup_navigation(self):
         """设置导航菜单（仅保留信号连接逻辑）"""
@@ -285,21 +353,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _show_page(self, page_index):
         """显示指定页面"""
         try:
+            # 检查stackedWidget是否存在
             if hasattr(self, 'stackedWidget'):
-                # 验证索引有效性
-                if 0 <= page_index < self.stackedWidget.count():
-                    self.stackedWidget.setCurrentIndex(page_index)
-                    # 更新导航菜单选中状态
-                    if hasattr(self, 'listNavigationMenu'):  # 使用UI中实际的导航菜单名称
-                        self.listNavigationMenu.setCurrentRow(page_index)
-                    self.log("INFO", f"切换到页面: {page_index}")
+                stacked_widget = self.stackedWidget
+            elif hasattr(self.ui, 'stackedWidget'):
+                stacked_widget = self.ui.stackedWidget
+            else:
+                self.log("ERROR", "stackedWidget不存在")
+                return False
+            
+            # 验证索引是否有效
+            if 0 <= page_index < stacked_widget.count():
+                stacked_widget.setCurrentIndex(page_index)
+                # 更新导航菜单选中状态
+                if hasattr(self, 'listNavigationMenu'):  # 使用UI中实际的导航菜单名称
+                    self.listNavigationMenu.setCurrentRow(page_index)
+                # 记录页面切换
+                page_name = stacked_widget.currentWidget().__class__.__name__
+                self.log("INFO", f"切换到页面: {page_name}")
+                # 刷新当前页面
+                self._refresh_current_page()
+                return True
+            else:
+                self.log("ERROR", f"无效的页面索引: {page_index}，有效范围: 0-{stacked_widget.count()-1}")
+                # 回退到第一个页面
+                if stacked_widget.count() > 0:
+                    stacked_widget.setCurrentIndex(0)
+                    self.log("INFO", "已回退到第一个页面")
                     # 刷新当前页面
                     self._refresh_current_page()
                     return True
-                else:
-                    self.log("ERROR", f"无效的页面索引: {page_index}")
-            else:
-                self.log("ERROR", "stackedWidget 不存在")
         except Exception as e:
             self.log("ERROR", f"切换页面时出错: {str(e)}")
             print(f"Error showing page: {str(e)}")
@@ -307,6 +390,31 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def _refresh_current_page(self):
         """刷新当前页面"""
+        try:
+            # 获取当前活动页面
+            current_widget = None
+            if hasattr(self, 'stackedWidget'):
+                current_widget = self.stackedWidget.currentWidget()
+            elif hasattr(self.ui, 'stackedWidget'):
+                current_widget = self.ui.stackedWidget.currentWidget()
+            
+            if current_widget is not None:
+                # 尝试调用页面的refresh方法
+                if hasattr(current_widget, 'refresh'):
+                    current_widget.refresh()
+                    page_name = current_widget.__class__.__name__
+                    self.log("INFO", f"已刷新页面: {page_name}")
+                elif hasattr(current_widget, 'init_page'):
+                    # 作为备选方案，重新初始化页面
+                    current_widget.init_page()
+                    page_name = current_widget.__class__.__name__
+                    self.log("INFO", f"已重新初始化页面: {page_name}")
+            else:
+                self.log("WARNING", "没有当前活动页面可刷新")
+        except Exception as e:
+            self.log("ERROR", f"刷新页面时出错: {str(e)}")
+            
+        # 获取当前索引用于其他逻辑
         current_index = 0
         if hasattr(self, 'stackedWidget_mainContent'):
             current_index = self.stackedWidget_mainContent.currentIndex()

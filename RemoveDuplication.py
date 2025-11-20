@@ -67,10 +67,10 @@ class ThumbnailLoader(QRunnable):
 
 
 class Contrast(QtWidgets.QWidget):
-    def __init__(self, parent=None, folder_page=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.folder_page = folder_page
+        self.folder_page = None  # 将在init_page中从parent获取
         self.groups = {}
         self.image_hashes = {}
         self._running = False
@@ -85,6 +85,10 @@ class Contrast(QtWidgets.QWidget):
         self.current_progress = 0
 
     def init_page(self):
+        # 从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+        
         self.parent.horizontalSlider_levelContrast.setRange(0, 100)
         self.parent.horizontalSlider_levelContrast.setValue(100)
         self.parent.verticalFrame_similar.hide()
@@ -503,3 +507,65 @@ class Contrast(QtWidgets.QWidget):
                              Qt.AspectRatioMode.KeepAspectRatio,
                              Qt.TransformationMode.SmoothTransformation)
             label.setPixmap(pix)
+    
+    def _remove_group(self, group_id):
+        """移除指定组"""
+        # 实现移除组的逻辑
+        if group_id in self.groups:
+            del self.groups[group_id]
+    
+    def refresh(self):
+        """刷新重复文件检测页面"""
+        try:
+            # 重置状态
+            self._reset_state()
+            
+            # 重新检查文件夹页面引用
+            if hasattr(self.parent, 'folder_page'):
+                self.folder_page = self.parent.folder_page
+            
+            # 刷新UI组件状态
+            self._update_ui_components()
+        except Exception as e:
+            pass
+    
+    def _reset_state(self):
+        """重置页面状态"""
+        try:
+            # 清空结果数据
+            if hasattr(self, 'groups'):
+                self.groups.clear()
+            
+            if hasattr(self, 'image_hashes'):
+                self.image_hashes.clear()
+                
+            # 重置进度条
+            if hasattr(self.parent, 'progressBar_Contrast'):
+                self.parent.progressBar_Contrast.setValue(0)
+            
+            if hasattr(self.parent, 'horizontalSlider_levelContrast'):
+                self.parent.horizontalSlider_levelContrast.setValue(100)
+            
+            # 重置按钮状态
+            self._running = False
+            if hasattr(self.parent, 'startContrastToolButton'):
+                self.parent.startContrastToolButton.setEnabled(True)
+                self.parent.startContrastToolButton.setText("开始对比")
+        except Exception as e:
+            pass
+    
+    def _update_ui_components(self):
+        """更新UI组件状态"""
+        try:
+            # 清空结果显示区域
+            if hasattr(self.parent, 'layout_contrast_images'):
+                self.clear_layout(self.parent.layout_contrast_images)
+            
+            # 隐藏相关面板
+            if hasattr(self.parent, 'verticalFrame_similar'):
+                self.parent.verticalFrame_similar.hide()
+            
+            if hasattr(self.parent, 'verticalFrame_13'):
+                self.parent.verticalFrame_13.hide()
+        except Exception as e:
+            pass

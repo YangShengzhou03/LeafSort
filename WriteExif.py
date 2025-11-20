@@ -9,11 +9,15 @@ from common import get_resource_path
 from config_manager import config_manager
 
 
-class WriteExif(QWidget):    
-    def __init__(self, parent=None, folder_page=None):
+class WriteExifPage(QWidget):    
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.folder_page = folder_page
+        # 尝试从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+        else:
+            self.folder_page = None
         self.selected_star = 0
         self.worker = None
         self.star_buttons = []
@@ -22,6 +26,16 @@ class WriteExif(QWidget):
         self.error_messages = []
         self.init_ui()
         self.setup_connections()
+        
+    def init_page(self):
+        """初始化页面"""
+        # 从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+        else:
+            self.folder_page = None
+        self.setup_connections()
+        self.load_camera_lens_mapping()
 
     def init_ui(self):
         for i in range(1, 6):
@@ -577,3 +591,60 @@ class WriteExif(QWidget):
             config_manager.update_setting("exif_star_rating", self.selected_star)
         except Exception as e:
             self.log("WARNING", f"保存EXIF设置时出错: {str(e)}")
+    
+    def refresh(self):
+        """刷新EXIF信息写入页面"""
+        try:
+            self.log("INFO", "正在刷新EXIF信息写入页面")
+            
+            # 重置状态
+            self._reset_state()
+            
+            # 重新检查文件夹页面引用
+            if hasattr(self.parent, 'folder_page'):
+                self.folder_page = self.parent.folder_page
+                self.log("INFO", "已重新获取文件夹页面引用")
+                
+            # 刷新UI组件状态
+            self._update_ui_components()
+            
+            self.log("INFO", "EXIF信息写入页面刷新完成")
+        except Exception as e:
+            self.log("ERROR", f"刷新EXIF信息写入页面时出错: {str(e)}")
+    
+    def _reset_state(self):
+        """重置页面状态"""
+        try:
+            # 重置星级选择
+            self.selected_star = 0
+            
+            # 停止正在运行的工作线程
+            if hasattr(self, 'worker') and self.worker:
+                self.worker.stop()
+                self.worker = None
+                
+            # 重置进度条
+            if hasattr(self.parent, 'progressBar_EXIF'):
+                self.parent.progressBar_EXIF.setValue(0)
+                
+            # 重置按钮状态
+            self.is_running = False
+            self.update_button_state()
+                
+        except Exception as e:
+            self.log("ERROR", f"重置状态时出错: {str(e)}")
+    
+    def _update_ui_components(self):
+        """更新UI组件状态"""
+        try:
+            # 重置星级按钮状态
+            self.highlight_stars(0)
+            
+            # 刷新相机品牌和型号数据
+            self.init_camera_brand_model()
+            
+            # 重新加载设置
+            self.load_exif_settings()
+                
+        except Exception as e:
+            self.log("ERROR", f"更新UI组件时出错: {str(e)}")

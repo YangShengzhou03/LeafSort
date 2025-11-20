@@ -35,10 +35,34 @@ class FolderPage(QtWidgets.QWidget):
         self.parent.scrollWelcomeContent.customContextMenuRequested.connect(self._show_context_menu)
 
     def init_page(self):
-        self.parent.btnAddFolder.clicked.connect(self._open_folder_dialog)
+        self._setup_drag_drop()
+        self._setup_click_behavior()
+        self._setup_context_menu()
+        self._connect_buttons()
+        # 从配置中加载已保存的文件夹
+        self._load_saved_folders()
 
     def _connect_buttons(self):
         self.parent.btnAddFolder.clicked.connect(self._open_folder_dialog)
+    
+    def _remove_all_folders(self):
+        """移除所有文件夹"""
+        if not self.folder_items:
+            return
+            
+        reply = QtWidgets.QMessageBox.question(
+            self, 
+            "确认移除", 
+            f"确定要移除所有 {len(self.folder_items)} 个文件夹吗？",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No,
+            QtWidgets.QMessageBox.StandardButton.No
+        )
+        
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            # 复制列表避免修改时出错
+            items_copy = self.folder_items.copy()
+            for item in items_copy:
+                self.remove_folder_item(item['frame'])
     
     def _open_folder_dialog_on_click(self, event):
         if event.button() == QtCore.Qt.MouseButton.LeftButton:
@@ -362,6 +386,33 @@ class FolderPage(QtWidgets.QWidget):
 
     def remove_folder_item(self, folder_frame):
         self._remove_folder_item(folder_frame)
+        
+    def refresh(self):
+        """刷新文件夹列表"""
+        try:
+            # 保存当前状态
+            current_paths = [item['path'] for item in self.folder_items]
+            current_sub_states = {item['path']: item['checkbox'].isChecked() for item in self.folder_items}
+            
+            # 清除现有项目
+            for item in self.folder_items.copy():
+                self.remove_folder_item(item['frame'])
+            
+            # 重新添加文件夹
+            for folder_path in current_paths:
+                if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                    folder_name = os.path.basename(folder_path) if os.path.basename(folder_path) else folder_path
+                    self._create_folder_item(folder_path, folder_name)
+                    
+                    # 恢复子文件夹状态
+                    for item in self.folder_items:
+                        if item['path'] == folder_path:
+                            item['checkbox'].setChecked(current_sub_states.get(folder_path, True))
+                            break
+            
+            self.parent._update_empty_state(bool(self.folder_items))
+        except Exception as e:
+            QMessageBox.warning(self, "刷新失败", f"刷新文件夹列表时出错: {str(e)}")
 
     def _paths_equal(self, path1, path2):
         try:
@@ -660,9 +711,6 @@ class FolderPage(QtWidgets.QWidget):
 
     def _show_context_menu(self, position):
         """显示右键菜单"""
-        if not self.folder_items:
-            return
-            
         menu = QtWidgets.QMenu(self)
         menu.setStyleSheet("""
             QMenu {
@@ -685,33 +733,87 @@ class FolderPage(QtWidgets.QWidget):
             }
         """)
         
-        # 添加菜单项
-        select_all_action = menu.addAction("全选")
-        select_none_action = menu.addAction("全不选")
-        menu.addSeparator()
+        # 添加添加文件夹操作
+        add_action = menu.addAction("添加文件夹")
+        add_action.triggered.connect(self._open_folder_dialog)
         
-        enable_all_sub_action = menu.addAction("全部包含子文件夹")
-        disable_all_sub_action = menu.addAction("全部不包含子文件夹")
-        menu.addSeparator()
+        # 添加批量添加文件夹操作
+        batch_add_action = menu.addAction("批量添加文件夹")
+        batch_add_action.triggered.connect(self._open_multiple_folder_dialog)
         
-        remove_all_action = menu.addAction("移除所有文件夹")
-        refresh_action = menu.addAction("刷新列表")
+        if self.folder_items:
+            menu.addSeparator()
+            
+            # 添加菜单项
+            select_all_action = menu.addAction("全选")
+            select_none_action = menu.addAction("全不选")
+            menu.addSeparator()
+            
+            enable_all_sub_action = menu.addAction("全部包含子文件夹")
+            disable_all_sub_action = menu.addAction("全部不包含子文件夹")
+            menu.addSeparator()
+            
+            remove_all_action = menu.addAction("移除所有文件夹")
+            refresh_action = menu.addAction("刷新列表")
+        else:
+            select_all_action = None
+            select_none_action = None
+            enable_all_sub_action = None
+            disable_all_sub_action = None
+            remove_all_action = None
+            refresh_action = None
         
         # 显示菜单
         action = menu.exec(self.parent.scrollWelcomeContent.mapToGlobal(position))
         
-        if action == select_all_action:
+        if action == select_all_action and select_all_action:
             self._select_all_folders(True)
-        elif action == select_none_action:
+        elif action == select_none_action and select_none_action:
             self._select_all_folders(False)
-        elif action == enable_all_sub_action:
+        elif action == enable_all_sub_action and enable_all_sub_action:
             self._set_all_subfolders(True)
-        elif action == disable_all_sub_action:
+        elif action == disable_all_sub_action and disable_all_sub_action:
             self._set_all_subfolders(False)
-        elif action == remove_all_action:
+        elif action == remove_all_action and remove_all_action:
             self._remove_all_folders()
-        elif action == refresh_action:
+        elif action == refresh_action and refresh_action:
             self._refresh_folder_list()
+            
+    def _show_add_folder_dialog(self):
+        """显示添加文件夹对话框 - 供MainWindow调用"""
+        self._open_folder_dialog()
+        
+    def _add_folders(self, folders):
+        """添加多个文件夹 - 供MainWindow拖放处理调用"""
+        self._batch_adding = True
+        added_count = 0
+        
+        for folder_path in folders:
+            if os.path.exists(folder_path) and os.path.isdir(folder_path):
+                self._check_and_add_folder(folder_path)
+                added_count += 1
+        
+        self._batch_adding = False
+        
+        if added_count > 0:
+            self.parent._update_empty_state(True)
+            
+    def _open_multiple_folder_dialog(self):
+        """打开批量选择文件夹对话框"""
+        dialog = QFileDialog()
+        dialog.setFileMode(QFileDialog.FileMode.Directory)
+        dialog.setOption(QFileDialog.Option.ShowDirsOnly, True)
+        dialog.setOption(QFileDialog.Option.DontUseNativeDialog, True)
+        dialog.setWindowTitle("选择多个文件夹")
+        
+        # 创建选择多个文件夹的按钮
+        for view in dialog.findChildren(QtWidgets.QAbstractItemView):
+            if isinstance(view, QtWidgets.QTreeView) or isinstance(view, QtWidgets.QListView):
+                view.setSelectionMode(QtWidgets.QAbstractItemView.SelectionMode.ExtendedSelection)
+        
+        if dialog.exec():
+            selected_folders = dialog.selectedFiles()
+            self._add_folders(selected_folders)
 
     def _select_all_folders(self, select):
         """全选或全不选所有文件夹"""

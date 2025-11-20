@@ -67,19 +67,26 @@ class TextRecognitionThread(QThread):
         self._stop_requested = True
 
 
-class TextRecognition(QtWidgets.QWidget):
+class TextRecognitionPage(QtWidgets.QWidget):
     log_signal = pyqtSignal(str, str)
 
-    def __init__(self, parent=None, folder_page=None):
+    def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        self.folder_page = folder_page
+        self.folder_page = None  # 将在init_page中从parent获取
         self.recognition_thread = None
         self.recognition_results = {}
         self.log_signal.connect(self.log)
         self.init_page()
 
     def init_page(self):
+        # 从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+            self.log("INFO", "成功获取文件夹页面引用")
+        else:
+            self.log("WARNING", "无法获取文件夹页面引用")
+            
         layout = QtWidgets.QVBoxLayout()
         
         self.recognize_btn = QtWidgets.QPushButton('识别图片文字')
@@ -106,6 +113,12 @@ class TextRecognition(QtWidgets.QWidget):
         
         self.setLayout(layout)
         
+        # 从parent获取folder_page引用，确保能访问文件夹数据
+        if hasattr(self.parent, 'folder_page'):
+            self.folder_page = self.parent.folder_page
+            self.log("INFO", "成功获取文件夹页面引用")
+        else:
+            self.log("WARNING", "无法获取文件夹页面引用")
         self._connect_signals()
         self.log("INFO", "欢迎使用文字识别和整理功能")
         
@@ -230,3 +243,63 @@ class TextRecognition(QtWidgets.QWidget):
             f"共成功整理 {success_count} 个文件到目标目录。\n\n"
             f"您可以在 {save_dir} 中查看整理后的文件。"
         )
+        
+    def stop_recognition(self):
+        """停止识别过程"""
+        if self.recognition_thread:
+            self.recognition_thread.stop()
+            self.recognition_thread = None
+    
+    def refresh(self):
+        """刷新文本识别页面"""
+        try:
+            self.log("INFO", "正在刷新文本识别页面")
+            
+            # 重置状态
+            self._reset_state()
+            
+            # 重新检查文件夹页面引用
+            if hasattr(self.parent, 'folder_page'):
+                self.folder_page = self.parent.folder_page
+                self.log("INFO", "已重新获取文件夹页面引用")
+                
+            # 刷新UI组件状态
+            self._update_ui_components()
+            
+            self.log("INFO", "文本识别页面刷新完成")
+        except Exception as e:
+            self.log("ERROR", f"刷新文本识别页面时出错: {str(e)}")
+    
+    def _reset_state(self):
+        """重置页面状态"""
+        try:
+            # 清空识别结果
+            self.recognition_results.clear()
+            
+            # 停止正在运行的识别线程
+            if hasattr(self, 'recognition_thread') and self.recognition_thread:
+                self.recognition_thread.stop()
+                self.recognition_thread = None
+                
+            # 重置进度条
+            if hasattr(self, 'progress_bar'):
+                self.progress_bar.setValue(0)
+                
+            # 重置按钮状态
+            if hasattr(self, 'recognize_btn'):
+                self.recognize_btn.setEnabled(True)
+                
+            if hasattr(self, 'organize_btn'):
+                self.organize_btn.setEnabled(False)
+                
+        except Exception as e:
+            self.log("ERROR", f"重置状态时出错: {str(e)}")
+    
+    def _update_ui_components(self):
+        """更新UI组件状态"""
+        try:
+            # 这里可以添加更新UI组件的代码
+            # 例如清空结果显示区域等
+            pass
+        except Exception as e:
+            self.log("ERROR", f"更新UI组件时出错: {str(e)}")
