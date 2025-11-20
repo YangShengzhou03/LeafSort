@@ -178,7 +178,7 @@
                   <number>6</number>
                  </property>
                  <item>
-                  <spacer name="spacerButtons">
+                  <spacer name="spacerDialogButtons">
                    <property name="orientation">
                     <enum>Qt::Horizontal</enum>
                    </property>

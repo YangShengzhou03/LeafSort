@@ -19,9 +19,9 @@ class Ui_UpdateDialog(object):
         self.layoutMain.setObjectName("layoutMain")
         self.frameDialog = QtWidgets.QFrame(parent=UpdateDialog)
         self.frameDialog.setMinimumSize(QtCore.QSize(512, 320))
-        self.frameDialog.setStyleSheet("QFrame#frame{\n"
-"background-color: rgb(245, 249, 254);\n"
-"border-radius:25px;\n"
+        self.frameDialog.setStyleSheet("QFrame#frameDialog {\n"
+"    background-color: rgb(245, 249, 254);\n"
+"    border-radius: 25px;\n"
 "}")
         self.frameDialog.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.frameDialog.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -37,15 +37,13 @@ class Ui_UpdateDialog(object):
         self.widgetHeader = QtWidgets.QWidget(parent=self.frameDialog)
         self.widgetHeader.setMinimumSize(QtCore.QSize(0, 0))
         self.widgetHeader.setMaximumSize(QtCore.QSize(16777215, 16777215))
-        self.widgetHeader.setStyleSheet(".QWidget{\n"
-"background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
-"                                  stop:0 rgb(105, 27, 253), \n"
-"                                  stop:1 rgb(200, 160, 240));\n"
-"border-radius:16px;\n"
-"color: rgb(255, 255, 255);\n"
-"}\n"
-"\n"
-"")
+        self.widgetHeader.setStyleSheet("QWidget#widgetHeader {\n"
+"    background-color: qlineargradient(x1:0, y1:0, x2:0, y2:1,\n"
+"                                      stop:0 rgb(105, 27, 253), \n"
+"                                      stop:1 rgb(200, 160, 240));\n"
+"    border-radius: 16px;\n"
+"    color: rgb(255, 255, 255);\n"
+"}")
         self.widgetHeader.setObjectName("widgetHeader")
         self.layoutHeader = QtWidgets.QHBoxLayout(self.widgetHeader)
         self.layoutHeader.setContentsMargins(18, 18, 18, 18)
@@ -61,7 +59,7 @@ class Ui_UpdateDialog(object):
         font.setPointSize(22)
         font.setBold(True)
         self.lblTitle.setFont(font)
-        self.lblTitle.setStyleSheet("QLabel {\n"
+        self.lblTitle.setStyleSheet("QLabel#lblTitle {\n"
 "    color: rgba(222, 255, 255, 255);\n"
 "    qproperty-alignment: \'AlignCenter\';\n"
 "    margin-bottom: 12px;\n"
@@ -73,7 +71,9 @@ class Ui_UpdateDialog(object):
         font.setPointSize(12)
         font.setBold(False)
         self.lblContent.setFont(font)
-        self.lblContent.setStyleSheet("color: rgb(250, 250, 250)")
+        self.lblContent.setStyleSheet("QLabel#lblContent {\n"
+"    color: rgb(250, 250, 250);\n"
+"}")
         self.lblContent.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeading|QtCore.Qt.AlignmentFlag.AlignLeft|QtCore.Qt.AlignmentFlag.AlignTop)
         self.lblContent.setObjectName("lblContent")
         self.layoutDialogElements.addWidget(self.lblContent)
@@ -86,7 +86,7 @@ class Ui_UpdateDialog(object):
         self.btnCancel = QtWidgets.QPushButton(parent=self.widgetHeader)
         self.btnCancel.setMinimumSize(QtCore.QSize(88, 30))
         self.btnCancel.setMaximumSize(QtCore.QSize(88, 30))
-        self.btnCancel.setStyleSheet("QPushButton {\n"
+        self.btnCancel.setStyleSheet("QPushButton#btnCancel {\n"
 "    background-color: rgba(250, 250, 250, 100);\n"
 "    color: white;\n"
 "    border: none;\n"
@@ -95,19 +95,19 @@ class Ui_UpdateDialog(object):
 "    font-size: 12px;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
-"    background-color: rgba(250, 250, 250,130);\n"
+"QPushButton#btnCancel:hover {\n"
+"    background-color: rgba(250, 250, 250, 130);\n"
 "}\n"
 "\n"
-"QPushButton:pressed {\n"
-"    background-color: rgba(250, 250, 250,180);\n"
+"QPushButton#btnCancel:pressed {\n"
+"    background-color: rgba(250, 250, 250, 180);\n"
 "}")
         self.btnCancel.setObjectName("btnCancel")
         self.layoutButtons.addWidget(self.btnCancel)
         self.btnDownload = QtWidgets.QPushButton(parent=self.widgetHeader)
         self.btnDownload.setMinimumSize(QtCore.QSize(88, 30))
         self.btnDownload.setMaximumSize(QtCore.QSize(88, 30))
-        self.btnDownload.setStyleSheet("QPushButton {\n"
+        self.btnDownload.setStyleSheet("QPushButton#btnDownload {\n"
 "    background-color: rgba(105, 27, 253, 180);\n"
 "    color: white;\n"
 "    border: none;\n"
@@ -116,11 +116,11 @@ class Ui_UpdateDialog(object):
 "    font-size: 12px;\n"
 "}\n"
 "\n"
-"QPushButton:hover {\n"
+"QPushButton#btnDownload:hover {\n"
 "    background-color: rgba(105, 27, 253, 120);\n"
 "}\n"
 "\n"
-"QPushButton:pressed {\n"
+"QPushButton#btnDownload:pressed {\n"
 "    background-color: rgba(105, 27, 253, 250);\n"
 "}")
         self.btnDownload.setObjectName("btnDownload")
