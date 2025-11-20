@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>949</width>
-    <height>572</height>
+    <width>890</width>
+    <height>520</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>LeafView - 媒体管理工具</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QGridLayout" name="mainGridLayout">
+   <layout class="QGridLayout" name="layoutMainGrid">
     <property name="leftMargin">
      <number>0</number>
     </property>
@@ -45,7 +45,7 @@ border-radius:12px;
       <property name="frameShadow">
        <enum>QFrame::Raised</enum>
       </property>
-      <layout class="QHBoxLayout" name="mainContainerLayout" stretch="0,0,1">
+      <layout class="QHBoxLayout" name="layoutMainContainer" stretch="0,0,1">
        <property name="spacing">
         <number>0</number>
        </property>
@@ -78,7 +78,7 @@ border-radius:12px;
          <property name="styleSheet">
           <string notr="true">background:rgba(0, 0, 0, 0);</string>
          </property>
-         <layout class="QVBoxLayout" name="sidebarLayout" stretch="0,9">
+         <layout class="QVBoxLayout" name="layoutSidebar" stretch="0,9">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -105,7 +105,7 @@ border-radius:12px;
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <layout class="QHBoxLayout" name="sidebarLogoLayout">
+            <layout class="QHBoxLayout" name="layoutSidebarLogo">
              <property name="spacing">
               <number>0</number>
              </property>
@@ -122,7 +122,7 @@ border-radius:12px;
               <number>0</number>
              </property>
              <item>
-              <widget class="QPushButton" name="homeButton">
+              <widget class="QPushButton" name="btnHome">
                <property name="font">
                 <font>
                  <pointsize>20</pointsize>
@@ -193,10 +193,10 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
                <x>0</x>
                <y>0</y>
                <width>156</width>
-               <height>520</height>
+               <height>468</height>
               </rect>
              </property>
-             <layout class="QVBoxLayout" name="sidebarContentLayout">
+             <layout class="QVBoxLayout" name="layoutSidebarContent">
               <property name="spacing">
                <number>12</number>
               </property>
@@ -213,7 +213,7 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
                <number>0</number>
               </property>
               <item>
-               <widget class="QListWidget" name="navigationMenu">
+               <widget class="QListWidget" name="listNavigationMenu">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
                   <horstretch>0</horstretch>
@@ -376,12 +376,12 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
         </widget>
        </item>
        <item>
-        <layout class="QHBoxLayout" name="sidebarDividerLayout">
+        <layout class="QHBoxLayout" name="layoutSidebarDivider">
          <property name="spacing">
           <number>0</number>
          </property>
          <item>
-          <widget class="Line" name="sidebarDividerLine">
+          <widget class="Line" name="lineSidebarDivider">
            <property name="sizePolicy">
             <sizepolicy hsizetype="Expanding" vsizetype="Expanding">
              <horstretch>0</horstretch>
@@ -411,11 +411,11 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
         </layout>
        </item>
        <item>
-        <widget class="QFrame" name="contentArea">
+        <widget class="QFrame" name="frameContentArea">
          <property name="styleSheet">
           <string notr="true">border-radius: 12px;</string>
          </property>
-         <layout class="QVBoxLayout" name="contentLayout" stretch="0,12">
+         <layout class="QVBoxLayout" name="layoutContent" stretch="0,12">
           <property name="spacing">
            <number>0</number>
           </property>
@@ -432,7 +432,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
            <number>0</number>
           </property>
           <item>
-           <widget class="QFrame" name="appHeaderBar">
+           <widget class="QFrame" name="frameAppHeaderBar">
             <property name="maximumSize">
              <size>
               <width>16777215</width>
@@ -458,7 +458,7 @@ border-bottom-left-radius:0px;
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <layout class="QHBoxLayout" name="headerBarLayout" stretch="0,0,0,0,0,0,0">
+            <layout class="QHBoxLayout" name="layoutHeaderBar" stretch="0,0,0,0,0,0,0">
              <property name="spacing">
               <number>9</number>
              </property>
@@ -475,7 +475,7 @@ border-bottom-left-radius:0px;
               <number>9</number>
              </property>
              <item>
-              <spacer name="headerSpacer">
+              <spacer name="spacerHeader">
                <property name="orientation">
                 <enum>Qt::Horizontal</enum>
                </property>
@@ -488,7 +488,7 @@ border-bottom-left-radius:0px;
               </spacer>
              </item>
              <item>
-              <widget class="QWidget" name="vipBadgeWidget" native="true">
+              <widget class="QWidget" name="widgetVipBadge" native="true">
                <property name="enabled">
                 <bool>true</bool>
                </property>
@@ -521,7 +521,7 @@ border-radius:0px;</string>
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="serviceButton">
+              <widget class="QToolButton" name="btnService">
                <property name="minimumSize">
                 <size>
                  <width>36</width>
@@ -566,7 +566,7 @@ QToolButton:pressed {
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="settingsButton">
+              <widget class="QToolButton" name="btnSettings">
                <property name="minimumSize">
                 <size>
                  <width>36</width>
@@ -611,7 +611,7 @@ QToolButton:pressed {
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="minimizeButton">
+              <widget class="QToolButton" name="btnMinimize">
                <property name="minimumSize">
                 <size>
                  <width>36</width>
@@ -656,7 +656,7 @@ QToolButton:pressed {
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="maximizeButton">
+              <widget class="QToolButton" name="btnMaximize">
                <property name="minimumSize">
                 <size>
                  <width>36</width>
@@ -701,7 +701,7 @@ QToolButton:pressed {
               </widget>
              </item>
              <item>
-              <widget class="QToolButton" name="closeButton">
+              <widget class="QToolButton" name="btnClose">
                <property name="minimumSize">
                 <size>
                  <width>36</width>
@@ -824,7 +824,7 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
                <property name="currentIndex">
                 <number>0</number>
                </property>
-               <widget class="QWidget" name="previewPage">
+               <widget class="QWidget" name="pagePreview">
                 <property name="sizePolicy">
                  <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
                   <horstretch>0</horstretch>
@@ -838,7 +838,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:12px;
 border-bottom-left-radius:0px;</string>
                 </property>
-                <layout class="QVBoxLayout" name="importLayout" stretch="0,0">
+                <layout class="QVBoxLayout" name="layoutImport" stretch="0,0">
                  <property name="spacing">
                   <number>0</number>
                  </property>
@@ -855,7 +855,7 @@ border-bottom-left-radius:0px;</string>
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="QFrame" name="importHeaderFrame">
+                  <widget class="QFrame" name="frameImportHeader">
                    <property name="minimumSize">
                     <size>
                      <width>0</width>
@@ -870,7 +870,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;</string>
                    </property>
-                   <layout class="QHBoxLayout" name="importHeaderLayout">
+                   <layout class="QHBoxLayout" name="layoutImportHeader">
                     <property name="leftMargin">
                      <number>18</number>
                     </property>
@@ -884,7 +884,7 @@ border-bottom-left-radius:0px;</string>
                      <number>18</number>
                     </property>
                     <item>
-                     <widget class="QLabel" name="importTitle">
+                     <widget class="QLabel" name="lblImportTitle">
                       <property name="font">
                        <font>
                         <family>Microsoft YaHei UI</family>
@@ -901,7 +901,7 @@ border-bottom-left-radius:0px;</string>
                      </widget>
                     </item>
                     <item>
-                     <widget class="QLabel" name="importRoute">
+                     <widget class="QLabel" name="lblImportRoute">
                       <property name="font">
                        <font>
                         <family>Microsoft YaHei UI</family>
@@ -917,7 +917,7 @@ border-bottom-left-radius:0px;</string>
                      </widget>
                     </item>
                     <item>
-                     <spacer name="horizontalSpacer_20">
+                     <spacer name="spacerHorizontal20">
                       <property name="orientation">
                        <enum>Qt::Horizontal</enum>
                       </property>
@@ -930,7 +930,7 @@ border-bottom-left-radius:0px;</string>
                      </spacer>
                     </item>
                     <item>
-                     <widget class="QLabel" name="importSeparator">
+                     <widget class="QLabel" name="lblImportSeparator">
                       <property name="font">
                        <font>
                         <family>Microsoft YaHei UI</family>
@@ -973,7 +973,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:12px;
 border-bottom-left-radius:0px;</string>
                    </property>
-                   <layout class="QVBoxLayout" name="importContainerLayout">
+                   <layout class="QVBoxLayout" name="layoutImportContainer">
                     <property name="leftMargin">
                      <number>18</number>
                     </property>
@@ -1035,7 +1035,7 @@ QFrame:focus {
                         </widget>
                        </item>
                        <item>
-                        <widget class="QLineEdit" name="sourceFolderInput">
+                        <widget class="QLineEdit" name="inputSourceFolder">
                          <property name="font">
                           <font>
                            <family>Microsoft YaHei UI</family>
@@ -1058,7 +1058,7 @@ selection-color: #1f2937;</string>
                         </widget>
                        </item>
                        <item>
-                        <widget class="QPushButton" name="browseSourceButton">
+                        <widget class="QPushButton" name="btnBrowseSource">
                          <property name="minimumSize">
                           <size>
                            <width>80</width>
@@ -1148,7 +1148,7 @@ QFrame:focus {
                         </widget>
                        </item>
                        <item>
-                        <widget class="QLineEdit" name="targetFolderInput">
+                        <widget class="QLineEdit" name="inputTargetFolder">
                          <property name="font">
                           <font>
                            <family>Microsoft YaHei UI</family>
@@ -1171,7 +1171,7 @@ selection-color: #1f2937;</string>
                         </widget>
                        </item>
                        <item>
-                        <widget class="QPushButton" name="browseTargetButton">
+                        <widget class="QPushButton" name="btnBrowseTarget">
                          <property name="minimumSize">
                           <size>
                            <width>80</width>
@@ -2307,7 +2307,7 @@ background:rgb(255, 255, 255);</string>
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="removeDuplicatesButton">
+                         <widget class="QPushButton" name="btnRemoveDuplicates">
                           <property name="minimumSize">
                            <size>
                             <width>78</width>
@@ -2365,7 +2365,7 @@ QPushButton:hover {
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="filterExtensionsButton">
+                         <widget class="QPushButton" name="btnFilterExtensions">
                           <property name="minimumSize">
                            <size>
                             <width>64</width>
@@ -2520,7 +2520,7 @@ border: 0px;
                              <number>6</number>
                             </property>
                             <item>
-                             <widget class="QPushButton" name="addOriginalTagButton">
+                             <widget class="QPushButton" name="btnAddOriginalTag">
                               <property name="maximumSize">
                                <size>
                                 <width>80</width>
@@ -2554,7 +2554,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addYearTagButton">
+                             <widget class="QPushButton" name="btnAddYearTag">
                               <property name="maximumSize">
                                <size>
                                 <width>46</width>
@@ -2595,7 +2595,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addMonthTagButton">
+                             <widget class="QPushButton" name="btnAddMonthTag">
                               <property name="maximumSize">
                                <size>
                                 <width>46</width>
@@ -2636,7 +2636,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addDateTagButton">
+                             <widget class="QPushButton" name="btnAddDateTag">
                               <property name="maximumSize">
                                <size>
                                 <width>32</width>
@@ -2677,7 +2677,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="dayTagButton">
+                             <widget class="QPushButton" name="btnDayTag">
                               <property name="maximumSize">
                                <size>
                                 <width>46</width>
@@ -2718,7 +2718,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addTimeTagButton">
+                             <widget class="QPushButton" name="btnAddTimeTag">
                               <property name="maximumSize">
                                <size>
                                 <width>46</width>
@@ -2765,7 +2765,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addMakeTagButton">
+                             <widget class="QPushButton" name="btnAddMakeTag">
                               <property name="maximumSize">
                                <size>
                                 <width>74</width>
@@ -2806,7 +2806,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="modelTagButton">
+                             <widget class="QPushButton" name="btnModelTag">
                               <property name="maximumSize">
                                <size>
                                 <width>74</width>
@@ -2847,7 +2847,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="addressTagButton">
+                             <widget class="QPushButton" name="btnAddressTag">
                               <property name="maximumSize">
                                <size>
                                 <width>66</width>
@@ -2892,7 +2892,7 @@ QPushButton:pressed {
                              </widget>
                             </item>
                             <item>
-                             <widget class="QPushButton" name="customizeTagButton">
+                             <widget class="QPushButton" name="btnCustomizeTag">
                               <property name="maximumSize">
                                <size>
                                 <width>80</width>
@@ -2957,7 +2957,7 @@ QPushButton:pressed {
                             </spacer>
                            </item>
                            <item>
-                            <widget class="QLabel" name="separatorLabel">
+                            <widget class="QLabel" name="lblSeparator">
                              <property name="font">
                               <font>
                                <pointsize>12</pointsize>
@@ -3557,7 +3557,7 @@ QProgressBar::chunk {
                        </widget>
                       </item>
                       <item>
-                       <widget class="QToolButton" name="startSmartArrangeButton">
+                       <widget class="QToolButton" name="btnStartSmartArrange">
                         <property name="minimumSize">
                          <size>
                           <width>88</width>
@@ -3854,7 +3854,7 @@ QProgressBar::chunk {
                         </widget>
                        </item>
                        <item>
-                        <widget class="QToolButton" name="startContrastButton">
+                        <widget class="QToolButton" name="btnStartContrast">
                          <property name="minimumSize">
                           <size>
                            <width>88</width>
@@ -5366,7 +5366,7 @@ QProgressBar::chunk {
                      </widget>
                     </item>
                     <item>
-                     <widget class="QToolButton" name="startExifButton">
+                     <widget class="QToolButton" name="btnStartExif">
                       <property name="minimumSize">
                        <size>
                         <width>88</width>
@@ -5449,7 +5449,7 @@ border-bottom-left-radius:0px;</string>
                      <number>6</number>
                     </property>
                     <item>
-                     <widget class="QLabel" name="label">
+                     <widget class="QLabel" name="lblDefault">
                       <property name="font">
                        <font>
                         <pointsize>12</pointsize>
@@ -5612,22 +5612,5 @@ QTextEdit:focus {
   </widget>
  </widget>
  <resources/>
- <connections>
-  <connection>
-   <sender>navigationMenu</sender>
-   <signal>currentRowChanged(int)</signal>
-   <receiver>mainContentStack</receiver>
-   <slot>setCurrentIndex(int)</slot>
-   <hints>
-    <hint type="sourcelabel">
-     <x>140</x>
-     <y>340</y>
-    </hint>
-    <hint type="destinationlabel">
-     <x>165</x>
-     <y>307</y>
-    </hint>
-   </hints>
-  </connection>
- </connections>
+ <connections/>
 </ui>
