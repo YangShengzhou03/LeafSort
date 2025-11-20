@@ -21,9 +21,17 @@ class Ui_MainWindow(object):
         self.layoutMainGrid.setObjectName("layoutMainGrid")
         self.mainContainer = QtWidgets.QFrame(parent=self.centralWidget)
         self.mainContainer.setStyleSheet("QFrame{\n"
-"background-color: rgb(255, 255, 255);\n"
+"background: qlineargradient(\n"
+"    spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"    stop:0 rgba(255, 255, 255, 255),\n"
+"    stop:0.5 rgba(249, 250, 251, 255),\n"
+"    stop:1 rgba(243, 244, 246, 255)\n"
+");\n"
 "border:none;\n"
 "border-radius:12px;\n"
+"box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), \n"
+"            0 2px 8px rgba(0, 0, 0, 0.04),\n"
+"            inset 0 1px 0 rgba(255, 255, 255, 0.8);\n"
 "}")
         self.mainContainer.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.mainContainer.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -35,7 +43,12 @@ class Ui_MainWindow(object):
         self.sidebarNavigation = QtWidgets.QFrame(parent=self.mainContainer)
         self.sidebarNavigation.setMinimumSize(QtCore.QSize(162, 0))
         self.sidebarNavigation.setMaximumSize(QtCore.QSize(162, 16777215))
-        self.sidebarNavigation.setStyleSheet("background:rgba(0, 0, 0, 0);")
+        self.sidebarNavigation.setStyleSheet("background: rgba(255, 255, 255, 80);\n"
+"background-blur: 12px;\n"
+"border: 1px solid rgba(255, 255, 255, 50);\n"
+"backdrop-filter: blur(12px);\n"
+"border-radius: 8px;\n"
+"")
         self.sidebarNavigation.setObjectName("sidebarNavigation")
         self.layoutSidebar = QtWidgets.QVBoxLayout(self.sidebarNavigation)
         self.layoutSidebar.setContentsMargins(6, 9, 0, 0)
@@ -251,7 +264,7 @@ class Ui_MainWindow(object):
         self.frameAppHeaderBar.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.frameAppHeaderBar.setStyleSheet("QFrame{\n"
 "background: qlineargradient(\n"
-"spread:pad, x1:0, y1:0, x2:1, y2:0,\n"
+"spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
 "stop:0 rgba(134, 119, 253, 255),\n"
 "stop:0.3 rgba(119, 111, 252, 255),\n"
 "stop:0.7 rgba(108, 92, 231, 255),\n"
@@ -261,7 +274,8 @@ class Ui_MainWindow(object):
 "border-top-right-radius:12px;\n"
 "border-bottom-right-radius:0px;\n"
 "border-bottom-left-radius:0px;\n"
-"box-shadow: 0 2px 12px rgba(108, 92, 231, 0.3);\n"
+"box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4),\n"
+"            inset 0 1px 0 rgba(255, 255, 255, 0.2);\n"
 "}")
         self.frameAppHeaderBar.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.frameAppHeaderBar.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
@@ -294,15 +308,29 @@ class Ui_MainWindow(object):
 "    border: none;\n"
 "    padding: 4px;\n"
 "    border-radius: 12px;\n"
-"    background-color: rgba(255, 255, 255, 0);\n"
+"    background: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
-"    background-color: rgba(255, 255, 255, 20);\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 30),\n"
+"        stop:1 rgba(255, 255, 255, 10)\n"
+"    );\n"
+"    border: 1px solid rgba(255, 255, 255, 40);\n"
+"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
-"    background-color: rgba(255, 255, 255, 50);\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 60),\n"
+"        stop:1 rgba(255, 255, 255, 30)\n"
+"    );\n"
+"    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnService.setText("")
         icon4 = QtGui.QIcon()
@@ -318,15 +346,29 @@ class Ui_MainWindow(object):
 "    border: none;\n"
 "    padding: 4px;\n"
 "    border-radius: 12px;\n"
-"    background-color: rgba(255, 255, 255, 0);\n"
+"    background: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
-"    background-color: rgba(255, 255, 255, 20);\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 30),\n"
+"        stop:1 rgba(255, 255, 255, 10)\n"
+"    );\n"
+"    border: 1px solid rgba(255, 255, 255, 40);\n"
+"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
-"    background-color: rgba(255, 255, 255, 50);\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 60),\n"
+"        stop:1 rgba(255, 255, 255, 30)\n"
+"    );\n"
+"    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(0);\n"
 "}")
         self.btnSettings.setText("")
         icon5 = QtGui.QIcon()
@@ -410,7 +452,12 @@ class Ui_MainWindow(object):
         self.layoutContent.addWidget(self.frameAppHeaderBar)
         self.mainContentFrame = QtWidgets.QFrame(parent=self.frameContentArea)
         self.mainContentFrame.setStyleSheet("border-radius: 20px;\n"
-"background:rgb(245, 246, 247);")
+"background: rgba(255, 255, 255, 90);\n"
+"background-blur: 10px;\n"
+"border: 1px solid rgba(255, 255, 255, 60);\n"
+"backdrop-filter: blur(10px);\n"
+"box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);\n"
+"")
         self.mainContentFrame.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
         self.mainContentFrame.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         self.mainContentFrame.setObjectName("mainContentFrame")

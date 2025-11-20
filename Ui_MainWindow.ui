@@ -34,9 +34,17 @@
      <widget class="QFrame" name="mainContainer">
       <property name="styleSheet">
        <string notr="true">QFrame{
-background-color: rgb(255, 255, 255);
+background: qlineargradient(
+    spread:pad, x1:0, y1:0, x2:1, y2:1,
+    stop:0 rgba(255, 255, 255, 255),
+    stop:0.5 rgba(249, 250, 251, 255),
+    stop:1 rgba(243, 244, 246, 255)
+);
 border:none;
 border-radius:12px;
+box-shadow: 0 8px 32px rgba(0, 0, 0, 0.06), 
+            0 2px 8px rgba(0, 0, 0, 0.04),
+            inset 0 1px 0 rgba(255, 255, 255, 0.8);
 }</string>
       </property>
       <property name="frameShape">
@@ -76,7 +84,12 @@ border-radius:12px;
           </size>
          </property>
          <property name="styleSheet">
-          <string notr="true">background:rgba(0, 0, 0, 0);</string>
+          <string notr="true">background: rgba(255, 255, 255, 80);
+background-blur: 12px;
+border: 1px solid rgba(255, 255, 255, 50);
+backdrop-filter: blur(12px);
+border-radius: 8px;
+</string>
          </property>
          <layout class="QVBoxLayout" name="layoutSidebar" stretch="0,9">
           <property name="spacing">
@@ -442,7 +455,7 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
             <property name="styleSheet">
              <string notr="true">QFrame{
 background: qlineargradient(
-spread:pad, x1:0, y1:0, x2:1, y2:0,
+spread:pad, x1:0, y1:0, x2:1, y2:1,
 stop:0 rgba(134, 119, 253, 255),
 stop:0.3 rgba(119, 111, 252, 255),
 stop:0.7 rgba(108, 92, 231, 255),
@@ -452,7 +465,8 @@ border-top-left-radius:0px;
 border-top-right-radius:12px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;
-box-shadow: 0 2px 12px rgba(108, 92, 231, 0.3);
+box-shadow: 0 4px 20px rgba(108, 92, 231, 0.4),
+            inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }</string>
             </property>
             <property name="frameShape">
@@ -540,17 +554,31 @@ border-radius:0px;</string>
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-	padding: 4px;
-	border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0);
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 QToolButton:hover {
-    background-color: rgba(255, 255, 255, 20);
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(255, 255, 255, 30),
+        stop:1 rgba(255, 255, 255, 10)
+    );
+    border: 1px solid rgba(255, 255, 255, 40);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 50);
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(255, 255, 255, 60),
+        stop:1 rgba(255, 255, 255, 30)
+    );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+    transform: translateY(0);
 }</string>
                </property>
                <property name="text">
@@ -585,17 +613,31 @@ QToolButton:pressed {
                <property name="styleSheet">
                 <string notr="true">QToolButton {
     border: none;
-	padding: 4px;
-	border-radius: 12px;
-    background-color: rgba(255, 255, 255, 0);
+    padding: 4px;
+    border-radius: 12px;
+    background: rgba(255, 255, 255, 0);
+    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 QToolButton:hover {
-    background-color: rgba(255, 255, 255, 20);
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(255, 255, 255, 30),
+        stop:1 rgba(255, 255, 255, 10)
+    );
+    border: 1px solid rgba(255, 255, 255, 40);
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    transform: translateY(-1px);
 }
 
 QToolButton:pressed {
-    background-color: rgba(255, 255, 255, 50);
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:1,
+        stop:0 rgba(255, 255, 255, 60),
+        stop:1 rgba(255, 255, 255, 30)
+    );
+    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
+    transform: translateY(0);
 }</string>
                </property>
                <property name="text">
@@ -755,7 +797,12 @@ QToolButton:pressed {
            <widget class="QFrame" name="mainContentFrame">
             <property name="styleSheet">
              <string notr="true">border-radius: 20px;
-background:rgb(245, 246, 247);</string>
+background: rgba(255, 255, 255, 90);
+background-blur: 10px;
+border: 1px solid rgba(255, 255, 255, 60);
+backdrop-filter: blur(10px);
+box-shadow: 0 4px 16px rgba(0, 0, 0, 0.04);
+</string>
             </property>
             <property name="frameShape">
              <enum>QFrame::StyledPanel</enum>
