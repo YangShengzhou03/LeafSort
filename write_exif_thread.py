@@ -55,119 +55,181 @@ class WriteExifThread(QThread):
         success_count = 0
         error_count = 0
         
-        try:
-            image_paths = self._collect_image_paths()
-            total_files = len(image_paths)
-            if not image_paths:
-                self.log_signal.emit("WARNING", "没有找到任何可以处理的图像文件\n\n"
-                               "请检查：\n"
-                               "• 您选择的文件夹路径是否正确\n"
-                               "• 文件夹里是否有.jpg、.jpeg、.png、.webp等格式的图片")
-                self.finished_conversion.emit()
-                return
-            
-            self.log_signal.emit("WARNING", f"开始处理 {total_files} 张图片")
-            
-            self.progress_updated.emit(0)
-            
-            with ThreadPoolExecutor(max_workers=min(4, os.cpu_count() or 1)) as executor:
-                futures = {}
-                for path in image_paths:
-                    if self._stop_requested:
-                        break
-                    try:
-                        file_size = os.path.getsize(path)
-                        if file_size > 500 * 1024 * 1024:
-                            self.log_signal.emit("ERROR", f"文件 {os.path.basename(path)} 太大了(超过500MB)，暂不支持处理")
-                            error_count += 1
-                            continue
-                        futures[executor.submit(self.process_image, path)] = path
-                    except Exception as e:
-                        self.log_signal.emit("ERROR", f"添加文件 {os.path.basename(path)} 到任务队列失败: {str(e)}")
-                        error_count += 1
-                
-                if futures:
-                    try:
-                        for i, future in enumerate(as_completed(futures), 1):
-                            if self._stop_requested:
-                                for f in futures:
-                                    f.cancel()
-                                time.sleep(0.1)
-                                self.log_signal.emit("DEBUG", "EXIF写入操作已成功中止")
-                                break
-                            try:
-                                future.result(timeout=30)
-                                success_count += 1
-                            except TimeoutError:
-                                file_path = futures[future]
-                                self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时间太长，已超时")
-                                error_count += 1
-                            except Exception as e:
-                                file_path = futures[future]
-                                self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时出错: {str(e)}")
-                                error_count += 1
-                            finally:
-                                progress = int((i / len(futures)) * 100)
-                                self.progress_updated.emit(progress)
-                    except Exception as e:
-                        self.log_signal.emit("ERROR", f"任务调度过程中发生错误: {str(e)}")
-                        error_count += 1
-        except Exception as e:
-            self.log_signal.emit("ERROR", f"全局错误: {str(e)}")
-            error_count += 1
-        finally:
-            self.log_signal.emit("DEBUG", "=" * 40)
-            self.log_signal.emit("INFO", f"属性写入完成了，成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
-            self.log_signal.emit("DEBUG", "=" * 3 + "LeafView © 2025 Yangshengzhou.All Rights Reserved" + "=" * 3)
+        image_paths = self._collect_image_paths()
+        total_files = len(image_paths)
+        
+        if not image_paths:
+            self.log_signal.emit("WARNING", "没有找到任何可以处理的图像文件\n\n"
+                           "请检查：\n"
+                           "• 您选择的文件夹路径是否正确\n"
+                           "• 文件夹里是否有.jpg、.jpeg、.png、.webp等格式的图片")
             self.finished_conversion.emit()
+            return
+        
+        self.log_signal.emit("WARNING", f"开始处理 {total_files} 张图片")
+        self.progress_updated.emit(0)
+        
+        # 创建任务并处理
+        futures = self._create_processing_tasks(image_paths, error_count)
+        
+        # 执行任务并更新进度
+        if futures:
+            success_count, error_count = self._execute_futures(futures, success_count, error_count)
+        
+        # 完成处理，输出总结信息
+        self._log_completion_summary(success_count, error_count, total_files)
+        self.finished_conversion.emit()
+    
+    def _create_processing_tasks(self, image_paths, error_count):
+        """创建图像处理任务，避免嵌套try-except"""
+        futures = {}
+        with ThreadPoolExecutor(max_workers=min(4, os.cpu_count() or 1)) as executor:
+            for path in image_paths:
+                if self._stop_requested:
+                    break
+                
+                # 检查文件大小
+                file_size = self._check_file_size(path)
+                if file_size > 500 * 1024 * 1024:
+                    self.log_signal.emit("ERROR", f"文件 {os.path.basename(path)} 太大了(超过500MB)，暂不支持处理")
+                    error_count += 1
+                    continue
+                
+                # 提交任务
+                future = self._submit_task(executor, path)
+                if future:
+                    futures[future] = path
+            
+            return futures
+    
+    def _check_file_size(self, file_path):
+        """检查文件大小"""
+        try:
+            return os.path.getsize(file_path)
+        except Exception as e:
+            self.log_signal.emit("ERROR", f"获取文件大小失败 {os.path.basename(file_path)}: {str(e)}")
+            return 0
+    
+    def _submit_task(self, executor, file_path):
+        """提交任务到执行器"""
+        try:
+            return executor.submit(self.process_image, file_path)
+        except Exception as e:
+            self.log_signal.emit("ERROR", f"添加文件 {os.path.basename(file_path)} 到任务队列失败: {str(e)}")
+            return None
+    
+    def _execute_futures(self, futures, success_count, error_count):
+        """执行所有futures任务并处理结果"""
+        try:
+            for i, future in enumerate(as_completed(futures), 1):
+                if self._stop_requested:
+                    self._cancel_all_tasks(futures)
+                    break
+                
+                # 处理单个future结果
+                success, error = self._process_future_result(future, futures)
+                success_count += success
+                error_count += error
+                
+                # 更新进度
+                progress = int((i / len(futures)) * 100)
+                self.progress_updated.emit(progress)
+        except Exception as e:
+            self.log_signal.emit("ERROR", f"任务调度过程中发生错误: {str(e)}")
+            error_count += 1
+        
+        return success_count, error_count
+    
+    def _cancel_all_tasks(self, futures):
+        """取消所有任务"""
+        for f in futures:
+            f.cancel()
+        time.sleep(0.1)
+        self.log_signal.emit("DEBUG", "EXIF写入操作已成功中止")
+    
+    def _process_future_result(self, future, futures):
+        """处理单个future的结果"""
+        success = 0
+        error = 0
+        
+        try:
+            future.result(timeout=30)
+            success = 1
+        except TimeoutError:
+            file_path = futures[future]
+            self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时间太长，已超时")
+            error = 1
+        except Exception as e:
+            file_path = futures[future]
+            self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时出错: {str(e)}")
+            error = 1
+        
+        return success, error
+    
+    def _log_completion_summary(self, success_count, error_count, total_files):
+        """记录完成摘要"""
+        self.log_signal.emit("DEBUG", "=" * 40)
+        self.log_signal.emit("INFO", f"属性写入完成了，成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
+        self.log_signal.emit("DEBUG", "=" * 3 + "LeafView © 2025 Yangshengzhou.All Rights Reserved" + "=" * 3)
 
     def _collect_image_paths(self):
         image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv', '.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf')
         image_paths = []
         
         for folder_path, include_sub in self.folders_dict.items():
-            try:
-                if not os.path.exists(folder_path):
-                    logger.warning(f"文件夹不存在: {folder_path}")
-                    self.log_signal.emit("WARNING", f"文件夹不存在: {folder_path}")
-                    continue
-                    
-                if include_sub == 1:
-                    try:
-                        for root, _, files in os.walk(folder_path):
-                            try:
-                                image_paths.extend(
-                                    os.path.join(root, file)
-                                    for file in files
-                                    if file.lower().endswith(image_extensions)
-                                )
-                            except Exception as e:
-                                logger.error(f"遍历子文件夹 {root} 时出错: {str(e)}")
-                                self.log_signal.emit("ERROR", f"遍历子文件夹 {root} 时出错: {str(e)}")
-                    except Exception as e:
-                        logger.error(f"遍历文件夹 {folder_path} 时出错: {str(e)}")
-                        self.log_signal.emit("ERROR", f"遍历文件夹 {folder_path} 时出错: {str(e)}")
-                else:
-                    try:
-                        if os.path.isdir(folder_path):
-                            files = os.listdir(folder_path)
-                            image_paths.extend(
-                                os.path.join(folder_path, file)
-                                for file in files
-                                if file.lower().endswith(image_extensions)
-                            )
-                    except PermissionError as e:
-                        logger.error(f"没有权限访问文件夹 {folder_path}: {str(e)}")
-                        self.log_signal.emit("ERROR", f"没有权限访问文件夹 {folder_path}")
-                    except Exception as e:
-                        logger.error(f"列出文件夹 {folder_path} 内容时出错: {str(e)}")
-                        self.log_signal.emit("ERROR", f"列出文件夹 {folder_path} 内容时出错: {str(e)}")
-            except Exception as e:
-                logger.error(f"处理文件夹 {folder_path} 时发生未知错误: {str(e)}")
-                self.log_signal.emit("ERROR", f"处理文件夹 {folder_path} 时发生未知错误: {str(e)}")
+            # 处理每个文件夹
+            self._process_folder(folder_path, include_sub, image_extensions, image_paths)
                 
         logger.info(f"共收集到 {len(image_paths)} 个图像文件")
         return image_paths
+    
+    def _process_folder(self, folder_path, include_sub, image_extensions, image_paths):
+        """处理单个文件夹"""
+        # 检查文件夹是否存在
+        if not os.path.exists(folder_path):
+            logger.warning(f"文件夹不存在: {folder_path}")
+            self.log_signal.emit("WARNING", f"文件夹不存在: {folder_path}")
+            return
+        
+        # 根据是否包含子文件夹选择不同的处理方式
+        if include_sub == 1:
+            self._process_folder_with_subfolders(folder_path, image_extensions, image_paths)
+        else:
+            self._process_folder_without_subfolders(folder_path, image_extensions, image_paths)
+    
+    def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
+        """处理包含子文件夹的情况"""
+        try:
+            for root, _, files in os.walk(folder_path):
+                self._process_folder_content(root, files, image_extensions, image_paths)
+        except Exception as e:
+            logger.error(f"遍历文件夹 {folder_path} 时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"遍历文件夹 {folder_path} 时出错: {str(e)}")
+    
+    def _process_folder_without_subfolders(self, folder_path, image_extensions, image_paths):
+        """处理不包含子文件夹的情况"""
+        try:
+            if os.path.isdir(folder_path):
+                files = os.listdir(folder_path)
+                self._process_folder_content(folder_path, files, image_extensions, image_paths)
+        except PermissionError as e:
+            logger.error(f"没有权限访问文件夹 {folder_path}: {str(e)}")
+            self.log_signal.emit("ERROR", f"没有权限访问文件夹 {folder_path}")
+        except Exception as e:
+            logger.error(f"列出文件夹 {folder_path} 内容时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"列出文件夹 {folder_path} 内容时出错: {str(e)}")
+    
+    def _process_folder_content(self, root, files, image_extensions, image_paths):
+        """处理文件夹内容，添加符合条件的图像文件"""
+        try:
+            image_paths.extend(
+                os.path.join(root, file)
+                for file in files
+                if file.lower().endswith(image_extensions)
+            )
+        except Exception as e:
+            logger.error(f"处理文件夹 {root} 内容时出错: {str(e)}")
+            self.log_signal.emit("ERROR", f"处理文件夹 {root} 内容时出错: {str(e)}")
 
     def process_image(self, image_path):
         try:
@@ -229,95 +291,110 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(error)}")
 
     def _process_exif_format(self, image_path):
+        # 检查文件是否可写
+        if not os.access(image_path, os.W_OK):
+            logger.error(f"文件不可写: {image_path}")
+            self.log_signal.emit("ERROR", f"文件不可写: {os.path.basename(image_path)}")
+            return
+        
+        # 加载EXIF数据
+        exif_dict = self._load_exif_data(image_path)
+        if not exif_dict:
+            return
+        
+        # 处理EXIF数据
+        updated_fields = self._update_exif_fields(exif_dict, image_path)
+        if not updated_fields:
+            return
+        
+        # 写入EXIF数据
+        self._save_exif_data(image_path, exif_dict, updated_fields)
+    
+    def _load_exif_data(self, image_path):
+        """加载EXIF数据"""
         try:
-            # 检查文件是否可写
-            if not os.access(image_path, os.W_OK):
-                logger.error(f"文件不可写: {image_path}")
-                self.log_signal.emit("ERROR", f"文件不可写: {os.path.basename(image_path)}")
-                return
-                
-            try:
-                exif_dict = piexif.load(image_path)
-            except Exception as e:
-                logger.warning(f"加载EXIF数据失败 {image_path}: {str(e)}，将创建新的EXIF数据")
-                exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
-            
-            updated_fields = []
-            
-            try:
-                if self.title:
-                    exif_dict["0th"][piexif.ImageIFD.ImageDescription] = self.title.encode('utf-8')
-                    updated_fields.append(f"标题: {self.title}")
-                
-                if self.author:
-                    exif_dict["0th"][315] = self.author.encode('utf-8')
-                    updated_fields.append(f"作者: {self.author}")
-                
-                if self.subject:
-                    exif_dict["0th"][piexif.ImageIFD.XPSubject] = self.subject.encode('utf-16le')
-                    updated_fields.append(f"主题: {self.subject}")
-                
-                if self.rating:
-                    exif_dict["0th"][piexif.ImageIFD.Rating] = int(self.rating)
-                    updated_fields.append(f"评分: {self.rating}星")
-                
-                if self.copyright:
-                    exif_dict["0th"][piexif.ImageIFD.Copyright] = self.copyright.encode('utf-8')
-                    updated_fields.append(f"版权: {self.copyright}")
-                
-                if self.camera_brand:
-                    exif_dict["0th"][piexif.ImageIFD.Make] = self.camera_brand.encode('utf-8')
-                    updated_fields.append(f"相机品牌: {self.camera_brand}")
-
-                if self.camera_model:
-                    exif_dict["0th"][piexif.ImageIFD.Model] = self.camera_model.encode('utf-8')
-                    updated_fields.append(f"相机型号: {self.camera_model}")
-
-                if self.lens_brand:
-                    if "Exif" not in exif_dict:
-                        exif_dict["Exif"] = {}
-                    exif_dict["Exif"][piexif.ExifIFD.LensMake] = self.lens_brand.encode('utf-8')
-                    updated_fields.append(f"镜头品牌: {self.lens_brand}")
-
-                if self.lens_model:
-                    if "Exif" not in exif_dict:
-                        exif_dict["Exif"] = {}
-                    exif_dict["Exif"][piexif.ExifIFD.LensModel] = self.lens_model.encode('utf-8')
-                    updated_fields.append(f"镜头型号: {self.lens_model}")
-
-                if self.shoot_time != 0:
-                    self._handle_shoot_time(exif_dict, image_path, updated_fields)
-                
-                if self.lat is not None and self.lon is not None:
-                    exif_dict["GPS"] = self._create_gps_data(self.lat, self.lon)
-                    updated_fields.append(
-                        f"GPS坐标: {abs(self.lat):.6f}°{'N' if self.lat >= 0 else 'S'}, {abs(self.lon):.6f}°{'E' if self.lon >= 0 else 'W'}")
-                
-                # 检查是否有更新内容
-                if not updated_fields:
-                    logger.info(f"文件 {image_path} 没有需要更新的内容")
-                    self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改\n\n"
-                                     "可能的原因：\n"
-                                     "• 所有EXIF字段均为空")
-                    return
-                
-                # 尝试写入EXIF数据
-                try:
-                    exif_bytes = piexif.dump(exif_dict)
-                    piexif.insert(exif_bytes, image_path)
-                    logger.info(f"成功写入EXIF数据到 {image_path}")
-                    self.log_signal.emit("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
-                except Exception as e:
-                    logger.error(f"写入EXIF数据失败 {image_path}: {str(e)}")
-                    self.log_signal.emit("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
-                    
-            except Exception as e:
-                logger.error(f"处理EXIF数据时出错 {image_path}: {str(e)}")
-                self.log_signal.emit("ERROR", f"处理EXIF数据时出错 {os.path.basename(image_path)}: {str(e)}")
-                
+            return piexif.load(image_path)
         except Exception as e:
-            logger.error(f"处理EXIF格式文件时出错 {image_path}: {str(e)}")
-            self.log_signal.emit("ERROR", f"处理EXIF格式文件 {os.path.basename(image_path)} 时出错: {str(e)}")
+            logger.warning(f"加载EXIF数据失败 {image_path}: {str(e)}，将创建新的EXIF数据")
+            return {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
+    
+    def _update_exif_fields(self, exif_dict, image_path):
+        """更新EXIF字段"""
+        updated_fields = []
+        
+        try:
+            if self.title:
+                exif_dict["0th"][piexif.ImageIFD.ImageDescription] = self.title.encode('utf-8')
+                updated_fields.append(f"标题: {self.title}")
+            
+            if self.author:
+                exif_dict["0th"][315] = self.author.encode('utf-8')
+                updated_fields.append(f"作者: {self.author}")
+            
+            if self.subject:
+                exif_dict["0th"][piexif.ImageIFD.XPSubject] = self.subject.encode('utf-16le')
+                updated_fields.append(f"主题: {self.subject}")
+            
+            if self.rating:
+                exif_dict["0th"][piexif.ImageIFD.Rating] = int(self.rating)
+                updated_fields.append(f"评分: {self.rating}星")
+            
+            if self.copyright:
+                exif_dict["0th"][piexif.ImageIFD.Copyright] = self.copyright.encode('utf-8')
+                updated_fields.append(f"版权: {self.copyright}")
+            
+            if self.camera_brand:
+                exif_dict["0th"][piexif.ImageIFD.Make] = self.camera_brand.encode('utf-8')
+                updated_fields.append(f"相机品牌: {self.camera_brand}")
+
+            if self.camera_model:
+                exif_dict["0th"][piexif.ImageIFD.Model] = self.camera_model.encode('utf-8')
+                updated_fields.append(f"相机型号: {self.camera_model}")
+
+            if self.lens_brand:
+                if "Exif" not in exif_dict:
+                    exif_dict["Exif"] = {}
+                exif_dict["Exif"][piexif.ExifIFD.LensMake] = self.lens_brand.encode('utf-8')
+                updated_fields.append(f"镜头品牌: {self.lens_brand}")
+
+            if self.lens_model:
+                if "Exif" not in exif_dict:
+                    exif_dict["Exif"] = {}
+                exif_dict["Exif"][piexif.ExifIFD.LensModel] = self.lens_model.encode('utf-8')
+                updated_fields.append(f"镜头型号: {self.lens_model}")
+
+            if self.shoot_time != 0:
+                self._handle_shoot_time(exif_dict, image_path, updated_fields)
+            
+            if self.lat is not None and self.lon is not None:
+                exif_dict["GPS"] = self._create_gps_data(self.lat, self.lon)
+                updated_fields.append(
+                    f"GPS坐标: {abs(self.lat):.6f}°{'N' if self.lat >= 0 else 'S'}, {abs(self.lon):.6f}°{'E' if self.lon >= 0 else 'W'}")
+            
+            # 检查是否有更新内容
+            if not updated_fields:
+                logger.info(f"文件 {image_path} 没有需要更新的内容")
+                self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改\n\n"
+                                 "可能的原因：\n"
+                                 "• 所有EXIF字段均为空")
+                return []
+            
+            return updated_fields
+        except Exception as e:
+            logger.error(f"处理EXIF数据时出错 {image_path}: {str(e)}")
+            self.log_signal.emit("ERROR", f"处理EXIF数据时出错 {os.path.basename(image_path)}: {str(e)}")
+            return []
+    
+    def _save_exif_data(self, image_path, exif_dict, updated_fields):
+        """保存EXIF数据"""
+        try:
+            exif_bytes = piexif.dump(exif_dict)
+            piexif.insert(exif_bytes, image_path)
+            logger.info(f"成功写入EXIF数据到 {image_path}")
+            self.log_signal.emit("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+        except Exception as e:
+            logger.error(f"写入EXIF数据失败 {image_path}: {str(e)}")
+            self.log_signal.emit("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
 
     def _handle_shoot_time(self, exif_dict, image_path, updated_fields):
         """处理拍摄时间逻辑"""

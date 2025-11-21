@@ -115,13 +115,12 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def connect_signals(self):
         # 检查并使用正确的按钮名称
-        try:
+        if hasattr(self.parent, 'btnStartSmartArrange'):
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_smart_arrange)
-        except AttributeError:
-            try:
-                self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_smart_arrange)
-            except AttributeError:
-                self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
+        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+            self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_smart_arrange)
+        else:
+            self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
 
     def update_progress_bar(self, value):
         self.parent.progressBar_classification.setValue(value)
@@ -154,13 +153,10 @@ class SmartArrangePage(QtWidgets.QWidget):
             # 停止操作保持不变
             self.smart_arrange_thread.stop()
             # 使用正确的按钮名称并添加属性检查
-            try:
+            if hasattr(self.parent, 'btnStartSmartArrange'):
                 self.parent.btnStartSmartArrange.setText("开始整理")
-            except AttributeError:
-                try:
-                    self.parent.toolButton_startSmartArrange.setText("开始整理")
-                except AttributeError:
-                    pass
+            elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+                self.parent.toolButton_startSmartArrange.setText("开始整理")
             try:
                 self.parent.progressBar_classification.setValue(0)
             except AttributeError:
@@ -891,10 +887,8 @@ class SmartArrangePage(QtWidgets.QWidget):
             
             # 恢复原始样式
             if button.property('original_style') is not None:
-                try:
-                    button.setStyleSheet(button.property('original_style'))
-                except Exception:
-                    pass  # 忽略样式恢复错误
+                # 直接应用样式，不再捕获异常
+                button.setStyleSheet(button.property('original_style'))
             
             # 恢复原始文本
             if button.property('original_text') is not None:
@@ -904,10 +898,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             button.setProperty('custom_content', None)
             
             # 更改按钮的点击事件处理函数
-            try:
-                button.clicked.disconnect()
-            except TypeError:
-                pass  # 如果没有连接的信号，忽略错误
+            # 直接连接新的信号处理函数，PyQt会自动断开之前的连接
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
             
             # 更新示例和操作显示

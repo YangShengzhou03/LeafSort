@@ -1454,13 +1454,11 @@ class SmartArrangeThread(QtCore.QThread):
                 return
                 
             # 文件大小检查，避免处理过大的文件
-            try:
-                file_size = file_path.stat().st_size
-                if file_size > 500 * 1024 * 1024:  # 500MB限制
-                    self.log("WARNING", f"跳过过大的文件: {file_path.name} ({file_size / 1024 / 1024:.1f}MB)")
-                    return
-            except Exception:
-                pass
+            # 直接获取文件大小，不再使用try-except
+            file_size = file_path.stat().st_size
+            if file_size > 500 * 1024 * 1024:  # 500MB限制
+                self.log("WARNING", f"跳过过大的文件: {file_path.name} ({file_size / 1024 / 1024:.1f}MB)")
+                return
                 
             exif_data = self.get_exif_data(file_path)
             
@@ -1601,64 +1599,84 @@ class SmartArrangeThread(QtCore.QThread):
 
     def build_target_path(self, file_path, exif_data, file_time, base_folder):
         """构建目标路径并确保目录存在，增强了错误处理和权限检查"""
-        try:
-            if not self.classification_structure:
-                return file_path.parent
-            
-            # 确定基础目标路径
-            if base_folder:
-                target_path = self._safe_path_resolve(base_folder)
-            elif self.destination_root:
-                target_path = self._safe_path_resolve(self.destination_root)
-            else:
-                target_path = file_path.parent
-            
-            # 验证基础路径的有效性
-            if not self._validate_folder_path(target_path):
-                self.log("ERROR", f"无效的目标路径: {target_path}")
-                return file_path.parent
-            
-            # 构建分类路径
-            for level in self.classification_structure:
-                try:
-                    folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
-                    if folder_name:
-                        # 清理文件夹名称，移除或替换非法字符
-                        safe_folder_name = self._sanitize_folder_name(folder_name)
-                        if safe_folder_name:
-                            target_path = target_path / safe_folder_name
-                        else:
-                            self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
-                except Exception as e:
-                    self.log("WARNING", f"处理分类级别 '{level}' 时出错: {str(e)}，跳过该级别")
-            
-            # 添加文件类型文件夹
-            try:
-                file_type = get_file_type(file_path)
-                if file_type:
-                    safe_file_type = self._sanitize_folder_name(file_type)
-                    target_path = target_path / safe_file_type
-            except Exception as e:
-                self.log("WARNING", f"获取文件类型时出错: {str(e)}")
-            
-            # 检查路径长度限制（Windows默认260字符限制）
-            if self._check_path_length_limit(target_path):
-                self.log("WARNING", f"路径长度可能超过系统限制: {target_path}")
-                # 尝试简化路径
-                target_path = self._simplify_path_if_needed(target_path)
-            
-            # 尝试创建目录结构
-            try:
-                self._ensure_directory_exists(target_path)
-            except Exception as e:
-                self.log("ERROR", f"创建目标目录失败: {target_path}，错误: {str(e)}")
-                # 返回父目录作为备选
-                return file_path.parent
-            
-            return target_path
-        except Exception as e:
-            self.log("ERROR", f"构建目标路径时发生严重错误: {str(e)}")
+        if not self.classification_structure:
             return file_path.parent
+        
+        # 确定基础目标路径
+        if base_folder:
+            target_path = self._safe_path_resolve(base_folder)
+        elif self.destination_root:
+            target_path = self._safe_path_resolve(self.destination_root)
+        else:
+            target_path = file_path.parent
+        
+        # 验证基础路径的有效性
+        if not self._validate_folder_path(target_path):
+            self.log("ERROR", f"无效的目标路径: {target_path}")
+            return file_path.parent
+        
+        # 构建分类路径
+        target_path = self._build_classification_path(target_path, exif_data, file_time, file_path)
+        
+        # 添加文件类型文件夹
+        target_path = self._add_file_type_folder(target_path, file_path)
+        
+        # 检查路径长度限制（Windows默认260字符限制）
+        if self._check_path_length_limit(target_path):
+            self.log("WARNING", f"路径长度可能超过系统限制: {target_path}")
+            # 尝试简化路径
+            target_path = self._simplify_path_if_needed(target_path)
+        
+        # 尝试创建目录结构
+        success = self._create_directory_structure(target_path)
+        if not success:
+            return file_path.parent
+        
+        return target_path
+        
+    def _build_classification_path(self, target_path, exif_data, file_time, file_path):
+        """构建分类路径，处理每个分类级别"""
+        for level in self.classification_structure:
+            # 使用函数处理以避免嵌套异常
+            folder_name = self._get_safe_folder_name(level, exif_data, file_time, file_path)
+            if folder_name:
+                target_path = target_path / folder_name
+        return target_path
+    
+    def _get_safe_folder_name(self, level, exif_data, file_time, file_path):
+        """获取安全的文件夹名称"""
+        try:
+            folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
+            if folder_name:
+                # 清理文件夹名称，移除或替换非法字符
+                safe_folder_name = self._sanitize_folder_name(folder_name)
+                if safe_folder_name:
+                    return safe_folder_name
+                else:
+                    self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
+        except Exception as e:
+            self.log("WARNING", f"处理分类级别 '{level}' 时出错: {str(e)}，跳过该级别")
+        return None
+    
+    def _add_file_type_folder(self, target_path, file_path):
+        """添加文件类型文件夹"""
+        try:
+            file_type = get_file_type(file_path)
+            if file_type:
+                safe_file_type = self._sanitize_folder_name(file_type)
+                return target_path / safe_file_type
+        except Exception as e:
+            self.log("WARNING", f"获取文件类型时出错: {str(e)}")
+        return target_path
+    
+    def _create_directory_structure(self, target_path):
+        """创建目录结构并处理可能的错误"""
+        try:
+            self._ensure_directory_exists(target_path)
+            return True
+        except Exception as e:
+            self.log("ERROR", f"创建目标目录失败: {target_path}，错误: {str(e)}")
+            return False
     
     def _safe_path_resolve(self, path_str):
         """安全地解析路径，避免路径遍历攻击"""
