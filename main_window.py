@@ -62,7 +62,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 from text_recognition import TextRecognitionPage
                 text_recognition_available = True
             except ImportError:
-                print("[ERROR] 导入TextRecognition模块失败: No module named 'TextRecognition'")
+                print("[WARNING] text_recognition.py文件不存在，TextRecognition功能不可用")
                 text_recognition_available = False
             
             # 创建功能页面实例

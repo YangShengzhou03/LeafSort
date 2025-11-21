@@ -595,7 +595,7 @@ class FolderPage(QtWidgets.QWidget):
         }
     
     def _show_folder_info(self, folder_path, stats):
-        """显示文件夹信息"""
+        """显示文件夹信息到UI中的textBrowser_import_info控件"""
         folder_name = os.path.basename(folder_path) if os.path.basename(folder_path) else folder_path
         
         # 构建信息字符串
@@ -611,41 +611,17 @@ class FolderPage(QtWidgets.QWidget):
             for media_type, count in stats['media_types'].items():
                 info_text += f"  - {media_type}: {count}个\n"
         
-        # 创建临时信息对话框
-        msg_box = QtWidgets.QMessageBox(self)
-        msg_box.setWindowTitle("文件夹信息")
-        msg_box.setText("文件夹扫描完成")
-        msg_box.setInformativeText(f"发现 {stats['media_count']} 个媒体文件")
-        
-        # 添加查看详情按钮
-        details_btn = msg_box.addButton("查看详情", QtWidgets.QMessageBox.ButtonRole.ActionRole)
-        ok_btn = msg_box.addButton("确定", QtWidgets.QMessageBox.ButtonRole.AcceptRole)
-        
-        msg_box.setDefaultButton(ok_btn)
-        msg_box.exec()
-        
-        # 如果用户点击了查看详情
-        if msg_box.clickedButton() == details_btn:
-            details_dialog = QtWidgets.QDialog(self)
-            details_dialog.setWindowTitle("文件夹详细信息")
-            details_dialog.resize(500, 350)
-            
-            # 创建文本显示区域
-            text_browser = QtWidgets.QTextEdit()
-            text_browser.setReadOnly(True)
-            text_browser.setPlainText(info_text)
-            
-            # 创建关闭按钮
-            close_btn = QtWidgets.QPushButton("关闭")
-            close_btn.clicked.connect(details_dialog.close)
-            
-            # 设置布局
-            layout = QtWidgets.QVBoxLayout()
-            layout.addWidget(text_browser)
-            layout.addWidget(close_btn, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
-            
-            details_dialog.setLayout(layout)
-            details_dialog.exec()
+        # 尝试使用UI中的textBrowser_import_info控件显示信息
+        if hasattr(self.parent, 'textBrowser_import_info'):
+            self.parent.textBrowser_import_info.setPlainText(info_text)
+        else:
+            # 如果控件不存在，使用临时对话框显示信息（兼容性处理）
+            msg_box = QtWidgets.QMessageBox(self)
+            msg_box.setWindowTitle("文件夹信息")
+            msg_box.setText("文件夹扫描完成")
+            msg_box.setDetailedText(info_text)
+            msg_box.setInformativeText(f"发现 {stats['media_count']} 个媒体文件")
+            msg_box.exec()
 
     def get_all_folders(self):
         return self.folder_items
