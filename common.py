@@ -8,24 +8,6 @@ from PyQt6.QtWidgets import QDialog, QWidget, QVBoxLayout, QLabel, QPushButton
 from filetype import guess
 
 
-def load_stylesheet(filename):
-    """
-    加载指定的样式表文件
-    
-    Args:
-        filename: 样式表文件名
-        
-    Returns:
-        str: 样式表内容，如果文件不存在则返回错误信息
-    """
-    # 使用get_resource_path统一管理资源路径
-    file_path = get_resource_path(f"stylesheet/{filename}")
-    
-    try:
-        with open(file_path, 'r', encoding='utf-8') as file:
-            return file.read()
-    except FileNotFoundError:
-        return f"找不到 {filename} 这个文件。"
 
 
 def get_resource_path(relative_path):

@@ -190,27 +190,24 @@ class WriteExifThread(QThread):
             file_ext = os.path.splitext(image_path)[1].lower()
             logger.debug(f"处理文件: {image_path}, 扩展名: {file_ext}")
             
-            try:
-                if file_ext in ('.jpg', '.jpeg', '.webp'):
-                    self._process_exif_format(image_path)
-                elif file_ext == '.png':
-                    self._process_png_format(image_path)
-                elif file_ext in ('.heic', '.heif'):
-                    self._process_heic_format(image_path)
-                elif file_ext in ('.mov', '.mp4', '.avi', '.mkv'):
-                    self._process_video_format(image_path)
-                elif file_ext in ('.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf'):
-                    self._process_raw_format(image_path)
-                else:
-                    logger.warning(f"不支持的文件格式: {file_ext}")
-                    self.log_signal.emit("WARNING", f"不支持的文件格式: {file_ext}")
-            except Exception as e:
-                logger.error(f"处理文件 {image_path} 时出错: {str(e)}")
-                self._handle_processing_error(image_path, e)
+            # 根据文件扩展名处理不同格式
+            if file_ext in ('.jpg', '.jpeg', '.webp'):
+                self._process_exif_format(image_path)
+            elif file_ext == '.png':
+                self._process_png_format(image_path)
+            elif file_ext in ('.heic', '.heif'):
+                self._process_heic_format(image_path)
+            elif file_ext in ('.mov', '.mp4', '.avi', '.mkv'):
+                self._process_video_format(image_path)
+            elif file_ext in ('.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf'):
+                self._process_raw_format(image_path)
+            else:
+                logger.warning(f"不支持的文件格式: {file_ext}")
+                self.log_signal.emit("WARNING", f"不支持的文件格式: {file_ext}")
 
         except Exception as e:
-            logger.error(f"处理文件 {image_path} 时发生未知错误: {str(e)}")
-            self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 时发生未知错误: {str(e)}")
+            logger.error(f"处理文件 {image_path} 时出错: {str(e)}")
+            self._handle_processing_error(image_path, e)
 
     def _handle_processing_error(self, image_path, error):
         """处理文件处理过程中的错误"""
@@ -830,7 +827,6 @@ class WriteExifThread(QThread):
 
     def decimal_to_dms(self, decimal):
         try:
-            is_negative = decimal < 0
             decimal = abs(decimal)
             
             degrees = int(decimal)
@@ -845,37 +841,10 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", f"坐标转换错误: {str(e)}")
             return str(decimal)
 
-    def convert_dms_to_decimal(self, dms_str):
-        try:
-            import re
-            
-            pattern = r'(\d+) deg (\d+)\'( (\d+(?:\.\d+)?)\")? ([NSWE])'
-            match = re.search(pattern, dms_str)
-            
-            if match:
-                degrees = float(match.group(1))
-                minutes = float(match.group(2))
-                seconds = float(match.group(4)) if match.group(4) else 0.0
-                direction = match.group(5)
-                
-                decimal = degrees + minutes/60 + seconds/3600
-                
-                if direction in ['S', 'W']:
-                    decimal = -decimal
-                    
-                return decimal
-            else:
-                try:
-                    return float(dms_str)
-                except ValueError:
-                    return None
-                    
-        except Exception as e:
-            self.log_signal.emit("ERROR", f"GPS坐标转换错误: {str(e)}")
-            return None
+
 
     def _create_gps_data(self, lat, lon):
-        def decimal_to_dms(decimal):
+        def _decimal_to_piexif_dms(decimal):
             degrees = int(abs(decimal))
             minutes_decimal = (abs(decimal) - degrees) * 60
             minutes = int(minutes_decimal)
@@ -884,10 +853,10 @@ class WriteExifThread(QThread):
         
         gps_dict = {}
         
-        gps_dict[piexif.GPSIFD.GPSLatitude] = decimal_to_dms(abs(lat))
+        gps_dict[piexif.GPSIFD.GPSLatitude] = _decimal_to_piexif_dms(abs(lat))
         gps_dict[piexif.GPSIFD.GPSLatitudeRef] = b'N' if lat >= 0 else b'S'
         
-        gps_dict[piexif.GPSIFD.GPSLongitude] = decimal_to_dms(abs(lon))
+        gps_dict[piexif.GPSIFD.GPSLongitude] = _decimal_to_piexif_dms(abs(lon))
         gps_dict[piexif.GPSIFD.GPSLongitudeRef] = b'E' if lon >= 0 else b'W'
         
         current_time = datetime.now()

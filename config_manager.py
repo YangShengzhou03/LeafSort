@@ -2,7 +2,7 @@ import os
 import json
 import threading
 from pathlib import Path
-from typing import Dict, List, Any, Optional, Union
+from typing import Dict, List, Any, Optional
 import logging
 from datetime import datetime
 from common import get_resource_path
@@ -283,16 +283,7 @@ class ConfigManager:
                 logger.warning(f"设置验证失败: {key} = {value}")
                 return False
             
-            old_value = self.config["settings"].get(key)
             self.config["settings"][key] = value
-            
-            # 记录设置变更
-            if old_value != value:
-                logger.info(f"设置已更新: {key} = {value} (原值: {old_value})")
-                
-                # 如果是重要设置变更，触发特定处理
-                self._handle_setting_change(key, old_value, value)
-            
             return self.save_config()
     
     def update_settings(self, settings_dict: Dict[str, Any]) -> bool:
@@ -301,8 +292,7 @@ class ConfigManager:
             changes_made = False
             for key, value in settings_dict.items():
                 if self._validate_setting(key, value):
-                    old_value = self.config["settings"].get(key)
-                    if old_value != value:
+                    if self.config["settings"].get(key) != value:
                         self.config["settings"][key] = value
                         logger.info(f"批量设置更新: {key} = {value}")
                         changes_made = True
@@ -378,17 +368,7 @@ class ConfigManager:
         logger.debug(f"未知设置键: {key}")
         return True
     
-    def _handle_setting_change(self, key: str, old_value: Any, new_value: Any) -> None:
-        """处理设置变更后的特殊逻辑"""
-        if key == "map_provider" and new_value != old_value:
-            logger.info(f"地图提供商已更改: {old_value} -> {new_value}")
-        elif key == "max_cache_size" and isinstance(new_value, int):
-            # 调整缓存大小
-            self._max_cache_size = new_value
-            logger.info(f"缓存大小已设置为: {new_value}")
-        elif key == "use_gps_cache":
-            self._cache_enabled = bool(new_value)
-            logger.info(f"GPS缓存已{'启用' if new_value else '禁用'}")
+
     
     def _get_default_config(self) -> Dict[str, Any]:
         """获取默认配置，用于初始化或重置"""
