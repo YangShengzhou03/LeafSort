@@ -19,6 +19,10 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.last_selected_button_index = -1
         self.destination_root = None
         
+        # 初始化布局变量
+        self.available_layout = None
+        self.selected_layout = None
+        
         # 使用正确的UI组件名称并添加属性检查
         self.tag_buttons = {}
         
@@ -52,6 +56,9 @@ class SmartArrangePage(QtWidgets.QWidget):
             "~": "~"
         }
         
+        # 初始化布局引用
+        self._initialize_layouts()
+        
         # 添加布局属性检查
         self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
         self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
@@ -71,6 +78,9 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.log("INFO", "成功获取文件夹页面引用")
         else:
             self.log("WARNING", "无法获取文件夹页面引用")
+        
+        # 确保布局已初始化
+        self._initialize_layouts()
         
         self.connect_signals()
         
@@ -847,6 +857,42 @@ class SmartArrangePage(QtWidgets.QWidget):
         except Exception as e:
             self.log("ERROR", f"将标签移回时出错: {str(e)}")
                 
+    def _initialize_layouts(self):
+        """初始化布局组件引用"""
+        # 首先检查是否能直接获取布局
+        self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
+        self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
+        
+        # 如果直接获取失败，尝试通过父框架获取
+        if not self.available_layout and hasattr(self.parent, 'frameRenameTags'):
+            frame = getattr(self.parent, 'frameRenameTags')
+            # 在frame中查找layout属性
+            for attr_name in dir(frame):
+                if attr_name.startswith('_'):
+                    continue
+                attr_value = getattr(frame, attr_name)
+                if str(type(attr_value)).find('QHBoxLayout') >= 0:
+                    self.available_layout = attr_value
+                    self.log("INFO", f"通过frameRenameTags获取布局组件: {attr_name}")
+                    break
+        
+        if not self.selected_layout and hasattr(self.parent, 'frameRename'):
+            frame = getattr(self.parent, 'frameRename')
+            # 在frame中查找layout属性
+            for attr_name in dir(frame):
+                if attr_name.startswith('_'):
+                    continue
+                attr_value = getattr(frame, attr_name)
+                if str(type(attr_value)).find('QHBoxLayout') >= 0:
+                    self.selected_layout = attr_value
+                    self.log("INFO", f"通过frameRename获取布局组件: {attr_name}")
+                    break
+        
+        if self.available_layout and self.selected_layout:
+            self.log("INFO", "已成功获取布局组件引用")
+        else:
+            self.log("WARNING", f"无法获取所有布局组件: available={bool(self.available_layout)}, selected={bool(self.selected_layout)}")
+    
     def refresh(self):
         """刷新智能整理页面"""
         try:
@@ -860,40 +906,8 @@ class SmartArrangePage(QtWidgets.QWidget):
                 self.folder_page = self.parent.folder_page
                 self.log("INFO", "已重新获取文件夹页面引用")
                 
-            # 重新获取布局引用
-            # 首先检查是否能直接获取布局
-            self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
-            self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
-            
-            # 如果直接获取失败，尝试通过父框架获取
-            if not self.available_layout and hasattr(self.parent, 'frameRenameTags'):
-                frame = getattr(self.parent, 'frameRenameTags')
-                # 在frame中查找layout属性
-                for attr_name in dir(frame):
-                    if attr_name.startswith('_'):
-                        continue
-                    attr_value = getattr(frame, attr_name)
-                    if str(type(attr_value)).find('QHBoxLayout') >= 0:
-                        self.available_layout = attr_value
-                        self.log("INFO", f"通过frameRenameTags获取布局组件: {attr_name}")
-                        break
-            
-            if not self.selected_layout and hasattr(self.parent, 'frameRename'):
-                frame = getattr(self.parent, 'frameRename')
-                # 在frame中查找layout属性
-                for attr_name in dir(frame):
-                    if attr_name.startswith('_'):
-                        continue
-                    attr_value = getattr(frame, attr_name)
-                    if str(type(attr_value)).find('QHBoxLayout') >= 0:
-                        self.selected_layout = attr_value
-                        self.log("INFO", f"通过frameRename获取布局组件: {attr_name}")
-                        break
-            
-            if self.available_layout and self.selected_layout:
-                self.log("INFO", "已成功获取布局组件引用")
-            else:
-                self.log("WARNING", f"无法获取所有布局组件: available={bool(self.available_layout)}, selected={bool(self.selected_layout)}")
+            # 重新初始化布局引用
+            self._initialize_layouts()
                 
             # 重新获取标签按钮引用
             button_mapping = {
