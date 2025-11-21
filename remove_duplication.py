@@ -113,7 +113,7 @@ class Contrast(QtWidgets.QWidget):
 
     def connect_signals(self):
         self.parent.horizontalSlider_levelContrast.valueChanged.connect(self.on_slider_value_changed)
-        self.parent.startContrastToolButton.clicked.connect(self.startContrast)
+        self.parent.startContrastToolButton.clicked.connect(self.start_contrast)
         self.parent.moveToolButton.clicked.connect(self.move_selected_images)
         self.parent.autoSelectToolButton.clicked.connect(self.auto_select_images)
         self.parent.deleteToolButton.clicked.connect(self.delete_selected_images)
@@ -192,7 +192,7 @@ class Contrast(QtWidgets.QWidget):
                 widget.style().unpolish(widget)
                 widget.style().polish(widget)
 
-    def startContrast(self):
+    def start_contrast(self):
         folders = self.folder_page.get_all_folders() if self.folder_page else []
         if not folders:
             QtWidgets.QMessageBox.warning(self, "操作提示",
@@ -268,7 +268,7 @@ class Contrast(QtWidgets.QWidget):
             self.parent.startContrastToolButton.setEnabled(True)
             self.parent.startContrastToolButton.setText("开始对比")
             self.parent.startContrastToolButton.clicked.disconnect()
-            self.parent.startContrastToolButton.clicked.connect(self.startContrast)
+            self.parent.startContrastToolButton.clicked.connect(self.start_contrast)
             return
 
         self.image_hashes = hashes
@@ -301,7 +301,7 @@ class Contrast(QtWidgets.QWidget):
         self.parent.startContrastToolButton.setEnabled(True)
         self.parent.startContrastToolButton.setText("开始对比")
         self.parent.startContrastToolButton.clicked.disconnect()
-        self.parent.startContrastToolButton.clicked.connect(self.startContrast)
+        self.parent.startContrastToolButton.clicked.connect(self.start_contrast)
 
     def stop_processing(self):
         if hasattr(self, 'hash_worker') and self.hash_worker.isRunning():
@@ -320,7 +320,7 @@ class Contrast(QtWidgets.QWidget):
         self.parent.startContrastToolButton.setEnabled(True)
         self.parent.startContrastToolButton.setText("开始对比")
         self.parent.startContrastToolButton.clicked.disconnect()
-        self.parent.startContrastToolButton.clicked.connect(self.startContrast)
+        self.parent.startContrastToolButton.clicked.connect(self.start_contrast)
 
         QtWidgets.QMessageBox.information(self, "处理已停止",
                                           "图片处理任务已被用户中断\n\n"
@@ -366,7 +366,7 @@ class Contrast(QtWidgets.QWidget):
         self.parent.startContrastToolButton.setEnabled(True)
         self.parent.startContrastToolButton.setText("开始对比")
         self.parent.startContrastToolButton.clicked.disconnect()
-        self.parent.startContrastToolButton.clicked.connect(self.startContrast)
+        self.parent.startContrastToolButton.clicked.connect(self.start_contrast)
 
     def create_thumbnail(self, path, total_images):
         label = QtWidgets.QLabel()

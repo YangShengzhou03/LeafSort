@@ -4,7 +4,7 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import QUrl
 from PyQt6.QtGui import QDesktopServices
 
-from ui_main_window import Ui_MainWindow
+from Ui_MainWindow import Ui_MainWindow
 from update_dialog import check_update
 from common import get_resource_path, author
 
@@ -160,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.btnMinimize.clicked.connect(self.showMinimized)
             
             if hasattr(self, 'btnGithub'):
-                self.btnGithub.clicked.connect(self.feedback)
+                self.btnGithub.clicked.connect(self._feedback)
             if hasattr(self, 'btnSettings'):
                 self.btnSettings.clicked.connect(author)
                 
@@ -532,7 +532,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print(f"[{level.upper()}] {title}: {message}")
             print(f"Failed to show notification: {str(e)}")
 
-    def feedback(self):
+    def _feedback(self):
         QDesktopServices.openUrl(QUrl('https://qun.qq.com/universal-share/share?ac=1&authKey=wjyQkU9iG7wc'
                                       '%2BsIEOWFE6cA0ayLLBdYwpMsKYveyufXSOE5FBe7bb9xxvuNYVsEn&busi_data'
                                       '=eyJncm91cENvZGUiOiIxMDIxNDcxODEzIiwidG9rZW4iOiJDaFYxYVpySU9FUVJr'

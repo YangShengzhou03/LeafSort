@@ -56,8 +56,8 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.available_layout = getattr(self.parent, 'layout_rename_tags', None)
         self.selected_layout = getattr(self.parent, 'layout_rename_selected', None)
         
-        self.SmartArrange_thread = None
-        self.SmartArrange_settings = []
+        self.smart_arrange_thread = None
+        self.smart_arrange_settings = []
         
         self.init_page()
         self.set_combo_box_states()
@@ -94,9 +94,9 @@ class SmartArrangePage(QtWidgets.QWidget):
     def connect_signals(self):
         # 检查并使用正确的按钮名称
         if hasattr(self.parent, 'btnStartSmartArrange'):
-            self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
+            self.parent.btnStartSmartArrange.clicked.connect(self.toggle_smart_arrange)
         elif hasattr(self.parent, 'toolButton_startSmartArrange'):
-            self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_SmartArrange)
+            self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_smart_arrange)
         else:
             self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
 
@@ -125,10 +125,10 @@ class SmartArrangePage(QtWidgets.QWidget):
         
         self.update_operation_display()
 
-    def toggle_SmartArrange(self):
+    def toggle_smart_arrange(self):
         """智能整理开关，简化用户交互流程"""
-        if self.SmartArrange_thread and self.SmartArrange_thread.isRunning():
-            self.SmartArrange_thread.stop()
+        if self.smart_arrange_thread and self.smart_arrange_thread.isRunning():
+            self.smart_arrange_thread.stop()
             # 使用正确的按钮名称并添加属性检查
             if hasattr(self.parent, 'btnStartSmartArrange'):
                 self.parent.btnStartSmartArrange.setText("开始整理")
@@ -278,7 +278,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         
         self.log("INFO", f"摘要: {operation_summary}")
         
-        self.SmartArrange_thread = SmartArrangeThread(
+        self.smart_arrange_thread = SmartArrangeThread(
             parent=self,
             folders=folders,
             classification_structure=classification_structure or None,
@@ -287,9 +287,9 @@ class SmartArrangePage(QtWidgets.QWidget):
             separator=separator,
             time_derive=self.parent.comboBox_timeSource.currentText()
         )
-        self.SmartArrange_thread.finished.connect(self.on_thread_finished)
-        self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
-        self.SmartArrange_thread.start()
+        self.smart_arrange_thread.finished.connect(self.on_thread_finished)
+        self.smart_arrange_thread.progress_signal.connect(self.update_progress_bar)
+        self.smart_arrange_thread.start()
         # 使用正确的按钮名称并添加属性检查
         if hasattr(self.parent, 'btnStartSmartArrange'):
             self.parent.btnStartSmartArrange.setText("停止整理")
@@ -304,11 +304,11 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.parent.btnStartSmartArrange.setText("开始整理")
         elif hasattr(self.parent, 'toolButton_startSmartArrange'):
             self.parent.toolButton_startSmartArrange.setText("开始整理")
-        self.SmartArrange_thread = None
+        self.smart_arrange_thread = None
         self.update_progress_bar(100)
         
-        if hasattr(self, 'SmartArrange_thread') and hasattr(self.SmartArrange_thread, 'error'):
-            error_msg = str(self.SmartArrange_thread.error)
+        if hasattr(self, 'smart_arrange_thread') and hasattr(self.smart_arrange_thread, 'error'):
+            error_msg = str(self.smart_arrange_thread.error)
             self.log("ERROR", f"整理过程中发生错误: {error_msg}")
             QMessageBox.critical(self, "整理失败", f"操作失败: {error_msg}")
             self._show_operation_status("整理失败", 3000)
