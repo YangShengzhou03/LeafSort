@@ -398,7 +398,13 @@ class ConfigManager:
                 "map_provider": "gaode",
                 "show_thumbnails": True,
                 "enable_exif_edit": True,
-                "remember_window_size": True
+                "remember_window_size": True,
+                "max_threads": 4,
+                "memory_limit_mb": 2048,
+                "amap_api_key": '0db079da53e08cbb62b52a42f657b994',
+                "last_opened_folder": '',
+                "window_position": {'x': 100, 'y': 100},
+                "window_size": {'width': 942, 'height': 580}
             },
             "api_limits": {
                 "gaode": {
@@ -413,9 +419,43 @@ class ConfigManager:
                 "cache_expiry_days": 30
             }
         }
-    
 
-    
+    def get_settings(self):
+        """获取当前设置"""
+        # 确保返回所有必要的默认值
+        default_settings = {
+            'max_threads': 4,
+            'memory_limit_mb': 2048,
+            'amap_api_key': '0db079da53e08cbb62b52a42f657b994',
+            'last_opened_folder': '',
+            'window_position': {'x': 100, 'y': 100},
+            'window_size': {'width': 942, 'height': 580}
+        }
+        
+        # 合并默认设置和当前设置
+        result = default_settings.copy()
+        result.update(self.config["settings"])
+        return result
+        
+    def clear_cache(self):
+        """清除缓存数据"""
+        try:
+            # 清除位置缓存
+            if hasattr(self, 'location_cache'):
+                self.location_cache.clear()
+                self._save_config()
+                
+            # 清除临时文件（如果有）
+            cache_dir = os.path.join(self.config_file.parent, 'cache')
+            if os.path.exists(cache_dir):
+                import shutil
+                shutil.rmtree(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
+                
+            return True
+        except Exception as e:
+            logger.error(f"清除缓存失败: {str(e)}")
+            return False
 
 
 

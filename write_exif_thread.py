@@ -822,7 +822,11 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
 
     def stop(self):
+        """停止处理线程"""
         self._stop_requested = True
+        # 确保线程能够尽快退出
+        if self.isRunning():
+            self.wait(1000)  # 等待最多1秒让线程完成
 
     def decimal_to_dms(self, decimal):
         try:

@@ -84,13 +84,6 @@ class WriteExifPage(QWidget):
                 return brand_data[model]
         return None
 
-    def get_default_model_for_brand(self, brand):
-        if brand in self.camera_data:
-            models = self.camera_data[brand]
-            if models:
-                return models[0]
-        return None
-
     def _on_model_changed(self, index):
         if index > 0:
             brand = self.parent.brandComboBox.currentText()
@@ -145,8 +138,6 @@ class WriteExifPage(QWidget):
         self.parent.lineEdit_EXIF_longitude.textChanged.connect(self.save_exif_settings)
         self.parent.brandComboBox.currentIndexChanged.connect(self.save_exif_settings)
         self.parent.modelComboBox.currentIndexChanged.connect(self.save_exif_settings)
-        self.parent.shootTimeComboBox.currentIndexChanged.connect(self.save_exif_settings)
-        self.parent.locationComboBox.currentIndexChanged.connect(self.save_exif_settings)
         for i in range(1, 6):
             getattr(self.parent, f'pushButton_star_{i}').clicked.connect(self.save_exif_settings)
 
@@ -185,7 +176,7 @@ class WriteExifPage(QWidget):
     def connect_worker_signals(self):
         if self.worker:
             self.worker.progress_updated.connect(self.update_progress)
-            self.worker.log.connect(self.log)
+            self.worker.log_signal.connect(self.log)
             self.worker.finished_conversion.connect(self.on_finished)
 
     @pyqtSlot(int)
@@ -294,7 +285,7 @@ class WriteExifPage(QWidget):
         location_info = self.get_location_by_ip()
         if location_info is not None:
             lat, lon = location_info
-            self.parent.positionLineEdit.setText(f"{lat}, {lon}")
+            self.parent.lineEdit_EXIF_Position.setText(f"{lat}, {lon}")
             self.log("WARNING", f"当前纬度={lat}, 经度={lon}，位置已加载，可直接开始。")
         else:
             self.log("ERROR", "获取位置信息失败\n\n"
