@@ -14,7 +14,7 @@ from write_exif_thread import WriteExifThread
 
 from Ui_MainWindow import Ui_MainWindow
 from update_dialog import check_update
-from common import get_resource_path, author
+from common import get_resource_path
 
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
