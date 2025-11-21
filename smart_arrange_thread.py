@@ -824,7 +824,7 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             # 使用exiftool读取EXIF信息
             cmd = [exiftool_path, file_path]
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=15)  # 减少超时时间
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=15)
             
             if result.returncode != 0:
                 error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
@@ -1156,7 +1156,7 @@ class SmartArrangeThread(QtCore.QThread):
             'Model': model or None
         })
 
-    def _get_video_metadata(self, file_path, timeout=15):  # 减少超时时间
+    def _get_video_metadata(self, file_path, timeout=15):
         try:
             # 文件大小检查
             try:

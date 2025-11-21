@@ -261,31 +261,9 @@ class ConfigManager:
             
             return None
     
-    def clear_location_cache(self) -> bool:
-        with self._lock:
-            cache_size = len(self.location_cache)
-            self.location_cache = {}
-            logger.info(f"已清空位置缓存，共删除 {cache_size} 条记录")
-            return self.save_location_cache()
+
     
-    def get_cache_stats(self) -> Dict[str, Any]:
-        """获取缓存统计信息"""
-        with self._lock:
-            if not self.location_cache:
-                return {"count": 0, "oldest": None, "newest": None}
-            
-            timestamps = [entry.get("timestamp", 0) for entry in self.location_cache.values()]
-            oldest = min(timestamps)
-            newest = max(timestamps)
-            max_size = self.config.get("cache_settings", {}).get("max_location_cache_size", 50000)
-            
-            return {
-                "count": len(self.location_cache),
-                "oldest": datetime.fromtimestamp(oldest).isoformat() if oldest > 0 else None,
-                "newest": datetime.fromtimestamp(newest).isoformat() if newest > 0 else None,
-                "capacity": max_size,
-                "usage_percent": round((len(self.location_cache) / max_size) * 100, 2)
-            }
+
     
     def clear_folders(self) -> bool:
         with self._lock:
@@ -294,8 +272,7 @@ class ConfigManager:
             logger.info(f"已清空所有文件夹配置，共删除 {folder_count} 个文件夹")
             return self.save_config()
     
-    def clear_locations(self) -> bool:
-        return self.clear_location_cache()
+
     
     def update_setting(self, key: str, value: Any) -> bool:
         with self._lock:
@@ -437,184 +414,9 @@ class ConfigManager:
             }
         }
     
-    def export_config(self, export_file: str = None) -> str:
-        """导出配置到文件"""
-        with self._lock:
-            if not export_file:
-                # 生成默认导出文件名
-                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-                export_file = os.path.join(os.path.expanduser("~"), f"leafview_config_export_{timestamp}.json")
-            
-            try:
-                # 创建导出数据，不包含敏感信息
-                export_data = {
-                    "version": self.config.get("version"),
-                    "export_time": datetime.now().isoformat(),
-                    "folders": self.config["folders"],
-                    "settings": self.config["settings"],
-                    # 不导出缓存和API密钥等敏感信息
-                }
-                
-                with open(export_file, 'w', encoding='utf-8') as f:
-                    json.dump(export_data, f, ensure_ascii=False, indent=2)
-                
-                logger.info(f"配置已导出到: {export_file}")
-                return export_file
-            except Exception as e:
-                logger.error(f"导出配置失败: {str(e)}")
-                return None
+
     
-    def import_config(self, import_file: str) -> bool:
-        """从文件导入配置"""
-        with self._lock:
-            try:
-                if not os.path.exists(import_file):
-                    logger.error(f"导入文件不存在: {import_file}")
-                    return False
-                
-                with open(import_file, 'r', encoding='utf-8') as f:
-                    import_data = json.load(f)
-                
-                # 验证导入数据
-                if "folders" in import_data:
-                    self.config["folders"] = import_data["folders"]
-                if "settings" in import_data:
-                    # 只导入有效的设置项
-                    for key, value in import_data["settings"].items():
-                        if self._validate_setting(key, value):
-                            self.config["settings"][key] = value
-                
-                logger.info(f"配置已从 {import_file} 导入")
-                return self.save_config()
-            except Exception as e:
-                logger.error(f"导入配置失败: {str(e)}")
-                return False
-    
-    def can_call_api(self, api_name: str = "gaode") -> bool:
-        """检查是否可以调用指定API（通用方法）"""
-        with self._lock:
-            # 确保API配置存在
-            if api_name not in self.config["api_limits"]:
-                logger.warning(f"API配置不存在: {api_name}")
-                # 创建默认配置
-                self._ensure_api_config_exists(api_name)
-            
-            api_config = self.config["api_limits"][api_name]
-            current_date = datetime.now().strftime("%Y-%m-%d")
-            
-            # 检查是否需要重置计数器
-            if api_config["last_reset_date"] != current_date:
-                # 重置计数器
-                api_config["daily_calls"] = 0
-                api_config["last_reset_date"] = current_date
-                self.save_config()
-            
-            # 检查是否超过限制
-            if api_config["daily_calls"] >= api_config["max_daily_calls"]:
-                logger.warning(f"{api_name} API每日调用次数已达上限: {api_config['daily_calls']}/{api_config['max_daily_calls']}")
-                return False
-            
-            return True
-    
-    def record_api_call(self, api_name: str = "gaode") -> bool:
-        """记录一次API调用（通用方法）"""
-        with self._lock:
-            # 确保API配置存在
-            if api_name not in self.config["api_limits"]:
-                self._ensure_api_config_exists(api_name)
-            
-            api_config = self.config["api_limits"][api_name]
-            current_date = datetime.now().strftime("%Y-%m-%d")
-            
-            # 检查是否需要重置计数器
-            if api_config["last_reset_date"] != current_date:
-                api_config["daily_calls"] = 0
-                api_config["last_reset_date"] = current_date
-            
-            # 检查是否超过限制
-            if api_config["daily_calls"] >= api_config["max_daily_calls"]:
-                logger.error(f"尝试超出{api_name} API调用限制")
-                return False
-            
-            # 增加调用计数
-            api_config["daily_calls"] += 1
-            api_config["last_call_time"] = datetime.now().isoformat()
-            
-            # 记录调用历史（最近100次）
-            if "call_history" not in api_config:
-                api_config["call_history"] = []
-            api_config["call_history"].append({
-                "timestamp": datetime.now().timestamp(),
-                "datetime": datetime.now().isoformat()
-            })
-            # 只保留最近100条记录
-            if len(api_config["call_history"]) > 100:
-                api_config["call_history"] = api_config["call_history"][-100:]
-            
-            return self.save_config()
-    
-    def get_api_stats(self, api_name: str = "gaode") -> Dict[str, Any]:
-        """获取API调用统计信息（通用方法）"""
-        with self._lock:
-            if api_name not in self.config["api_limits"]:
-                logger.warning(f"API配置不存在: {api_name}")
-                return {"error": "API配置不存在"}
-            
-            # 返回副本，不包含敏感信息
-            stats = self.config["api_limits"][api_name].copy()
-            # 移除详细的调用历史，只保留基本统计
-            if "call_history" in stats:
-                stats["call_history_count"] = len(stats["call_history"])
-                del stats["call_history"]
-            
-            return stats
-    
-    def reset_api_limits(self, api_name: str = None) -> bool:
-        """重置指定API或所有API的调用限制"""
-        with self._lock:
-            if api_name:
-                # 重置特定API
-                if api_name in self.config["api_limits"]:
-                    self.config["api_limits"][api_name]["daily_calls"] = 0
-                    self.config["api_limits"][api_name]["last_reset_date"] = datetime.now().strftime("%Y-%m-%d")
-                    logger.info(f"已重置 {api_name} API调用限制")
-                else:
-                    return False
-            else:
-                # 重置所有API
-                for api_key in self.config["api_limits"]:
-                    self.config["api_limits"][api_key]["daily_calls"] = 0
-                    self.config["api_limits"][api_key]["last_reset_date"] = datetime.now().strftime("%Y-%m-%d")
-                logger.info("已重置所有API调用限制")
-            
-            return self.save_config()
-    
-    def _ensure_api_config_exists(self, api_name: str) -> None:
-        """确保API配置存在，如果不存在则创建默认配置"""
-        if api_name not in self.config["api_limits"]:
-            default_limits = {
-                "gaode": 500,
-                "baidu": 3000,
-                "bing": 2500,
-                "google": 2500
-            }
-            self.config["api_limits"][api_name] = {
-                "daily_calls": 0,
-                "max_daily_calls": default_limits.get(api_name, 1000),
-                "last_reset_date": datetime.now().strftime("%Y-%m-%d"),
-                "last_call_time": None
-            }
-            logger.info(f"已创建 {api_name} API默认配置")
-    
-    # 保持向后兼容的方法
-    def can_call_gaode_api(self) -> bool:
-        return self.can_call_api("gaode")
-    
-    def record_gaode_api_call(self) -> bool:
-        return self.record_api_call("gaode")
-    
-    def get_gaode_api_stats(self) -> Dict[str, Any]:
-        return self.get_api_stats("gaode")
+
 
 
 config_manager = ConfigManager()

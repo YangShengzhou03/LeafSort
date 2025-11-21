@@ -1,5 +1,6 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
-from PyQt6.QtWidgets import QFileDialog, QMessageBox, QProgressDialog, QVBoxLayout, QPushButton, QTextEdit, QDialog
+from PyQt6.QtWidgets import QFileDialog, QMessageBox, QProgressDialog, QVBoxLayout, QPushButton, QTextEdit, QDialog, QHBoxLayout, QScrollArea, QLabel
+from PyQt6.QtCore import Qt, QPropertyAnimation, QEasingCurve, QPoint
 import os
 import pathlib
 from collections import Counter
@@ -14,11 +15,11 @@ class FolderPage(QtWidgets.QWidget):
         self.parent = parent
         self.folder_items = []
         self._batch_adding = False
+        # 初始化为字典格式，与_save_tags_state方法保持一致
+        self.tags_data = {'available_tags': [], 'selected_tags': []}
         self.init_page()
-        self._setup_drag_drop()
-        self._setup_click_behavior()
-        self._setup_context_menu()
-        self._load_saved_folders()
+        # 初始化标签选择UI组件
+        self._init_tags_selection_ui()
     
     def _setup_drag_drop(self):
         # 添加属性检查以避免错误
@@ -415,7 +416,263 @@ class FolderPage(QtWidgets.QWidget):
             
             self.parent._update_empty_state(bool(self.folder_items))
         except Exception as e:
-            QMessageBox.warning(self, "刷新失败", f"刷新文件夹列表时出错: {str(e)}")
+            print(f"刷新文件夹列表时出错: {str(e)}")
+        finally:
+            pass
+    
+    def _init_tags_selection_ui(self):
+        # 初始化标签选择UI
+        # 标签数据初始化
+        self.available_tags = ["风景", "人像", "动物", "建筑", "美食", "旅行", "夜景", "自然风光", "城市", "街拍"]
+        self.selected_tags = []
+        
+        # 检查UI元素是否存在
+        if not hasattr(self.parent, 'frameRenameTags') or not hasattr(self.parent, 'frameRename'):
+            print("警告：frameRenameTags或frameRename不存在于UI中")
+            return
+        
+        # 从UI文件中获取已有的frameRenameTags和frameRename
+        frame_rename_tags = self.parent.frameRenameTags
+        frame_rename = self.parent.frameRename
+        
+        # 清除现有布局内容
+        self._clear_layout(frame_rename_tags.layout())
+        self._clear_layout(frame_rename.layout())
+        
+        # 创建垂直布局
+        self.frameRenameTags_layout = QVBoxLayout(frame_rename_tags)
+        self.frameRename_layout = QVBoxLayout(frame_rename)
+        
+        # 创建标签标题
+        available_tags_label = QLabel("可用标签")
+        available_tags_label.setStyleSheet("font-weight: bold; margin-bottom: 8px;")
+        selected_tags_label = QLabel("已选标签")
+        selected_tags_label.setStyleSheet("font-weight: bold; margin-bottom: 8px;")
+        
+        # 创建滚动区域用于标签展示
+        self.available_tags_scroll = QScrollArea()
+        self.selected_tags_scroll = QScrollArea()
+        
+        self.available_tags_scroll.setWidgetResizable(True)
+        self.selected_tags_scroll.setWidgetResizable(True)
+        
+        self.available_tags_widget = QWidget()
+        self.selected_tags_widget = QWidget()
+        
+        # 创建容器布局
+        self.available_tags_container = QVBoxLayout(self.available_tags_widget)
+        self.selected_tags_container = QVBoxLayout(self.selected_tags_widget)
+        
+        # 设置水平流式布局以容纳多个标签
+        self.available_tags_flow_layout = QHBoxLayout()
+        self.available_tags_flow_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop)
+        self.available_tags_flow_layout.setSpacing(8)
+        
+        self.selected_tags_flow_layout = QHBoxLayout()
+        self.selected_tags_flow_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignLeft | QtCore.Qt.AlignmentFlag.AlignTop)
+        self.selected_tags_flow_layout.setSpacing(8)
+        
+        # 添加到容器布局
+        self.available_tags_container.addLayout(self.available_tags_flow_layout)
+        self.selected_tags_container.addLayout(self.selected_tags_flow_layout)
+        
+        # 为容器添加拉伸空间，确保标签不会被拉伸
+        self.available_tags_container.addStretch(1)
+        self.selected_tags_container.addStretch(1)
+        
+        # 设置滚动区域的widget
+        self.available_tags_scroll.setWidget(self.available_tags_widget)
+        self.selected_tags_scroll.setWidget(self.selected_tags_widget)
+        
+        # 添加到主布局
+        self.frameRenameTags_layout.addWidget(available_tags_label)
+        self.frameRenameTags_layout.addWidget(self.available_tags_scroll)
+        
+        self.frameRename_layout.addWidget(selected_tags_label)
+        self.frameRename_layout.addWidget(self.selected_tags_scroll)
+        
+        # 初始加载标签
+        self._load_tags()
+    
+    def _load_tags(self):
+        # 清除现有标签
+        self._clear_layout(self.available_tags_flow_layout)
+        self._clear_layout(self.selected_tags_flow_layout)
+        
+        # 加载可用标签到待选区域
+        for tag in self.available_tags:
+            tag_button = self._create_tag_button(tag, False)
+            self.available_tags_flow_layout.addWidget(tag_button)
+        
+        # 加载已选标签到已选区域
+        for tag in self.selected_tags:
+            tag_button = self._create_tag_button(tag, True)
+            self.selected_tags_flow_layout.addWidget(tag_button)
+    
+    def _create_tag_button(self, tag_text, is_selected):
+        # 创建标签按钮
+        button = QPushButton(tag_text)
+        button.setObjectName(f"tag_{tag_text}")
+        button.setMinimumSize(80, 32)
+        button.setMaximumWidth(120)
+        button.setCheckable(True)
+        button.setChecked(is_selected)
+        button.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+        
+        # 添加属性动画支持
+        button.setProperty('is_animated', False)
+        
+        # 设置样式 - 增强的样式与过渡效果
+        if is_selected:
+            button.setStyleSheet("""QPushButton {
+                background-color: #8b5cf6;
+                color: white;
+                border-radius: 16px;
+                padding: 6px 16px;
+                font-size: 14px;
+                border: 2px solid #8b5cf6;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 2px 8px rgba(139, 92, 246, 0.2);
+            }
+            QPushButton:hover {
+                background-color: #7c3aed;
+                border-color: #7c3aed;
+                transform: translateY(-1px);
+                box-shadow: 0 4px 12px rgba(139, 92, 246, 0.3);
+            }
+            QPushButton:pressed {
+                background-color: #6d28d9;
+                border-color: #6d28d9;
+                transform: translateY(0);
+                box-shadow: 0 1px 4px rgba(139, 92, 246, 0.4);
+            }""")
+        else:
+            button.setStyleSheet("""QPushButton {
+                background-color: #f3f4f6;
+                color: #4b5563;
+                border-radius: 16px;
+                padding: 6px 16px;
+                font-size: 14px;
+                border: 2px solid transparent;
+                transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+            }
+            QPushButton:hover {
+                background-color: #e5e7eb;
+                border-color: #d1d5db;
+                transform: translateY(-1px);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            }
+            QPushButton:pressed {
+                background-color: #d1d5db;
+                border-color: #9ca3af;
+                transform: translateY(0);
+                box-shadow: 0 1px 3px rgba(0, 0, 0, 0.2);
+            }""")
+        
+        # 连接点击事件
+        button.clicked.connect(lambda checked, btn=button, text=tag_text: self._on_tag_clicked(text, checked, btn))
+        
+        return button
+    
+    def _on_tag_clicked(self, tag_text, checked, button):
+        # 标签点击事件处理 - 简化实现，直接移动标签
+        try:
+            # 直接执行标签移动逻辑
+            self._move_tag(tag_text, checked, button)
+        except Exception as e:
+            print(f"处理标签点击事件时出错: {str(e)}")
+            # 重新加载标签以恢复一致状态
+            self._load_tags()
+    
+
+    
+    def _move_tag(self, tag_text, checked, button):
+        """执行标签移动的实际逻辑"""
+        try:
+            if checked:
+                # 从待选区域移动到已选区域
+                if tag_text in self.available_tags:
+                    # 从待选列表移除
+                    self.available_tags = [tag for tag in self.available_tags if tag != tag_text]
+                    # 添加到已选列表
+                    if tag_text not in self.selected_tags:
+                        self.selected_tags.append(tag_text)
+                        # 立即重新加载标签以更新UI
+                        self._load_tags()
+            else:
+                # 从已选区域移动到待选区域
+                if tag_text in self.selected_tags:
+                    # 从已选列表移除
+                    self.selected_tags = [tag for tag in self.selected_tags if tag != tag_text]
+                    # 添加到待选列表
+                    if tag_text not in self.available_tags:
+                        self.available_tags.append(tag_text)
+                        # 立即重新加载标签以更新UI
+                        self._load_tags()
+        except Exception as e:
+            print(f"移动标签时出错: {str(e)}")
+            # 重新加载标签以恢复一致状态
+            self._load_tags()
+    
+
+    
+    def _save_tags_state(self):
+        """保存标签状态，确保数据一致性"""
+        try:
+            # 验证标签数据的完整性和一致性
+            self._validate_tags_data()
+            
+            # 这里可以实现将标签状态保存到配置或其他存储方式
+            # 例如：config_manager.save_tags_state(self.available_tags, self.selected_tags)
+            
+            # 更新tags_data变量以保持一致性
+            self.tags_data = {
+                'available_tags': self.available_tags.copy(),
+                'selected_tags': self.selected_tags.copy()
+            }
+            
+        except Exception as e:
+            print(f"保存标签状态时出错: {str(e)}")
+    
+    def _validate_tags_data(self):
+        """验证标签数据的一致性"""
+        # 检查是否有重复标签
+        if len(self.available_tags) != len(set(self.available_tags)):
+            # 移除重复标签
+            self.available_tags = list(set(self.available_tags))
+        
+        if len(self.selected_tags) != len(set(self.selected_tags)):
+            # 移除重复标签
+            self.selected_tags = list(set(self.selected_tags))
+        
+        # 确保没有标签同时存在于两个列表中
+        common_tags = set(self.available_tags).intersection(set(self.selected_tags))
+        if common_tags:
+            # 如果有共同标签，优先保留在selected_tags中
+            for tag in common_tags:
+                if tag in self.available_tags:
+                    self.available_tags.remove(tag)
+    
+    def get_selected_tags(self):
+        """获取已选标签的公共方法"""
+        # 返回副本以避免外部修改
+        return self.selected_tags.copy()
+    
+    def _clear_layout(self, layout):
+        # 清除布局中的所有控件
+        if layout is None:
+            return
+        
+        while layout.count() > 0:
+            item = layout.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            else:
+                nested_layout = item.layout()
+                if nested_layout is not None:
+                    self._clear_layout(nested_layout)
 
     def _paths_equal(self, path1, path2):
         try:

@@ -167,39 +167,4 @@ def detect_media_type(file_path):
     return result
 
 
-def author():
-    """
-    显示作者信息对话框，包含联系二维码
-    """
-    dialog = QDialog()
-    dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowType.FramelessWindowHint)
-    dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-    dialog.setFixedSize(320, 450)
 
-    container = QWidget(dialog)
-    container.setStyleSheet(load_stylesheet("author.dialog.setStyleSheet.css"))
-    container.setGeometry(0, 0, dialog.width(), dialog.height())
-
-    layout = QVBoxLayout(container)
-
-    qr_code_label = QLabel(container)
-    # 修复资源路径冗余问题
-    resource_path = get_resource_path("img/activity/QQ_名片.png")
-    pixmap = QPixmap(resource_path)
-    qr_code_label.setPixmap(pixmap)
-    qr_code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-
-    confirm_button = QPushButton("手机QQ扫码·联系开发者", container)
-    confirm_button.clicked.connect(dialog.accept)
-    layout.addWidget(qr_code_label)
-    layout.addWidget(confirm_button)
-
-    close_button = QPushButton(container)
-    # 修复资源路径冗余问题
-    close_button.setIcon(QIcon(get_resource_path("img/窗口控制/关闭作者.svg")))
-    close_button.setFixedSize(28, 28)
-    close_button.move(container.width() - close_button.width() - 12, 6)
-    close_button.clicked.connect(dialog.reject)
-    close_button.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
-    close_button.setStyleSheet(load_stylesheet("close_button.setStyleSheet.css"))
-    dialog.exec()
