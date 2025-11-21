@@ -847,6 +847,77 @@ class Ui_MainWindow(object):
         self.btnBrowseTarget.setObjectName("btnBrowseTarget")
         self.layoutTargetFolder.addWidget(self.btnBrowseTarget)
         self.layoutImportContainer.addWidget(self.frameTargetFolderGroup)
+        self.textBrowser_resource_info = QtWidgets.QTextBrowser(parent=self.importContainer)
+        self.textBrowser_resource_info.setMinimumSize(QtCore.QSize(0, 120))
+        self.textBrowser_resource_info.setReadOnly(True)
+        self.textBrowser_resource_info.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByKeyboard|QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.textBrowser_resource_info.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.textBrowser_resource_info.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.textBrowser_resource_info.setStyleSheet("QTextBrowser {\n"
+"    border: 1.5px solid qlineargradient(\n"
+"        x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(229, 231, 235, 255),\n"
+"        stop:1 rgba(209, 213, 219, 255)\n"
+"    );\n"
+"    background: rgba(255, 255, 255, 95);\n"
+"    border-radius: 8px;\n"
+"    padding: 12px;\n"
+"    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+"    font-size: 13px;\n"
+"    color: #4b5563;\n"
+"    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);\n"
+"}\n"
+"\n"
+"QTextBrowser:hover {\n"
+"    border-color: qlineargradient(\n"
+"        x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(199, 210, 254, 255),\n"
+"        stop:1 rgba(165, 180, 252, 255)\n"
+"    );\n"
+"    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05),\n"
+"                0 1px 3px rgba(167, 139, 250, 0.1);\n"
+"}\n"
+"\n"
+"QTextBrowser:focus {\n"
+"    outline: none;\n"
+"    border-color: qlineargradient(\n"
+"        x1:0, y1:0, x2:1, y2:0,\n"
+"        stop:0 rgba(139, 92, 246, 255),\n"
+"        stop:1 rgba(124, 58, 237, 255)\n"
+"    );\n"
+"    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05),\n"
+"                0 0 0 3px rgba(139, 92, 246, 0.15);\n"
+"}\n"
+"\n"
+"QTextBrowser QScrollBar:vertical {\n"
+"    border: none;\n"
+"    background: transparent;\n"
+"    width: 6px;\n"
+"    margin: 4px;\n"
+"}\n"
+"\n"
+"QTextBrowser QScrollBar::handle:vertical {\n"
+"    background: rgba(156, 163, 175, 0.5);\n"
+"    min-height: 20px;\n"
+"    border-radius: 3px;\n"
+"}\n"
+"\n"
+"QTextBrowser QScrollBar::handle:vertical:hover {\n"
+"    background: rgba(156, 163, 175, 0.8);\n"
+"}\n"
+"\n"
+"QTextBrowser QScrollBar::add-line:vertical,\n"
+"QTextBrowser QScrollBar::sub-line:vertical {\n"
+"    height: 0px;\n"
+"    background: none;\n"
+"}\n"
+"\n"
+"QTextBrowser QScrollBar::add-page:vertical,\n"
+"QTextBrowser QScrollBar::sub-page:vertical {\n"
+"    background: none;\n"
+"}")
+        self.textBrowser_resource_info.setObjectName("textBrowser_resource_info")
+        self.layoutImportContainer.addWidget(self.textBrowser_resource_info)
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.layoutImportContainer.addItem(spacerItem2)
         self.layoutImport.addWidget(self.importContainer)
