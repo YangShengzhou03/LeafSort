@@ -5,6 +5,7 @@ from pathlib import Path
 from typing import Dict, List, Any, Optional, Union
 import logging
 from datetime import datetime
+from common import get_resource_path
 
 logger = logging.getLogger(__name__)
 
@@ -15,8 +16,9 @@ class ConfigManager:
     
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
-        self.config_file = Path(config_file)
-        self.cache_file = Path(cache_file)
+        # 使用get_resource_path获取正确的配置文件路径
+        self.config_file = Path(get_resource_path(config_file))
+        self.cache_file = Path(get_resource_path(cache_file))
         self._lock = threading.RLock()  # 使用可重入锁提供线程安全
         self.config = self._load_config()
         self.location_cache = self._load_location_cache()
@@ -430,16 +432,20 @@ class ConfigManager:
         
     def clear_cache(self):
         """清除缓存数据"""
-        if hasattr(self, 'location_cache'):
-            self.location_cache.clear()
-            self.save_config()
+        # 清除位置缓存
+        self.location_cache.clear()
+        self.save_location_cache()  # 修正：应该保存位置缓存而不是配置
         
         # 清除临时文件（如果有）
         cache_dir = os.path.join(self.config_file.parent, 'cache')
         if os.path.exists(cache_dir):
             import shutil
-            shutil.rmtree(cache_dir)
-            os.makedirs(cache_dir, exist_ok=True)
+            try:
+                shutil.rmtree(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
+            except Exception as e:
+                logger.error(f"清除缓存目录时出错: {e}")
+                return False
             
         return True
 

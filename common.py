@@ -34,7 +34,7 @@ def get_resource_path(relative_path):
     同时支持开发环境和打包后的环境
     
     Args:
-        relative_path: 相对于resources目录的路径
+        relative_path: 相对于项目根目录的路径
         
     Returns:
         str: 资源文件的绝对路径
@@ -45,10 +45,6 @@ def get_resource_path(relative_path):
     except Exception:
         # 开发环境
         base_path = Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    
-    # 确保路径以resources开头
-    if not relative_path.startswith('resources'):
-        relative_path = f"resources/{relative_path}"
 
     # 规范化路径，使用正斜杠
     return str((base_path / relative_path).resolve()).replace('\\', '/')

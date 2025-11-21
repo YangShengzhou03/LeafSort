@@ -21,8 +21,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.current_page_index = -1
         self.page_cache = {}
         self.setupUi(self)
-            
-            # 初始化窗口
+        
+        # 初始化窗口
         self._init_window()
         
         # 初始化功能页面
@@ -77,9 +77,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
             # 窗口控制按钮连接
             try:
-                self.toolButton_Minimize.clicked.connect(self.showMinimized)
-                self.toolButton_Maximize.clicked.connect(self._toggle_maximize)
-                self.toolButton_Close.clicked.connect(self.close)
+                self.btnMinimize.clicked.connect(self.showMinimized)
+                self.btnMaximize.clicked.connect(self._toggle_maximize)
+                self.btnClose.clicked.connect(self.close)
             except Exception as e:
                 print(f"连接窗口控制按钮信号失败: {str(e)}")
                 
@@ -144,14 +144,21 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 根据当前活动页面显示在对应的日志组件中
         try:
             current_index = self.stackedWidget.currentIndex()
-            if current_index == 0 and hasattr(self, 'textBrowser_import_info'):
-                self.textBrowser_import_info.append(log_message)
-            elif current_index == 1 and hasattr(self, 'smartArrangeLogOutputTextEdit'):
-                self.smartArrangeLogOutputTextEdit.append(log_message)
-            elif current_index == 2 and hasattr(self, 'textBrowser_duplication_log'):
-                self.textBrowser_duplication_log.append(log_message)
-            elif current_index == 3 and hasattr(self, 'textBrowser_EXIF_log'):
-                self.textBrowser_EXIF_log.append(log_message)
+            
+            # 定义页面索引到可能的日志组件名称的映射
+            log_components = {
+                0: ['textBrowser_import_info'],
+                1: ['smartArrangeLogOutputTextEdit'],
+                2: ['textBrowser_duplication_log', 'textBrowser_duplication', 'textBrowser_log_duplication'],
+                3: ['textBrowser_EXIF_log', 'textBrowser_exif', 'textBrowser_log_exif']
+            }
+            
+            # 尝试使用映射中的组件
+            if current_index in log_components:
+                for component_name in log_components[current_index]:
+                    if hasattr(self, component_name):
+                        getattr(self, component_name).append(log_message)
+                        break
         except Exception as e:
             print(f"写入日志到UI失败: {str(e)}")
             
