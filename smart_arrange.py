@@ -320,7 +320,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         separator_text = self.parent.comboBox_separator.currentText()
         separator = self.separator_mapping.get(separator_text, "-")
         
-        operation_type = self.parent.comboBox_operation.currentIndex()
+        operation_type = self.parent.fileOperation.currentIndex()
         operation_text = "移动" if operation_type == 0 else "复制"
         
         if not classification_structure and not file_name_structure:

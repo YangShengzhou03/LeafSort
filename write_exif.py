@@ -207,20 +207,23 @@ class WriteExifPage(QWidget):
         # 星级按钮连接已经在init_ui中处理
 
     def on_combobox_location_changed(self, index):
-        if index == 1:
-            self.parent.lineEdit_EXIF_longitude.show()
-            self.parent.lineEdit_EXIF_latitude.show()
-            self.parent.horizontalFrame.hide()
-        else:
-            self.parent.lineEdit_EXIF_longitude.hide()
-            self.parent.lineEdit_EXIF_latitude.hide()
-            self.parent.horizontalFrame.show()
+        if hasattr(self.parent, 'lineEdit_EXIF_longitude') and hasattr(self.parent, 'lineEdit_EXIF_latitude') and hasattr(self.parent, 'horizontalFrame'):
+            if index == 1:
+                self.parent.lineEdit_EXIF_longitude.show()
+                self.parent.lineEdit_EXIF_latitude.show()
+                self.parent.horizontalFrame.hide()
+            else:
+                self.parent.lineEdit_EXIF_longitude.hide()
+                self.parent.lineEdit_EXIF_latitude.hide()
+                self.parent.horizontalFrame.show()
 
     def on_combobox_time_changed(self, index):
-        if index == 2:
-            self.parent.dateTimeEdit_shootTime.show()
+        if hasattr(self.parent, 'shootTimeSource') and self.parent.shootTimeSource.currentIndex() == 2:
+            if hasattr(self.parent, 'dateTimeEdit_shootTime'):
+                self.parent.dateTimeEdit_shootTime.show()
         else:
-            self.parent.dateTimeEdit_shootTime.hide()
+            if hasattr(self.parent, 'dateTimeEdit_shootTime'):
+                self.parent.dateTimeEdit_shootTime.hide()
 
     def update_button_state(self):
         # 检查toolButton_StartEXIF是在self还是parent中
@@ -380,8 +383,8 @@ class WriteExifPage(QWidget):
                            "点击\"导入文件夹\"按钮添加包含图片的文件夹")
             return False
         
-        camera_brand = self.parent.comboBox_brand.currentText() if self.parent.comboBox_brand.currentIndex() > 0 else None
-        camera_model = self.parent.comboBox_model.currentText() if self.parent.comboBox_model.currentIndex() > 0 else None
+        camera_brand = self.parent.brandComboBox.currentText() if self.parent.brandComboBox.currentIndex() > 0 else None
+        camera_model = self.parent.modelComboBox.currentText() if self.parent.modelComboBox.currentIndex() > 0 else None
         
         if camera_brand and not camera_model:
             camera_model = self.get_default_model_for_brand(camera_brand)
@@ -396,16 +399,16 @@ class WriteExifPage(QWidget):
             'position': None,
             'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
-            if self.parent.comboBox_shootTime.currentIndex() == 2
-            else self.parent.comboBox_shootTime.currentIndex(),
+            if self.parent.shootTimeSource.currentIndex() == 2
+            else self.parent.shootTimeSource.currentIndex(),
             'cameraBrand': camera_brand,
             'cameraModel': camera_model,
             'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
         
-        location_type = self.parent.locationComboBox.currentIndex()
+        location_type = self.parent.locationComboBox.currentIndex() if hasattr(self.parent, 'locationComboBox') else 0
         if location_type == 0:
-            address = self.parent.positionLineEdit.text()
+            address = self.parent.lineEdit_EXIF_Position.text()
             if address:
                 import re
                 coord_pattern = r'^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$'
@@ -505,11 +508,11 @@ class WriteExifPage(QWidget):
         
         params = {
             'folders_dict': folders,
-            'title': self.parent.titleLineEdit.text(),
-            'author': self.parent.authorLineEdit.text(),
-            'subject': self.parent.themeLineEdit.text(),
+            'title': self.parent.lineEdit_EXIF_Title.text(),
+            'author': self.parent.lineEdit_EXIF_Author.text(),
+            'subject': self.parent.lineEdit_EXIF_Theme.text(),
             'rating': str(self.selected_star),
-            'copyright': self.parent.copyrightLineEdit.text(),
+            'copyright': self.parent.lineEdit_EXIF_Copyright.text(),
             'position': None,
             'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
@@ -639,8 +642,8 @@ class WriteExifPage(QWidget):
                         self.parent.modelComboBox.setCurrentIndex(index)
             
             if shoot_time_index := config_manager.get_setting("exif_shoot_time_index"):
-                if hasattr(self.parent, 'shootTimeComboBox'):
-                    self.parent.shootTimeComboBox.setCurrentIndex(int(shoot_time_index))
+                if hasattr(self.parent, 'shootTimeSource'):
+                    self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_index))
                     self.on_combobox_time_changed(int(shoot_time_index))
             
             if star_rating := config_manager.get_setting("exif_star_rating"):
@@ -682,8 +685,8 @@ class WriteExifPage(QWidget):
             if hasattr(self.parent, 'modelComboBox'):
                 config_manager.update_setting("exif_camera_model", self.parent.modelComboBox.currentText())
             
-            if hasattr(self.parent, 'shootTimeComboBox'):
-                config_manager.update_setting("exif_shoot_time_index", self.parent.shootTimeComboBox.currentIndex())
+            if hasattr(self.parent, 'shootTimeSource'):
+                config_manager.update_setting("exif_shoot_time_index", self.parent.shootTimeSource.currentIndex())
             
             if hasattr(self.parent, 'dateTimeEdit_shootTime'):
                 config_manager.update_setting("exif_shoot_time", 
