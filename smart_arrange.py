@@ -860,8 +860,73 @@ class SmartArrangePage(QtWidgets.QWidget):
                 self.folder_page = self.parent.folder_page
                 self.log("INFO", "已重新获取文件夹页面引用")
                 
+            # 重新获取布局引用
+            # 首先检查是否能直接获取布局
+            self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
+            self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
+            
+            # 如果直接获取失败，尝试通过父框架获取
+            if not self.available_layout and hasattr(self.parent, 'frameRenameTags'):
+                frame = getattr(self.parent, 'frameRenameTags')
+                # 在frame中查找layout属性
+                for attr_name in dir(frame):
+                    if attr_name.startswith('_'):
+                        continue
+                    attr_value = getattr(frame, attr_name)
+                    if str(type(attr_value)).find('QHBoxLayout') >= 0:
+                        self.available_layout = attr_value
+                        self.log("INFO", f"通过frameRenameTags获取布局组件: {attr_name}")
+                        break
+            
+            if not self.selected_layout and hasattr(self.parent, 'frameRename'):
+                frame = getattr(self.parent, 'frameRename')
+                # 在frame中查找layout属性
+                for attr_name in dir(frame):
+                    if attr_name.startswith('_'):
+                        continue
+                    attr_value = getattr(frame, attr_name)
+                    if str(type(attr_value)).find('QHBoxLayout') >= 0:
+                        self.selected_layout = attr_value
+                        self.log("INFO", f"通过frameRename获取布局组件: {attr_name}")
+                        break
+            
+            if self.available_layout and self.selected_layout:
+                self.log("INFO", "已成功获取布局组件引用")
+            else:
+                self.log("WARNING", f"无法获取所有布局组件: available={bool(self.available_layout)}, selected={bool(self.selected_layout)}")
+                
+            # 重新获取标签按钮引用
+            button_mapping = {
+                '原名': 'btnAddOriginalTag',
+                '年份': 'btnAddYearTag',
+                '月份': 'btnAddMonthTag',
+                '日': 'btnAddDateTag',
+                '星期': 'btnDayTag',
+                '时间': 'btnAddTimeTag',
+                '品牌': 'btnAddMakeTag',
+                '型号': 'btnModelTag',
+                '位置': 'btnAddressTag',
+                '自定义': 'btnCustomizeTag'
+            }
+            
+            # 清空并重新填充tag_buttons字典
+            self.tag_buttons.clear()
+            for tag_name, attr_name in button_mapping.items():
+                if hasattr(self.parent, attr_name):
+                    button = getattr(self.parent, attr_name)
+                    self.tag_buttons[tag_name] = button
+                    # 确保按钮与move_tag方法连接
+                    if button and hasattr(button, 'clicked'):
+                        # 断开现有连接以避免重复连接
+                        try:
+                            button.clicked.disconnect(self.move_tag)
+                        except (TypeError, RuntimeError):
+                            pass  # 忽略未连接的错误
+                        button.clicked.connect(lambda checked, b=button: self.move_tag(b))
+            
             # 重置组合框状态
             self.set_combo_box_states()
+            self.log("INFO", "智能整理页面刷新完成")
             
             # 清除所有已选标签并恢复到可用区域
             selected_buttons = []

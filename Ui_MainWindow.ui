@@ -1380,18 +1380,6 @@ QPushButton:pressed {
                         <height>120</height>
                        </size>
                       </property>
-                      <property name="readOnly">
-                       <bool>true</bool>
-                      </property>
-                      <property name="textInteractionFlags">
-                       <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse</set>
-                      </property>
-                      <property name="verticalScrollBarPolicy">
-                       <enum>Qt::ScrollBarAsNeeded</enum>
-                      </property>
-                      <property name="horizontalScrollBarPolicy">
-                       <enum>Qt::ScrollBarAlwaysOff</enum>
-                      </property>
                       <property name="styleSheet">
                        <string notr="true">QTextBrowser {
     border: 1.5px solid qlineargradient(
@@ -1456,6 +1444,18 @@ QTextBrowser QScrollBar::add-page:vertical,
 QTextBrowser QScrollBar::sub-page:vertical {
     background: none;
 }</string>
+                      </property>
+                      <property name="verticalScrollBarPolicy">
+                       <enum>Qt::ScrollBarAsNeeded</enum>
+                      </property>
+                      <property name="horizontalScrollBarPolicy">
+                       <enum>Qt::ScrollBarAlwaysOff</enum>
+                      </property>
+                      <property name="readOnly">
+                       <bool>true</bool>
+                      </property>
+                      <property name="textInteractionFlags">
+                       <set>Qt::LinksAccessibleByKeyboard|Qt::LinksAccessibleByMouse</set>
                       </property>
                      </widget>
                     </item>
@@ -5947,6 +5947,14 @@ border-bottom-left-radius:0px;</string>
                        <font>
                         <pointsize>12</pointsize>
                        </font>
+                      </property>
+                      <property name="styleSheet">
+                       <string notr="true">color: #4B5563;
+background-color: rgba(134, 119, 253, 0.1);
+padding: 8px 12px;
+border-radius: 8px;
+border: 1px solid rgba(134, 119, 253, 0.2);
+box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);</string>
                       </property>
                       <property name="text">
                        <string>正在处理：XXX，正在写入XX的拍摄时间</string>
