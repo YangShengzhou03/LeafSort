@@ -39,7 +39,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _init_window(self):
         self.setWindowTitle("枫叶相册")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
-        
+        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         # 连接按钮信号与槽函数
         self._connect_buttons()
     
