@@ -1,0 +1,13 @@
+{
+  "version": "1.0.0",
+  "folders": [],
+  "api_limits": {
+    "gaode": {
+      "daily_calls": 0,
+      "last_reset_date": "",
+      "max_daily_calls": 500
+    }
+  },
+  "settings": {},
+  "last_modified": "2025-11-21T16:40:05.166310"
+}

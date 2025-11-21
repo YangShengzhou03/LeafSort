@@ -322,8 +322,14 @@ class ConfigManager:
                 # 只返回指定的设置
                 return {key: self.config["settings"].get(key) for key in keys}
             else:
-                # 返回所有设置的副本
-                return self.config["settings"].copy()
+                # 返回所有设置的副本（确保包含默认值）
+                result = {}
+                # 先添加默认设置
+                default_config = self._get_default_config()
+                result.update(default_config["settings"])
+                # 然后更新为当前设置
+                result.update(self.config["settings"])
+                return result
     
     def reset_settings(self, keys: List[str] = None) -> bool:
         """重置设置到默认值"""
@@ -420,42 +426,22 @@ class ConfigManager:
             }
         }
 
-    def get_settings(self):
-        """获取当前设置"""
-        # 确保返回所有必要的默认值
-        default_settings = {
-            'max_threads': 4,
-            'memory_limit_mb': 2048,
-            'amap_api_key': '0db079da53e08cbb62b52a42f657b994',
-            'last_opened_folder': '',
-            'window_position': {'x': 100, 'y': 100},
-            'window_size': {'width': 942, 'height': 580}
-        }
-        
-        # 合并默认设置和当前设置
-        result = default_settings.copy()
-        result.update(self.config["settings"])
-        return result
+
         
     def clear_cache(self):
         """清除缓存数据"""
-        try:
-            # 清除位置缓存
-            if hasattr(self, 'location_cache'):
-                self.location_cache.clear()
-                self._save_config()
-                
-            # 清除临时文件（如果有）
-            cache_dir = os.path.join(self.config_file.parent, 'cache')
-            if os.path.exists(cache_dir):
-                import shutil
-                shutil.rmtree(cache_dir)
-                os.makedirs(cache_dir, exist_ok=True)
-                
-            return True
-        except Exception as e:
-            logger.error(f"清除缓存失败: {str(e)}")
-            return False
+        if hasattr(self, 'location_cache'):
+            self.location_cache.clear()
+            self.save_config()
+        
+        # 清除临时文件（如果有）
+        cache_dir = os.path.join(self.config_file.parent, 'cache')
+        if os.path.exists(cache_dir):
+            import shutil
+            shutil.rmtree(cache_dir)
+            os.makedirs(cache_dir, exist_ok=True)
+            
+        return True
 
 
 

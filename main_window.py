@@ -7,33 +7,13 @@ from common import get_resource_path
 from SettingsDialog import SettingsDialog
 
 
-# 导入智能整理线程类
-# 导入文件去重相关类
-# 导入属性写入线程类
-
-
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
-
         
-        # 初始化空状态管理
-        self.empty_widgets = {}
-        
-        # 初始化智能整理线程
-        self.smart_arrange_thread = None
-        # 初始化文件去重相关线程
-        self.hash_worker = None
-        self.contrast_worker = None
-        self.image_hashes = {}
-        # 初始化属性写入线程
-        self.write_exif_thread = None
-        
-        # 页面相关初始化 - 添加页面缓存和状态管理
+        # 页面相关初始化
         self.current_page_index = -1
         self.page_cache = {}
-        self.last_page_index = -1
-        self.page_transitioning = False
         self.setupUi(self)
             
             # 初始化窗口
