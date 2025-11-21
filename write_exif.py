@@ -13,19 +13,27 @@ class WriteExifPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
+        self.is_running = False
+        self.worker = None
+        try:
+            self.parent.log("info", "属性写入页面初始化")
+        except (AttributeError, TypeError):
+            pass
         self.folder_page = self.parent.folder_page
 
         self.selected_star = 0
-        self.worker = None
         self.star_buttons = []
-        self.is_running = False
         self.camera_lens_mapping = {}
         self.error_messages = []
         self.init_ui()
         self.setup_connections()
         
     def init_page(self):
-        """初始化页面"""
+        """初始化页面组件和数据"""
+        try:
+            self.parent.log("info", "初始化属性写入页面")
+        except (AttributeError, TypeError):
+            pass
         self.folder_page = self.parent.folder_page
         self.setup_connections()
         self.load_camera_lens_mapping()
@@ -87,6 +95,13 @@ class WriteExifPage(QWidget):
                 return brand_data[model]
         return None
 
+    def _update_camera_brand_model(self):
+        """更新相机品牌和型号下拉框"""
+        try:
+            self.dateTimeEdit_shootTime.setDateTime(QtCore.QDateTime.currentDateTime())
+        except (AttributeError, TypeError):
+            pass
+    
     def _on_model_changed(self, index):
         if index > 0 and hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
             brand = self.brandComboBox.currentText()
@@ -105,6 +120,11 @@ class WriteExifPage(QWidget):
         
         json_path = os.path.join('resources', 'json', 'camera_brand_model.json')
         try:
+            # 读取相机品牌和型号数据
+            try:
+                self.parent.log("debug", "加载相机品牌型号数据")
+            except (AttributeError, TypeError):
+                pass
             with open(json_path, 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError, IOError) as e:
@@ -128,19 +148,31 @@ class WriteExifPage(QWidget):
                 "Vivo": ["X100 Pro", "X100", "X90 Pro+", "X90 Pro", "X90", "X80 Pro", "X80", "S18 Pro"]
             }
         
-        # 使用hasattr检查确保控件存在
-        if hasattr(self.parent, 'cameraBrand') and hasattr(self.parent, 'cameraModel'):
-            self.brandComboBox = self.parent.cameraBrand
-            self.modelComboBox = self.parent.cameraModel
-            for brand in sorted(camera_data.keys()):
-                self.brandComboBox.addItem(brand)
-            self.camera_data = camera_data
+        try:
+            # 填充相机品牌下拉框
+            brands = ['不写入'] + list(camera_data.keys())
+            self.parent.cameraBrand.addItems(brands)
+            self.parent.cameraBrand.currentIndexChanged.connect(self._on_brand_changed)
+        except (AttributeError, TypeError):
+            try:
+                self.parent.log("warning", "未找到相机品牌或型号下拉框")
+            except (AttributeError, TypeError):
+                pass
+        self.camera_data = camera_data
+        if hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
             self.brandComboBox.currentIndexChanged.connect(self._on_brand_changed)
             self.modelComboBox.currentIndexChanged.connect(self._on_model_changed)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', '品牌或型号下拉框不存在，跳过相机数据初始化')
         
     def _on_brand_changed(self, index):
+        """当相机品牌改变时，更新型号下拉框"""
+        try:
+            self.modelComboBox.clear()
+            if index > 0:
+                brand = self.brandComboBox.currentText()
+                models = ['不写入'] + self.camera_data.get(brand, [])
+                self.modelComboBox.addItems(models)
+        except (AttributeError, TypeError):
+            pass
         # 使用hasattr检查确保控件存在
         if hasattr(self, 'modelComboBox') and hasattr(self, 'brandComboBox'):
             self.modelComboBox.clear()
@@ -689,7 +721,13 @@ class WriteExifPage(QWidget):
             self.log("WARNING", f"保存EXIF设置时出错: {str(e)}")
     
     def refresh(self):
-        """刷新EXIF信息写入页面"""
+        """刷新页面状态"""
+        try:
+            if hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
+                self.brandComboBox.setCurrentIndex(0)
+                self.modelComboBox.setCurrentIndex(0)
+        except (AttributeError, TypeError):
+            pass
         try:
             self.log("INFO", "正在刷新EXIF信息写入页面")
             

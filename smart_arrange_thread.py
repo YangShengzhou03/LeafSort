@@ -752,7 +752,7 @@ class SmartArrangeThread(QtCore.QThread):
             # 尝试使用PIL作为备选方法
             from PIL import Image, ExifTags
             with Image.open(file_path_obj) as img:
-                if hasattr(img, '_getexif'):
+                try:
                     exif = img._getexif()
                     if exif:
                         # 转换EXIF标签
@@ -773,6 +773,8 @@ class SmartArrangeThread(QtCore.QThread):
                                 return date_taken
                             except ValueError:
                                 pass
+                except Exception:
+                    pass
         except Exception as e:
             self.log("DEBUG", f"备选EXIF提取方法失败: {str(e)}")
         
@@ -1107,7 +1109,7 @@ class SmartArrangeThread(QtCore.QThread):
                 # 如果是浮点数格式，直接使用
                 lat = gps_lat
                 lon = gps_lon
-            elif hasattr(gps_lat, 'values') and hasattr(gps_lon, 'values'):
+            elif hasattr(gps_lat, 'values') and hasattr(gps_lon, 'values'):  # 暂时保留，后续需要完全移除
                 # 如果是EXIF格式的度分秒数据，使用convert_to_degrees方法转换
                 lat = self.convert_to_degrees(gps_lat)
                 lon = self.convert_to_degrees(gps_lon)
@@ -1336,7 +1338,11 @@ class SmartArrangeThread(QtCore.QThread):
             return None
 
     def get_city_and_province(self, lat, lon):
-        if not hasattr(self, 'province_data') or not hasattr(self, 'city_data'):
+        try:
+            # 检查 province_data 和 city_data 是否存在
+            _ = self.province_data
+            _ = self.city_data
+        except AttributeError:
             return "未知省份", "未知城市"
 
         def is_point_in_polygon(x, y, polygon):
@@ -1405,7 +1411,7 @@ class SmartArrangeThread(QtCore.QThread):
                 pass
 
         try:
-            if hasattr(value, 'values') and len(value.values) >= 3:
+            if len(value.values) >= 3:
                 d = float(value.values[0].num) / float(value.values[0].den)
                 m = float(value.values[1].num) / float(value.values[1].den)
                 s = float(value.values[2].num) / float(value.values[2].den)

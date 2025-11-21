@@ -9,7 +9,7 @@ class SettingsDialog(QDialog):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle("设置")
-        self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')) if hasattr(QtGui, 'QIcon') else None)
+        self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.resize(600, 400)
         
         self.init_ui()

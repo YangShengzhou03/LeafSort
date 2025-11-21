@@ -369,13 +369,16 @@ class WriteExifThread(QThread):
                         png_info = PngImagePlugin.PngInfo()
                         
                         # 复制现有的文本信息
-                        if hasattr(img, 'text') and img.text:
-                            for key in img.text:
-                                if key.lower() != "creation time":
-                                    try:
-                                        png_info.add_text(key, img.text[key])
-                                    except Exception as e:
-                                        logger.warning(f"复制PNG文本信息失败 {key}: {str(e)}")
+                        try:
+                            if img.text:
+                                for key in img.text:
+                                    if key.lower() != "creation time":
+                                        try:
+                                            png_info.add_text(key, img.text[key])
+                                        except Exception as e:
+                                            logger.warning(f"复制PNG文本信息失败 {key}: {str(e)}")
+                        except AttributeError:
+                            pass
                         
                         # 添加新的拍摄时间
                         if self.shoot_time == 1:
@@ -460,15 +463,53 @@ class WriteExifThread(QThread):
             
             # 尝试加载现有EXIF数据
             try:
-                if hasattr(heif_file, 'exif') and heif_file.exif:
-                    heif_exif = piexif.load(heif_file.exif)
-                    exif_dict.update(heif_exif)
+                try:
+                    if heif_file.exif:
+                        heif_exif = piexif.load(heif_file.exif)
+                        exif_dict.update(heif_exif)
+                except AttributeError:
+                    pass
             except Exception as e:
                 logger.debug(f"加载HEIF EXIF数据失败: {str(e)}")
             
             try:
-                if hasattr(image, '_getexif'):
-                    pil_exif = image._getexif()
+                pil_exif = image._getexif()
+                if pil_exif:
+                    tag_mapping = {
+                        270: ("0th", piexif.ImageIFD.ImageDescription),
+                        271: ("0th", piexif.ImageIFD.Make),
+                        272: ("0th", piexif.ImageIFD.Model),
+                        315: ("0th", 315),
+                        36867: ("Exif", piexif.ExifIFD.DateTimeOriginal),
+                        37378: ("Exif", piexif.ExifIFD.FNumber),
+                        37386: ("Exif", piexif.ExifIFD.FocalLength),
+                        42035: ("Exif", piexif.ExifIFD.LensMake),
+                        41988: ("Exif", piexif.ExifIFD.LensModel),
+                        42034: ("Exif", piexif.ExifIFD.LensSpecification),
+                    }
+                    
+                    # 合并PIL EXIF数据到exif_dict
+                    for tag_id, (section, piexif_tag) in tag_mapping.items():
+                        if tag_id in pil_exif:
+                            try:
+                                exif_dict[section][piexif_tag] = pil_exif[tag_id]
+                            except Exception as e:
+                                logger.debug(f"处理PIL EXIF标签 {tag_id} 失败: {str(e)}")
+            except Exception as e:
+                logger.debug(f"加载PIL EXIF数据失败: {str(e)}")
+            
+            # 尝试从image.info加载EXIF数据
+            try:
+                if 'exif' in image.info:
+                    info_exif = piexif.load(image.info['exif'])
+                    exif_dict.update(info_exif)
+
+            except Exception as e:
+                    pass
+            
+            try:
+                with Image.open(image_path) as img:
+                    pil_exif = img._getexif()
                     if pil_exif:
                         tag_mapping = {
                             270: ("0th", piexif.ImageIFD.ImageDescription),
@@ -482,46 +523,10 @@ class WriteExifThread(QThread):
                             41988: ("Exif", piexif.ExifIFD.LensModel),
                             42034: ("Exif", piexif.ExifIFD.LensSpecification),
                         }
-                        
-                        # 合并PIL EXIF数据到exif_dict
-                        for tag_id, (section, piexif_tag) in tag_mapping.items():
-                            if tag_id in pil_exif:
-                                try:
-                                    exif_dict[section][piexif_tag] = pil_exif[tag_id]
-                                except Exception as e:
-                                    logger.debug(f"处理PIL EXIF标签 {tag_id} 失败: {str(e)}")
-            except Exception as e:
-                    logger.debug(f"加载PIL EXIF数据失败: {str(e)}")
-            
-            # 尝试从image.info加载EXIF数据
-            try:
-                if hasattr(image, 'info') and 'exif' in image.info:
-                    info_exif = piexif.load(image.info['exif'])
-                    exif_dict.update(info_exif)
-            except Exception as e:
-                    pass
-            
-            try:
-                with Image.open(image_path) as img:
-                    if hasattr(img, '_getexif') and img._getexif():
-                        pil_exif = img._getexif()
-                        if pil_exif:
-                            tag_mapping = {
-                                270: ("0th", piexif.ImageIFD.ImageDescription),
-                                271: ("0th", piexif.ImageIFD.Make),
-                                272: ("0th", piexif.ImageIFD.Model),
-                                315: ("0th", 315),
-                                36867: ("Exif", piexif.ExifIFD.DateTimeOriginal),
-                                37378: ("Exif", piexif.ExifIFD.FNumber),
-                                37386: ("Exif", piexif.ExifIFD.FocalLength),
-                                42035: ("Exif", piexif.ExifIFD.LensMake),
-                                41988: ("Exif", piexif.ExifIFD.LensModel),
-                                42034: ("Exif", piexif.ExifIFD.LensSpecification),
-                            }
-                            
-                            for tag_id, (section, piexif_tag) in tag_mapping.items():
-                                if tag_id in pil_exif:
-                                    exif_dict[section][piexif_tag] = pil_exif[tag_id]
+                    
+                    for tag_id, (section, piexif_tag) in tag_mapping.items():
+                        if tag_id in pil_exif:
+                            exif_dict[section][piexif_tag] = pil_exif[tag_id]
             except Exception:
                 pass
             

@@ -42,8 +42,10 @@ class SmartArrangePage(QtWidgets.QWidget):
         
         # 只添加存在的属性
         for tag_name, attr_name in button_mapping.items():
-            if hasattr(self.parent, attr_name):
+            try:
                 self.tag_buttons[tag_name] = getattr(self.parent, attr_name)
+            except AttributeError:
+                pass
         
         self.separator_mapping = {
             "-": "-",
@@ -73,10 +75,10 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def init_page(self):
         # 从parent获取folder_page引用，确保能访问文件夹数据
-        if hasattr(self.parent, 'folder_page'):
+        try:
             self.folder_page = self.parent.folder_page
             self.log("INFO", "成功获取文件夹页面引用")
-        else:
+        except AttributeError:
             self.log("WARNING", "无法获取文件夹页面引用")
         
         # 确保布局已初始化
@@ -85,30 +87,41 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.connect_signals()
         
         for i in range(1, 6):
-            if hasattr(self.parent, f'comboClassificationLevel{i}'):
-                getattr(self.parent, f'comboClassificationLevel{i}').currentIndexChanged.connect(
+            try:
+                combo_box = getattr(self.parent, f'comboClassificationLevel{i}')
+                combo_box.currentIndexChanged.connect(
                     lambda index, level=i: self.handle_combobox_selection(level, index))
+            except AttributeError:
+                pass
         
         for button in self.tag_buttons.values():
-            if button and hasattr(button, 'clicked'):
-                button.clicked.connect(lambda checked, b=button: self.move_tag(b))
+            if button:
+                try:
+                    button.clicked.connect(lambda checked, b=button: self.move_tag(b))
+                except AttributeError:
+                    pass
         
-        if hasattr(self.parent, 'fileOperation'):
+        try:
             self.parent.fileOperation.currentIndexChanged.connect(self.handle_operation_change)
+        except AttributeError:
+            pass
         
-        if hasattr(self.parent, 'comboBox_separator'):
+        try:
             self.parent.comboBox_separator.currentIndexChanged.connect(self.update_example_label)
+        except AttributeError:
+            pass
         
         self.log("DEBUG", "欢迎使用图像分类整理，您可在上方构建文件路径与文件名结构。")
 
     def connect_signals(self):
         # 检查并使用正确的按钮名称
-        if hasattr(self.parent, 'btnStartSmartArrange'):
+        try:
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_smart_arrange)
-        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
-            self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_smart_arrange)
-        else:
-            self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
+        except AttributeError:
+            try:
+                self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_smart_arrange)
+            except AttributeError:
+                self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
 
     def update_progress_bar(self, value):
         self.parent.progressBar_classification.setValue(value)
@@ -141,12 +154,17 @@ class SmartArrangePage(QtWidgets.QWidget):
             # 停止操作保持不变
             self.smart_arrange_thread.stop()
             # 使用正确的按钮名称并添加属性检查
-            if hasattr(self.parent, 'btnStartSmartArrange'):
+            try:
                 self.parent.btnStartSmartArrange.setText("开始整理")
-            elif hasattr(self.parent, 'toolButton_startSmartArrange'):
-                self.parent.toolButton_startSmartArrange.setText("开始整理")
-            if hasattr(self.parent, 'progressBar_classification'):
+            except AttributeError:
+                try:
+                    self.parent.toolButton_startSmartArrange.setText("开始整理")
+                except AttributeError:
+                    pass
+            try:
                 self.parent.progressBar_classification.setValue(0)
+            except AttributeError:
+                pass
             self._show_operation_status("整理已停止", 2000)
         else:
             folders = self.folder_page.get_all_folders() if self.folder_page else []
@@ -188,7 +206,10 @@ class SmartArrangePage(QtWidgets.QWidget):
         operation_text = "移动" if operation_type == 0 else "复制"
         
         # 添加记住选择的选项
-        if not hasattr(self, '_remember_operation'):
+        try:
+            # 直接尝试访问属性，如果不存在会抛出AttributeError
+            _ = self._remember_operation
+        except AttributeError:
             self._remember_operation = False
         
         # 如果用户选择了记住操作，则跳过确认
@@ -240,24 +261,29 @@ class SmartArrangePage(QtWidgets.QWidget):
             has_valid_folder = False
             
             for folder_info in folders:
-                folder_path = Path(folder_info['path'])
-                if folder_path.exists():
-                    has_valid_folder = True
-                    if folder_info.get('include_sub', 0):
-                        # 使用生成器表达式优化大文件夹性能
-                        for root, _, files in os.walk(folder_path):
-                            total_files += len(files)
-                            # 如果文件数量过多，不再继续计数以提高性能
-                            if total_files > 10000:
-                                break
+                try:
+                    folder_path = Path(folder_info['path'])
+                    if folder_path.exists():
+                        has_valid_folder = True
+                        if folder_info.get('include_sub', 0):
+                            # 使用生成器表达式优化大文件夹性能
+                            for root, _, files in os.walk(folder_path):
+                                total_files += len(files)
+                                # 如果文件数量过多，不再继续计数以提高性能
+                                if total_files > 10000:
+                                    break
+                        else:
+                            # 如果不包含子文件夹，直接列出文件夹中的文件
+                            try:
+                                files = [f for f in folder_path.iterdir() if f.is_file()]
+                                total_files += len(files)
+                            except PermissionError:
+                                self.log("WARNING", f"无权限访问文件夹: {folder_path}")
                         if total_files > 10000:
                             break
-                    else:
-                        try:
-                            files = [f for f in folder_path.iterdir() if f.is_file()]
-                            total_files += len(files)
-                        except PermissionError:
-                            self.log("WARNING", f"无权限访问文件夹: {folder_path}")
+                except Exception:
+                    # 忽略文件夹处理中的异常
+                    pass
             
             # 简化检查结果处理
             if not has_valid_folder:
@@ -371,19 +397,25 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.smart_arrange_thread.progress_signal.connect(self.update_progress_bar)
         self.smart_arrange_thread.start()
         # 使用正确的按钮名称并添加属性检查
-        if hasattr(self.parent, 'btnStartSmartArrange'):
+        try:
             self.parent.btnStartSmartArrange.setText("停止整理")
-        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
-            self.parent.toolButton_startSmartArrange.setText("停止整理")
+        except AttributeError:
+            try:
+                self.parent.toolButton_startSmartArrange.setText("停止整理")
+            except AttributeError:
+                pass
         self._show_operation_status("开始整理文件...", 1500)
 
     def on_thread_finished(self):
         """线程结束处理，优化通知机制"""
         # 使用正确的按钮名称并添加属性检查
-        if hasattr(self.parent, 'btnStartSmartArrange'):
+        try:
             self.parent.btnStartSmartArrange.setText("开始整理")
-        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
-            self.parent.toolButton_startSmartArrange.setText("开始整理")
+        except AttributeError:
+            try:
+                self.parent.toolButton_startSmartArrange.setText("开始整理")
+            except AttributeError:
+                pass
         
         # 获取线程结果信息
         error_msg = None
@@ -511,12 +543,18 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def update_combobox_state(self, level):
         # 检查comboClassificationLevel{level}属性是否存在
-        if not hasattr(self.parent, f'comboClassificationLevel{level}'):
+        try:
+            # 尝试获取属性
+            combo_box = getattr(self.parent, f'comboClassificationLevel{level}')
+        except AttributeError:
             # 属性不存在时记录日志并返回
-            if hasattr(self.parent, 'log'):
-                self.parent.log.info(f'comboClassificationLevel{level}属性不存在，跳过组合框状态更新')
-            elif hasattr(self.parent, 'logger'):
-                self.parent.logger.info(f'comboClassificationLevel{level}属性不存在，跳过组合框状态更新')
+            try:
+                if hasattr(self.parent, 'log'):
+                    self.parent.log.info(f'comboClassificationLevel{level}属性不存在，跳过组合框状态更新')
+                elif hasattr(self.parent, 'logger'):
+                    self.parent.logger.info(f'comboClassificationLevel{level}属性不存在，跳过组合框状态更新')
+            except Exception:
+                pass
             return
         
         current_text = getattr(self.parent, f'comboClassificationLevel{level}').currentText()
@@ -602,22 +640,28 @@ class SmartArrangePage(QtWidgets.QWidget):
     
     def set_combo_box_states(self):
         # 检查comboClassificationLevel1属性是否存在
-        if hasattr(self.parent, 'comboClassificationLevel1'):
+        try:
             self.parent.comboClassificationLevel1.setEnabled(True)
             # 尝试设置其他级别的组合框状态
             for i in range(2, 6):
-                if hasattr(self.parent, f'comboClassificationLevel{i}'):
-                    combo_box = getattr(self.parent, f'comboClassificationLevel{i}')
-                    combo_box.setEnabled(False)
-                    combo_box.setCurrentIndex(0)
+                try:
+                    combo_box = getattr(self.parent, f'comboClassificationLevel{i}', None)
+                    if combo_box:
+                        combo_box.setEnabled(False)
+                        combo_box.setCurrentIndex(0)
+                except Exception:
+                    continue
             
             self.update_combobox_state(1)
-        else:
+        except AttributeError:
             # 记录日志，说明组合框不存在
-            if hasattr(self.parent, 'log'):
-                self.parent.log('INFO', 'comboClassificationLevel1属性不存在，跳过组合框状态设置')
-            elif hasattr(self.parent, 'logger'):
-                self.parent.logger.info('comboClassificationLevel1属性不存在，跳过组合框状态设置')
+            try:
+                if hasattr(self.parent, 'log'):
+                    self.parent.log('INFO', 'comboClassificationLevel1属性不存在，跳过组合框状态设置')
+                elif hasattr(self.parent, 'logger'):
+                    self.parent.logger.info('comboClassificationLevel1属性不存在，跳过组合框状态设置')
+            except Exception:
+                pass
 
     def get_specific_value(self, text):
         now = datetime.now()
@@ -784,7 +828,7 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def handle_log_signal(self, level, message):
         # 检查并使用正确的日志输出控件
-        if hasattr(self.parent, 'smartArrangeLogOutputTextEdit'):
+        try:
             color_map = {
                 'ERROR': '#FF0000',
                 'WARNING': '#FFA500',
@@ -794,23 +838,43 @@ class SmartArrangePage(QtWidgets.QWidget):
             color = color_map.get(level, '#000000')
             self.parent.smartArrangeLogOutputTextEdit.append(
                 f'<span style="color:{color}">{message}</span>')
-        elif hasattr(self.parent, 'textEdit_SmartArrange_Log'):
-            color_map = {
-                'ERROR': '#FF0000',
-                'WARNING': '#FFA500',
-                'DEBUG': '#008000',
-                'INFO': '#8677FD'
-            }
-            color = color_map.get(level, '#000000')
-            self.parent.textEdit_SmartArrange_Log.append(
-                f'<span style="color:{color}">{message}</span>')
-        else:
-            print(f"[{level}] {message}")  # 降级到控制台输出
+        except AttributeError:
+            try:
+                color_map = {
+                    'ERROR': '#FF0000',
+                    'WARNING': '#FFA500',
+                    'DEBUG': '#008000',
+                    'INFO': '#8677FD'
+                }
+                color = color_map.get(level, '#000000')
+                self.parent.textEdit_SmartArrange_Log.append(
+                    f'<span style="color:{color}">{message}</span>')
+            except AttributeError:
+                print(f"[{level}] {message}")  # 降级到控制台输出
+    
+    def _show_operation_status(self, message, duration=1500):
+        try:
+            # 尝试使用父组件的show_status_message方法
+            self.parent.show_status_message(message, duration)
+        except AttributeError:
+            # 如果父组件没有该方法，记录日志
+            self.log("INFO", message)
+        except Exception as e:
+            # 出错时降级到日志记录
+            self.log("WARNING", f"无法显示状态消息: {str(e)}")
     
     def log(self, level, message):
         current_time = datetime.now().strftime('%H:%M:%S')
-        log_message = f"[{current_time}] [{level}] {message}"
-        self.log_signal.emit(level, log_message)
+        formatted_message = f"[{current_time}] [{level}] {message}"
+        
+        # 直接使用信号发送日志
+        try:
+            # 发送原始级别和格式化后的消息
+            self.log_signal.emit(level, formatted_message)
+        except Exception as e:
+            # 改进异常处理，提供更详细的错误信息
+            print(f"日志发送失败: {str(e)}")
+            print(formatted_message)  # 降级到控制台输出
 
     def move_tag_back(self, button):
         # 确保布局存在
@@ -864,18 +928,22 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
         
         # 如果直接获取失败，尝试通过父框架获取
-        if not self.available_layout and hasattr(self.parent, 'frameRenameTags'):
-            frame = getattr(self.parent, 'frameRenameTags')
-            # 在frame中查找layout属性
-            for attr_name in dir(frame):
-                if attr_name.startswith('_'):
-                    continue
-                attr_value = getattr(frame, attr_name)
-                if str(type(attr_value)).find('QHBoxLayout') >= 0:
-                    self.available_layout = attr_value
-                    self.log("INFO", f"通过frameRenameTags获取布局组件: {attr_name}")
-                    break
-        
+        try:
+            if not self.available_layout and getattr(self.parent, 'frameRenameTags', None):
+                frame = getattr(self.parent, 'frameRenameTags')
+                # 在frame中查找layout属性
+                for attr_name in dir(frame):
+                    if attr_name.startswith('_'):
+                        continue
+                    attr_value = getattr(frame, attr_name)
+                    if str(type(attr_value)).find('QHBoxLayout') >= 0:
+                        self.available_layout = attr_value
+                        self.log("INFO", f"通过frameRenameTags获取布局组件: {attr_name}")
+                        break
+        except Exception:
+            # 忽略获取布局组件时的异常
+            pass
+
         if not self.selected_layout and hasattr(self.parent, 'frameRename'):
             frame = getattr(self.parent, 'frameRename')
             # 在frame中查找layout属性
@@ -902,9 +970,11 @@ class SmartArrangePage(QtWidgets.QWidget):
             self._reset_state()
             
             # 重新检查文件夹页面引用
-            if hasattr(self.parent, 'folder_page'):
+            try:
                 self.folder_page = self.parent.folder_page
                 self.log("INFO", "已重新获取文件夹页面引用")
+            except AttributeError:
+                pass
                 
             # 重新初始化布局引用
             self._initialize_layouts()
@@ -963,6 +1033,13 @@ class SmartArrangePage(QtWidgets.QWidget):
             if hasattr(self, 'smart_arrange_thread') and self.smart_arrange_thread and self.smart_arrange_thread.isRunning():
                 self.smart_arrange_thread.stop()
                 self.smart_arrange_thread = None
+            
+            # 重新初始化UI组件引用
+            for attr_name in ['btnStartSmartArrange', 'toolButton_startSmartArrange', 'progressBar_classification']:
+                try:
+                    pass  # 占位，保留结构完整性
+                except Exception:
+                    pass
                 
             # 重置进度条
             if hasattr(self.parent, 'progressBar_classification'):

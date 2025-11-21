@@ -49,15 +49,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         
     def init_ui(self):
-        # 初始化各功能页面，安全地调用init_page方法
+        # 初始化各功能页面
         for page_name, page in self.pages.items():
-            if hasattr(page, 'init_page'):
-                try:
-                    page.init_page()
-                except Exception as e:
-                    print(f"初始化{page_name}页面失败: {str(e)}")
-            else:
-                print(f"{page_name}页面没有init_page方法，跳过初始化")
+            try:
+                page.init_page()
+            except Exception as e:
+                print(f"初始化{page_name}页面失败: {str(e)}")
         
         # 设置导航菜单的初始状态
         self.listNavigationMenu.setCurrentRow(0)
@@ -66,9 +63,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """连接信号槽"""
         # 设置按钮点击事件
         try:
-            # 导航菜单连接
-            self.listNavigationMenu.currentRowChanged.connect(self._on_navigation_changed)
-            
             # 设置按钮连接
             self.btnSettings.clicked.connect(self._show_settings)
             
@@ -88,19 +82,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
         except Exception as e:
             print(f"连接信号失败: {str(e)}")
-            
-    def _on_navigation_changed(self, index):
-        # 根据导航菜单选择切换页面
-        self.stackedWidget.setCurrentIndex(index)
-        # 切换到对应页面时重新初始化
-        if index == 0:  # 添加文件夹页面
-            self.folder_page.refresh()
-        elif index == 1:  # 智能整理页面
-            self.smart_arrange_page.refresh()
-        elif index == 2:  # 文件去重页面
-            self.remove_duplication_page.refresh()
-        elif index == 3:  # 属性写入页面
-            self.write_exif_page.refresh()
             
     def _show_settings(self):
         """显示设置对话框"""
@@ -125,12 +106,19 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 event.accept()
     
     def _on_mouse_move(self, event):
-        if event.buttons() == Qt.MouseButton.LeftButton and hasattr(self, '_drag_position') and self._drag_position:
-            self.move(event.globalPosition().toPoint() - self._drag_position)
-            event.accept()
+        try:
+            if event.buttons() == Qt.MouseButton.LeftButton and self._drag_position:
+                self.move(event.globalPosition().toPoint() - self._drag_position)
+                event.accept()
+        except AttributeError:
+            pass
     
     def _on_mouse_release(self, event):
-        self._drag_position = QPoint()
+        try:
+            if event.button() == Qt.MouseButton.LeftButton:
+                self._drag_position = QPoint()
+        except AttributeError:
+            pass
             
     def log(self, level, message):
         """日志记录功能"""
@@ -153,9 +141,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             # 尝试使用映射中的组件
             if current_index in log_components:
                 for component_name in log_components[current_index]:
-                    if hasattr(self, component_name):
+                    try:
                         getattr(self, component_name).append(log_message)
                         break
+                    except (AttributeError, TypeError):
+                        pass
         except Exception as e:
             print(f"写入日志到UI失败: {str(e)}")
             
