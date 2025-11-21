@@ -9,9 +9,18 @@ from filetype import guess
 
 
 def load_stylesheet(filename):
-    script_dir = os.path.dirname(os.path.realpath(__file__))
-    file_path = os.path.join(script_dir, 'resources', 'stylesheet', filename)
-
+    """
+    加载指定的样式表文件
+    
+    Args:
+        filename: 样式表文件名
+        
+    Returns:
+        str: 样式表内容，如果文件不存在则返回错误信息
+    """
+    # 使用get_resource_path统一管理资源路径
+    file_path = get_resource_path(f"stylesheet/{filename}")
+    
     try:
         with open(file_path, 'r', encoding='utf-8') as file:
             return file.read()
@@ -20,15 +29,44 @@ def load_stylesheet(filename):
 
 
 def get_resource_path(relative_path):
+    """
+    获取资源文件的绝对路径
+    同时支持开发环境和打包后的环境
+    
+    Args:
+        relative_path: 相对于resources目录的路径
+        
+    Returns:
+        str: 资源文件的绝对路径
+    """
     try:
+        # 打包后的环境
         base_path = Path(sys._MEIPASS)
     except Exception:
+        # 开发环境
         base_path = Path(__file__).parent if '__file__' in globals() else Path.cwd()
+    
+    # 确保路径以resources开头
+    if not relative_path.startswith('resources'):
+        relative_path = f"resources/{relative_path}"
 
+    # 规范化路径，使用正斜杠
     return str((base_path / relative_path).resolve()).replace('\\', '/')
 
 
 def detect_media_type(file_path):
+    """
+    检测媒体文件类型
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        dict: 包含文件类型信息的字典
+        
+    Raises:
+        FileNotFoundError: 文件不存在时抛出
+    """
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"这个文件不存在: {file_path}")
 
@@ -130,6 +168,9 @@ def detect_media_type(file_path):
 
 
 def author():
+    """
+    显示作者信息对话框，包含联系二维码
+    """
     dialog = QDialog()
     dialog.setWindowFlags(dialog.windowFlags() | Qt.WindowType.FramelessWindowHint)
     dialog.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -142,7 +183,8 @@ def author():
     layout = QVBoxLayout(container)
 
     qr_code_label = QLabel(container)
-    resource_path = get_resource_path("resources/img/activity/QQ_名片.png")
+    # 修复资源路径冗余问题
+    resource_path = get_resource_path("img/activity/QQ_名片.png")
     pixmap = QPixmap(resource_path)
     qr_code_label.setPixmap(pixmap)
     qr_code_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -153,7 +195,8 @@ def author():
     layout.addWidget(confirm_button)
 
     close_button = QPushButton(container)
-    close_button.setIcon(QIcon(get_resource_path("resources/img/窗口控制/关闭作者.svg")))
+    # 修复资源路径冗余问题
+    close_button.setIcon(QIcon(get_resource_path("img/窗口控制/关闭作者.svg")))
     close_button.setFixedSize(28, 28)
     close_button.move(container.width() - close_button.width() - 12, 6)
     close_button.clicked.connect(dialog.reject)

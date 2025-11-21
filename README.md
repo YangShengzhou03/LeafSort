@@ -25,7 +25,7 @@
       <img src="https://img.shields.io/badge/Python-3.11-blue?style=for-the-badge&logo=python" alt="Python Version">
     </a>
     <a href="https://www.riverbankcomputing.com/software/pyqt/">
-      <img src="https://img.shields.io/badge/PyQt6-6.4.2-green?style=for-the-badge&logo=qt" alt="PyQt6 Version">
+      <img src="https://img.shields.io/badge/PyQt6-6.5.0-green?style=for-the-badge&logo=qt" alt="PyQt6 Version">
     </a>
     <a href="https://pillow.readthedocs.io/en/stable/">
       <img src="https://img.shields.io/badge/Pillow-11.3.0-orange?style=for-the-badge&logo=pypi" alt="Pillow Version">
@@ -33,8 +33,6 @@
   </div>
 
   <br />
-  
-  [![Star History Chart](https://api.star-history.com/svg?repos=YangShengzhou03/LeafView&type=Date)](https://star-history.com/#YangShengzhou03/LeafView&Date)
 
 </div>
 
@@ -59,12 +57,12 @@
 - **安全可靠**：提供预览和确认机制，防止误操作
 
 ### 💡 适用场景
-- 个人图片库管理
-- 摄影爱好者的照片整理
+- 个人图片库管理与浏览
+- 摄影爱好者的照片整理与分类
 - 图片批量处理与重命名
-- 图片元数据编辑
+- 图片元数据（EXIF）编辑
 - 重复图片检测与清理
-- 图片文字识别与分类
+- 媒体文件组织与管理
 
 ## 🚀 技术架构
 
@@ -72,7 +70,7 @@
 | 技术                | 版本      | 描述                                                         |
 |---------------------|-----------|--------------------------------------------------------------|
 | **Python 3.11**     | 3.11+     | 主要编程语言，提供强大的后端处理能力                         |
-| **PyQt6**           | 6.4.2+    | 跨平台GUI框架，用于构建直观、美观的用户界面                  |
+| **PyQt6**           | 6.5.0     | 跨平台GUI框架，用于构建直观、美观的用户界面                  |
 | **Pillow**          | 11.3.0    | Python图像处理库，支持各种图片格式的读写和处理              |
 | **pillow-heif**     | 1.1.0     | HEIF格式支持，扩展Pillow对HEIC等格式的兼容性                 |
 | **piexif**          | 1.1.3     | 用于读取和写入EXIF元数据信息                                |
@@ -82,6 +80,7 @@
 | **numpy**           | 1.26.4    | 科学计算库，用于图像数据处理                                |
 | **exifread**        | 3.0.0     | EXIF数据读取库                                              |
 | **moviepy**         | 1.0.3     | 视频处理库，支持媒体文件处理                                |
+| **python-magic**    | 0.4.27    | 文件类型检测库，用于识别媒体文件格式                        |
 
 ### 🏗️ 系统架构
 
@@ -249,6 +248,135 @@ LeafView采用生产者-消费者模式管理多线程任务：
 - **无边框界面**：现代化UI设计，支持自定义主题
 
 ## 💻 安装部署
+
+详细的安装说明请参考独立的 [安装指南](installation_guide.md) 文档，其中包含完整的环境要求、依赖安装步骤、多平台部署方法和常见问题解决方案。
+### 📋 系统要求
+- Python 3.11 或更高版本
+- Windows/macOS/Linux 操作系统
+- 至少 2GB RAM（推荐 4GB 或更多）
+- 支持 OpenGL 的图形硬件
+
+### 🚀 快速安装
+
+#### 1. 克隆仓库
+```bash
+git clone https://github.com/YangShengzhou03/LeafView.git
+cd LeafView
+```
+
+#### 2. 创建虚拟环境（推荐）
+```bash
+# Windows
+python -m venv venv
+venv\Scripts\activate
+
+# macOS/Linux
+python3 -m venv venv
+source venv/bin/activate
+```
+
+#### 3. 安装依赖
+```bash
+pip install -r requirements.txt
+```
+
+#### 4. 运行应用
+```bash
+python App.py
+```
+
+### ⚙️ 环境配置注意事项
+- **Tesseract OCR**: 对于文字识别功能，需要安装 Tesseract OCR 引擎并配置环境变量
+- **ffmpeg**: 对于视频处理功能，需要安装 ffmpeg
+- **系统权限**: 确保应用有足够的文件系统权限来访问和管理图片文件
+
+## 📁 目录结构
+
+LeafView 项目采用清晰的目录结构组织代码和资源，便于维护和扩展：
+
+```
+LeafView/
+├── App.py              # 应用程序入口文件
+├── common.py           # 通用功能和工具函数
+├── main_window.py      # 主窗口实现
+├── resources/          # 资源文件目录
+│   ├── img/            # 图标和图片资源
+│   ├── stylesheet/     # CSS样式表
+│   ├── cv2_date/       # 日期识别相关资源
+│   ├── exiftool/       # EXIF工具
+│   └── json/           # 配置和数据文件
+├── requirements.txt    # 项目依赖列表
+├── LeafView_version_info.txt  # 版本信息
+├── README.md           # 项目说明文档
+├── installation_guide.md      # 安装指南文档
+└── comprehensive_guide.md     # 综合使用指南文档
+
+```
+LeafView/
+├── App.py                 # 应用程序入口
+├── main_window.py         # 主窗口实现
+├── Ui_MainWindow.py       # UI界面生成文件
+├── Ui_MainWindow.ui       # Qt Designer UI设计文件
+├── add_folder.py          # 文件夹添加功能
+├── smart_arrange.py       # 智能整理功能
+├── smart_arrange_thread.py # 智能整理线程
+├── remove_duplication.py  # 文件去重功能
+├── remove_duplication_thread.py # 去重处理线程
+├── write_exif.py          # EXIF属性写入功能
+├── write_exif_thread.py   # EXIF写入线程
+├── contrast_thread.py     # 对比处理线程
+├── read_thread.py         # 读取处理线程
+├── update_dialog.py       # 更新对话框
+├── UI_UpdateDialog.py     # 更新对话框UI
+├── UI_UpdateDialog.ui     # 更新对话框UI设计
+├── config_manager.py      # 配置管理
+├── common.py              # 公共工具函数
+├── requirements.txt       # 项目依赖
+├── README.md              # 项目文档
+├── license.txt            # 许可证文件
+├── .gitignore             # Git忽略文件
+└── resources/             # 资源文件夹
+    ├── img/               # 图像资源
+    ├── exiftool/          # ExifTool工具
+    ├── cv2_date/          # OpenCV日期处理
+    └── json/              # JSON配置文件
+```
+
+## 📖 使用说明
+
+详细的使用指南请参考独立的 [综合使用指南](comprehensive_guide.md) 文档，其中包含完整的功能介绍、操作步骤、快捷键说明和高级功能使用方法。
+### 📷 图片浏览
+1. 启动应用程序
+2. 通过菜单栏或工具栏导入图片文件夹或单个图片文件
+3. 在左侧文件列表中选择图片进行预览
+4. 使用鼠标滚轮或键盘方向键浏览多张图片
+
+### 🧹 智能整理
+1. 选择要整理的图片文件夹
+2. 在侧边栏选择"智能整理"功能
+3. 设置整理规则（按日期、地点、格式等）
+4. 预览整理结果
+5. 确认并执行整理操作
+
+### 🔍 文件去重
+1. 选择要检查的文件夹
+2. 在侧边栏选择"文件去重"功能
+3. 设置相似度阈值
+4. 等待扫描完成
+5. 查看重复文件组并选择处理方式
+
+### 📝 属性写入
+1. 选择要修改EXIF属性的图片
+2. 在侧边栏选择"属性写入"功能
+3. 编辑或添加EXIF信息
+4. 预览修改效果
+5. 确认并保存修改
+
+## ⚠️ 注意事项
+- 请在执行文件整理、重命名和属性写入等操作前备份重要数据
+- 大量图片处理可能需要较长时间，请耐心等待
+- 部分功能（如OCR文字识别）需要额外安装第三方软件
+- 应用采用单例模式设计，同一时间只能运行一个实例
 
 ### 🔧 环境准备
 - **操作系统**：Windows 10/11、macOS 10.14+、Linux (Ubuntu 18.04+)
@@ -1899,22 +2027,12 @@ def profile_performance(func):
         return result
     return wrapper
 
-# 使用cProfile进行详细性能分析
-import cProfile
-import pstats
+## 📊 性能优化建议
 
-def profile_function(func, *args, **kwargs):
-    """详细性能分析"""
-    profiler = cProfile.Profile()
-    profiler.enable()
-    
-    result = func(*args, **kwargs)
-    
-    profiler.disable()
-    stats = pstats.Stats(profiler)
-    stats.sort_stats('cumulative').print_stats(10)
-    
-    return result
+### 🔧 常见性能问题
+- **大量图片处理时的性能优化**：建议分批处理大型图片集合
+- **内存占用优化**：可在设置中调整缓存大小以平衡性能和内存使用
+- **启动速度优化**：减少不必要的启动时加载项
 ```
 
 ---

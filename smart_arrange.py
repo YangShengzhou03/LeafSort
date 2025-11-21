@@ -128,6 +128,7 @@ class SmartArrangePage(QtWidgets.QWidget):
     def toggle_smart_arrange(self):
         """智能整理开关，简化用户交互流程"""
         if self.smart_arrange_thread and self.smart_arrange_thread.isRunning():
+            # 停止操作保持不变
             self.smart_arrange_thread.stop()
             # 使用正确的按钮名称并添加属性检查
             if hasattr(self.parent, 'btnStartSmartArrange'):
@@ -143,10 +144,26 @@ class SmartArrangePage(QtWidgets.QWidget):
                 self.log("WARNING", "请先导入一个包含文件的文件夹。")
                 self._show_operation_status("请先添加文件夹", 2500)
                 return
-
-            # 快速确认流程
-            if not self._quick_confirm_operation():
-                return
+                
+            # 添加快速模式支持：如果只有一个文件夹且文件数少于100，自动跳过确认
+            quick_mode = False
+            if len(folders) == 1:
+                folder_path = Path(folders[0]['path'])
+                if folder_path.exists():
+                    try:
+                        if not folders[0].get('include_sub', 0):
+                            file_count = len([f for f in folder_path.iterdir() if f.is_file()])
+                            if file_count > 0 and file_count < 100:
+                                quick_mode = True
+                                self.log("INFO", f"启用快速模式：单个文件夹且文件数较少({file_count})")
+                    except Exception:
+                        pass
+            
+            # 快速模式下跳过确认，直接预检查
+            if not quick_mode:
+                # 快速确认流程
+                if not self._quick_confirm_operation():
+                    return
                 
             # 智能预检查
             if not self._smart_pre_check(folders):
@@ -160,17 +177,39 @@ class SmartArrangePage(QtWidgets.QWidget):
         operation_type = self.parent.comboBox_operation.currentIndex()
         operation_text = "移动" if operation_type == 0 else "复制"
         
-        # 智能生成简洁确认信息
-        confirm_message = self._generate_smart_confirmation(operation_type, [])
+        # 添加记住选择的选项
+        if not hasattr(self, '_remember_operation'):
+            self._remember_operation = False
         
-        # 使用更简洁的确认对话框
-        reply = QMessageBox.question(
-            self,
-            f"开始{operation_text}整理",
-            confirm_message,
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.Yes  # 默认选择Yes，减少操作步骤
-        )
+        # 如果用户选择了记住操作，则跳过确认
+        if self._remember_operation:
+            self.log("INFO", f"自动确认{operation_text}操作（用户已选择记住此设置）")
+            return True
+        
+        # 获取文件夹信息用于生成准确的确认信息
+        folders = self.folder_page.get_all_folders() if self.folder_page else []
+        folder_paths = [folder_info['path'] for folder_info in folders]
+        
+        # 智能生成简洁确认信息
+        confirm_message = self._generate_smart_confirmation(operation_type, folder_paths)
+        
+        # 创建自定义对话框以支持记住选择选项
+        msg_box = QMessageBox(self)
+        msg_box.setWindowTitle(f"开始{operation_text}整理")
+        msg_box.setText(confirm_message)
+        msg_box.setStandardButtons(QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No)
+        msg_box.setDefaultButton(QMessageBox.StandardButton.Yes)
+        
+        # 添加复选框
+        remember_checkbox = QtWidgets.QCheckBox("记住此操作，下次不再提示", self)
+        msg_box.setCheckBox(remember_checkbox)
+        
+        reply = msg_box.exec()
+        
+        # 保存用户的记住选择
+        if remember_checkbox.isChecked():
+            self._remember_operation = True
+            self.log("INFO", "用户已选择记住操作设置")
         
         if reply != QMessageBox.StandardButton.Yes:
             self.log("INFO", "用户取消整理操作")
@@ -178,26 +217,56 @@ class SmartArrangePage(QtWidgets.QWidget):
         return True
         
     def _smart_pre_check(self, folders):
-        """智能预检查"""
+        """智能预检查，简化检查流程"""
         try:
-            # 检查文件数量
+            # 检查文件夹是否为空
+            if not folders:
+                self.log("WARNING", "未选择文件夹")
+                self._show_operation_status("请先添加文件夹", 2000)
+                return False
+            
+            # 快速检查文件数量
             total_files = 0
+            has_valid_folder = False
+            
             for folder_info in folders:
                 folder_path = Path(folder_info['path'])
                 if folder_path.exists():
+                    has_valid_folder = True
                     if folder_info.get('include_sub', 0):
+                        # 使用生成器表达式优化大文件夹性能
                         for root, _, files in os.walk(folder_path):
                             total_files += len(files)
+                            # 如果文件数量过多，不再继续计数以提高性能
+                            if total_files > 10000:
+                                break
+                        if total_files > 10000:
+                            break
                     else:
-                        files = os.listdir(folder_path)
-                        total_files += len([f for f in files if (folder_path / f).is_file()])
+                        try:
+                            files = [f for f in folder_path.iterdir() if f.is_file()]
+                            total_files += len(files)
+                        except PermissionError:
+                            self.log("WARNING", f"无权限访问文件夹: {folder_path}")
             
+            # 简化检查结果处理
+            if not has_valid_folder:
+                self.log("WARNING", "所有文件夹路径无效")
+                self._show_operation_status("文件夹路径无效", 2000)
+                return False
+                
             if total_files == 0:
                 self.log("WARNING", "未检测到文件")
                 self._show_operation_status("文件夹中没有文件", 2000)
                 return False
-                
-            # 检查目标路径
+            
+            # 优化大量文件的处理
+            if total_files > 10000:
+                self.log("WARNING", f"检测到大量文件({total_files}+)，可能需要较长时间")
+                # 对于大量文件，默认跳过详细确认，只显示提示
+                self._show_operation_status(f"开始处理大量文件...", 2000)
+            
+            # 检查目标路径，使用更简洁的错误处理
             if self.parent.lineEdit_destination.text():
                 dest_path = Path(self.parent.lineEdit_destination.text())
                 try:
@@ -211,6 +280,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             
         except Exception as e:
             self.log("ERROR", f"预检查失败: {str(e)}")
+            self._show_operation_status(f"检查失败: {str(e)}", 3000)
             return False
             
     def _start_smart_arrange_thread(self, folders):
@@ -298,23 +368,60 @@ class SmartArrangePage(QtWidgets.QWidget):
         self._show_operation_status("开始整理文件...", 1500)
 
     def on_thread_finished(self):
-        """线程结束处理"""
+        """线程结束处理，优化通知机制"""
         # 使用正确的按钮名称并添加属性检查
         if hasattr(self.parent, 'btnStartSmartArrange'):
             self.parent.btnStartSmartArrange.setText("开始整理")
         elif hasattr(self.parent, 'toolButton_startSmartArrange'):
             self.parent.toolButton_startSmartArrange.setText("开始整理")
+        
+        # 获取线程结果信息
+        error_msg = None
+        success_count = 0
+        fail_count = 0
+        
+        if self.smart_arrange_thread:
+            if hasattr(self.smart_arrange_thread, 'error') and self.smart_arrange_thread.error:
+                error_msg = str(self.smart_arrange_thread.error)
+            # 获取处理统计信息
+            if hasattr(self.smart_arrange_thread, 'stats'):
+                stats = self.smart_arrange_thread.stats
+                success_count = stats.get('success', 0)
+                fail_count = stats.get('fail', 0)
+        
         self.smart_arrange_thread = None
         self.update_progress_bar(100)
         
-        if hasattr(self, 'smart_arrange_thread') and hasattr(self.smart_arrange_thread, 'error'):
-            error_msg = str(self.smart_arrange_thread.error)
+        if error_msg:
+            # 错误处理保持不变
             self.log("ERROR", f"整理过程中发生错误: {error_msg}")
             QMessageBox.critical(self, "整理失败", f"操作失败: {error_msg}")
             self._show_operation_status("整理失败", 3000)
         else:
+            # 优化成功提示，提供更多信息
             self.log("INFO", "整理完成")
-            QMessageBox.information(self, "整理完成", "文件整理成功！")
+            
+            # 生成更详细的成功消息
+            success_message = f"文件整理成功！"
+            if success_count > 0:
+                success_message += f"\n成功处理: {success_count} 个文件"
+            if fail_count > 0:
+                success_message += f"\n\n注意: 有 {fail_count} 个文件处理失败，请查看日志获取详细信息"
+            
+            # 为大量文件操作提供简化通知选项
+            if success_count > 100:
+                # 使用非模态通知，不阻塞用户继续操作
+                msg_box = QMessageBox(self)
+                msg_box.setWindowTitle("整理完成")
+                msg_box.setText(success_message)
+                msg_box.setStandardButtons(QMessageBox.StandardButton.Ok)
+                msg_box.setIcon(QMessageBox.Icon.Information)
+                msg_box.setModal(False)
+                msg_box.show()
+            else:
+                # 小批量操作使用传统消息框
+                QMessageBox.information(self, "整理完成", success_message)
+                
             self._show_operation_status("整理完成", 2000)
 
     def handle_combobox_selection(self, level, index):
@@ -322,22 +429,75 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.update_combobox_state(level)
 
     def _generate_smart_confirmation(self, operation_type, folders):
-        """智能生成确认信息"""
-        # 统计文件信息
+        """智能生成确认信息，优化用户体验"""
+        # 统计文件信息（使用更高效的方式）
         total_files = 0
+        processed_folders = 0
+        
         for folder in folders:
             if os.path.exists(folder):
-                for root, dirs, files in os.walk(folder):
+                processed_folders += 1
+                # 只统计顶层文件以提高速度，避免大量文件时的性能问题
+                try:
+                    files = [f for f in os.listdir(folder) if os.path.isfile(os.path.join(folder, f))]
                     total_files += len(files)
+                    # 限制计数以提高性能
+                    if total_files > 1000:
+                        break
+                except PermissionError:
+                    pass
         
         operation_text = "移动" if operation_type == 0 else "复制"
         
+        # 获取操作摘要
+        has_classification = any(getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类" 
+                                for i in range(1, 6) if hasattr(self.parent, f'comboBox_level_{i}'))
+        has_rename = self.selected_layout.count() > 0
+        
+        # 生成操作类型描述
+        action_desc = []
+        if has_classification:
+            action_desc.append("分类")
+        if has_rename:
+            action_desc.append("重命名")
+        action_text = "和".join(action_desc) if action_desc else "处理"
+        
+        # 生成更简洁、更明确的确认信息
         if total_files == 0:
-            return f"{operation_text}模式：未检测到文件，请确保文件夹中包含文件。"
+            return f"即将{operation_text}文件并进行{action_text}，但当前未检测到文件。请确认继续？"
         elif total_files == 1:
-            return f"{operation_text}模式：检测到1个文件，将根据标签进行分类整理。"
+            return f"即将{operation_text}1个文件并进行{action_text}。\n\n确认继续？"
+        elif total_files > 1000:
+            # 对于大量文件，提供更简洁的信息
+            return f"即将{operation_text}大量文件（超过1000个）并进行{action_text}。\n\n此操作可能需要较长时间，确认继续？"
         else:
-            return f"{operation_text}模式：检测到{total_files}个文件，将根据标签进行分类整理。\n\n操作完成后可在目标位置查看结果。"
+            # 对于普通数量的文件，提供详细信息
+            info_parts = [f"即将{operation_text}{total_files}个文件并进行{action_text}"]
+            
+            # 添加分类信息
+            if has_classification:
+                classification_levels = []
+                for i in range(1, 6):
+                    if hasattr(self.parent, f'comboBox_level_{i}'):
+                        level_text = getattr(self.parent, f'comboBox_level_{i}').currentText()
+                        if level_text != "不分类":
+                            classification_levels.append(self.get_specific_value(level_text))
+                if classification_levels:
+                    info_parts.append(f"分类路径: {'/'.join(classification_levels)}")
+            
+            # 添加重命名信息
+            if has_rename:
+                tag_count = self.selected_layout.count()
+                info_parts.append(f"将添加{tag_count}个标签到文件名")
+            
+            # 添加目标信息
+            if operation_type == 1 and self.destination_root:
+                display_path = self.destination_root
+                if len(display_path) > 40:
+                    display_path = f"{display_path[:20]}...{display_path[-15:]}"
+                info_parts.append(f"目标位置: {display_path}")
+            
+            return "\n".join(info_parts) + "\n\n确认继续？"
 
     def update_combobox_state(self, level):
         # 检查comboBox_level_{level}属性是否存在

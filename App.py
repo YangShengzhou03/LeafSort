@@ -52,26 +52,30 @@ def setup_local_server():
 
 
 def handle_application_exception(exc_type, exc_value, exc_traceback):
-    """Global exception handler"""
+    """Global exception handler for uncaught exceptions"""
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     
-    # Log the exception
+    # Log the exception with more detailed information
     error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    print(f"Unhandled exception: {error_message}")
+    print(f"Unhandled exception: {exc_type.__name__}: {exc_value}\n{error_message}")
     
     # Try to show error to user if possible
     try:
         if QtWidgets.QApplication.instance():
+            # Extract a more user-friendly error message
+            user_error_msg = f"{exc_type.__name__}: {str(exc_value)}"
+            
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-            msg.setWindowTitle("Application Error")
-            msg.setText("An unexpected error occurred. The application will close.")
+            msg.setWindowTitle("应用程序错误")
+            msg.setText("发生未预期的错误。应用程序可能需要关闭。")
+            msg.setInformativeText(user_error_msg)
             msg.setDetailedText(error_message)
             msg.exec()
-    except:
-        pass
+    except Exception as e:
+        print(f"Failed to show error dialog: {str(e)}")
 
 
 def main():
@@ -130,8 +134,11 @@ def main():
                     window.raise_()
                     window.showNormal()
                     print("Window brought to front via IPC")
+                else:
+                    print(f"Unknown socket data received: {data}")
             except Exception as e:
                 print(f"Error handling socket data: {str(e)}")
+                traceback.print_exc()
             finally:
                 try:
                     socket.deleteLater()
@@ -162,8 +169,8 @@ def main():
     except Exception as e:
         error_msg = f"应用程序启动失败: {str(e)}"
         print(f"Fatal error: {error_msg}")
+        traceback.print_exc()
         try:
-            print(error_msg)
             QtWidgets.QMessageBox.critical(None, "致命错误", error_msg)
         except:
             print("Failed to show error message dialog")
@@ -193,7 +200,3 @@ def main():
 if __name__ == '__main__':
     exit_code = main()
     sys.exit(exit_code)
-
-
-if __name__ == '__main__':
-    main()

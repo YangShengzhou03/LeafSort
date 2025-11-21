@@ -276,11 +276,15 @@ class SmartArrangeThread(QtCore.QThread):
                 self.log("ERROR", f"处理文件夹时出错: {str(e)}")
 
     def process_renaming(self):
-        file_count = {}
+        # 初始化统计变量
         total_rename_files = len(self.files_to_rename)
         renamed_files = 0
+        failed_files = 0
+        skipped_files = 0
         
-        for file_info in self.files_to_rename:
+        self.log("INFO", f"开始处理 {total_rename_files} 个文件")
+        
+        for idx, file_info in enumerate(self.files_to_rename):
             if self._stop_flag:
                 self.log("WARNING", "文件重命名操作被用户中断")
                 break
@@ -288,39 +292,106 @@ class SmartArrangeThread(QtCore.QThread):
             old_path = Path(file_info['old_path'])
             new_path = Path(file_info['new_path'])
             
-            new_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            base_name = new_path.stem
-            ext = new_path.suffix
-            counter = 1
-            unique_path = new_path
-            
-            while unique_path.exists():
-                unique_path = new_path.parent / f"{base_name}_{counter}{ext}"
-                counter += 1
+            # 验证源文件是否存在
+            if not old_path.exists():
+                self.log("WARNING", f"源文件不存在，跳过: {old_path}")
+                skipped_files += 1
+                continue
             
             try:
-                if self.destination_root:
-                    import shutil
-                    shutil.copy2(old_path, unique_path)
-                    self.log("INFO", f"复制文件: {old_path} -> {unique_path}")
-                else:
-                    if old_path.parent == unique_path.parent:
-                        old_path.rename(unique_path)
-                        self.log("DEBUG", f"重命名文件: {old_path.name} -> {unique_path.name}")
-                    else:
+                # 增强的目录创建，增加错误处理
+                try:
+                    new_path.parent.mkdir(parents=True, exist_ok=True)
+                    # 验证目录是否真的创建成功
+                    if not new_path.parent.exists():
+                        raise OSError(f"无法创建目标目录: {new_path.parent}")
+                    # 验证目录是否可写
+                    if not os.access(new_path.parent, os.W_OK):
+                        raise PermissionError(f"没有写入权限: {new_path.parent}")
+                except (OSError, PermissionError) as e:
+                    self.log("ERROR", f"创建目录失败 {new_path.parent}: {str(e)}")
+                    failed_files += 1
+                    continue
+                
+                # 改进的文件冲突检测
+                base_name = new_path.stem
+                ext = new_path.suffix
+                counter = 1
+                unique_path = new_path
+                
+                # 使用更智能的文件名冲突解决
+                while unique_path.exists():
+                    # 检查是否是同一个文件（硬链接或相同内容）
+                    if old_path.resolve() == unique_path.resolve():
+                        self.log("INFO", f"源文件和目标文件相同，跳过: {old_path}")
+                        skipped_files += 1
+                        unique_path = None
+                        break
+                    
+                    # 生成新的唯一文件名
+                    unique_path = new_path.parent / f"{base_name}_{counter}{ext}"
+                    counter += 1
+                    
+                    # 防止无限循环
+                    if counter > 1000:
+                        self.log("ERROR", f"无法找到唯一文件名，跳过: {old_path}")
+                        unique_path = None
+                        failed_files += 1
+                        break
+                
+                if unique_path is None:
+                    continue
+                
+                # 执行文件操作，增加更多错误处理
+                try:
+                    if self.destination_root:
                         import shutil
-                        shutil.move(old_path, unique_path)
-                        self.log("INFO", f"移动文件: {old_path} -> {unique_path}")
-                
-                renamed_files += 1
-                if total_rename_files > 0:
-                    rename_progress = int((renamed_files / total_rename_files) * 20)
-                    total_progress = 80 + rename_progress
-                    self.progress_signal.emit(min(total_progress, 99))
-                
+                        # 复制文件时保留元数据
+                        shutil.copy2(old_path, unique_path)
+                        self.log("INFO", f"复制文件成功: {old_path.name} -> {unique_path.name}")
+                    else:
+                        if old_path.parent == unique_path.parent:
+                            # 同一目录下重命名
+                            old_path.rename(unique_path)
+                            self.log("DEBUG", f"重命名文件成功: {old_path.name} -> {unique_path.name}")
+                        else:
+                            # 跨目录移动
+                            import shutil
+                            # 先尝试直接移动
+                            try:
+                                shutil.move(old_path, unique_path)
+                            except (OSError, PermissionError):
+                                # 如果移动失败，尝试复制后删除
+                                self.log("WARNING", f"直接移动失败，尝试复制后删除: {old_path}")
+                                shutil.copy2(old_path, unique_path)
+                                old_path.unlink()
+                            self.log("INFO", f"移动文件成功: {old_path.name} -> {unique_path}")
+                    
+                    renamed_files += 1
+                    
+                    # 更新进度条，提供更平滑的进度更新
+                    if total_rename_files > 0:
+                        rename_progress = int((renamed_files / total_rename_files) * 20)
+                        total_progress = 80 + rename_progress
+                        self.progress_signal.emit(min(total_progress, 99))
+                    
+                except (OSError, PermissionError, IOError) as e:
+                    self.log("ERROR", f"文件操作失败 {old_path} -> {unique_path}: {str(e)}")
+                    failed_files += 1
+            
             except Exception as e:
-                self.log("ERROR", f"处理文件 {old_path} 时出错: {str(e)}")
+                self.log("ERROR", f"处理文件时发生未预期错误 {old_path}: {str(e)}")
+                failed_files += 1
+            
+            # 定期更新进度，即使文件处理失败
+            if idx % 10 == 0 or idx == total_rename_files - 1:
+                self.progress_signal.emit(min(80 + int((idx + 1) / total_rename_files * 20), 99))
+        
+        # 最终进度更新
+        self.progress_signal.emit(99)
+        
+        # 输出统计信息
+        self.log("INFO", f"文件整理完成 - 成功: {renamed_files}, 失败: {failed_files}, 跳过: {skipped_files}")
 
     def organize_without_classification(self, folder_path):
         folder_path = Path(folder_path)
@@ -534,11 +605,38 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level, message):
-        current_time = datetime.datetime.now().strftime('%H:%M:%S')
+        """增强的日志系统，支持更详细的日志级别和分类"""
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        
+        # 根据日志级别添加颜色标记（用于UI显示）
+        color_map = {
+            "DEBUG": "#888888",
+            "INFO": "#000000",
+            "WARNING": "#FF8C00",
+            "ERROR": "#FF0000",
+            "SUCCESS": "#008000",
+            "PROGRESS": "#0000FF"
+        }
+        color = color_map.get(level, "#000000")
+        
+        # 增强的日志消息格式
         log_message = f"[{current_time}] [{level}] {message}"
-        self.log_signal.emit(level, log_message)
+        
+        # 发送信号时包含更多信息
+        self.log_signal.emit(level, log_message, color)
+        
+        # 同时记录到Python日志系统
+        if level == "ERROR":
+            logger.error(message)
+        elif level == "WARNING":
+            logger.warning(message)
+        elif level == "DEBUG":
+            logger.debug(message)
+        else:
+            logger.info(message)
     
     def get_exif_data(self, file_path):
+        """获取文件的EXIF数据，增强了错误处理和兼容性"""
         exif_data = {}
         file_path_obj = Path(file_path)
         suffix = file_path_obj.suffix.lower()
@@ -550,38 +648,143 @@ class SmartArrangeThread(QtCore.QThread):
                 self.log("WARNING", f"跳过过大的文件: {file_path_obj.name} ({file_size / 1024 / 1024:.1f}MB)")
                 exif_data['DateTime'] = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
                 return exif_data
-        except Exception:
-            pass
+        except Exception as e:
+            self.log("WARNING", f"获取文件大小失败: {file_path}, 错误: {str(e)}")
         
-        create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
-        modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
+        # 安全地获取文件系统时间
+        try:
+            create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
+            modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
+        except Exception as e:
+            self.log("WARNING", f"获取文件系统时间失败: {file_path}, 错误: {str(e)}")
+            # 使用当前时间作为最后备选
+            current_time = datetime.datetime.now()
+            create_time = modify_time = current_time
         
         date_taken = None
         
         try:
+            # 扩展文件格式支持范围
             if suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
+                # 如果主要方法失败，尝试备选方法
+                if not date_taken:
+                    self.log("DEBUG", f"尝试备选方法提取图像EXIF数据: {file_path}")
+                    date_taken = self._try_alternative_exif_extraction(file_path_obj, exif_data)
             elif suffix == '.heic':
                 date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix == '.png':
                 date_taken = self._process_png_exif(file_path_obj)
-            elif suffix == '.mov':
+            elif suffix in ('.mov', '.qt'):
                 date_taken = self._process_mov_exif(file_path_obj, exif_data)
-            elif suffix == '.mp4':
+            elif suffix in ('.mp4', '.m4v'):
                 date_taken = self._process_mp4_exif(file_path_obj, exif_data)
-            elif suffix in ('.arw', '.cr2', '.dng', '.nef', '.orf', '.raf', '.sr2', '.tif', '.tiff'):
-                date_taken = self._process_raw_exif(file_path_obj, exif_data)
+            elif suffix.lower() in ('.arw', '.cr2', '.cr3', '.nef', '.orf', '.sr2', '.raf', '.dng', '.rw2', 
+                                  '.pef', '.nrw', '.kdc', '.mos', '.iiq', '.fff', '.x3f', '.3fr', '.mef', 
+                                  '.mrw', '.erf', '.raw', '.rwz', '.ari'):
+                # 扩展RAW格式支持
+                try:
+                    # 先尝试exiftool提取RAW文件元数据，更可靠
+                    metadata = self._get_video_metadata(file_path, timeout=20)  # RAW文件可能需要更长时间
+                    if metadata and 'DateTime' in metadata:
+                        try:
+                            # 尝试将字符串转换为datetime对象
+                            date_str = metadata['DateTime']
+                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                            # 复制其他元数据
+                            for key, value in metadata.items():
+                                if key not in exif_data:
+                                    exif_data[key] = value
+                        except (ValueError, TypeError):
+                            self.log("DEBUG", f"解析exiftool返回的日期时间失败: {date_str}")
+                    
+                    # 如果exiftool失败，尝试原生方法
+                    if not date_taken:
+                        date_taken = self._process_raw_exif(file_path_obj, exif_data)
+                except Exception as e:
+                    self.log("WARNING", f"处理RAW文件时出错: {file_path}, 错误: {str(e)}")
+            elif suffix in VIDEO_EXTENSIONS:
+                # 为其他视频格式提供支持
+                try:
+                    metadata = self._get_video_metadata(file_path, timeout=15)
+                    if metadata and 'DateTime' in metadata:
+                        try:
+                            date_str = metadata['DateTime']
+                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                            for key, value in metadata.items():
+                                if key not in exif_data:
+                                    exif_data[key] = value
+                        except (ValueError, TypeError):
+                            self.log("DEBUG", f"解析视频日期时间失败: {date_str}")
+                except Exception as e:
+                    self.log("DEBUG", f"提取视频元数据失败: {file_path}, 错误: {str(e)}")
+            elif suffix in AUDIO_EXTENSIONS:
+                # 为音频文件提供支持
+                try:
+                    metadata = self._get_video_metadata(file_path, timeout=10)  # 音频文件通常处理更快
+                    if metadata and 'DateTime' in metadata:
+                        try:
+                            date_str = metadata['DateTime']
+                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                            for key, value in metadata.items():
+                                if key not in exif_data:
+                                    exif_data[key] = value
+                        except (ValueError, TypeError):
+                            self.log("DEBUG", f"解析音频日期时间失败: {date_str}")
+                except Exception as e:
+                    self.log("DEBUG", f"提取音频元数据失败: {file_path}, 错误: {str(e)}")
             else:
-                self.log("DEBUG", f"不支持的文件类型或无EXIF数据: {suffix}")
+                self.log("DEBUG", f"不支持的文件类型: {suffix}")
 
-            exif_data['DateTime'] = self._determine_best_datetime(
-                date_taken, create_time, modify_time
-            )
+            # 确定最终的日期时间
+            final_datetime = self._determine_best_datetime(date_taken, create_time, modify_time)
+            exif_data['DateTime'] = final_datetime
                 
         except Exception as e:
-            self.log("DEBUG", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
+            self.log("WARNING", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
+            # 确保即使出错也有日期时间信息
             exif_data['DateTime'] = modify_time.strftime('%Y-%m-%d %H:%M:%S')
+        
+        # 添加基本文件信息
+        exif_data['file_extension'] = suffix
+        try:
+            exif_data['file_size'] = file_path_obj.stat().st_size
+        except:
+            pass
+            
         return exif_data
+        
+    def _try_alternative_exif_extraction(self, file_path_obj, exif_data):
+        """尝试备选方法提取EXIF数据"""
+        try:
+            # 尝试使用PIL作为备选方法
+            from PIL import Image, ExifTags
+            with Image.open(file_path_obj) as img:
+                if hasattr(img, '_getexif'):
+                    exif = img._getexif()
+                    if exif:
+                        # 转换EXIF标签
+                        exif_translated = {}
+                        for tag, value in exif.items():
+                            tag_name = ExifTags.TAGS.get(tag, tag)
+                            exif_translated[tag_name] = value
+                        
+                        # 提取日期时间
+                        if 'DateTime' in exif_translated:
+                            try:
+                                date_taken = datetime.datetime.strptime(exif_translated['DateTime'], '%Y:%m:%d %H:%M:%S')
+                                # 提取相机信息
+                                if 'Make' in exif_translated:
+                                    exif_data['camera'] = exif_translated['Make']
+                                if 'Model' in exif_translated:
+                                    exif_data['model'] = exif_translated['Model']
+                                return date_taken
+                            except ValueError:
+                                pass
+        except Exception as e:
+            self.log("DEBUG", f"备选EXIF提取方法失败: {str(e)}")
+        
+        return None
 
     def _process_image_exif(self, file_path, exif_data):
         try:
@@ -1263,7 +1466,42 @@ class SmartArrangeThread(QtCore.QThread):
                 
             exif_data = self.get_exif_data(file_path)
             
-            file_time = datetime.datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S') if exif_data.get('DateTime') else None
+            # 增强的文件时间解析逻辑，支持多种格式和更好的错误处理
+            file_time = None
+            if exif_data.get('DateTime'):
+                # 尝试多种常见的日期时间格式
+                date_formats = [
+                    '%Y-%m-%d %H:%M:%S',
+                    '%Y:%m:%d %H:%M:%S',
+                    '%d-%m-%Y %H:%M:%S',
+                    '%m-%d-%Y %H:%M:%S',
+                    '%Y-%m-%dT%H:%M:%S',
+                    '%Y:%m:%dT%H:%M:%S'
+                ]
+                
+                for fmt in date_formats:
+                    try:
+                        file_time = datetime.datetime.strptime(str(exif_data['DateTime']), fmt)
+                        break
+                    except ValueError:
+                        continue
+                
+                if file_time is None:
+                    # 如果尝试所有格式都失败，记录警告并尝试使用文件系统时间
+                    self.log("WARNING", f"无法解析文件时间格式: {exif_data['DateTime']} 对于文件 {file_path.name}")
+                    
+            # 如果EXIF时间解析失败，使用文件系统时间
+            if file_time is None:
+                try:
+                    if self.time_derive == "文件创建时间":
+                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_ctime)
+                    elif self.time_derive == "文件修改时间":
+                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    else:  # 默认使用修改时间
+                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    self.log("DEBUG", f"使用文件系统时间: {file_time} 对于文件 {file_path.name}")
+                except Exception as e:
+                    self.log("ERROR", f"获取文件系统时间失败 {file_path.name}: {str(e)}")
 
             if self.destination_root:
                 base_folder = self.destination_root
@@ -1364,25 +1602,158 @@ class SmartArrangeThread(QtCore.QThread):
             return ""
 
     def build_target_path(self, file_path, exif_data, file_time, base_folder):
-        if not self.classification_structure:
+        """构建目标路径并确保目录存在，增强了错误处理和权限检查"""
+        try:
+            if not self.classification_structure:
+                return file_path.parent
+            
+            # 确定基础目标路径
+            if base_folder:
+                target_path = self._safe_path_resolve(base_folder)
+            elif self.destination_root:
+                target_path = self._safe_path_resolve(self.destination_root)
+            else:
+                target_path = file_path.parent
+            
+            # 验证基础路径的有效性
+            if not self._validate_folder_path(target_path):
+                self.log("ERROR", f"无效的目标路径: {target_path}")
+                return file_path.parent
+            
+            # 构建分类路径
+            for level in self.classification_structure:
+                try:
+                    folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
+                    if folder_name:
+                        # 清理文件夹名称，移除或替换非法字符
+                        safe_folder_name = self._sanitize_folder_name(folder_name)
+                        if safe_folder_name:
+                            target_path = target_path / safe_folder_name
+                        else:
+                            self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
+                except Exception as e:
+                    self.log("WARNING", f"处理分类级别 '{level}' 时出错: {str(e)}，跳过该级别")
+            
+            # 添加文件类型文件夹
+            try:
+                file_type = get_file_type(file_path)
+                if file_type:
+                    safe_file_type = self._sanitize_folder_name(file_type)
+                    target_path = target_path / safe_file_type
+            except Exception as e:
+                self.log("WARNING", f"获取文件类型时出错: {str(e)}")
+            
+            # 检查路径长度限制（Windows默认260字符限制）
+            if self._check_path_length_limit(target_path):
+                self.log("WARNING", f"路径长度可能超过系统限制: {target_path}")
+                # 尝试简化路径
+                target_path = self._simplify_path_if_needed(target_path)
+            
+            # 尝试创建目录结构
+            try:
+                self._ensure_directory_exists(target_path)
+            except Exception as e:
+                self.log("ERROR", f"创建目标目录失败: {target_path}，错误: {str(e)}")
+                # 返回父目录作为备选
+                return file_path.parent
+            
+            return target_path
+        except Exception as e:
+            self.log("ERROR", f"构建目标路径时发生严重错误: {str(e)}")
             return file_path.parent
-        
-        if base_folder:
-            target_path = Path(base_folder)
-        elif self.destination_root:
-            target_path = Path(self.destination_root)
-        else:
-            target_path = file_path.parent
-        
-        for level in self.classification_structure:
-            folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
-            if folder_name:
-                target_path = target_path / folder_name
-        
-        file_type = get_file_type(file_path)
-        target_path = target_path / file_type
-        
-        return target_path
+    
+    def _safe_path_resolve(self, path_str):
+        """安全地解析路径，避免路径遍历攻击"""
+        try:
+            # 使用Path对象解析路径
+            path = Path(path_str).resolve()
+            # 确保是绝对路径
+            if not path.is_absolute():
+                self.log("WARNING", f"路径不是绝对路径，将使用当前工作目录: {path_str}")
+                path = Path.cwd() / path_str
+                path = path.resolve()
+            return path
+        except Exception as e:
+            self.log("ERROR", f"解析路径失败: {path_str}，错误: {str(e)}")
+            # 返回当前工作目录作为备选
+            return Path.cwd()
+    
+    def _sanitize_folder_name(self, folder_name):
+        """清理文件夹名称，移除或替换非法字符"""
+        try:
+            # 替换Windows文件系统中的非法字符
+            illegal_chars = '<>:"/\\|?*'
+            safe_name = folder_name
+            for char in illegal_chars:
+                safe_name = safe_name.replace(char, '_')
+            
+            # 移除控制字符
+            safe_name = ''.join(char for char in safe_name if ord(char) > 31)
+            
+            # 处理空字符串或仅包含空格的情况
+            safe_name = safe_name.strip()
+            if not safe_name:
+                safe_name = "未知"
+            
+            # 处理过长的文件夹名称（Windows限制为255个字符）
+            if len(safe_name) > 255:
+                safe_name = safe_name[:252] + "..."
+            
+            return safe_name
+        except Exception:
+            return "未知"
+    
+    def _check_path_length_limit(self, path):
+        """检查路径长度是否接近系统限制"""
+        try:
+            # Windows通常有260字符的限制，我们设置240作为预警值
+            path_str = str(path)
+            return len(path_str) > 240
+        except:
+            return False
+    
+    def _simplify_path_if_needed(self, path):
+        """在需要时简化路径"""
+        try:
+            # 这里可以根据需要实现更复杂的路径简化逻辑
+            # 目前只是返回父目录作为简单的备选方案
+            if len(path.parts) > 2:
+                # 保留最后两个部分，其他用父目录替换
+                return path.parent.parent / path.name
+            return path
+        except:
+            return path
+    
+    def _ensure_directory_exists(self, directory_path):
+        """确保目录存在，如果不存在则创建，并处理权限问题"""
+        try:
+            if not directory_path.exists():
+                # 使用parents=True确保所有父目录都被创建
+                directory_path.mkdir(parents=True, exist_ok=True)
+                self.log("DEBUG", f"成功创建目录: {directory_path}")
+            
+            # 验证目录是否可以写入
+            if not self._can_write_to_directory(directory_path):
+                raise PermissionError(f"没有写入权限: {directory_path}")
+            
+            return True
+        except PermissionError as e:
+            self.log("ERROR", f"权限错误: {str(e)}")
+            raise
+        except Exception as e:
+            self.log("ERROR", f"创建目录失败: {directory_path}，错误: {str(e)}")
+            raise
+    
+    def _can_write_to_directory(self, directory_path):
+        """检查是否有写入目录的权限"""
+        try:
+            # 尝试创建一个临时文件来验证写权限
+            test_file = directory_path / f".permission_test_{int(time.time())}"
+            test_file.touch()
+            test_file.unlink()
+            return True
+        except Exception:
+            return False
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
         if level == "不分类":
