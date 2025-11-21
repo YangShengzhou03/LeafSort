@@ -5,7 +5,7 @@ from PyQt6.QtWidgets import QInputDialog, QMessageBox, QFileDialog
 import os
 from pathlib import Path
 
-from SmartArrangeThread import SmartArrangeThread
+from smart_arrange_thread import SmartArrangeThread
 
 
 class SmartArrangePage(QtWidgets.QWidget):

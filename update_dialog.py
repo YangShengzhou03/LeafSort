@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import QDialog
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import QUrl
 from bs4 import BeautifulSoup
-from UI_UpdateDialog import Ui_UpdateDialog
+from ui_update_dialog import Ui_UpdateDialog
 from common import get_resource_path
 
 

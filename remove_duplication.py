@@ -8,7 +8,7 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import pyqtSignal, QRunnable, QObject, Qt, QThreadPool
 from PyQt6.QtGui import QPixmap, QImage
 
-from RemoveDuplicationThread import HashWorker, ContrastWorker
+from remove_duplication_thread import HashWorker, ContrastWorker
 
 
 class ThumbnailLoaderSignals(QObject):

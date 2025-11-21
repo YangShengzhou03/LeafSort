@@ -4,7 +4,7 @@ import requests
 from datetime import datetime
 from PyQt6.QtCore import pyqtSlot, QDateTime
 from PyQt6.QtWidgets import QWidget, QMessageBox
-from WriteExifThread import WriteExifThread
+from write_exif_thread import WriteExifThread
 from common import get_resource_path
 from config_manager import config_manager
 

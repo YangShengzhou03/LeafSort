@@ -4,8 +4,8 @@ from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import QUrl
 from PyQt6.QtGui import QDesktopServices
 
-from Ui_MainWindow import Ui_MainWindow
-from UpdateDialog import check_update
+from ui_main_window import Ui_MainWindow
+from update_dialog import check_update
 from common import get_resource_path, author
 
 
@@ -52,14 +52,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             print("[INFO] 开始初始化功能页面")
             
             # 导入必要的模块
-            from AddFolder import FolderPage
-            from SmartArrange import SmartArrangePage
-            from RemoveDuplication import RemoveDuplicationPage
-            from WriteExif import WriteExifPage
+            from add_folder import FolderPage
+            from smart_arrange import SmartArrangePage
+            from remove_duplication import RemoveDuplicationPage
+            from write_exif import WriteExifPage
             
             # 尝试导入TextRecognition模块，如果失败则记录错误但继续运行
             try:
-                from TextRecognition import TextRecognitionPage
+                from text_recognition import TextRecognitionPage
                 text_recognition_available = True
             except ImportError:
                 print("[ERROR] 导入TextRecognition模块失败: No module named 'TextRecognition'")

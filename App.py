@@ -1,7 +1,7 @@
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtNetwork import QLocalSocket, QLocalServer
 from contextlib import closing
-from MainWindow import MainWindow
+from main_window import MainWindow
 import sys
 import traceback
 
