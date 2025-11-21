@@ -847,13 +847,13 @@ class Ui_MainWindow(object):
         self.btnBrowseTarget.setObjectName("btnBrowseTarget")
         self.layoutTargetFolder.addWidget(self.btnBrowseTarget)
         self.layoutImportContainer.addWidget(self.frameTargetFolderGroup)
-        self.textBrowser_resource_info = QtWidgets.QTextBrowser(parent=self.importContainer)
-        self.textBrowser_resource_info.setMinimumSize(QtCore.QSize(0, 120))
-        self.textBrowser_resource_info.setReadOnly(True)
-        self.textBrowser_resource_info.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByKeyboard|QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
-        self.textBrowser_resource_info.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        self.textBrowser_resource_info.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        self.textBrowser_resource_info.setStyleSheet("QTextBrowser {\n"
+        self.textBrowser_import_info = QtWidgets.QTextBrowser(parent=self.importContainer)
+        self.textBrowser_import_info.setMinimumSize(QtCore.QSize(0, 120))
+        self.textBrowser_import_info.setReadOnly(True)
+        self.textBrowser_import_info.setTextInteractionFlags(QtCore.Qt.TextInteractionFlag.LinksAccessibleByKeyboard|QtCore.Qt.TextInteractionFlag.LinksAccessibleByMouse)
+        self.textBrowser_import_info.setVerticalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.textBrowser_import_info.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.textBrowser_import_info.setStyleSheet("QTextBrowser {\n"
 "    border: 1.5px solid qlineargradient(\n"
 "        x1:0, y1:0, x2:1, y2:0,\n"
 "        stop:0 rgba(229, 231, 235, 255),\n"
@@ -916,8 +916,8 @@ class Ui_MainWindow(object):
 "QTextBrowser QScrollBar::sub-page:vertical {\n"
 "    background: none;\n"
 "}")
-        self.textBrowser_resource_info.setObjectName("textBrowser_resource_info")
-        self.layoutImportContainer.addWidget(self.textBrowser_resource_info)
+        self.textBrowser_import_info.setObjectName("textBrowser_import_info")
+        self.layoutImportContainer.addWidget(self.textBrowser_import_info)
         spacerItem2 = QtWidgets.QSpacerItem(20, 40, QtWidgets.QSizePolicy.Policy.Minimum, QtWidgets.QSizePolicy.Policy.Expanding)
         self.layoutImportContainer.addItem(spacerItem2)
         self.layoutImport.addWidget(self.importContainer)

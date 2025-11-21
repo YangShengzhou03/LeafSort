@@ -515,39 +515,137 @@ class FolderPage(QtWidgets.QWidget):
             )
 
     def _check_media_files(self, folder_path):
-        has_media = False
+        """检查并收集文件夹中的媒体文件信息"""
         try:
-            file_count = 0
-            max_check_files = 200
+            # 收集文件夹统计信息
+            stats = self._collect_folder_stats(folder_path)
             
-            for file in os.listdir(folder_path):
-                file_path = os.path.join(folder_path, file)
-                if os.path.isfile(file_path):
-                    try:
-                        ext = os.path.splitext(file)[1].lower()
-                        common_media_exts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.tiff', '.heic', '.heif',
-                                            '.mp4', '.mov', '.avi', '.mkv', '.flv', '.3gp', '.wmv',
-                                            '.mp3', '.flac', '.wav', '.aac', '.ogg']
-                        
-                        if ext in common_media_exts:
-                            has_media = True
-                            break
-                        
-                        media_info = detect_media_type(file_path)
-                        if media_info['valid']:
-                            has_media = True
-                            break
-                    except Exception as e:
-                        continue
-                    
-                file_count += 1
-                if file_count >= max_check_files:
-                    break
+            # 显示文件夹信息
+            self._show_folder_info(folder_path, stats)
+            
+            # 更新父窗口状态
+            if stats['has_media']:
+                self.parent._update_empty_state(True)
+                
+            return stats
         except Exception as e:
+            # 发生错误时静默处理，不影响主流程
+            return {'has_media': False, 'file_count': 0, 'media_count': 0, 'subfolder_count': 0}
+    
+    def _collect_folder_stats(self, folder_path):
+        """收集文件夹的统计信息"""
+        file_count = 0
+        media_count = 0
+        subfolder_count = 0
+        has_media = False
+        media_types = Counter()
+        
+        try:
+            # 定义常见媒体文件扩展名
+            image_exts = ['.jpg', '.jpeg', '.png', '.gif', '.webp', '.tiff', '.heic', '.heif', '.bmp', '.ico']
+            video_exts = ['.mp4', '.mov', '.avi', '.mkv', '.flv', '.3gp', '.wmv', '.m4v', '.webm']
+            audio_exts = ['.mp3', '.flac', '.wav', '.aac', '.ogg', '.wma', '.m4a']
+            
+            # 遍历文件夹中的所有项
+            for item in os.listdir(folder_path):
+                item_path = os.path.join(folder_path, item)
+                
+                if os.path.isfile(item_path):
+                    file_count += 1
+                    
+                    # 检查文件扩展名
+                    ext = os.path.splitext(item)[1].lower()
+                    
+                    if ext in image_exts:
+                        has_media = True
+                        media_count += 1
+                        media_types['图片'] += 1
+                    elif ext in video_exts:
+                        has_media = True
+                        media_count += 1
+                        media_types['视频'] += 1
+                    elif ext in audio_exts:
+                        has_media = True
+                        media_count += 1
+                        media_types['音频'] += 1
+                    else:
+                        # 使用detect_media_type进一步检测
+                        try:
+                            media_info = detect_media_type(item_path)
+                            if media_info['valid']:
+                                has_media = True
+                                media_count += 1
+                                media_types['其他媒体'] += 1
+                        except Exception:
+                            pass
+                
+                elif os.path.isdir(item_path):
+                    subfolder_count += 1
+                    
+        except Exception:
+            # 忽略访问错误
             pass
         
-        if has_media:
-            self.parent._update_empty_state(True)
+        return {
+            'file_count': file_count,
+            'media_count': media_count,
+            'subfolder_count': subfolder_count,
+            'has_media': has_media,
+            'media_types': media_types
+        }
+    
+    def _show_folder_info(self, folder_path, stats):
+        """显示文件夹信息"""
+        folder_name = os.path.basename(folder_path) if os.path.basename(folder_path) else folder_path
+        
+        # 构建信息字符串
+        info_text = f"文件夹: {folder_name}\n"
+        info_text += f"路径: {folder_path}\n\n"
+        info_text += f"文件总数: {stats['file_count']}\n"
+        info_text += f"媒体文件: {stats['media_count']}\n"
+        info_text += f"子文件夹: {stats['subfolder_count']}\n\n"
+        
+        # 添加媒体类型分布
+        if stats['media_types']:
+            info_text += "媒体类型分布:\n"
+            for media_type, count in stats['media_types'].items():
+                info_text += f"  - {media_type}: {count}个\n"
+        
+        # 创建临时信息对话框
+        msg_box = QtWidgets.QMessageBox(self)
+        msg_box.setWindowTitle("文件夹信息")
+        msg_box.setText("文件夹扫描完成")
+        msg_box.setInformativeText(f"发现 {stats['media_count']} 个媒体文件")
+        
+        # 添加查看详情按钮
+        details_btn = msg_box.addButton("查看详情", QtWidgets.QMessageBox.ButtonRole.ActionRole)
+        ok_btn = msg_box.addButton("确定", QtWidgets.QMessageBox.ButtonRole.AcceptRole)
+        
+        msg_box.setDefaultButton(ok_btn)
+        msg_box.exec()
+        
+        # 如果用户点击了查看详情
+        if msg_box.clickedButton() == details_btn:
+            details_dialog = QtWidgets.QDialog(self)
+            details_dialog.setWindowTitle("文件夹详细信息")
+            details_dialog.resize(500, 350)
+            
+            # 创建文本显示区域
+            text_browser = QtWidgets.QTextEdit()
+            text_browser.setReadOnly(True)
+            text_browser.setPlainText(info_text)
+            
+            # 创建关闭按钮
+            close_btn = QtWidgets.QPushButton("关闭")
+            close_btn.clicked.connect(details_dialog.close)
+            
+            # 设置布局
+            layout = QtWidgets.QVBoxLayout()
+            layout.addWidget(text_browser)
+            layout.addWidget(close_btn, alignment=QtCore.Qt.AlignmentFlag.AlignRight)
+            
+            details_dialog.setLayout(layout)
+            details_dialog.exec()
 
     def get_all_folders(self):
         return self.folder_items
