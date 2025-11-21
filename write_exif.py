@@ -13,11 +13,8 @@ class WriteExifPage(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
-        # 尝试从parent获取folder_page引用，确保能访问文件夹数据
-        if hasattr(self.parent, 'folder_page'):
-            self.folder_page = self.parent.folder_page
-        else:
-            self.folder_page = None
+        self.folder_page = self.parent.folder_page
+
         self.selected_star = 0
         self.worker = None
         self.star_buttons = []
@@ -29,11 +26,7 @@ class WriteExifPage(QWidget):
         
     def init_page(self):
         """初始化页面"""
-        # 从parent获取folder_page引用，确保能访问文件夹数据
-        if hasattr(self.parent, 'folder_page'):
-            self.folder_page = self.parent.folder_page
-        else:
-            self.folder_page = None
+        self.folder_page = self.parent.folder_page
         self.setup_connections()
         self.load_camera_lens_mapping()
 
@@ -50,21 +43,17 @@ class WriteExifPage(QWidget):
         
         for i in range(1, 6):
             btn_name = button_names.get(i)
-            if hasattr(self.parent, btn_name):
-                btn = getattr(self.parent, btn_name)
-                btn.setStyleSheet(
-                    "QPushButton { "
-                    f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});\n"
-                    "border: none; padding: 0; }" "\n"
-                    "QPushButton:hover { background-color: transparent; }"
-                )
-                btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
-                btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
-                btn.clicked.connect(lambda _, idx=i: self.set_selected_star(idx))
-                self.star_buttons.append(btn)
-            else:
-                if hasattr(self.parent, 'log'):
-                    self.parent.log('WARNING', f'星级评分按钮 {btn_name} 不存在')
+            btn = getattr(self.parent, btn_name)
+            btn.setStyleSheet(
+                "QPushButton { "
+                f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});\n"
+                "border: none; padding: 0; }" "\n"
+                "QPushButton:hover { background-color: transparent; }"
+            )
+            btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
+            btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
+            btn.clicked.connect(lambda _, idx=i: self.set_selected_star(idx))
+            self.star_buttons.append(btn)
         
         self.init_camera_brand_model()
         
@@ -72,13 +61,9 @@ class WriteExifPage(QWidget):
         
         self.update_button_state()
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
-        self.parent.dateTimeEdit_shootTime.hide()
-        self.parent.lineEdit_EXIF_longitude.hide()
-        self.parent.lineEdit_EXIF_latitude.hide()
         self.load_exif_settings()
         self.save_exif_settings()
-        if hasattr(self.parent, 'log'):
-            self.parent.log('INFO', "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
+        self.parent.log('INFO', "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
         
     def load_camera_lens_mapping(self):
         try:
@@ -144,7 +129,9 @@ class WriteExifPage(QWidget):
             }
         
         # 使用hasattr检查确保控件存在
-        if hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
+        if hasattr(self.parent, 'cameraBrand') and hasattr(self.parent, 'cameraModel'):
+            self.brandComboBox = self.parent.cameraBrand
+            self.modelComboBox = self.parent.cameraModel
             for brand in sorted(camera_data.keys()):
                 self.brandComboBox.addItem(brand)
             self.camera_data = camera_data
@@ -167,42 +154,41 @@ class WriteExifPage(QWidget):
 
     def setup_connections(self):
         # 为所有控件连接添加hasattr检查
-        if hasattr(self.parent, 'toolButton_StartEXIF'):
-            self.parent.toolButton_StartEXIF.clicked.connect(self.toggle_exif_writing)
+        if hasattr(self.parent, 'btnStartExif'):
+            self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
         elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'toolButton_StartEXIF按钮不存在，跳过连接')
+            self.parent.log('WARNING', 'btnStartExif按钮不存在，跳过连接')
             
-        if hasattr(self.parent, 'pushButton_Position'):
-            self.parent.pushButton_Position.clicked.connect(self.update_position_by_ip)
+        # 为位置更新按钮添加连接（如果存在）
+        # 注意：在UI文件中没有找到pushButton_Position的直接对应组件
+        
+        if hasattr(self.parent, 'shootTimeSource'):
+            self.parent.shootTimeSource.currentIndexChanged.connect(self.on_combobox_time_changed)
         elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'pushButton_Position按钮不存在，跳过连接')
-            
-        if hasattr(self.parent, 'shootTimeComboBox'):
-            self.parent.shootTimeComboBox.currentIndexChanged.connect(self.on_combobox_time_changed)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'shootTimeComboBox组合框不存在，跳过连接')
-            
-        if hasattr(self.parent, 'locationComboBox'):
-            self.parent.locationComboBox.currentIndexChanged.connect(self.on_combobox_location_changed)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'locationComboBox组合框不存在，跳过连接')
+            self.parent.log('WARNING', 'shootTimeSource组合框不存在，跳过连接')
             
         # 为所有文本框连接添加hasattr检查
-        text_fields = ['lineEdit_EXIF_Title', 'lineEdit_EXIF_Author', 'lineEdit_EXIF_Theme', 
-                      'lineEdit_EXIF_Copyright', 'lineEdit_EXIF_Position', 'lineEdit_EXIF_latitude', 
-                      'lineEdit_EXIF_longitude']
-        for field in text_fields:
-            if hasattr(self.parent, field):
-                getattr(self.parent, field).textChanged.connect(self.save_exif_settings)
+        # 使用正确的组件名称
+        text_fields_mapping = {
+            'authorLineEdit': 'lineEdit_EXIF_Author',
+            'themeLineEdit': 'lineEdit_EXIF_Theme',
+            'copyrightLineEdit': 'lineEdit_EXIF_Copyright',
+            'lineEdit_EXIF_latitude': 'lineEdit_EXIF_latitude',
+            'lineEdit_EXIF_longitude': 'lineEdit_EXIF_longitude'
+        }
+        
+        for actual_name, old_name in text_fields_mapping.items():
+            if hasattr(self.parent, actual_name):
+                getattr(self.parent, actual_name).textChanged.connect(self.save_exif_settings)
             elif hasattr(self.parent, 'log'):
-                self.parent.log('WARNING', f'{field}文本框不存在，跳过连接')
+                self.parent.log('WARNING', f'{old_name}文本框不存在，跳过连接')
                 
-        if hasattr(self.parent, 'brandComboBox'):
-            self.parent.brandComboBox.currentIndexChanged.connect(self.save_exif_settings)
-        if hasattr(self.parent, 'modelComboBox'):
-            self.parent.modelComboBox.currentIndexChanged.connect(self.save_exif_settings)
+        if hasattr(self.parent, 'cameraBrand'):
+            self.parent.cameraBrand.currentIndexChanged.connect(self.save_exif_settings)
+        if hasattr(self.parent, 'cameraModel'):
+            self.parent.cameraModel.currentIndexChanged.connect(self.save_exif_settings)
         elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'modelComboBox组合框不存在，跳过连接')
+            self.parent.log('WARNING', 'cameraModel组合框不存在，跳过连接')
             
         # 星级按钮连接已经在init_ui中处理
 
@@ -226,19 +212,19 @@ class WriteExifPage(QWidget):
                 self.parent.dateTimeEdit_shootTime.hide()
 
     def update_button_state(self):
-        # 检查toolButton_StartEXIF是在self还是parent中
-        if hasattr(self, 'toolButton_StartEXIF'):
+        # 检查btnStartExif是在self还是parent中
+        if hasattr(self, 'btnStartExif'):
             if self.is_running:
-                self.toolButton_StartEXIF.setText("停止")
+                self.btnStartExif.setText("停止")
             else:
-                self.toolButton_StartEXIF.setText("开始")
-        elif hasattr(self.parent, 'toolButton_StartEXIF'):
+                self.btnStartExif.setText("开始")
+        elif hasattr(self.parent, 'btnStartExif'):
             if self.is_running:
-                self.parent.toolButton_StartEXIF.setText("停止")
+                self.parent.btnStartExif.setText("停止")
             else:
-                self.parent.toolButton_StartEXIF.setText("开始")
+                self.parent.btnStartExif.setText("开始")
         elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'toolButton_StartEXIF按钮不存在，跳过按钮状态更新')
+            self.parent.log('WARNING', 'btnStartExif按钮不存在，跳过按钮状态更新')
 
     def toggle_exif_writing(self):
         if self.is_running:
@@ -383,19 +369,25 @@ class WriteExifPage(QWidget):
                            "点击\"导入文件夹\"按钮添加包含图片的文件夹")
             return False
         
-        camera_brand = self.parent.brandComboBox.currentText() if self.parent.brandComboBox.currentIndex() > 0 else None
-        camera_model = self.parent.modelComboBox.currentText() if self.parent.modelComboBox.currentIndex() > 0 else None
+        camera_brand = self.parent.cameraBrand.currentText() if hasattr(self.parent, 'cameraBrand') and self.parent.cameraBrand.currentIndex() > 0 else None
+        camera_model = self.parent.cameraModel.currentText() if hasattr(self.parent, 'cameraModel') and self.parent.cameraModel.currentIndex() > 0 else None
         
         if camera_brand and not camera_model:
             camera_model = self.get_default_model_for_brand(camera_brand)
         
+        # 获取文本框内容，使用getattr和默认值避免属性不存在的错误
+        title = getattr(self.parent, 'titleLineEdit', None).text() if hasattr(self.parent, 'titleLineEdit') else ''
+        author = getattr(self.parent, 'authorLineEdit', None).text() if hasattr(self.parent, 'authorLineEdit') else ''
+        subject = getattr(self.parent, 'themeLineEdit', None).text() if hasattr(self.parent, 'themeLineEdit') else ''
+        copyright = getattr(self.parent, 'copyrightLineEdit', None).text() if hasattr(self.parent, 'copyrightLineEdit') else ''
+        
         params = {
             'folders_dict': folders,
-            'title': self.parent.lineEdit_EXIF_Title.text(),
-            'author': self.parent.lineEdit_EXIF_Author.text(),
-            'subject': self.parent.lineEdit_EXIF_Theme.text(),
+            'title': title,
+            'author': author,
+            'subject': subject,
             'rating': str(self.selected_star),
-            'copyright': self.parent.lineEdit_EXIF_Copyright.text(),
+            'copyright': copyright,
             'position': None,
             'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
