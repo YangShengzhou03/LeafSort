@@ -193,9 +193,8 @@ class FolderPage(QtWidgets.QWidget):
                 QMessageBox.critical(
                     self, 
                     "添加失败", 
-                    f"添加文件夹时发生错误：{str(e)}"
+                    f"添加文件夹时发生错误：{str(e)}\n请检查文件夹路径和权限后重试。"
                 )
-                f"请检查文件夹路径和权限后重试。"
 
     def _create_folder_item(self, folder_path, folder_name):
         folder_frame = QtWidgets.QFrame(parent=self.parent.scrollWelcomeContent)

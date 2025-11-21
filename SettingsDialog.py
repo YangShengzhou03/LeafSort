@@ -66,4 +66,9 @@ PRESET_CONFIGS = {
 }
 
 class SettingsDialog(QDialog):
+    """设置对话框类"""
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle("设置")
+        self.resize(600, 400)
     
