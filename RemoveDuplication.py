@@ -569,3 +569,9 @@ class Contrast(QtWidgets.QWidget):
                 self.parent.verticalFrame_13.hide()
         except Exception as e:
             pass
+
+
+# 添加RemoveDuplicationPage类作为Contrast类的别名或包装器
+class RemoveDuplicationPage(Contrast):
+    """去重页面类，用于MainWindow导入"""
+    pass

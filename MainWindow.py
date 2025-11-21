@@ -48,30 +48,41 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _setup_pages(self):
         """设置各个功能页面"""
         try:
-            self.log("INFO", "开始初始化功能页面")
+            print("[INFO] 开始初始化功能页面")
             
-            # 导入所有功能页面模块
+            # 导入必要的模块
             from AddFolder import FolderPage
             from SmartArrange import SmartArrangePage
             from RemoveDuplication import RemoveDuplicationPage
             from WriteExif import WriteExifPage
-            from TextRecognition import TextRecognitionPage
+            
+            # 尝试导入TextRecognition模块，如果失败则记录错误但继续运行
+            try:
+                from TextRecognition import TextRecognitionPage
+                text_recognition_available = True
+            except ImportError:
+                print("[ERROR] 导入TextRecognition模块失败: No module named 'TextRecognition'")
+                text_recognition_available = False
             
             # 创建功能页面实例
             self.folder_page = FolderPage(parent=self)
-            self.log("INFO", "FolderPage实例创建成功")
+            print("[INFO] FolderPage实例创建成功")
             
             self.smart_arrange_page = SmartArrangePage(parent=self)
-            self.log("INFO", "SmartArrangePage实例创建成功")
+            print("[INFO] SmartArrangePage实例创建成功")
             
             self.remove_duplication_page = RemoveDuplicationPage(parent=self)
-            self.log("INFO", "RemoveDuplicationPage实例创建成功")
+            print("[INFO] RemoveDuplicationPage实例创建成功")
             
             self.write_exif_page = WriteExifPage(parent=self)
-            self.log("INFO", "WriteExifPage实例创建成功")
+            print("[INFO] WriteExifPage实例创建成功")
             
-            self.text_recognition_page = TextRecognitionPage(parent=self)
-            self.log("INFO", "TextRecognitionPage实例创建成功")
+            # 如果TextRecognition模块可用，则创建实例
+            if text_recognition_available:
+                self.text_recognition_page = TextRecognitionPage(parent=self)
+                print("[INFO] TextRecognitionPage实例创建成功")
+            else:
+                self.text_recognition_page = None
             
             # 将页面添加到stackedWidget
             if hasattr(self, 'stackedWidget'):
@@ -79,41 +90,50 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.stackedWidget.addWidget(self.smart_arrange_page)
                 self.stackedWidget.addWidget(self.remove_duplication_page)
                 self.stackedWidget.addWidget(self.write_exif_page)
-                self.stackedWidget.addWidget(self.text_recognition_page)
-                self.log("INFO", "所有页面已添加到stackedWidget")
+                
+                if text_recognition_available:
+                    self.stackedWidget.addWidget(self.text_recognition_page)
+                
+                print("[INFO] 所有可用页面已添加到stackedWidget")
             else:
-                self.log("ERROR", "stackedWidget不存在，无法添加页面")
+                print("[ERROR] stackedWidget不存在，无法添加页面")
                 return
             
             # 初始化各个页面
             self.folder_page.init_page()
-            self.log("INFO", "FolderPage初始化完成")
+            print("[INFO] FolderPage初始化完成")
             
             self.smart_arrange_page.init_page()
-            self.log("INFO", "SmartArrangePage初始化完成")
+            print("[INFO] SmartArrangePage初始化完成")
             
             self.remove_duplication_page.init_page()
-            self.log("INFO", "RemoveDuplicationPage初始化完成")
+            print("[INFO] RemoveDuplicationPage初始化完成")
             
             self.write_exif_page.init_page()
-            self.log("INFO", "WriteExifPage初始化完成")
+            print("[INFO] WriteExifPage初始化完成")
             
-            self.text_recognition_page.init_page()
-            self.log("INFO", "TextRecognitionPage初始化完成")
+            # 如果TextRecognition模块可用，则初始化页面
+            if text_recognition_available:
+                self.text_recognition_page.init_page()
+                print("[INFO] TextRecognitionPage初始化完成")
+            else:
+                print("[WARNING] TextRecognition页面不可用")
             
             # 初始显示第一个页面
             self._show_page(0)
-            self.log("INFO", "初始页面已设置为FolderPage")
+            print("[INFO] 初始页面已设置为FolderPage")
             
-            self.log("INFO", "所有功能页面已初始化完成")
+            print("[INFO] 功能页面初始化完成")
+            if not text_recognition_available:
+                print("[INFO] 注意: 某些功能页面可能无法使用")
             
         except ImportError as e:
-            self.log("ERROR", f"导入模块失败: {str(e)}")
-            self.log("ERROR", "某些功能页面可能无法使用")
+            print(f"[ERROR] 导入模块失败: {str(e)}")
+            print("[ERROR] 某些功能页面可能无法使用")
             print(f"Import error setting up pages: {str(e)}")
         except Exception as e:
-            self.log("ERROR", f"初始化功能页面时出错: {str(e)}")
-            self.log("ERROR", "请检查程序配置和依赖")
+            print(f"[ERROR] 初始化功能页面时出错: {str(e)}")
+            print("[ERROR] 请检查程序配置和依赖")
             print(f"Error setting up pages: {str(e)}")
     
     def _setup_navigation(self):
@@ -121,11 +141,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             # 检查是否有listWidget_navigationMenu
             if not hasattr(self, 'listWidget_navigationMenu'):
-                self.log("WARNING", "listWidget_navigationMenu not found in UI")
+                print("[WARNING] listWidget_navigationMenu not found in UI")
                 return
             
         except Exception as e:
-            self.log("ERROR", f"Error setting up navigation: {str(e)}")
+            print(f"[ERROR] Error setting up navigation: {str(e)}")
     
     def _connect_buttons(self):
         """连接按钮信号与槽 - 保留核心功能"""
@@ -161,9 +181,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if hasattr(self, 'pushButton_textRecognition'):
                 self.pushButton_textRecognition.clicked.connect(lambda: self._show_page(4))
             
-            self.log("INFO", "Button connections setup completed")
+            print("[INFO] Button connections setup completed")
         except Exception as e:
-            self.log("WARNING", f"Failed to connect some buttons: {str(e)}")
+            print(f"[WARNING] Failed to connect some buttons: {str(e)}")
             
     def _on_add_folder_clicked(self):
         """添加文件夹按钮点击处理"""
@@ -174,7 +194,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             if hasattr(self, 'folder_page') and hasattr(self.folder_page, '_show_add_folder_dialog'):
                 self.folder_page._show_add_folder_dialog()
         except Exception as e:
-            self.log("ERROR", f"处理添加文件夹按钮点击时出错: {str(e)}")
+            print(f"[ERROR] 处理添加文件夹按钮点击时出错: {str(e)}")
             print(f"Error handling add folder click: {str(e)}")
 
     def _setup_drag_handlers(self):
@@ -460,13 +480,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 保留功能但简化实现
         QtWidgets.QMessageBox.information(self, "帮助", "枫叶相册 - 核心功能正常运行")
 
-    def _toggle_maximize(self):
-        """切换窗口最大化状态 - 简化实现"""
-        if self.isMaximized():
-            self.showNormal()
-        else:
-            self.showMaximized()
-
     def log(self, level, message):
         """日志记录函数 - 核心逻辑保留"""
         import datetime
@@ -507,17 +520,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _show_user_notification(self, title, message, level):
         try:
-            from PyQt6.QtWidgets import QMessageBox
-            
             if level == "error":
-                QMessageBox.critical(self, title, message)
+                QtWidgets.QMessageBox.critical(self, title, message)
             elif level == "warning":
-                QMessageBox.warning(self, title, message)
+                QtWidgets.QMessageBox.warning(self, title, message)
             elif level == "info":
-                QMessageBox.information(self, title, message)
+                QtWidgets.QMessageBox.information(self, title, message)
                 
-        except ImportError:
+        except Exception as e:
             print(f"[{level.upper()}] {title}: {message}")
+            print(f"Failed to show notification: {str(e)}")
 
     def feedback(self):
         QDesktopServices.openUrl(QUrl('https://qun.qq.com/universal-share/share?ac=1&authKey=wjyQkU9iG7wc'

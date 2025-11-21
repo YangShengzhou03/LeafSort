@@ -21,18 +21,24 @@ class FolderPage(QtWidgets.QWidget):
         self._load_saved_folders()
     
     def _setup_drag_drop(self):
-        self.parent.widgetAddFolder.setAcceptDrops(True)
-        self.parent.widgetAddFolder.dragEnterEvent = self.dragEnterEvent
-        self.parent.widgetAddFolder.dropEvent = self.dropEvent
+        # 添加属性检查以避免错误
+        if hasattr(self.parent, 'widgetAddFolder'):
+            self.parent.widgetAddFolder.setAcceptDrops(True)
+            self.parent.widgetAddFolder.dragEnterEvent = self.dragEnterEvent
+            self.parent.widgetAddFolder.dropEvent = self.dropEvent
     
     def _setup_click_behavior(self):
-        self.parent.widgetAddFolder.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.parent.widgetAddFolder.mousePressEvent = self._open_folder_dialog_on_click
+        # 添加属性检查以避免错误
+        if hasattr(self.parent, 'widgetAddFolder'):
+            self.parent.widgetAddFolder.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
+            self.parent.widgetAddFolder.mousePressEvent = self._open_folder_dialog_on_click
 
     def _setup_context_menu(self):
         """设置右键菜单"""
-        self.parent.scrollWelcomeContent.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
-        self.parent.scrollWelcomeContent.customContextMenuRequested.connect(self._show_context_menu)
+        # 添加属性检查以避免错误
+        if hasattr(self.parent, 'scrollWelcomeContent'):
+            self.parent.scrollWelcomeContent.setContextMenuPolicy(QtCore.Qt.ContextMenuPolicy.CustomContextMenu)
+            self.parent.scrollWelcomeContent.customContextMenuRequested.connect(self._show_context_menu)
 
     def init_page(self):
         self._setup_drag_drop()
@@ -43,7 +49,9 @@ class FolderPage(QtWidgets.QWidget):
         self._load_saved_folders()
 
     def _connect_buttons(self):
-        self.parent.btnAddFolder.clicked.connect(self._open_folder_dialog)
+        # 添加属性检查以避免错误
+        if hasattr(self.parent, 'btnAddFolder'):
+            self.parent.btnAddFolder.clicked.connect(self._open_folder_dialog)
     
     def _remove_all_folders(self):
         """移除所有文件夹"""

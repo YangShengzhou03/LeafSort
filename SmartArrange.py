@@ -19,18 +19,27 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.last_selected_button_index = -1
         self.destination_root = None
         
-        self.tag_buttons = {
-            '原名': self.parent.pushButton_original_tag,
-            '年份': self.parent.pushButton_year_tag,
-            '月份': self.parent.pushButton_month_tag,
-            '日': self.parent.pushButton_date_tag,
-            '星期': self.parent.pushButton_day_tag,
-            '时间': self.parent.pushButton_time_tag,
-            '品牌': self.parent.pushButton_make_tag,
-            '型号': self.parent.pushButton_model_tag,
-            '位置': self.parent.pushButton_address_tag,
-            '自定义': self.parent.pushButton_customize_tag
+        # 使用正确的UI组件名称并添加属性检查
+        self.tag_buttons = {}
+        
+        # 映射标签名称到UI组件名称
+        button_mapping = {
+            '原名': 'btnAddOriginalTag',
+            '年份': 'btnAddYearTag',
+            '月份': 'btnAddMonthTag',
+            '日': 'btnAddDateTag',
+            '星期': 'btnDayTag',
+            '时间': 'btnAddTimeTag',
+            '品牌': 'btnAddMakeTag',
+            '型号': 'btnModelTag',
+            '位置': 'btnAddressTag',
+            '自定义': 'btnCustomizeTag'
         }
+        
+        # 只添加存在的属性
+        for tag_name, attr_name in button_mapping.items():
+            if hasattr(self.parent, attr_name):
+                self.tag_buttons[tag_name] = getattr(self.parent, attr_name)
         
         self.separator_mapping = {
             "-": "-",
@@ -43,8 +52,9 @@ class SmartArrangePage(QtWidgets.QWidget):
             "~": "~"
         }
         
-        self.available_layout = self.parent.layout_rename_tags
-        self.selected_layout = self.parent.layout_rename_selected
+        # 添加布局属性检查
+        self.available_layout = getattr(self.parent, 'layout_rename_tags', None)
+        self.selected_layout = getattr(self.parent, 'layout_rename_selected', None)
         
         self.SmartArrange_thread = None
         self.SmartArrange_settings = []
@@ -82,7 +92,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.log("DEBUG", "欢迎使用图像分类整理，您可在上方构建文件路径与文件名结构。")
 
     def connect_signals(self):
-        self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_SmartArrange)
+        # 检查并使用正确的按钮名称
+        if hasattr(self.parent, 'btnStartSmartArrange'):
+            self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
+        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+            self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_SmartArrange)
+        else:
+            self.log("WARNING", "未找到智能整理启动按钮，功能可能无法正常使用")
 
     def update_progress_bar(self, value):
         self.parent.progressBar_classification.setValue(value)
@@ -113,8 +129,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         """智能整理开关，简化用户交互流程"""
         if self.SmartArrange_thread and self.SmartArrange_thread.isRunning():
             self.SmartArrange_thread.stop()
-            self.parent.toolButton_startSmartArrange.setText("开始整理")
-            self.parent.progressBar_classification.setValue(0)
+            # 使用正确的按钮名称并添加属性检查
+            if hasattr(self.parent, 'btnStartSmartArrange'):
+                self.parent.btnStartSmartArrange.setText("开始整理")
+            elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+                self.parent.toolButton_startSmartArrange.setText("开始整理")
+            if hasattr(self.parent, 'progressBar_classification'):
+                self.parent.progressBar_classification.setValue(0)
             self._show_operation_status("整理已停止", 2000)
         else:
             folders = self.folder_page.get_all_folders() if self.folder_page else []
@@ -269,12 +290,20 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.SmartArrange_thread.finished.connect(self.on_thread_finished)
         self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
         self.SmartArrange_thread.start()
-        self.parent.toolButton_startSmartArrange.setText("停止整理")
+        # 使用正确的按钮名称并添加属性检查
+        if hasattr(self.parent, 'btnStartSmartArrange'):
+            self.parent.btnStartSmartArrange.setText("停止整理")
+        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+            self.parent.toolButton_startSmartArrange.setText("停止整理")
         self._show_operation_status("开始整理文件...", 1500)
 
     def on_thread_finished(self):
         """线程结束处理"""
-        self.parent.toolButton_startSmartArrange.setText("开始整理")
+        # 使用正确的按钮名称并添加属性检查
+        if hasattr(self.parent, 'btnStartSmartArrange'):
+            self.parent.btnStartSmartArrange.setText("开始整理")
+        elif hasattr(self.parent, 'toolButton_startSmartArrange'):
+            self.parent.toolButton_startSmartArrange.setText("开始整理")
         self.SmartArrange_thread = None
         self.update_progress_bar(100)
         
@@ -311,23 +340,34 @@ class SmartArrangePage(QtWidgets.QWidget):
             return f"{operation_text}模式：检测到{total_files}个文件，将根据标签进行分类整理。\n\n操作完成后可在目标位置查看结果。"
 
     def update_combobox_state(self, level):
+        # 检查comboBox_level_{level}属性是否存在
+        if not hasattr(self.parent, f'comboBox_level_{level}'):
+            # 属性不存在时记录日志并返回
+            if hasattr(self.parent, 'log'):
+                self.parent.log.info(f'comboBox_level_{level}属性不存在，跳过组合框状态更新')
+            elif hasattr(self.parent, 'logger'):
+                self.parent.logger.info(f'comboBox_level_{level}属性不存在，跳过组合框状态更新')
+            return
+        
         current_text = getattr(self.parent, f'comboBox_level_{level}').currentText()
         
         if current_text == "不分类":
             for i in range(level + 1, 6):
-                getattr(self.parent, f'comboBox_level_{i}').setEnabled(False)
-                getattr(self.parent, f'comboBox_level_{i}').setCurrentIndex(0)
+                if hasattr(self.parent, f'comboBox_level_{i}'):
+                    getattr(self.parent, f'comboBox_level_{i}').setEnabled(False)
+                    getattr(self.parent, f'comboBox_level_{i}').setCurrentIndex(0)
         else:
-            if level < 5:
+            if level < 5 and hasattr(self.parent, f'comboBox_level_{level + 1}'):
                 getattr(self.parent, f'comboBox_level_{level + 1}').setEnabled(True)
                 self.update_combobox_state(level + 1)
         
-        SmartArrange_paths = [
-            self.get_specific_value(getattr(self.parent, f'comboBox_level_{i}').currentText())
-            for i in range(1, 6)
-            if getattr(self.parent, f'comboBox_level_{i}').isEnabled() and
-               getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类"
-        ]
+        # 安全地收集SmartArrange路径
+        SmartArrange_paths = []
+        for i in range(1, 6):
+            if hasattr(self.parent, f'comboBox_level_{i}'):
+                combo_box = getattr(self.parent, f'comboBox_level_{i}')
+                if combo_box.isEnabled() and combo_box.currentText() != "不分类":
+                    SmartArrange_paths.append(self.get_specific_value(combo_box.currentText()))
         
         if SmartArrange_paths:
             preview_text = "/".join(SmartArrange_paths)
@@ -390,13 +430,23 @@ class SmartArrangePage(QtWidgets.QWidget):
                 )
     
     def set_combo_box_states(self):
-        self.parent.comboBox_level_1.setEnabled(True)
-        for i in range(2, 6):
-            combo_box = getattr(self.parent, f'comboBox_level_{i}')
-            combo_box.setEnabled(False)
-            combo_box.setCurrentIndex(0)
-        
-        self.update_combobox_state(1)
+        # 检查comboBox_level_1属性是否存在
+        if hasattr(self.parent, 'comboBox_level_1'):
+            self.parent.comboBox_level_1.setEnabled(True)
+            # 尝试设置其他级别的组合框状态
+            for i in range(2, 6):
+                if hasattr(self.parent, f'comboBox_level_{i}'):
+                    combo_box = getattr(self.parent, f'comboBox_level_{i}')
+                    combo_box.setEnabled(False)
+                    combo_box.setCurrentIndex(0)
+            
+            self.update_combobox_state(1)
+        else:
+            # 记录日志，说明组合框不存在
+            if hasattr(self.parent, 'log'):
+                self.parent.log.info('comboBox_level_1属性不存在，跳过组合框状态设置')
+            elif hasattr(self.parent, 'logger'):
+                self.parent.logger.info('comboBox_level_1属性不存在，跳过组合框状态设置')
 
     def get_specific_value(self, text):
         now = datetime.now()
@@ -422,6 +472,15 @@ class SmartArrangePage(QtWidgets.QWidget):
         return True
     
     def move_tag(self, button):
+        # 确保布局存在
+        if not self.available_layout or not self.selected_layout:
+            self.log("ERROR", "布局组件不存在，无法移动标签")
+            return
+            
+        # 确保按钮是有效的标签按钮
+        if button not in self.tag_buttons.values():
+            return
+        
         # 限制最多选择5个标签
         if self.selected_layout.count() >= 5:
             QMessageBox.information(self, "提示", "最多只能选择5个标签")
@@ -468,28 +527,31 @@ class SmartArrangePage(QtWidgets.QWidget):
             else:
                 return
         
-        # 从待选区域移除
-        self.available_layout.removeWidget(button)
-        
-        # 添加到已选区域（按点击顺序）
-        self.selected_layout.addWidget(button)
-        
-        # 更改按钮的点击事件处理函数
         try:
-            button.clicked.disconnect()
-        except TypeError:
-            pass  # 如果没有连接的信号，忽略错误
-        button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
-        
-        # 更新示例和操作显示
-        self.update_example_label()
-        self.update_operation_display()
-        
-        # 如果已选满5个标签，禁用剩余的可用标签
-        if self.selected_layout.count() >= 5:
-            for btn in self.tag_buttons.values():
-                if btn.parent() == self.available_layout:
-                    btn.setEnabled(False)
+            # 从待选区域移除
+            self.available_layout.removeWidget(button)
+            
+            # 添加到已选区域（按点击顺序）
+            self.selected_layout.addWidget(button)
+            
+            # 更改按钮的点击事件处理函数
+            try:
+                button.clicked.disconnect()
+            except TypeError:
+                pass  # 如果没有连接的信号，忽略错误
+            button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
+            
+            # 更新示例和操作显示
+            self.update_example_label()
+            self.update_operation_display()
+            
+            # 如果已选满5个标签，禁用剩余的可用标签
+            if self.selected_layout.count() >= 5:
+                for btn in self.tag_buttons.values():
+                    if btn.parent() == self.available_layout:
+                        btn.setEnabled(False)
+        except Exception as e:
+            self.log("ERROR", f"移动标签时出错: {str(e)}")
     
     def _get_weekday(self, date):
         weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -550,7 +612,18 @@ class SmartArrangePage(QtWidgets.QWidget):
         return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        if hasattr(self.parent, 'textEdit_SmartArrange_Log'):
+        # 检查并使用正确的日志输出控件
+        if hasattr(self.parent, 'smartArrangeLogOutputTextEdit'):
+            color_map = {
+                'ERROR': '#FF0000',
+                'WARNING': '#FFA500',
+                'DEBUG': '#008000',
+                'INFO': '#8677FD'
+            }
+            color = color_map.get(level, '#000000')
+            self.parent.smartArrangeLogOutputTextEdit.append(
+                f'<span style="color:{color}">{message}</span>')
+        elif hasattr(self.parent, 'textEdit_SmartArrange_Log'):
             color_map = {
                 'ERROR': '#FF0000',
                 'WARNING': '#FFA500',
@@ -560,6 +633,8 @@ class SmartArrangePage(QtWidgets.QWidget):
             color = color_map.get(level, '#000000')
             self.parent.textEdit_SmartArrange_Log.append(
                 f'<span style="color:{color}">{message}</span>')
+        else:
+            print(f"[{level}] {message}")  # 降级到控制台输出
     
     def log(self, level, message):
         current_time = datetime.now().strftime('%H:%M:%S')
@@ -567,41 +642,49 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.log_signal.emit(level, log_message)
 
     def move_tag_back(self, button):
-        # 从已选区域移除
-        self.selected_layout.removeWidget(button)
-        
-        # 添加回待选区域
-        self.available_layout.addWidget(button)
-        
-        # 恢复原始样式
-        if button.property('original_style') is not None:
-            try:
-                button.setStyleSheet(button.property('original_style'))
-            except Exception:
-                pass  # 忽略样式恢复错误
-        
-        # 恢复原始文本
-        if button.property('original_text') is not None:
-            button.setText(button.property('original_text'))
-        
-        # 清除自定义内容属性
-        button.setProperty('custom_content', None)
-        
-        # 更改按钮的点击事件处理函数
+        # 确保布局存在
+        if not self.available_layout or not self.selected_layout:
+            self.log("ERROR", "布局组件不存在，无法移动标签")
+            return
+            
         try:
-            button.clicked.disconnect()
-        except TypeError:
-            pass  # 如果没有连接的信号，忽略错误
-        button.clicked.connect(lambda checked, b=button: self.move_tag(b))
-        
-        # 更新示例和操作显示
-        self.update_example_label()
-        self.update_operation_display()
-        
-        # 重新启用所有可用标签
-        for btn in self.tag_buttons.values():
-            if btn.parent() == self.available_layout:
-                btn.setEnabled(True)
+            # 从已选区域移除
+            self.selected_layout.removeWidget(button)
+            
+            # 添加回待选区域
+            self.available_layout.addWidget(button)
+            
+            # 恢复原始样式
+            if button.property('original_style') is not None:
+                try:
+                    button.setStyleSheet(button.property('original_style'))
+                except Exception:
+                    pass  # 忽略样式恢复错误
+            
+            # 恢复原始文本
+            if button.property('original_text') is not None:
+                button.setText(button.property('original_text'))
+            
+            # 清除自定义内容属性
+            button.setProperty('custom_content', None)
+            
+            # 更改按钮的点击事件处理函数
+            try:
+                button.clicked.disconnect()
+            except TypeError:
+                pass  # 如果没有连接的信号，忽略错误
+            button.clicked.connect(lambda checked, b=button: self.move_tag(b))
+            
+            # 更新示例和操作显示
+            self.update_example_label()
+            self.update_operation_display()
+            
+            # 重新启用所有可用标签
+            for btn in self.tag_buttons.values():
+                if btn.parent() == self.available_layout:
+                    btn.setEnabled(True)
+        except Exception as e:
+            self.log("ERROR", f"将标签移回时出错: {str(e)}")
                 
     def refresh(self):
         """刷新智能整理页面"""
@@ -645,8 +728,10 @@ class SmartArrangePage(QtWidgets.QWidget):
             if hasattr(self.parent, 'progressBar_classification'):
                 self.parent.progressBar_classification.setValue(0)
                 
-            # 重置操作按钮
-            if hasattr(self.parent, 'toolButton_startSmartArrange'):
+            # 重置操作按钮，使用正确的名称并添加属性检查
+            if hasattr(self.parent, 'btnStartSmartArrange'):
+                self.parent.btnStartSmartArrange.setText("开始整理")
+            elif hasattr(self.parent, 'toolButton_startSmartArrange'):
                 self.parent.toolButton_startSmartArrange.setText("开始整理")
                 
             # 重置操作类型
