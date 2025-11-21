@@ -53,8 +53,8 @@ class SmartArrangePage(QtWidgets.QWidget):
         }
         
         # 添加布局属性检查
-        self.available_layout = getattr(self.parent, 'layout_rename_tags', None)
-        self.selected_layout = getattr(self.parent, 'layout_rename_selected', None)
+        self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
+        self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
         
         self.smart_arrange_thread = None
         self.smart_arrange_settings = []
