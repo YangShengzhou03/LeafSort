@@ -8,6 +8,15 @@
       "max_daily_calls": 500
     }
   },
-  "settings": {},
-  "last_modified": "2025-11-21T16:40:05.166310"
+  "settings": {
+    "exif_title": "",
+    "exif_author": "",
+    "exif_subject": "",
+    "exif_copyright": "",
+    "exif_latitude": "",
+    "exif_longitude": "",
+    "exif_shoot_time": "2025:11:21 17:30:01",
+    "exif_star_rating": 0
+  },
+  "last_modified": "2025-11-21T17:30:01.924624"
 }

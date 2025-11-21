@@ -604,7 +604,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         else:
             # 记录日志，说明组合框不存在
             if hasattr(self.parent, 'log'):
-                self.parent.log.info('comboBox_level_1属性不存在，跳过组合框状态设置')
+                self.parent.log('INFO', 'comboBox_level_1属性不存在，跳过组合框状态设置')
             elif hasattr(self.parent, 'logger'):
                 self.parent.logger.info('comboBox_level_1属性不存在，跳过组合框状态设置')
 
