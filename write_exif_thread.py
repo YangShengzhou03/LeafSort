@@ -428,21 +428,17 @@ class WriteExifThread(QThread):
             except Exception as e:
                 logger.error(f"替换文件失败 {image_path}: {str(e)}")
                 self.log_signal.emit("ERROR", f"替换文件失败 {os.path.basename(image_path)}: {str(e)}")
-                # 清理临时文件
-                try:
-                    os.remove(temp_path)
-                except:
-                    pass
                     
         except Exception as e:
             logger.error(f"保存PNG文件失败 {image_path}: {str(e)}")
             self.log_signal.emit("ERROR", f"保存PNG文件 {os.path.basename(image_path)} 失败: {str(e)}")
+        finally:
             # 清理临时文件
             try:
-                if os.path.exists(image_path + ".tmp"):
-                    os.remove(image_path + ".tmp")
-            except:
-                pass
+                if os.path.exists(temp_path):
+                    os.remove(temp_path)
+            except Exception as e:
+                logger.debug(f"清理临时文件失败: {str(e)}")
 
     def _process_heic_format(self, image_path):
         try:
@@ -462,15 +458,16 @@ class WriteExifThread(QThread):
             
             exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
             
-            if hasattr(heif_file, 'exif') and heif_file.exif:
-                try:
+            # 尝试加载现有EXIF数据
+            try:
+                if hasattr(heif_file, 'exif') and heif_file.exif:
                     heif_exif = piexif.load(heif_file.exif)
                     exif_dict.update(heif_exif)
-                except Exception:
-                    pass
+            except Exception as e:
+                logger.debug(f"加载HEIF EXIF数据失败: {str(e)}")
             
-            if hasattr(image, '_getexif') and image._getexif():
-                try:
+            try:
+                if hasattr(image, '_getexif'):
                     pil_exif = image._getexif()
                     if pil_exif:
                         tag_mapping = {
@@ -486,17 +483,22 @@ class WriteExifThread(QThread):
                             42034: ("Exif", piexif.ExifIFD.LensSpecification),
                         }
                         
+                        # 合并PIL EXIF数据到exif_dict
                         for tag_id, (section, piexif_tag) in tag_mapping.items():
                             if tag_id in pil_exif:
-                                exif_dict[section][piexif_tag] = pil_exif[tag_id]
-                except Exception:
-                    pass
+                                try:
+                                    exif_dict[section][piexif_tag] = pil_exif[tag_id]
+                                except Exception as e:
+                                    logger.debug(f"处理PIL EXIF标签 {tag_id} 失败: {str(e)}")
+            except Exception as e:
+                    logger.debug(f"加载PIL EXIF数据失败: {str(e)}")
             
-            if hasattr(image, 'info') and 'exif' in image.info:
-                try:
+            # 尝试从image.info加载EXIF数据
+            try:
+                if hasattr(image, 'info') and 'exif' in image.info:
                     info_exif = piexif.load(image.info['exif'])
                     exif_dict.update(info_exif)
-                except Exception:
+            except Exception as e:
                     pass
             
             try:

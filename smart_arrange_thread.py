@@ -109,28 +109,20 @@ class SmartArrangeThread(QtCore.QThread):
         self.files_lock = threading.Lock()
 
     def calculate_total_files(self):
-        """计算总文件数，增强错误处理"""
+        """计算总文件数"""
         try:
             self.total_files = 0
             for folder_info in self.folders:
-                try:
-                    folder_path = Path(folder_info['path'])
+                folder_path = Path(folder_info['path'])
+                
+                # 路径验证
+                if not self._validate_folder_path(folder_path):
+                    continue
                     
-                    # 增强的路径验证
-                    if not self._validate_folder_path(folder_path):
-                        continue
-                        
-                    if folder_info.get('include_sub', 0):
-                        self._count_files_recursive(folder_path)
-                    else:
-                        self._count_files_direct(folder_path)
-                            
-                except (OSError, IOError) as e:
-                    logger.error(f"访问文件夹失败 {folder_info.get('path', 'unknown')}: {str(e)}")
-                    self.log("ERROR", f"无法访问文件夹: {str(e)}")
-                except Exception as e:
-                    logger.error(f"处理文件夹信息时出错: {str(e)}")
-                    self.log("ERROR", f"处理文件夹时出错: {str(e)}")
+                if folder_info.get('include_sub', 0):
+                    self._count_files_recursive(folder_path)
+                else:
+                    self._count_files_direct(folder_path)
                     
             logger.info(f"总文件数: {self.total_files}")
             self.log("DEBUG", f"总文件数: {self.total_files}")
