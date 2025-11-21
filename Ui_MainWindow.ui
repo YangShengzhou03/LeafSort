@@ -997,13 +997,13 @@ border-bottom-left-radius:0px;</string>
                      <number>24</number>
                     </property>
                     <property name="topMargin">
-                     <number>24</number>
+                     <number>9</number>
                     </property>
                     <property name="rightMargin">
                      <number>24</number>
                     </property>
                     <property name="bottomMargin">
-                     <number>24</number>
+                     <number>9</number>
                     </property>
                     <item>
                      <widget class="QLabel" name="lblImportTitle">
@@ -1096,6 +1096,9 @@ border-bottom-right-radius:12px;
 border-bottom-left-radius:0px;</string>
                    </property>
                    <layout class="QVBoxLayout" name="layoutImportContainer">
+                    <property name="spacing">
+                     <number>18</number>
+                    </property>
                     <property name="leftMargin">
                      <number>18</number>
                     </property>
@@ -1138,7 +1141,7 @@ QFrame:focus {
     box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
 }</string>
                       </property>
-                      <layout class="QHBoxLayout" name="layoutSourceFolder">
+                      <layout class="QHBoxLayout" name="layoutSourceFolder" stretch="1,0,0">
                        <item>
                         <widget class="QLabel" name="lblSourceFolder">
                          <property name="minimumSize">
@@ -1153,6 +1156,11 @@ QFrame:focus {
                            <pointsize>10</pointsize>
                           </font>
                          </property>
+                         <property name="styleSheet">
+                          <string notr="true">QLabel {
+    qproperty-alignment: AlignRight;
+}</string>
+                         </property>
                          <property name="text">
                           <string>源文件夹：</string>
                          </property>
@@ -1160,6 +1168,12 @@ QFrame:focus {
                        </item>
                        <item>
                         <widget class="QLineEdit" name="inputSourceFolder">
+                         <property name="minimumSize">
+                          <size>
+                           <width>482</width>
+                           <height>0</height>
+                          </size>
+                         </property>
                          <property name="font">
                           <font>
                            <family>Microsoft YaHei UI</family>
@@ -1270,7 +1284,7 @@ QFrame:focus {
     box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15), 0 4px 16px rgba(0, 0, 0, 0.08);
 }</string>
                       </property>
-                      <layout class="QHBoxLayout" name="layoutTargetFolder">
+                      <layout class="QHBoxLayout" name="layoutTargetFolder" stretch="1,0,0">
                        <item>
                         <widget class="QLabel" name="lblTargetFolder">
                          <property name="minimumSize">
@@ -1285,6 +1299,11 @@ QFrame:focus {
                            <pointsize>10</pointsize>
                           </font>
                          </property>
+                         <property name="styleSheet">
+                          <string notr="true">QLabel {
+    qproperty-alignment: AlignRight;
+}</string>
+                         </property>
                          <property name="text">
                           <string>目标文件夹：</string>
                          </property>
@@ -1292,6 +1311,12 @@ QFrame:focus {
                        </item>
                        <item>
                         <widget class="QLineEdit" name="inputTargetFolder">
+                         <property name="minimumSize">
+                          <size>
+                           <width>482</width>
+                           <height>0</height>
+                          </size>
+                         </property>
                          <property name="font">
                           <font>
                            <family>Microsoft YaHei UI</family>
@@ -1377,16 +1402,12 @@ QPushButton:pressed {
                       <property name="minimumSize">
                        <size>
                         <width>0</width>
-                        <height>120</height>
+                        <height>0</height>
                        </size>
                       </property>
                       <property name="styleSheet">
                        <string notr="true">QTextBrowser {
-    border: 1.5px solid qlineargradient(
-        x1:0, y1:0, x2:1, y2:0,
-        stop:0 rgba(229, 231, 235, 255),
-        stop:1 rgba(209, 213, 219, 255)
-    );
+    border: transparent;
     background: rgba(255, 255, 255, 95);
     border-radius: 8px;
     padding: 12px;
@@ -3472,7 +3493,7 @@ QComboBox:focus {
                             <property name="styleSheet">
                              <string notr="true">QComboBox {
     background-color: rgba(255, 255, 255, 85);
-    border: 1px solid rgba(255, 255, 255, 60);
+    border: 1px solid #a5b4fc;
     border-radius: 8px;
     padding: 6px 12px;
     color: #374151;
@@ -3646,7 +3667,7 @@ QComboBox:focus {
                             <property name="styleSheet">
                              <string notr="true">QComboBox {
     background-color: rgba(255, 255, 255, 85);
-    border: 1px solid rgba(255, 255, 255, 60);
+    border: 1px solid #a5b4fc;
     border-radius: 8px;
     padding: 6px 12px;
     color: #374151;
@@ -4413,7 +4434,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:12px;
 border-bottom-left-radius:0px;</string>
                       </property>
-                      <layout class="QHBoxLayout" name="viewerToolbarLayout" stretch="0,0,0">
+                      <layout class="QHBoxLayout" name="viewerToolbarLayout" stretch="">
                        <property name="spacing">
                         <number>0</number>
                        </property>
@@ -4429,48 +4450,6 @@ border-bottom-left-radius:0px;</string>
                        <property name="bottomMargin">
                         <number>0</number>
                        </property>
-                       <item>
-                        <widget class="QLabel" name="imageA">
-                         <property name="styleSheet">
-                          <string notr="true"/>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="Line" name="contrastLine">
-                         <property name="minimumSize">
-                          <size>
-                           <width>1</width>
-                           <height>0</height>
-                          </size>
-                         </property>
-                         <property name="maximumSize">
-                          <size>
-                           <width>1</width>
-                           <height>16777215</height>
-                          </size>
-                         </property>
-                         <property name="styleSheet">
-                          <string notr="true">background-color: rgb(235, 236, 237);</string>
-                         </property>
-                         <property name="orientation">
-                          <enum>Qt::Vertical</enum>
-                         </property>
-                        </widget>
-                       </item>
-                       <item>
-                        <widget class="QLabel" name="imageB">
-                         <property name="styleSheet">
-                          <string notr="true"/>
-                         </property>
-                         <property name="text">
-                          <string/>
-                         </property>
-                        </widget>
-                       </item>
                       </layout>
                      </widget>
                     </item>
@@ -5420,9 +5399,9 @@ border-top-right-radius:0px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;</string>
                    </property>
-                   <layout class="QHBoxLayout" name="saveButtonsLayout" stretch="0,0">
+                   <layout class="QHBoxLayout" name="saveButtonsLayout" stretch="1,1">
                     <property name="spacing">
-                     <number>12</number>
+                     <number>18</number>
                     </property>
                     <property name="leftMargin">
                      <number>9</number>

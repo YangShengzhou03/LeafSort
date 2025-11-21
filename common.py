@@ -2,12 +2,7 @@ import os
 import sys
 from pathlib import Path
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QPixmap, QIcon
-from PyQt6.QtWidgets import QDialog, QWidget, QVBoxLayout, QLabel, QPushButton
 from filetype import guess
-
-
 
 
 def get_resource_path(relative_path):

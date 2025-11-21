@@ -605,7 +605,7 @@ class Ui_MainWindow(object):
 "border-bottom-left-radius:0px;")
         self.frameImportHeader.setObjectName("frameImportHeader")
         self.layoutImportHeader = QtWidgets.QHBoxLayout(self.frameImportHeader)
-        self.layoutImportHeader.setContentsMargins(24, 24, 24, 24)
+        self.layoutImportHeader.setContentsMargins(24, 9, 24, 9)
         self.layoutImportHeader.setObjectName("layoutImportHeader")
         self.lblImportTitle = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
@@ -652,6 +652,7 @@ class Ui_MainWindow(object):
         self.importContainer.setObjectName("importContainer")
         self.layoutImportContainer = QtWidgets.QVBoxLayout(self.importContainer)
         self.layoutImportContainer.setContentsMargins(18, 18, 18, 18)
+        self.layoutImportContainer.setSpacing(18)
         self.layoutImportContainer.setObjectName("layoutImportContainer")
         self.frameSourceFolderGroup = QtWidgets.QFrame(parent=self.importContainer)
         self.frameSourceFolderGroup.setStyleSheet("QFrame {\n"
@@ -689,9 +690,13 @@ class Ui_MainWindow(object):
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(10)
         self.lblSourceFolder.setFont(font)
+        self.lblSourceFolder.setStyleSheet("QLabel {\n"
+"    qproperty-alignment: AlignRight;\n"
+"}")
         self.lblSourceFolder.setObjectName("lblSourceFolder")
         self.layoutSourceFolder.addWidget(self.lblSourceFolder)
         self.inputSourceFolder = QtWidgets.QLineEdit(parent=self.frameSourceFolderGroup)
+        self.inputSourceFolder.setMinimumSize(QtCore.QSize(482, 0))
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(-1)
@@ -749,6 +754,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnBrowseSource.setObjectName("btnBrowseSource")
         self.layoutSourceFolder.addWidget(self.btnBrowseSource)
+        self.layoutSourceFolder.setStretch(0, 1)
         self.layoutImportContainer.addWidget(self.frameSourceFolderGroup)
         self.frameTargetFolderGroup = QtWidgets.QFrame(parent=self.importContainer)
         self.frameTargetFolderGroup.setStyleSheet("QFrame {\n"
@@ -786,9 +792,13 @@ class Ui_MainWindow(object):
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(10)
         self.lblTargetFolder.setFont(font)
+        self.lblTargetFolder.setStyleSheet("QLabel {\n"
+"    qproperty-alignment: AlignRight;\n"
+"}")
         self.lblTargetFolder.setObjectName("lblTargetFolder")
         self.layoutTargetFolder.addWidget(self.lblTargetFolder)
         self.inputTargetFolder = QtWidgets.QLineEdit(parent=self.frameTargetFolderGroup)
+        self.inputTargetFolder.setMinimumSize(QtCore.QSize(482, 0))
         font = QtGui.QFont()
         font.setFamily("Microsoft YaHei UI")
         font.setPointSize(-1)
@@ -846,15 +856,12 @@ class Ui_MainWindow(object):
 "}")
         self.btnBrowseTarget.setObjectName("btnBrowseTarget")
         self.layoutTargetFolder.addWidget(self.btnBrowseTarget)
+        self.layoutTargetFolder.setStretch(0, 1)
         self.layoutImportContainer.addWidget(self.frameTargetFolderGroup)
         self.textBrowser_import_info = QtWidgets.QTextBrowser(parent=self.importContainer)
-        self.textBrowser_import_info.setMinimumSize(QtCore.QSize(0, 120))
+        self.textBrowser_import_info.setMinimumSize(QtCore.QSize(0, 0))
         self.textBrowser_import_info.setStyleSheet("QTextBrowser {\n"
-"    border: 1.5px solid qlineargradient(\n"
-"        x1:0, y1:0, x2:1, y2:0,\n"
-"        stop:0 rgba(229, 231, 235, 255),\n"
-"        stop:1 rgba(209, 213, 219, 255)\n"
-"    );\n"
+"    border: transparent;\n"
 "    background: rgba(255, 255, 255, 95);\n"
 "    border-radius: 8px;\n"
 "    padding: 12px;\n"
@@ -2226,7 +2233,7 @@ class Ui_MainWindow(object):
         self.timeSource1.setFont(font)
         self.timeSource1.setStyleSheet("QComboBox {\n"
 "    background-color: rgba(255, 255, 255, 85);\n"
-"    border: 1px solid rgba(255, 255, 255, 60);\n"
+"    border: 1px solid #a5b4fc;\n"
 "    border-radius: 8px;\n"
 "    padding: 6px 12px;\n"
 "    color: #374151;\n"
@@ -2363,7 +2370,7 @@ class Ui_MainWindow(object):
         self.fileOperation.setFont(font)
         self.fileOperation.setStyleSheet("QComboBox {\n"
 "    background-color: rgba(255, 255, 255, 85);\n"
-"    border: 1px solid rgba(255, 255, 255, 60);\n"
+"    border: 1px solid #a5b4fc;\n"
 "    border-radius: 8px;\n"
 "    padding: 6px 12px;\n"
 "    color: #374151;\n"
@@ -2837,24 +2844,6 @@ class Ui_MainWindow(object):
         self.viewerToolbarLayout.setContentsMargins(0, 0, 0, 0)
         self.viewerToolbarLayout.setSpacing(0)
         self.viewerToolbarLayout.setObjectName("viewerToolbarLayout")
-        self.imageA = QtWidgets.QLabel(parent=self.verticalFrame_13)
-        self.imageA.setStyleSheet("")
-        self.imageA.setText("")
-        self.imageA.setObjectName("imageA")
-        self.viewerToolbarLayout.addWidget(self.imageA)
-        self.contrastLine = QtWidgets.QFrame(parent=self.verticalFrame_13)
-        self.contrastLine.setMinimumSize(QtCore.QSize(1, 0))
-        self.contrastLine.setMaximumSize(QtCore.QSize(1, 16777215))
-        self.contrastLine.setStyleSheet("background-color: rgb(235, 236, 237);")
-        self.contrastLine.setFrameShape(QtWidgets.QFrame.Shape.VLine)
-        self.contrastLine.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
-        self.contrastLine.setObjectName("contrastLine")
-        self.viewerToolbarLayout.addWidget(self.contrastLine)
-        self.imageB = QtWidgets.QLabel(parent=self.verticalFrame_13)
-        self.imageB.setStyleSheet("")
-        self.imageB.setText("")
-        self.imageB.setObjectName("imageB")
-        self.viewerToolbarLayout.addWidget(self.imageB)
         self.viewerContentLayout.addWidget(self.verticalFrame_13)
         self.viewerContentLayout.setStretch(1, 3)
         self.viewerPageLayout.addWidget(self.verticalWidget)
@@ -3525,7 +3514,7 @@ class Ui_MainWindow(object):
         self.horizontalFrame_10.setObjectName("horizontalFrame_10")
         self.saveButtonsLayout = QtWidgets.QHBoxLayout(self.horizontalFrame_10)
         self.saveButtonsLayout.setContentsMargins(9, 6, 9, 6)
-        self.saveButtonsLayout.setSpacing(12)
+        self.saveButtonsLayout.setSpacing(18)
         self.saveButtonsLayout.setObjectName("saveButtonsLayout")
         self.exifControlLayout = QtWidgets.QHBoxLayout()
         self.exifControlLayout.setContentsMargins(6, 6, 6, 6)
@@ -3791,6 +3780,8 @@ class Ui_MainWindow(object):
         self.lineEdit_EXIF_longitude.setObjectName("lineEdit_EXIF_longitude")
         self.windowControlLayout.addWidget(self.lineEdit_EXIF_longitude)
         self.saveButtonsLayout.addLayout(self.windowControlLayout)
+        self.saveButtonsLayout.setStretch(0, 1)
+        self.saveButtonsLayout.setStretch(1, 1)
         self.detailsPageLayout.addWidget(self.horizontalFrame_10)
         self.verticalFrame_15 = QtWidgets.QFrame(parent=self.imageDetailsPage)
         self.verticalFrame_15.setStyleSheet("background:rgb(255, 255, 255);\n"

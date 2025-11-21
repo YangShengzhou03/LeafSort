@@ -1,10 +1,4 @@
-import os
-
-from PyQt6 import QtWidgets, QtCore, QtGui
-from PyQt6.QtWidgets import QFileDialog, QMessageBox, QProgressDialog
-
-from common import get_resource_path
-from config_manager import config_manager
+from PyQt6 import QtWidgets
 
 
 class FolderPage(QtWidgets.QWidget):

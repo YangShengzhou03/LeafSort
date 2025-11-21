@@ -1,8 +1,6 @@
-import os
-import json
-from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QFileDialog, QCheckBox, QLineEdit, QHBoxLayout, QGroupBox, QGridLayout, QComboBox, QMessageBox
-from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QHBoxLayout, QGroupBox, QGridLayout, \
+    QComboBox, QMessageBox
+
 from common import get_resource_path
 from config_manager import config_manager
 

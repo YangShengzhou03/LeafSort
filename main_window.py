@@ -1,15 +1,12 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
-from PyQt6.QtWidgets import QMainWindow, QDialog, QMenu, QInputDialog, QMessageBox
-from PyQt6.QtCore import Qt, QThread, pyqtSignal, QSize, QPoint
-from PyQt6.QtGui import QPixmap, QImage, QIcon, QFont
-import os
-import sys
-from Ui_MainWindow import Ui_MainWindow
+from PyQt6.QtCore import Qt, QPoint
+
 from SettingsDialog import SettingsDialog
-from common import get_resource_path
+from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
-from smart_arrange import SmartArrangePage
+from common import get_resource_path
 from remove_duplication import RemoveDuplicationPage
+from smart_arrange import SmartArrangePage
 from write_exif import WriteExifPage
 
 
