@@ -1455,7 +1455,6 @@ class SmartArrangeThread(QtCore.QThread):
                 return
                 
             # 文件大小检查，避免处理过大的文件
-            # 直接获取文件大小，不再使用try-except
             file_size = file_path.stat().st_size
             if file_size > 500 * 1024 * 1024:  # 500MB限制
                 self.log("WARNING", f"跳过过大的文件: {file_path.name} ({file_size / 1024 / 1024:.1f}MB)")
@@ -1463,62 +1462,57 @@ class SmartArrangeThread(QtCore.QThread):
                 
             exif_data = self.get_exif_data(file_path)
             
-            # 增强的文件时间解析逻辑，支持多种格式和更好的错误处理
+            # 解析文件时间 - 简化格式解析逻辑
             file_time = None
             if exif_data.get('DateTime'):
-                # 尝试多种常见的日期时间格式
-                date_formats = [
-                    '%Y-%m-%d %H:%M:%S',
-                    '%Y:%m:%d %H:%M:%S',
-                    '%d-%m-%Y %H:%M:%S',
-                    '%m-%d-%Y %H:%M:%S',
-                    '%Y-%m-%dT%H:%M:%S',
-                    '%Y:%m:%dT%H:%M:%S'
-                ]
+                # 使用更高效的方式尝试解析日期时间
+                # 首先尝试调用专门的解析方法，如果存在的话
+                if hasattr(self, 'parse_datetime'):
+                    file_time = self.parse_datetime(str(exif_data['DateTime']))
                 
-                for fmt in date_formats:
-                    try:
-                        file_time = datetime.datetime.strptime(str(exif_data['DateTime']), fmt)
-                        break
-                    except ValueError:
-                        continue
+                # 如果专门的方法不存在或失败，回退到尝试多种格式
+                if file_time is None:
+                    date_formats = [
+                        '%Y-%m-%d %H:%M:%S',
+                        '%Y:%m:%d %H:%M:%S',
+                        '%Y-%m-%dT%H:%M:%S',
+                        '%Y:%m:%dT%H:%M:%S'
+                    ]
+                    
+                    # 优先尝试最常见的格式，减少循环次数
+                    for fmt in date_formats:
+                        try:
+                            file_time = datetime.datetime.strptime(str(exif_data['DateTime']), fmt)
+                            break
+                        except ValueError:
+                            continue
                 
                 if file_time is None:
-                    # 如果尝试所有格式都失败，记录警告并尝试使用文件系统时间
                     self.log("WARNING", f"无法解析文件时间格式: {exif_data['DateTime']} 对于文件 {file_path.name}")
                     
             # 如果EXIF时间解析失败，使用文件系统时间
             if file_time is None:
                 try:
-                    if self.time_derive == "文件创建时间":
-                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_ctime)
-                    elif self.time_derive == "文件修改时间":
-                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
-                    else:  # 默认使用修改时间
-                        file_time = datetime.datetime.fromtimestamp(file_path.stat().st_mtime)
+                    # 简化文件时间获取逻辑
+                    timestamp = file_path.stat().st_ctime if self.time_derive == "文件创建时间" else file_path.stat().st_mtime
+                    file_time = datetime.datetime.fromtimestamp(timestamp)
                     self.log("DEBUG", f"使用文件系统时间: {file_time} 对于文件 {file_path.name}")
                 except Exception as e:
                     self.log("ERROR", f"获取文件系统时间失败 {file_path.name}: {str(e)}")
 
+            # 设置目标根目录
             if self.destination_root:
                 base_folder = self.destination_root
             
+            # 构建目标路径和新文件名
             target_path = self.build_target_path(file_path, exif_data, file_time, base_folder)
-            
             original_name = file_path.stem
             new_file_name = self.build_new_file_name(file_path, file_time, original_name, exif_data)
-            
             new_file_name_with_ext = f"{new_file_name}{file_path.suffix}"
-            
             full_target_path = target_path / new_file_name_with_ext
             
-            needs_operation = False
-            
-            if file_path.name != new_file_name_with_ext:
-                needs_operation = True
-            
-            if file_path.parent != target_path:
-                needs_operation = True
+            # 简化文件操作判断逻辑
+            needs_operation = file_path.name != new_file_name_with_ext or file_path.parent != target_path
             
             if needs_operation:
                 with self.files_lock:

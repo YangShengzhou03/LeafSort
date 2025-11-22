@@ -7,6 +7,11 @@ class FolderPage(QtWidgets.QWidget):
         self.parent = parent
         self.folder_items = []
     
+    def init_page(self):
+        """初始化页面"""
+        # 页面初始化逻辑
+        pass
+    
     def refresh(self):
         """刷新文件夹列表"""
         # 简单实现：清空现有列表

@@ -10,3 +10,8 @@ class RemoveDuplicationPage(QObject):
         self.hash_dict = {}
         self.duplicate_groups = []
         self.current_group_index = -1
+    
+    def init_page(self):
+        """初始化页面"""
+        # 页面初始化逻辑
+        pass

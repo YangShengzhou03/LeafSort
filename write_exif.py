@@ -98,7 +98,7 @@ class WriteExifPage(QWidget):
     def _update_camera_brand_model(self):
         """更新相机品牌和型号下拉框"""
         try:
-            self.dateTimeEdit_shootTime.setDateTime(QtCore.QDateTime.currentDateTime())
+            self.parent.dateTimeEdit_shootTime.setDateTime(QtCore.QDateTime.currentDateTime())
         except (AttributeError, TypeError):
             pass
     
@@ -433,7 +433,8 @@ class WriteExifPage(QWidget):
             'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
         
-        location_type = self.parent.locationComboBox.currentIndex()
+        # Location handling - default to address-based location
+        location_type = 0  # Default to address-based location
         if location_type == 0:
             address = self.parent.lineEdit_EXIF_Position.text()
             if address:
@@ -543,8 +544,8 @@ class WriteExifPage(QWidget):
             'position': None,
             'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
-            if self.parent.shootTimeComboBox.currentIndex() == 2
-            else self.parent.shootTimeComboBox.currentIndex(),
+            if self.parent.shootTimeSource.currentIndex() == 2
+            else self.parent.shootTimeSource.currentIndex(),
             'cameraBrand': camera_brand,
             'cameraModel': camera_model,
             'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
@@ -636,20 +637,21 @@ class WriteExifPage(QWidget):
             if longitude := config_manager.get_setting("exif_longitude"):
                 self.parent.lineEdit_EXIF_longitude.setText(longitude)
             
-            if location_index := config_manager.get_setting("exif_location_index"):
-                self.parent.locationComboBox.setCurrentIndex(int(location_index))
-                self.on_combobox_location_changed(int(location_index))
+            # locationComboBox not in UI, skip location_index loading
+            # if location_index := config_manager.get_setting("exif_location_index"):
+            #     self.parent.locationComboBox.setCurrentIndex(int(location_index))
+            #     self.on_combobox_location_changed(int(location_index))
             
             if camera_brand := config_manager.get_setting("exif_camera_brand"):
-                index = self.parent.brandComboBox.findText(camera_brand)
+                index = self.parent.cameraBrand.findText(camera_brand)
                 if index >= 0:
-                    self.parent.brandComboBox.setCurrentIndex(index)
+                    self.parent.cameraBrand.setCurrentIndex(index)
                     self._on_brand_changed(index)
             
             if camera_model := config_manager.get_setting("exif_camera_model"):
-                index = self.parent.modelComboBox.findText(camera_model)
+                index = self.parent.cameraModel.findText(camera_model)
                 if index >= 0:
-                    self.parent.modelComboBox.setCurrentIndex(index)
+                    self.parent.cameraModel.setCurrentIndex(index)
             
             if shoot_time_index := config_manager.get_setting("exif_shoot_time_index"):
                 self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_index))
@@ -671,18 +673,19 @@ class WriteExifPage(QWidget):
             
             config_manager.update_setting("exif_copyright", self.parent.copyrightLineEdit.text())
             
-            # 使用lineEdit_EXIF_Position
+            # 使用正确的控件名称
             config_manager.update_setting("exif_position", self.parent.lineEdit_EXIF_Position.text())
             
             config_manager.update_setting("exif_latitude", self.parent.lineEdit_EXIF_latitude.text())
             
             config_manager.update_setting("exif_longitude", self.parent.lineEdit_EXIF_longitude.text())
             
-            config_manager.update_setting("exif_location_index", self.parent.locationComboBox.currentIndex())
+            # locationComboBox not in UI, skip saving location_index
+            # config_manager.update_setting("exif_location_index", self.parent.locationComboBox.currentIndex())
             
-            config_manager.update_setting("exif_camera_brand", self.parent.brandComboBox.currentText())
+            config_manager.update_setting("exif_camera_brand", self.parent.cameraBrand.currentText())
             
-            config_manager.update_setting("exif_camera_model", self.parent.modelComboBox.currentText())
+            config_manager.update_setting("exif_camera_model", self.parent.cameraModel.currentText())
             
             config_manager.update_setting("exif_shoot_time_index", self.parent.shootTimeSource.currentIndex())
             
@@ -696,8 +699,8 @@ class WriteExifPage(QWidget):
     def refresh(self):
         """刷新页面状态"""
         try:
-            self.brandComboBox.setCurrentIndex(0)
-            self.modelComboBox.setCurrentIndex(0)
+            self.parent.cameraBrand.setCurrentIndex(0)
+            self.parent.cameraModel.setCurrentIndex(0)
         except (AttributeError, TypeError):
             pass
         try:
