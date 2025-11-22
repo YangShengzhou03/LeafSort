@@ -98,6 +98,20 @@ class SmartArrangePage(QtWidgets.QWidget):
             if not folders:
                 self.log("WARNING", "请先导入一个包含文件的文件夹。")
                 return
+            
+            # 确保必须选择目标文件夹
+            if not self.destination_root:
+                folder = QFileDialog.getExistingDirectory(self, "请选择目标文件夹",
+                                                          options=QFileDialog.Option.ShowDirsOnly)
+                if not folder:
+                    self.log("WARNING", "必须选择目标文件夹才能进行整理操作。")
+                    return
+                self.destination_root = folder
+                display_path = folder + '/'
+                if len(display_path) > 20:
+                    display_path = f"{display_path[:8]}...{display_path[-6:]}"
+                operation_text = "目标文件夹: "
+                self.parent.copyRoute.setText(f"{operation_text}{display_path}")
 
             reply = QMessageBox.question(
                 self,

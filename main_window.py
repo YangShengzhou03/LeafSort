@@ -1,5 +1,7 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import Qt, QPoint
+from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
+from PyQt6.QtGui import QAction
 
 from SettingsDialog import SettingsDialog
 from Ui_MainWindow import Ui_MainWindow
@@ -17,6 +19,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 页面相关初始化
         self.current_page_index = -1
         self.page_cache = {}
+        
+        # 初始化系统托盘
+        self._init_system_tray()
         self.setupUi(self)
         
         # 初始化窗口
@@ -70,7 +75,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             try:
                 self.btnMinimize.clicked.connect(self.showMinimized)
                 self.btnMaximize.clicked.connect(self._toggle_maximize)
-                self.btnClose.clicked.connect(self.close)
+                self.btnClose.clicked.connect(self.hide_to_tray)
             except Exception as e:
                 print(f"连接窗口控制按钮信号失败: {str(e)}")
                 
@@ -97,6 +102,70 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.showNormal()
         else:
             self.showMaximized()
+            
+    def _init_system_tray(self):
+        """初始化系统托盘"""
+        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon.setIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
+        self.tray_icon.setToolTip("枫叶相册")
+        
+        # 创建托盘菜单
+        self._create_tray_menu()
+        
+        # 设置点击托盘图标显示/隐藏主窗口
+        self.tray_icon.activated.connect(self._tray_icon_activated)
+        
+    def _create_tray_menu(self):
+        """创建托盘菜单"""
+        # 创建菜单
+        self.tray_menu = QMenu()
+        
+        # 创建显示动作
+        self.action_show = QAction("显示窗口", self)
+        self.action_show.triggered.connect(self._show_window)
+        
+        # 创建退出动作
+        self.action_exit = QAction("退出", self)
+        self.action_exit.triggered.connect(self._exit_application)
+        
+        # 添加动作到菜单
+        self.tray_menu.addAction(self.action_show)
+        self.tray_menu.addSeparator()
+        self.tray_menu.addAction(self.action_exit)
+        
+        # 设置托盘菜单
+        self.tray_icon.setContextMenu(self.tray_menu)
+        
+    def _show_window(self):
+        """显示主窗口"""
+        self.show()
+        self.raise_()
+        
+    def _exit_application(self):
+        """退出应用程序"""
+        # 先隐藏托盘图标
+        self.tray_icon.hide()
+        # 然后退出应用
+        QtWidgets.QApplication.quit()
+        
+    def _tray_icon_activated(self, reason):
+        """托盘图标被激活时的处理"""
+        if reason == QSystemTrayIcon.ActivationReason.Trigger:
+            if self.isHidden():
+                self.show()
+                self.raise_()
+            else:
+                self.hide()
+                
+    def hide_to_tray(self):
+        """隐藏到系统托盘"""
+        self.hide()
+        self.tray_icon.show()
+        
+    def closeEvent(self, event):
+        """重写关闭事件，最小化到托盘而不是退出"""
+        event.ignore()
+        self.hide_to_tray()
     
     def _on_mouse_press(self, event):
         if event.button() == Qt.MouseButton.LeftButton:
