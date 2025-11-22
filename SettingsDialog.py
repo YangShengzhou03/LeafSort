@@ -1,5 +1,6 @@
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QHBoxLayout, QGroupBox, QGridLayout, \
     QComboBox, QMessageBox
+from PyQt6 import QtGui
 
 from common import get_resource_path
 from config_manager import config_manager
@@ -134,5 +135,3 @@ class SettingsDialog(QDialog):
                 QMessageBox.warning(self, "清除失败", f"清除缓存时出错: {str(e)}")
 
 
-# 确保导入QtGui
-from PyQt6 import QtGui
