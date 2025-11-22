@@ -1398,7 +1398,7 @@ class WriteExifThread(QThread):
         
         Args:
             groups: 正则表达式匹配组字典
-            
+
         Returns:
             bool: 是否包含必要组件
         """
@@ -1406,12 +1406,12 @@ class WriteExifThread(QThread):
     
     def _build_date_str_parts(self, groups, name_without_ext, match):
         """构建日期字符串部分
-        
+
         Args:
             groups: 正则表达式匹配组字典
             name_without_ext: 不包含扩展名的文件名
             match: 匹配对象
-            
+
         Returns:
             tuple: (日期字符串部分列表, 是否包含时间)
         """
@@ -1425,13 +1425,14 @@ class WriteExifThread(QThread):
         if groups.get('hour'):
             date_str_parts.append(groups['hour'].rjust(2, '0'))
             has_time = True
-            self._add_time_components(date_str_parts, groups, name_without_ext, match)
-        
+            self._add_time_components(date_str_parts, groups, 
+                                     name_without_ext, match)
+
         return date_str_parts, has_time
     
     def _add_time_components(self, date_str_parts, groups, name_without_ext, match):
         """添加时间组件到日期字符串部分
-        
+
         Args:
             date_str_parts: 日期字符串部分列表
             groups: 正则表达式匹配组字典
@@ -1443,13 +1444,14 @@ class WriteExifThread(QThread):
             
             if groups.get('second'):
                 date_str_parts.append(groups['second'].rjust(2, '0'))
-            elif len(groups.get('minute', '')) == 2 and len(groups.get('hour', '')) == 2:
+            elif (len(groups.get('minute', '')) == 2 and 
+                  len(groups.get('hour', '')) == 2):
                 # 尝试从剩余文本中提取秒数
                 self._try_extract_seconds(date_str_parts, groups, name_without_ext, match)
     
     def _try_extract_seconds(self, date_str_parts, groups, name_without_ext, match):
         """尝试从剩余文本中提取秒数
-        
+
         Args:
             date_str_parts: 日期字符串部分列表
             groups: 正则表达式匹配组字典
@@ -1462,35 +1464,36 @@ class WriteExifThread(QThread):
             if 0 <= int(seconds) <= 59:
                 date_str_parts.append(seconds)
                 groups['second'] = seconds
-    
+
     def _try_extract_missing_time(self, date_str_parts, name_without_ext, groups):
         """尝试从文件名中提取缺失的时间信息
-        
+
         Args:
             date_str_parts: 日期字符串部分列表
             name_without_ext: 不包含扩展名的文件名
             groups: 正则表达式匹配组字典
-            
+
         Returns:
             tuple: (更新后的日期字符串部分列表, 是否包含时间)
         """
-        time_match = re.search(r'(?P<hour>[0-2]\d)(?P<minute>[0-5]\d)(?P<second>[0-5]\d)', name_without_ext)
+        time_pattern = r'(?P<hour>[0-2]\d)(?P<minute>[0-5]\d)(?P<second>[0-5]\d)'
+        time_match = re.search(time_pattern, name_without_ext)
         if time_match:
             groups.update(time_match.groupdict())
             date_str_parts.append(groups['hour'])
             date_str_parts.append(groups['minute'])
             date_str_parts.append(groups['second'])
             return date_str_parts, True
-        
+
         return date_str_parts, False
     
     def _parse_date_string(self, date_str, has_time):
         """解析日期字符串为datetime对象
-        
+
         Args:
             date_str: 日期字符串
             has_time: 是否包含时间
-            
+
         Returns:
             datetime: 解析后的日期时间对象或None
         """
@@ -1500,7 +1503,7 @@ class WriteExifThread(QThread):
             12: "%Y%m%d%H%M",
             14: "%Y%m%d%H%M%S"
         }
-        
+
         fmt = format_map.get(len(date_str))
         if not fmt:
             return None
@@ -1514,15 +1517,15 @@ class WriteExifThread(QThread):
                 return date_obj
         except ValueError:
             pass
-        
+
         return None
     
     def _is_valid_date(self, date_obj):
         """验证日期是否有效
-        
+
         Args:
             date_obj: datetime对象
-            
+
         Returns:
             bool: 日期是否有效
         """
