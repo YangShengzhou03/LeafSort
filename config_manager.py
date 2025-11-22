@@ -16,10 +16,9 @@ class ConfigManager:
     
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
-        # 使用get_resource_path获取正确的配置文件路径
         self.config_file = Path(get_resource_path(config_file))
         self.cache_file = Path(get_resource_path(cache_file))
-        self._lock = threading.RLock()  # 使用可重入锁提供线程安全
+        self._lock = threading.RLock()
         self.config = self._load_config()
         self.location_cache = self._load_location_cache()
         self._validate_and_migrate_config()
@@ -63,16 +62,12 @@ class ConfigManager:
         return default_config
     
     def _validate_and_migrate_config(self):
-        """验证配置并进行必要的迁移"""
         with self._lock:
-            # 更新配置版本
             self.config["version"] = self.CONFIG_VERSION
             
-            # 确保last_modified字段存在
             if "last_modified" not in self.config:
                 self.config["last_modified"] = datetime.now().isoformat()
             
-            # 检查并清理重复的文件夹路径
             seen_paths = set()
             unique_folders = []
             for folder in self.config["folders"]:
@@ -100,10 +95,8 @@ class ConfigManager:
     def save_config(self) -> bool:
         with self._lock:
             try:
-                # 更新最后修改时间
                 self.config["last_modified"] = datetime.now().isoformat()
                 
-                # 确保父目录存在
                 self.config_file.parent.mkdir(parents=True, exist_ok=True)
                 
                 with open(self.config_file, 'w', encoding='utf-8') as f:
@@ -116,7 +109,6 @@ class ConfigManager:
     def save_location_cache(self) -> bool:
         with self._lock:
             try:
-                # 确保父目录存在
                 self.cache_file.parent.mkdir(parents=True, exist_ok=True)
                 
                 with open(self.cache_file, 'w', encoding='utf-8') as f:
@@ -130,12 +122,10 @@ class ConfigManager:
         with self._lock:
             folder_path = os.path.normpath(folder_path)
             
-            # 检查文件夹是否存在且是有效目录
             if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
                 logger.warning(f"尝试添加无效文件夹: {folder_path}")
                 return False
             
-            # 检查是否已存在
             for folder in self.config["folders"]:
                 if folder["path"] == folder_path:
                     return False

@@ -9,40 +9,15 @@ from playwright.sync_api import sync_playwright
 
 
 def get_resource_path(relative_path):
-    """
-    获取资源文件的绝对路径
-    同时支持开发环境和打包后的环境
-    
-    Args:
-        relative_path: 相对于项目根目录的路径
-        
-    Returns:
-        str: 资源文件的绝对路径
-    """
     try:
-        # 打包后的环境
         base_path = Path(sys._MEIPASS)
     except Exception:
-        # 开发环境
         base_path = Path(__file__).parent if '__file__' in globals() else Path.cwd()
 
-    # 规范化路径，使用正斜杠
     return str((base_path / relative_path).resolve()).replace('\\', '/')
 
 
 def detect_media_type(file_path):
-    """
-    检测媒体文件类型
-    
-    Args:
-        file_path: 文件路径
-        
-    Returns:
-        dict: 包含文件类型信息的字典
-        
-    Raises:
-        FileNotFoundError: 文件不存在时抛出
-    """
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"这个文件不存在: {file_path}")
 
@@ -157,8 +132,8 @@ def get_address_from_coordinates(lat, lon):
                     saved = json.load(f)
                     if saved.get("cookies") and saved.get("key"):
                         return saved["cookies"], saved["key"]
-            except Exception as e:
-                print(f"读取cookies失败: {e}")
+            except Exception:
+                pass
 
         target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
                        'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
@@ -184,8 +159,8 @@ def get_address_from_coordinates(lat, lon):
             if resp.status_code == 200 and "formatted_address" in resp.text:
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                 return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
-        except Exception as e:
-            print(f"请求失败: {e}")
+        except Exception:
+            pass
         return None
 
     cookies, key = get_cookies_key()
@@ -197,5 +172,4 @@ def get_address_from_coordinates(lat, lon):
     return addr or "获取失败"
 
 
-if __name__ == "__main__":
-    print(f"坐标 (39.9087, 116.3975) 对应的地址是：{get_address_from_coordinates(39.9087, 116.3975)}")
+
