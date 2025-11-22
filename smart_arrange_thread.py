@@ -6,8 +6,8 @@ import subprocess
 import logging
 from pathlib import Path
 import threading
-from concurrent.futures import ThreadPoolExecutor, as_completed
-import time
+# ThreadPoolExecutor 和 as_completed 未使用，已移除导入
+# time 未使用，已移除导入
 
 import exifread
 import pillow_heif
@@ -138,7 +138,7 @@ class SmartArrangeThread(QtCore.QThread):
                 self.city_data = json.load(f)
             with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
                 self.province_data = json.load(f)
-        except Exception as e:
+        except Exception:
             self.city_data, self.province_data = {'features': []}, {'features': []}
 
     def run(self):
@@ -391,7 +391,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.log("DEBUG", f"开始处理文件夹: {folder_path}")
         
         file_count = 0
-        for root, dirs, files in os.walk(folder_path):
+        for root, _, files in os.walk(folder_path):
             if self._stop_flag:
                 self.log("WARNING", "文件提取操作被用户中断")
                 break
@@ -441,7 +441,7 @@ class SmartArrangeThread(QtCore.QThread):
             processed_folders.add(folder_path.resolve())
             
             if folder_info.get('include_sub', 0):
-                for root, dirs, files in os.walk(folder_path):
+                for root, _, _ in os.walk(folder_path):
                     processed_folders.add(Path(root).resolve())
         
         for folder in processed_folders:
@@ -1264,7 +1264,7 @@ class SmartArrangeThread(QtCore.QThread):
                     return dt
                 except ValueError:
                     continue
-        except (ValueError, TypeError) as e:
+        except (ValueError, TypeError):
             pass
             
         return None
@@ -1335,7 +1335,7 @@ class SmartArrangeThread(QtCore.QThread):
                 
             return decimal
             
-        except Exception as e:
+        except Exception:
             return None
 
     def get_city_and_province(self, lat, lon):
@@ -1368,12 +1368,12 @@ class SmartArrangeThread(QtCore.QThread):
             return inside
 
         def query_location(longitude, latitude, data):
-            for i, feature in enumerate(data['features']):
+            for feature in data['features']:
                 name, coordinates = feature['properties']['name'], feature['geometry']['coordinates']
                 polygons = [polygon for multi_polygon in coordinates for polygon in
                             ([multi_polygon] if isinstance(multi_polygon[0][0], (float, int)) else multi_polygon)]
                 
-                for j, polygon in enumerate(polygons):
+                for polygon in polygons:
                     if is_point_in_polygon(longitude, latitude, polygon):
                         return name
 
@@ -1513,15 +1513,12 @@ class SmartArrangeThread(QtCore.QThread):
             full_target_path = target_path / new_file_name_with_ext
             
             needs_operation = False
-            operation_type = "重命名"
             
             if file_path.name != new_file_name_with_ext:
                 needs_operation = True
-                operation_type = "重命名"
             
             if file_path.parent != target_path:
                 needs_operation = True
-                operation_type = "移动"
             
             if needs_operation:
                 with self.files_lock:

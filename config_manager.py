@@ -333,13 +333,11 @@ class ConfigManager:
                 # 重置指定的设置
                 for key in keys:
                     if key in default_config["settings"]:
-                        old_value = self.config["settings"].get(key)
                         self.config["settings"][key] = default_config["settings"][key]
                         changes_made = True
                         logger.info(f"设置已重置: {key} = {default_config['settings'][key]}")
             else:
                 # 重置所有设置
-                old_settings = self.config["settings"].copy()
                 self.config["settings"] = default_config["settings"].copy()
                 changes_made = True
                 logger.info("所有设置已重置为默认值")

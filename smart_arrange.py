@@ -257,7 +257,7 @@ class SmartArrangePage(QtWidgets.QWidget):
                         has_valid_folder = True
                         if folder_info.get('include_sub', 0):
                             # 使用生成器表达式优化大文件夹性能
-                            for root, _, files in os.walk(folder_path):
+                            for _, _, files in os.walk(folder_path):
                                 total_files += len(files)
                                 # 如果文件数量过多，不再继续计数以提高性能
                                 if total_files > 10000:
@@ -904,9 +904,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         except AttributeError:
             pass
 
-    @staticmethod
-    def _get_weekday(date):
-        return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
+    # 已移除此重复函数，使用第844行的普通方法版本
 
     def handle_log_signal(self, level, message):
         # 检查并使用正确的日志输出控件
@@ -1368,12 +1366,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             except AttributeError:
                 pass
             
-            # 重新初始化UI组件引用
-            for attr_name in ['btnStartSmartArrange', 'toolButton_startSmartArrange', 'progressBar_classification']:
-                try:
-                    pass  # 占位，保留结构完整性
-                except Exception:
-                    pass
+            # 重新初始化UI组件引用 - 移除未使用的循环
                 
             # 重置进度条
             try:

@@ -230,7 +230,7 @@ class WriteExifPage(QWidget):
             'lineEdit_EXIF_longitude': 'lineEdit_EXIF_longitude'
         }
         
-        for actual_name, old_name in text_fields_mapping.items():
+        for actual_name, _ in text_fields_mapping.items():
             getattr(self.parent, actual_name).textChanged.connect(self.save_exif_settings)
                 
         self.parent.cameraBrand.currentIndexChanged.connect(self.save_exif_settings)
