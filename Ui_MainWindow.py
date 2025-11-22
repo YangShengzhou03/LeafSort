@@ -333,6 +333,7 @@ class Ui_MainWindow(object):
 "    border-radius: 16px;\n"
 "    background: rgba(255, 255, 255, 0);\n"
 "    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    color: #374151;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -371,6 +372,7 @@ class Ui_MainWindow(object):
 "    border-radius: 12px;\n"
 "    background: rgba(255, 255, 255, 0);\n"
 "    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
+"    color: #374151;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2205,6 +2207,7 @@ class Ui_MainWindow(object):
         self.tagsActionLayout.addWidget(self.fileNameSeparator)
         self.tagsActionLayout.setStretch(2, 1)
         self.layoutTags.addLayout(self.tagsActionLayout)
+        self.layoutTags.setStretch(1, 1)
         self.layoutRename.addWidget(self.frameTags)
         self.tagsControlLayout = QtWidgets.QHBoxLayout()
         self.tagsControlLayout.setContentsMargins(9, 6, 9, 6)
@@ -2937,7 +2940,13 @@ class Ui_MainWindow(object):
         self.starButton1 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
         self.starButton1.setMinimumSize(QtCore.QSize(22, 22))
         self.starButton1.setMaximumSize(QtCore.QSize(22, 22))
-        self.starButton1.setStyleSheet("QPushButton:hover {\n"
+        self.starButton1.setStyleSheet("QPushButton {\n"
+"    border: none;\n"
+"    background-color: transparent;\n"
+"    color: transparent;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.starButton1.setText("")
@@ -2950,7 +2959,13 @@ class Ui_MainWindow(object):
         self.ratingStar2Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
         self.ratingStar2Button.setMinimumSize(QtCore.QSize(22, 22))
         self.ratingStar2Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar2Button.setStyleSheet("QPushButton:hover {\n"
+        self.ratingStar2Button.setStyleSheet("QPushButton {\n"
+"    border: none;\n"
+"    background-color: transparent;\n"
+"    color: transparent;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.ratingStar2Button.setText("")
@@ -2961,7 +2976,13 @@ class Ui_MainWindow(object):
         self.ratingStar3Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
         self.ratingStar3Button.setMinimumSize(QtCore.QSize(22, 22))
         self.ratingStar3Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar3Button.setStyleSheet("QPushButton:hover {\n"
+        self.ratingStar3Button.setStyleSheet("QPushButton {\n"
+"    border: none;\n"
+"    background-color: transparent;\n"
+"    color: transparent;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.ratingStar3Button.setText("")
@@ -2972,7 +2993,13 @@ class Ui_MainWindow(object):
         self.ratingStar4Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
         self.ratingStar4Button.setMinimumSize(QtCore.QSize(22, 22))
         self.ratingStar4Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar4Button.setStyleSheet("QPushButton:hover {\n"
+        self.ratingStar4Button.setStyleSheet("QPushButton {\n"
+"    border: none;\n"
+"    background-color: transparent;\n"
+"    color: transparent;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.ratingStar4Button.setText("")
@@ -2983,7 +3010,13 @@ class Ui_MainWindow(object):
         self.ratingStar5Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
         self.ratingStar5Button.setMinimumSize(QtCore.QSize(22, 22))
         self.ratingStar5Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar5Button.setStyleSheet("QPushButton:hover {\n"
+        self.ratingStar5Button.setStyleSheet("QPushButton {\n"
+"    border: none;\n"
+"    background-color: transparent;\n"
+"    color: transparent;\n"
+"}\n"
+"\n"
+"QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.ratingStar5Button.setText("")
@@ -4129,4 +4162,4 @@ class Ui_MainWindow(object):
         self.lineEdit_EXIF_latitude.setPlaceholderText(_translate("MainWindow", "纬度"))
         self.lineEdit_EXIF_longitude.setPlaceholderText(_translate("MainWindow", "经度"))
         self.btnStartExif.setText(_translate("MainWindow", "开始写入"))
-        self.lblDefault.setText(_translate("MainWindow", "正在处理：XXX，正在写入XX的拍摄时间"))
+        self.lblDefault.setText(_translate("MainWindow", "准备就绪 - 请选择文件并配置参数开始处理"))

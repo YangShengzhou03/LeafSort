@@ -5,6 +5,8 @@ import subprocess
 import logging
 from pathlib import Path
 import threading
+import time
+import io
 
 import exifread
 import pillow_heif
@@ -587,7 +589,7 @@ class SmartArrangeThread(QtCore.QThread):
     def log(self, level, message):
         # 简化日志记录
         log_message = f"[{level}] {message}"
-        self.log_signal.emit(level, log_message, "#000000")
+        self.log_signal.emit(level, log_message)
         
         # 仅记录关键错误
         if level == "ERROR":
@@ -734,7 +736,7 @@ class SmartArrangeThread(QtCore.QThread):
             date_taken = self.parse_exif_datetime(tags)
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
-        except Exception:
+        except (IOError, OSError):
             return None
 
     def _process_raw_exif(self, file_path, exif_data):
@@ -770,7 +772,7 @@ class SmartArrangeThread(QtCore.QThread):
             
             return date_taken
                 
-        except (subprocess.TimeoutExpired, Exception):
+        except (subprocess.TimeoutExpired, OSError, UnicodeDecodeError):
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
@@ -857,7 +859,7 @@ class SmartArrangeThread(QtCore.QThread):
                 creation_time = img.info.get('Creation Time')
                 if creation_time:
                     return self.parse_datetime(creation_time)
-        except Exception:
+        except (IOError, OSError):
             pass
         return None
 
@@ -1019,14 +1021,13 @@ class SmartArrangeThread(QtCore.QThread):
     def _determine_best_datetime(self, date_taken, create_time, modify_time):
         if self.time_derive == "拍摄日期":
             return date_taken.strftime('%Y-%m-%d %H:%M:%S') if date_taken else None
-        elif self.time_derive == "创建时间":
+        if self.time_derive == "创建时间":
             return create_time.strftime('%Y-%m-%d %H:%M:%S')
-        elif self.time_derive == "修改时间":
+        if self.time_derive == "修改时间":
             return modify_time.strftime('%Y-%m-%d %H:%M:%S')
-        else:
-            times = [t for t in [date_taken, create_time, modify_time] if t is not None]
-            earliest_time = min(times) if times else modify_time
-            return earliest_time.strftime('%Y-%m-%d %H:%M:%S')
+        times = [t for t in [date_taken, create_time, modify_time] if t is not None]
+        earliest_time = min(times) if times else modify_time
+        return earliest_time.strftime('%Y-%m-%d %H:%M:%S')
 
     def _extract_gps_and_camera_info(self, tags, exif_data):
         lat_ref = str(tags.get('GPS GPSLatitudeRef', '')).strip()
@@ -1102,7 +1103,8 @@ class SmartArrangeThread(QtCore.QThread):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                shell=True
+                shell=True,
+                check=False
             )
 
             metadata = {}
@@ -1116,11 +1118,19 @@ class SmartArrangeThread(QtCore.QThread):
         except subprocess.TimeoutExpired:
             self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据超时")
             return None
-        except Exception as e:
+        except (OSError, UnicodeDecodeError, ValueError) as e:
             self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据时出错: {str(e)}")
             return None
 
     def parse_exif_datetime(self, tags):
+        """从EXIF标签中解析日期时间信息
+        
+        Args:
+            tags: 包含EXIF信息的标签字典
+            
+        Returns:
+            datetime.datetime: 解析后的日期时间对象，如果解析失败则返回None
+        """
         try:
             datetime_str = str(tags.get('EXIF DateTimeOriginal', ''))
             if datetime_str and datetime_str != 'None':
@@ -1154,6 +1164,14 @@ class SmartArrangeThread(QtCore.QThread):
         return None
 
     def parse_datetime(self, datetime_str):
+        """解析日期时间字符串
+        
+        Args:
+            datetime_str: 日期时间字符串
+            
+        Returns:
+            datetime.datetime: 解析后的日期时间对象，如果解析失败则返回None
+        """
         if not datetime_str:
             return None
             
@@ -1188,7 +1206,6 @@ class SmartArrangeThread(QtCore.QThread):
                 try:
                     dt = datetime.datetime.strptime(datetime_str, fmt)
                     if 'mov' in fmt.lower() or fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
-                        import time
                         utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
                         local_dt = utc_dt.astimezone()
                         return local_dt.replace(tzinfo=None)
@@ -1315,7 +1332,9 @@ class SmartArrangeThread(QtCore.QThread):
                         if x <= max(p1x, p2x):
                             if p1y != p2y:
                                 xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                            if p1x == p2x or x <= xinters:
+                                if p1x == p2x or x <= xinters:
+                                    inside = not inside
+                            elif p1x == p2x:
                                 inside = not inside
                 p1x, p1y = p2x, p2y
             
@@ -1348,11 +1367,18 @@ class SmartArrangeThread(QtCore.QThread):
                 province if province else "未知省份",
                 city if city else "未知城市"
             )
-        else:
-            return "未知省份", "未知城市"
+        return "未知省份", "未知城市"
 
     @staticmethod
     def convert_to_degrees(value):
+        """将GPS坐标从度分秒格式转换为十进制度格式
+        
+        Args:
+            value: GPS坐标值（度分秒格式）
+            
+        Returns:
+            float: 转换后的十进制度坐标值，如果转换失败则返回None
+        """
         if not value:
             return None
 
@@ -1528,18 +1554,60 @@ class SmartArrangeThread(QtCore.QThread):
         if 'exif_data' not in file_context or file_context['exif_data'] is None:
             file_context['exif_data'] = self.get_exif_data(file_context['file_path'])
         
-        # 使用字典映射代替多个if语句
+    def _get_original_name(self, ctx):
+        """获取原始文件名"""
+        return ctx['original_name']
+    
+    def _get_year(self, ctx):
+        """获取年份"""
+        return str(ctx['file_time'].year) if ctx['file_time'] else ""
+    
+    def _get_month(self, ctx):
+        """获取月份"""
+        return f"{ctx['file_time'].month:02d}" if ctx['file_time'] else ""
+    
+    def _get_day(self, ctx):
+        """获取日"""
+        return f"{ctx['file_time'].day:02d}" if ctx['file_time'] else ""
+    
+    def _get_weekday(self, ctx):
+        """获取星期"""
+        return self._get_weekday_name(ctx['file_time']) if ctx['file_time'] else ""
+    
+    def _get_time(self, ctx):
+        """获取时间"""
+        return ctx['file_time'].strftime('%H%M%S') if ctx['file_time'] else ""
+    
+    def _get_device_make_info(self, ctx):
+        """获取设备品牌"""
+        return self._get_device_info(ctx['exif_data'], 'Make', '未知品牌')
+    
+    def _get_device_model_info(self, ctx):
+        """获取设备型号"""
+        return self._get_device_info(ctx['exif_data'], 'Model', '未知型号')
+    
+    def _get_location_from_ctx(self, ctx):
+        """获取位置信息"""
+        return self._get_location_name(ctx)
+    
+    def _get_custom_text(self, ctx):
+        """获取自定义文本"""
+        return "自定义"
+        
+    def _process_tag(self, tag_info, file_context):
+        """处理单个标签"""
+        # 使用字典映射代替多个if语句和lambda表达式
         tag_processors = {
-            "原文件名": lambda ctx: ctx['original_name'],
-            "年份": lambda ctx: str(ctx['file_time'].year) if ctx['file_time'] else "",
-            "月份": lambda ctx: f"{ctx['file_time'].month:02d}" if ctx['file_time'] else "",
-            "日": lambda ctx: f"{ctx['file_time'].day:02d}" if ctx['file_time'] else "",
-            "星期": lambda ctx: self._get_weekday_name(ctx['file_time']) if ctx['file_time'] else "",
-            "时间": lambda ctx: ctx['file_time'].strftime('%H%M%S') if ctx['file_time'] else "",
-            "品牌": lambda ctx: self._get_device_info(ctx['exif_data'], 'Make', '未知品牌'),
-            "型号": lambda ctx: self._get_device_info(ctx['exif_data'], 'Model', '未知型号'),
-            "位置": lambda ctx: self._get_location_name(ctx),
-            "自定义": lambda ctx: "自定义"
+            "原文件名": self._get_original_name,
+            "年份": self._get_year,
+            "月份": self._get_month,
+            "日": self._get_day,
+            "星期": self._get_weekday,
+            "时间": self._get_time,
+            "品牌": self._get_device_make_info,
+            "型号": self._get_device_model_info,
+            "位置": self._get_location_from_ctx,
+            "自定义": self._get_custom_text
         }
         
         # 获取对应的处理器并执行

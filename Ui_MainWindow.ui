@@ -581,6 +581,7 @@ QWidget:hover {
     border-radius: 16px;
     background: rgba(255, 255, 255, 0);
     transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+    color: #374151;
 }
 
 QToolButton:hover {
@@ -640,6 +641,7 @@ QToolButton:pressed {
     border-radius: 12px;
     background: rgba(255, 255, 255, 0);
     transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+    color: #374151;
 }
 
 QToolButton:hover {
@@ -2705,7 +2707,7 @@ QPushButton:hover {
                          <string notr="true">border: none;
 border-radius: 0px;</string>
                         </property>
-                        <layout class="QHBoxLayout" name="layoutTags">
+                        <layout class="QHBoxLayout" name="layoutTags" stretch="0,1,0">
                          <property name="spacing">
                           <number>0</number>
                          </property>
@@ -4614,7 +4616,13 @@ QLineEdit:disabled {
                            </size>
                           </property>
                           <property name="styleSheet">
-                           <string notr="true">QPushButton:hover {
+                           <string notr="true">QPushButton {
+    border: none;
+    background-color: transparent;
+    color: transparent;
+}
+
+QPushButton:hover {
     image: url(resources/img/page_4/星级_亮.svg);
 }</string>
                           </property>
@@ -4648,7 +4656,13 @@ QLineEdit:disabled {
                            </size>
                           </property>
                           <property name="styleSheet">
-                           <string notr="true">QPushButton:hover {
+                           <string notr="true">QPushButton {
+    border: none;
+    background-color: transparent;
+    color: transparent;
+}
+
+QPushButton:hover {
     image: url(resources/img/page_4/星级_亮.svg);
 }</string>
                           </property>
@@ -4682,7 +4696,13 @@ QLineEdit:disabled {
                            </size>
                           </property>
                           <property name="styleSheet">
-                           <string notr="true">QPushButton:hover {
+                           <string notr="true">QPushButton {
+    border: none;
+    background-color: transparent;
+    color: transparent;
+}
+
+QPushButton:hover {
     image: url(resources/img/page_4/星级_亮.svg);
 }</string>
                           </property>
@@ -4716,7 +4736,13 @@ QLineEdit:disabled {
                            </size>
                           </property>
                           <property name="styleSheet">
-                           <string notr="true">QPushButton:hover {
+                           <string notr="true">QPushButton {
+    border: none;
+    background-color: transparent;
+    color: transparent;
+}
+
+QPushButton:hover {
     image: url(resources/img/page_4/星级_亮.svg);
 }</string>
                           </property>
@@ -4750,7 +4776,13 @@ QLineEdit:disabled {
                            </size>
                           </property>
                           <property name="styleSheet">
-                           <string notr="true">QPushButton:hover {
+                           <string notr="true">QPushButton {
+    border: none;
+    background-color: transparent;
+    color: transparent;
+}
+
+QPushButton:hover {
     image: url(resources/img/page_4/星级_亮.svg);
 }</string>
                           </property>
@@ -5936,7 +5968,7 @@ border: 1px solid rgba(134, 119, 253, 0.2);
 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);</string>
                       </property>
                       <property name="text">
-                       <string>正在处理：XXX，正在写入XX的拍摄时间</string>
+                       <string>准备就绪 - 请选择文件并配置参数开始处理</string>
                       </property>
                      </widget>
                     </item>
