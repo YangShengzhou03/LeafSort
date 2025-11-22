@@ -16,7 +16,6 @@ class ConfigManager:
     
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
-        """初始化配置管理器"""
         self.config_file = Path(get_resource_path(config_file))
         self.cache_file = Path(get_resource_path(cache_file))
         self._lock = threading.RLock()
@@ -25,14 +24,12 @@ class ConfigManager:
         self._validate_and_migrate_config()
     
     def _thread_safe_method(func):
-        """线程安全装饰器"""
         def wrapper(self, *args, **kwargs):
             with self._lock:
                 return func(self, *args, **kwargs)
         return wrapper
     
     def _load_config(self) -> Dict[str, Any]:
-        """加载配置文件"""
         default_config = self._get_default_config()
         
         try:
@@ -42,7 +39,7 @@ class ConfigManager:
                     self._update_config_with_defaults(config, default_config)
                     return config
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"加载配置文件出错: {e}")
+            logger.warning(f"Error loading config file: {e}")
         
         return default_config
     
@@ -55,7 +52,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def _validate_and_migrate_config(self):
-        """验证配置并进行必要的迁移"""
         self.config["version"] = self.CONFIG_VERSION
         self.config["last_modified"] = datetime.now().isoformat()
         
@@ -71,22 +67,20 @@ class ConfigManager:
         if len(unique_folders) != len(self.config["folders"]):
             duplicate_count = len(self.config["folders"]) - len(unique_folders)
             self.config["folders"] = unique_folders
-            logger.info(f"已清理 {duplicate_count} 个重复的文件夹路径")
+            logger.info(f"Cleaned {duplicate_count} duplicate folder paths")
             self._save_config_no_lock()
     
     def _load_location_cache(self) -> Dict[str, Any]:
-        """加载位置缓存文件"""
         try:
             if self.cache_file.exists():
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"加载位置缓存文件时出错了: {e}")
+            logger.warning(f"Error loading location cache file: {e}")
         
         return {}
     
     def _save_config_no_lock(self) -> bool:
-        """无锁版本的保存配置方法，供内部使用"""
         try:
             self.config["last_modified"] = datetime.now().isoformat()
             self._ensure_directory(self.config_file.parent)
@@ -95,17 +89,15 @@ class ConfigManager:
                 json.dump(self.config, f, ensure_ascii=False, indent=2)
             return True
         except IOError as e:
-            logger.error(f"保存配置文件出错: {e}")
+            logger.error(f"Error saving config file: {e}")
             return False
     
     @_thread_safe_method
     def save_config(self) -> bool:
-        """保存配置到文件"""
         return self._save_config_no_lock()
     
     @_thread_safe_method
     def save_location_cache(self) -> bool:
-        """保存位置缓存到文件"""
         try:
             self._ensure_directory(self.cache_file.parent)
             
@@ -113,28 +105,22 @@ class ConfigManager:
                 json.dump(self.location_cache, f, ensure_ascii=False, indent=2)
             return True
         except IOError as e:
-            logger.error(f"保存位置缓存文件出错: {e}")
+            logger.error(f"Error saving location cache file: {e}")
             return False
     
     def _ensure_directory(self, directory: Path):
-        """确保目录存在，如果不存在则创建"""
         directory.mkdir(parents=True, exist_ok=True)
     
     @_thread_safe_method
     def add_folder(self, folder_path: str, include_sub: bool = True) -> bool:
-        """添加文件夹到配置中"""
         folder_path = os.path.normpath(folder_path)
         
-        # 检查文件夹是否有效
         if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
-            logger.warning(f"尝试添加无效文件夹: {folder_path}")
+            logger.warning(f"Attempting to add invalid folder: {folder_path}")
             return False
         
-        # 检查是否已存在
         if any(folder["path"] == folder_path for folder in self.config["folders"]):
             return False
-        
-        # 添加新文件夹
         self.config["folders"].append({
             "path": folder_path,
             "include_sub": include_sub,
@@ -145,14 +131,12 @@ class ConfigManager:
     
     @_thread_safe_method
     def add_folders(self, folders: List[Dict[str, Any]]) -> int:
-        """批量添加文件夹，返回成功添加的数量"""
         added_count = 0
         for folder in folders:
             folder_path = os.path.normpath(folder.get("path", ""))
             include_sub = folder.get("include_sub", True)
             
             if folder_path and os.path.exists(folder_path) and os.path.isdir(folder_path):
-                # 直接检查并添加，避免递归调用
                 if not any(f["path"] == folder_path for f in self.config["folders"]):
                     self.config["folders"].append({
                         "path": folder_path,
@@ -167,7 +151,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def remove_folder(self, folder_path: str) -> bool:
-        """从配置中移除文件夹"""
         folder_path = os.path.normpath(folder_path)
         
         for i, folder in enumerate(self.config["folders"]):
@@ -179,7 +162,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def update_folder_include_sub(self, folder_path: str, include_sub: bool) -> bool:
-        """更新文件夹的子文件夹包含设置"""
         folder_path = os.path.normpath(folder_path)
         
         for folder in self.config["folders"]:
@@ -192,32 +174,28 @@ class ConfigManager:
     
     @_thread_safe_method
     def get_folders(self) -> List[Dict[str, Any]]:
-        """获取所有文件夹配置"""
         return [folder.copy() for folder in self.config["folders"]]
     
     @_thread_safe_method
     def get_valid_folders(self) -> List[Dict[str, Any]]:
-        """获取所有有效的文件夹（存在且为目录）"""
         return [folder.copy() for folder in self.config["folders"] 
                 if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
     
     @_thread_safe_method
     def clear_invalid_folders(self) -> int:
-        """清除无效的文件夹，返回清除的数量"""
         original_count = len(self.config["folders"])
         self.config["folders"] = [folder for folder in self.config["folders"] 
                                   if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
         removed_count = original_count - len(self.config["folders"])
         
         if removed_count > 0:
-            logger.info(f"已移除 {removed_count} 个无效文件夹")
+            logger.info(f"Removed {removed_count} invalid folders")
             self._save_config_no_lock()
         
         return removed_count
     
     @_thread_safe_method
     def cache_location(self, latitude: float, longitude: float, address: str) -> bool:
-        """缓存位置信息"""
         cache_key = f"{latitude:.6f},{longitude:.6f}"
         self.location_cache[cache_key] = {
             "address": address,
@@ -225,24 +203,21 @@ class ConfigManager:
             "last_accessed": datetime.now().timestamp()
         }
         
-        # 使用配置中的缓存大小限制
         max_cache_size = self.config.get("cache_settings", {}).get("max_location_cache_size", 50000)
         if len(self.location_cache) > max_cache_size:
             cache_items = list(self.location_cache.items())
             cache_items.sort(key=lambda x: x[1].get("last_accessed", 0), reverse=True)
             self.location_cache = dict(cache_items[:max(10000, max_cache_size // 2)])
-            logger.debug(f"位置缓存已清理，当前大小: {len(self.location_cache)}/{max_cache_size}")
+            logger.debug(f"Location cache cleaned, current size: {len(self.location_cache)}/{max_cache_size}")
         
         return self.save_location_cache()
     
     @_thread_safe_method
     def get_cached_location(self, latitude: float, longitude: float) -> Optional[str]:
-        """获取缓存的位置信息"""
         cache_key = f"{latitude:.6f},{longitude:.6f}"
         cached_data = self.location_cache.get(cache_key)
         
         if cached_data:
-            # 更新最后访问时间
             cached_data["last_accessed"] = datetime.now().timestamp()
             return cached_data["address"]
         
@@ -250,13 +225,10 @@ class ConfigManager:
     
     @_thread_safe_method
     def get_cached_location_with_tolerance(self, latitude: float, longitude: float, tolerance: float = 0.01) -> Optional[str]:
-        """获取缓存的位置信息，支持一定的误差范围"""
-        # 先尝试精确匹配
         exact_match = self._get_cached_location_no_lock(latitude, longitude)
         if exact_match:
             return exact_match
         
-        # 再尝试误差范围内匹配
         for cache_key, cached_data in self.location_cache.items():
             try:
                 cached_lat, cached_lon = map(float, cache_key.split(','))
@@ -265,13 +237,12 @@ class ConfigManager:
                     cached_data["last_accessed"] = datetime.now().timestamp()
                     return cached_data["address"]
             except (ValueError, IndexError):
-                logger.warning(f"无效的缓存键: {cache_key}")
+                logger.warning(f"Invalid cache key: {cache_key}")
                 continue
         
         return None
     
     def _get_cached_location_no_lock(self, latitude: float, longitude: float) -> Optional[str]:
-        """无锁版本的获取缓存位置方法，供内部使用"""
         cache_key = f"{latitude:.6f},{longitude:.6f}"
         cached_data = self.location_cache.get(cache_key)
         
@@ -283,19 +254,17 @@ class ConfigManager:
     
     @_thread_safe_method
     def clear_folders(self) -> bool:
-        """清空所有文件夹配置"""
         folder_count = len(self.config["folders"])
         self.config["folders"] = []
-        logger.info(f"已清空所有文件夹配置，共删除 {folder_count} 个文件夹")
+        logger.info(f"Cleared all folder configurations, deleted {folder_count} folders")
         return self._save_config_no_lock()
     
 
     
     @_thread_safe_method
     def update_setting(self, key: str, value: Any) -> bool:
-        """更新单个设置值"""
         if not self._validate_setting(key, value):
-            logger.warning(f"设置验证失败: {key} = {value}")
+            logger.warning(f"Setting validation failed: {key} = {value}")
             return False
         
         self.config["settings"][key] = value
@@ -303,31 +272,27 @@ class ConfigManager:
     
     @_thread_safe_method
     def update_settings(self, settings_dict: Dict[str, Any]) -> bool:
-        """批量更新设置"""
         changes_made = False
         for key, value in settings_dict.items():
             if self._validate_setting(key, value):
                 if self.config["settings"].get(key) != value:
                     self.config["settings"][key] = value
-                    logger.info(f"批量设置更新: {key} = {value}")
+                    logger.info(f"Batch setting update: {key} = {value}")
                     changes_made = True
             else:
-                logger.warning(f"批量设置验证失败: {key} = {value}")
+                logger.warning(f"Batch setting validation failed: {key} = {value}")
         
         return self._save_config_no_lock() if changes_made else True
     
     @_thread_safe_method
     def get_setting(self, key: str, default: Any = None) -> Any:
-        """获取单个设置值"""
         return self.config["settings"].get(key, default)
     
     @_thread_safe_method
     def get_settings(self, keys: List[str] = None) -> Dict[str, Any]:
-        """获取多个设置值"""
         if keys:
             return {key: self.config["settings"].get(key) for key in keys}
         else:
-            # 确保返回的设置包含所有默认值
             default_config = self._get_default_config()
             result = default_config["settings"].copy()
             result.update(self.config["settings"])
@@ -335,27 +300,23 @@ class ConfigManager:
     
     @_thread_safe_method
     def reset_settings(self, keys: List[str] = None) -> bool:
-        """重置设置到默认值"""
         default_config = self._get_default_config()
         changes_made = False
         
         if keys:
-            # 重置指定的设置
             for key in keys:
                 if key in default_config["settings"]:
                     self.config["settings"][key] = default_config["settings"][key]
                     changes_made = True
-                    logger.info(f"设置已重置: {key} = {default_config['settings'][key]}")
+                    logger.info(f"Setting reset: {key} = {default_config['settings'][key]}")
         else:
-            # 重置所有设置
             self.config["settings"] = default_config["settings"].copy()
             changes_made = True
-            logger.info("所有设置已重置为默认值")
+            logger.info("All settings reset to default values")
         
         return self._save_config_no_lock() if changes_made else True
     
     def _validate_setting(self, key: str, value: Any) -> bool:
-        """验证设置值是否有效"""
         validation_rules = {
             "thumbnail_size": lambda v: isinstance(v, int) and 0 < v <= 2000,
             "max_cache_size": lambda v: isinstance(v, int) and v >= 0,
@@ -369,13 +330,12 @@ class ConfigManager:
         if key in validation_rules:
             return validation_rules[key](value)
         
-        logger.debug(f"未知设置键: {key}")
+        logger.debug(f"Unknown setting key: {key}")
         return True
     
 
     
     def _get_default_config(self) -> Dict[str, Any]:
-        """获取默认配置，用于初始化或重置"""
         current_time = datetime.now()
         return {
             "version": self.CONFIG_VERSION,
@@ -415,12 +375,9 @@ class ConfigManager:
     
     @_thread_safe_method
     def clear_cache(self):
-        """清除缓存数据"""
-        # 清除位置缓存
         self.location_cache.clear()
         save_result = self.save_location_cache()
         
-        # 清除临时文件（如果有）
         cache_dir = os.path.join(self.config_file.parent, 'cache')
         if os.path.exists(cache_dir):
             import shutil
@@ -428,14 +385,10 @@ class ConfigManager:
                 shutil.rmtree(cache_dir)
                 os.makedirs(cache_dir, exist_ok=True)
             except Exception as e:
-                logger.error(f"清除缓存目录时出错: {e}")
-                return False
+                logger.error(f"Error clearing cache directory: {e}")
+            return False
             
         return save_result
-
-
-config_manager = ConfigManager()
-
 
 
 config_manager = ConfigManager()

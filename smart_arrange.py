@@ -46,7 +46,7 @@ class SmartArrangePage(QtWidgets.QWidget):
 
         self.init_page()
         self.set_combo_box_states()
-        self.log("INFO", "欢迎使用智能整理，可以为您整理目录、重命名媒体。请注意，操作一旦执行将无法恢复。")
+        self.log("INFO", "Welcome to Smart Arrange, you can organize directories and rename media. Please note that operations cannot be undone once executed.")
 
     def init_page(self):
         self.connect_signals()
@@ -59,121 +59,100 @@ class SmartArrangePage(QtWidgets.QWidget):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
     def connect_signals(self):
-        # 连接日志信号
         try:
             self.log_signal.disconnect(self.handle_log_signal)
         except (TypeError, RuntimeError):
-            pass  # 如果没有连接，忽略错误
+            pass
         self.log_signal.connect(self.handle_log_signal)
         
-        # 确保按钮存在并启用
         if hasattr(self.parent, 'btnStartSmartArrange'):
-            # 先断开可能存在的连接，避免重复连接
             try:
                 self.parent.btnStartSmartArrange.clicked.disconnect(self.toggle_SmartArrange)
             except (TypeError, RuntimeError):
-                pass  # 如果没有连接，忽略错误
+                pass
             
-            # 重新连接信号
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
             
-            # 确保按钮已启用
             if not self.parent.btnStartSmartArrange.isEnabled():
                 self.parent.btnStartSmartArrange.setEnabled(True)
-                self.log("INFO", "已启用开始整理按钮")
+                self.log("INFO", "Start arrange button has been enabled")
             
-            self.log("INFO", "按钮信号已连接到toggle_SmartArrange方法")
+            self.log("INFO", "Button signal connected to toggle_SmartArrange method")
         else:
-            self.log("ERROR", "未找到btnStartSmartArrange按钮")
+            self.log("ERROR", "btnStartSmartArrange button not found")
 
     def update_progress_bar(self, value):
         self.parent.progressBar_classification.setValue(value)
 
     def toggle_SmartArrange(self):
-        # 添加详细调试日志
         self.log("DEBUG", "toggle_SmartArrange方法被调用")
         
-        # 检查线程是否正在运行
         thread_running = self.SmartArrange_thread and self.SmartArrange_thread.isRunning()
         self.log("DEBUG", f"线程运行状态: {thread_running}")
         
         if thread_running:
-            # 记录停止操作
-            self.log("INFO", "用户请求停止智能整理操作")
-            # 更新按钮文本
-            self.parent.btnStartSmartArrange.setText("正在停止...")
-            # 停止线程
+            self.log("INFO", "User requested to stop smart arrange operation")
+            self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "已调用线程的stop方法")
-                
-                # 不等待线程完成，让finished信号处理后续工作
-                # 这样可以避免UI阻塞
-                self.log("DEBUG", "线程停止信号已发送")
+                self.log("DEBUG", "Thread stop method called")
+                self.log("DEBUG", "Thread stop signal sent")
             except Exception as e:
-                self.log("ERROR", f"停止线程时出错: {str(e)}")
-                # 即使出错也要重置按钮状态
-                self.parent.btnStartSmartArrange.setText("开始整理")
+                self.log("ERROR", f"Error stopping thread: {str(e)}")
+                self.parent.btnStartSmartArrange.setText("Start Arrange")
         else:
-            # 确保按钮状态正确
             self.parent.btnStartSmartArrange.setEnabled(True)
             self.log("DEBUG", "准备启动新的整理任务")
             
             folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not folders:
-                self.log("WARNING", "请先导入一个包含文件的文件夹。")
+                self.log("WARNING", "Please import a folder containing files first.")
                 return
             
-            self.log("DEBUG", f"获取到 {len(folders)} 个文件夹")
+            self.log("DEBUG", f"Retrieved {len(folders)} folders")
             
-            # 确保必须选择目标文件夹
             if not self.destination_root:
-                folder = QFileDialog.getExistingDirectory(self, "请选择目标文件夹",
+                folder = QFileDialog.getExistingDirectory(self, "Please select destination folder",
                                                           options=QFileDialog.Option.ShowDirsOnly)
                 if not folder:
-                    self.log("WARNING", "必须选择目标文件夹才能进行整理操作。")
+                    self.log("WARNING", "Must select a destination folder to perform arrange operation.")
                     return
                 self.destination_root = folder
                 display_path = folder + '/'
                 if len(display_path) > 20:
                     display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                operation_text = "目标文件夹: "
+                operation_text = "Destination folder: "
                 self.parent.copyRoute.setText(f"{operation_text}{display_path}")
             
-            # 如果之前有线程实例，先确保它已经停止
             if self.SmartArrange_thread:
                 try:
                     if self.SmartArrange_thread.isRunning():
                         self.SmartArrange_thread.stop()
-                        # 不等待，避免阻塞
-                        self.log("DEBUG", "已停止旧线程")
-                except Exception as e:
-                    self.log("WARNING", f"处理旧线程时出错: {str(e)}")
-                # 清除旧的线程引用
+                        self.log("DEBUG", "Old thread stopped")
+            except Exception as e:
+                self.log("WARNING", f"Error handling old thread: {str(e)}")
                 self.SmartArrange_thread = None
 
-            # 添加调试日志
-            self.log("DEBUG", "显示确认对话框")
+            self.log("DEBUG", "Showing confirmation dialog")
             
             reply = QMessageBox.question(
                 self,
-                "即将开始整理，确定吗？",
-                "重要提醒：整理文件的操作一旦开始就没办法恢复了！\n\n"
-                "• 移动操作：文件会被搬到新位置，原来的地方就没有了\n"
-                "• 复制操作：文件会在新位置创建一份，原目录文件原封不动\n\n"
-                "答应我，一定要先备份好重要文件再开始！\n\n"
-                "确定要开始整理吗？",
+                "Ready to start arrangement, confirm?",
+                "Important reminder: File arrangement operations cannot be undone once started!\n\n"
+                "• Move operation: Files will be moved to new location, original files will be removed\n"
+                "• Copy operation: Files will be copied to new location, original files remain intact\n\n"
+                "Please make sure to backup important files before starting!\n\n"
+                "Are you sure you want to start arrangement?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "您取消了整理操作")
+                self.log("INFO", "You cancelled the arrangement operation")
                 return
 
-            self.log("DEBUG", "用户确认开始整理操作")
+            self.log("DEBUG", "User confirmed to start arrangement operation")
             
-            # 获取分类结构
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()
                 for i in range(1, 6)
@@ -182,7 +161,6 @@ class SmartArrangePage(QtWidgets.QWidget):
             ]
             self.log("DEBUG", f"分类结构: {SmartArrange_structure}")
 
-            # 获取文件名结构
             file_name_parts = []
             try:
                 for i in range(self.selected_frame.layout().count()):
@@ -197,20 +175,17 @@ class SmartArrangePage(QtWidgets.QWidget):
                 self.log("ERROR", f"获取文件名结构时出错: {str(e)}")
                 file_name_parts = []
 
-            # 获取分隔符
             separator_text = self.parent.fileNameSeparator.currentText()
             separator = self.separator_mapping.get(separator_text, "-")
             self.log("DEBUG", f"使用分隔符: '{separator}'")
 
-            # 获取操作类型
             operation_type = self.parent.fileOperation.currentIndex()
-            operation_text = "移动" if operation_type == 0 else "复制"
-            self.log("DEBUG", f"操作类型: {operation_type} ({operation_text})")
+            operation_text = "Move" if operation_type == 0 else "Copy"
+            self.log("DEBUG", f"Operation type: {operation_type} ({operation_text})")
 
-            # 准备操作摘要
-            operation_summary = f"操作类型: {operation_text}"
+            operation_summary = f"Operation type: {operation_text}"
             if SmartArrange_structure:
-                operation_summary += f", 分类结构: {' → '.join(SmartArrange_structure)}"
+                operation_summary += f", Classification structure: {' → '.join(SmartArrange_structure)}"
             if file_name_parts:
                 filename_tags = []
                 for tag_info in file_name_parts:
@@ -218,18 +193,16 @@ class SmartArrangePage(QtWidgets.QWidget):
                         filename_tags.append(tag_info['content'])
                     else:
                         filename_tags.append(tag_info['tag'])
-                operation_summary += f", 文件名标签: {'+'.join(filename_tags)}"
+                operation_summary += f", Filename tags: {'+'.join(filename_tags)}"
             if self.destination_root:
-                operation_summary += f", 目标路径: {self.destination_root}"
+                operation_summary += f", Destination path: {self.destination_root}"
 
-            self.log("INFO", f"摘要: {operation_summary}")
+            self.log("INFO", f"Summary: {operation_summary}")
             
-            # 更新按钮状态
             self.parent.btnStartSmartArrange.setText("停止整理")
             self.parent.btnStartSmartArrange.setEnabled(True)
             
             try:
-                # 创建并启动 SmartArrange 线程
                 self.log("DEBUG", "创建SmartArrangeThread实例")
                 self.SmartArrange_thread = SmartArrangeThread(
                     parent=self,
@@ -239,12 +212,10 @@ class SmartArrangePage(QtWidgets.QWidget):
                     destination_root=self.destination_root,
                     separator=separator,
                     time_derive="文件创建时间",
-                    operation_type=operation_type  # 直接在构造函数中设置
+                    operation_type=operation_type
                 )
                 
-                # 连接线程信号
                 self.log("DEBUG", "连接线程信号")
-                # 断开可能存在的旧连接
                 try:
                     self.SmartArrange_thread.log_signal.disconnect()
                 except (TypeError, RuntimeError):
@@ -258,37 +229,29 @@ class SmartArrangePage(QtWidgets.QWidget):
                 except (TypeError, RuntimeError):
                     pass
                 
-                # 重新连接信号
                 self.SmartArrange_thread.log_signal.connect(self.handle_log_signal)
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
                 self.SmartArrange_thread.finished.connect(self.on_thread_finished)
                 
-                # 启动线程
                 self.log("DEBUG", "启动智能整理线程")
                 self.SmartArrange_thread.start()
                 self.log("INFO", "智能整理线程已成功启动")
             except Exception as e:
                 self.log("ERROR", f"创建或启动线程时出错: {str(e)}")
-                # 重置按钮状态
                 self.parent.btnStartSmartArrange.setText("开始整理")
                 self.parent.btnStartSmartArrange.setEnabled(True)
-                # 确保线程引用被清除
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
-        """线程完成后的处理"""
         self.log("DEBUG", "on_thread_finished方法被调用")
         
-        # 确保按钮状态正确更新
         try:
-            # 更新按钮文本和状态
             self.parent.btnStartSmartArrange.setText("开始整理")
             self.parent.btnStartSmartArrange.setEnabled(True)
             self.log("DEBUG", "已重置按钮状态为'开始整理'并启用")
         except Exception as e:
             self.log("ERROR", f"更新按钮状态时出错: {str(e)}")
         
-        # 检查线程是否被用户停止
         stopped_status = False
         try:
             if hasattr(self.SmartArrange_thread, 'is_stopped'):
@@ -302,14 +265,12 @@ class SmartArrangePage(QtWidgets.QWidget):
         except Exception as e:
             self.log("WARNING", f"检查线程状态时出错: {str(e)}")
         
-        # 重置进度条
         try:
-            self.update_progress_bar(0)  # 重置为0而不是100，更符合完成状态
+            self.update_progress_bar(0)
             self.log("DEBUG", "已重置进度条")
         except Exception as e:
             self.log("WARNING", f"更新进度条时出错: {str(e)}")
         
-        # 显示完成消息
         if not stopped_status:
             try:
                 QMessageBox.information(self, "操作完成", "文件整理操作已完成！")
@@ -317,7 +278,6 @@ class SmartArrangePage(QtWidgets.QWidget):
             except Exception as e:
                 self.log("WARNING", f"显示完成消息时出错: {str(e)}")
         
-        # 清除线程引用
         self.log("DEBUG", "清除线程引用")
         self.SmartArrange_thread = None
 
@@ -362,7 +322,6 @@ class SmartArrangePage(QtWidgets.QWidget):
     def update_operation_display(self):
         has_SmartArrange = len(self.SmartArrange_settings) > 0
 
-        # 使用布局管理器的count方法而不是QFrame的count方法
         has_filename = self.selected_frame.layout().count() > 0
 
         if has_SmartArrange and has_filename:
@@ -422,7 +381,6 @@ class SmartArrangePage(QtWidgets.QWidget):
         }.get(text, text)
 
     def is_valid_windows_filename(self, filename):
-        # 简化的文件名验证
         invalid_chars = '<>:"/\\|?*'
         reserved_names = {'CON', 'PRN', 'AUX', 'NUL'}
         reserved_names.update({f'COM{i}' for i in range(1, 10)})
@@ -465,13 +423,11 @@ class SmartArrangePage(QtWidgets.QWidget):
             else:
                 return
 
-        # 使用布局管理器移除控件
         self.available_frame.layout().removeWidget(button)
-        button.hide()  # 确保控件被隐藏
+        button.hide()
 
-        # 使用布局管理器添加控件
         self.selected_frame.layout().addWidget(button)
-        button.show()  # 确保控件可见
+        button.show()
 
         button.clicked.disconnect()
         button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
@@ -519,7 +475,6 @@ class SmartArrangePage(QtWidgets.QWidget):
         return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        # 确保即使没有日志组件，程序也不会崩溃
         if hasattr(self.parent, 'txtSmartArrangeLog'):
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
             color = color_map.get(level, '#000000')
@@ -528,18 +483,14 @@ class SmartArrangePage(QtWidgets.QWidget):
             except Exception as e:
                 print(f"无法写入日志: {e}")
         else:
-            # 如果没有日志组件，打印到控制台
             print(f"[{level}] {message}")
 
     def log(self, level, message):
-        # 移除时间戳以简化日志
         log_message = f"[{level}] {message}"
         try:
             self.log_signal.emit(level, log_message)
         except Exception:
-            # 确保即使信号发射失败，程序也不会崩溃
             print(log_message)
-            # 尝试使用parent的log方法作为备选
             try:
                 self.parent.log(level, message)
             except Exception:

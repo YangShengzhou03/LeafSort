@@ -133,5 +133,3 @@ class SettingsDialog(QDialog):
                 QMessageBox.information(self, "清除成功", "缓存数据已成功清除！")
             except Exception as e:
                 QMessageBox.warning(self, "清除失败", f"清除缓存时出错: {str(e)}")
-
-

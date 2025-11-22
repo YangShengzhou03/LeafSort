@@ -19,7 +19,7 @@ def get_resource_path(relative_path):
 
 def detect_media_type(file_path):
     if not os.path.isfile(file_path):
-        raise FileNotFoundError(f"文件不存在: {file_path}")
+        raise FileNotFoundError(f"File does not exist: {file_path}")
 
     mime_to_ext = {
         **{f'image/{fmt}': (ext, 'image') for fmt, ext in {
@@ -55,7 +55,7 @@ def detect_media_type(file_path):
     try:
         kind = guess(file_path)
     except Exception as e:
-        raise IOError(f"读文件时出错了: {str(e)}")
+        raise IOError(f"Error reading file: {str(e)}")
 
     if not kind:
         return {
@@ -137,7 +137,7 @@ def get_address_from_coordinates(lat, lon):
     except Exception:
         pass
     
-    return "获取失败"
+    return "Failed to retrieve"
 
 
 

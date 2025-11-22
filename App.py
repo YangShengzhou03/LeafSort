@@ -42,8 +42,8 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
         user_error_msg = f"{exc_type.__name__}: {exc_value}"
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-        msg.setWindowTitle("应用程序错误")
-        msg.setText("发生未预期的错误。应用程序可能需要关闭。")
+        msg.setWindowTitle("Application Error")
+        msg.setText("An unexpected error occurred. The application may need to close.")
         msg.setInformativeText(user_error_msg)
         msg.setDetailedText(error_message)
         msg.exec()
@@ -76,7 +76,7 @@ def main():
             return 0 if bring_existing_to_front() else 1
         
         if not shared_memory.create(1):
-            QtWidgets.QMessageBox.critical(None, "启动错误", "初始化应用程序失败。可能已有实例在运行。")
+            QtWidgets.QMessageBox.critical(None, "Startup Error", "Failed to initialize application. Another instance may be running.")
             return 1
         
         local_server = setup_local_server()
@@ -94,9 +94,9 @@ def main():
         return app.exec()
     
     except Exception as e:
-        error_msg = f"应用程序启动失败: {e}"
+        error_msg = f"Application startup failed: {e}"
         try:
-            QtWidgets.QMessageBox.critical(None, "致命错误", error_msg)
+            QtWidgets.QMessageBox.critical(None, "Fatal Error", error_msg)
         except Exception:
             pass
         return 1
