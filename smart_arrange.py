@@ -51,20 +51,20 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.connect_signals()
 
         for i in range(1, 6):
-            getattr(self.parent, f'comboBox_level_{i}').currentIndexChanged.connect(
+            getattr(self.parent, f'comboClassificationLevel{i}').currentIndexChanged.connect(
                 lambda index, level=i: self.handle_combobox_selection(level, index))
 
         for button in self.tag_buttons.values():
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
-        self.parent.comboBox_operation.currentIndexChanged.connect(self.handle_operation_change)
+        self.parent.fileOperation.currentIndexChanged.connect(self.handle_operation_change)
 
-        self.parent.comboBox_separator.currentIndexChanged.connect(self.update_example_label)
+        self.parent.fileNameSeparator.currentIndexChanged.connect(self.update_example_label)
 
         self.log("DEBUG", "欢迎使用图像分类整理，您可在上方构建文件路径与文件名结构。")
 
     def connect_signals(self):
-        self.parent.toolButton_startSmartArrange.clicked.connect(self.toggle_SmartArrange)
+        self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
 
     def update_progress_bar(self, value):
         self.parent.progressBar_classification.setValue(value)
@@ -79,22 +79,22 @@ class SmartArrangePage(QtWidgets.QWidget):
                 if len(display_path) > 20:
                     display_path = f"{display_path[:8]}...{display_path[-6:]}"
                 operation_text = "复制到: "
-                self.parent.label_CopyRoute.setText(f"{operation_text}{display_path}")
+                self.parent.copyRoute.setText(f"{operation_text}{display_path}")
             else:
-                self.parent.comboBox_operation.setCurrentIndex(0)
+                self.parent.fileOperation.setCurrentIndex(0)
                 self.destination_root = None
-                self.parent.label_CopyRoute.setText("移动文件（默认操作）")
+                self.parent.copyRoute.setText("移动文件（默认操作）")
         else:
             self.destination_root = None
             operation_text = "移动文件"
-            self.parent.label_CopyRoute.setText(f"{operation_text}")
+            self.parent.copyRoute.setText(f"{operation_text}")
 
         self.update_operation_display()
 
     def toggle_SmartArrange(self):
         if self.SmartArrange_thread and self.SmartArrange_thread.isRunning():
             self.SmartArrange_thread.stop()
-            self.parent.toolButton_startSmartArrange.setText("开始整理")
+            self.parent.btnStartSmartArrange.setText("开始整理")
             self.parent.progressBar_classification.setValue(0)
         else:
             folders = self.folder_page.get_all_folders() if self.folder_page else []
@@ -119,20 +119,21 @@ class SmartArrangePage(QtWidgets.QWidget):
                 return
 
             SmartArrange_structure = [
-                getattr(self.parent, f'comboBox_level_{i}').currentText()
+                getattr(self.parent, f'comboClassificationLevel{i}').currentText()
                 for i in range(1, 6)
-                if getattr(self.parent, f'comboBox_level_{i}').isEnabled() and
-                   getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类"
+                if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
+                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
             ]
 
-            file_name_structure = [self.selected_layout.itemAt(i).widget().text()
-                                   for i in range(self.selected_layout.count())
-                                   if isinstance(self.selected_layout.itemAt(i).widget(), QtWidgets.QPushButton)]
+            # 使用布局管理器的count方法而不是QFrame的count方法
+            file_name_structure = [self.selected_frame.layout().itemAt(i).widget().text()
+                                   for i in range(self.selected_frame.layout().count())
+                                   if isinstance(self.selected_frame.layout().itemAt(i).widget(), QtWidgets.QPushButton)]
 
-            separator_text = self.parent.comboBox_separator.currentText()
+            separator_text = self.parent.fileNameSeparator.currentText()
             separator = self.separator_mapping.get(separator_text, "-")
 
-            operation_type = self.parent.comboBox_operation.currentIndex()
+            operation_type = self.parent.fileOperation.currentIndex()
             operation_text = "移动" if operation_type == 0 else "复制"
 
             if not SmartArrange_structure and not file_name_structure:
@@ -145,8 +146,9 @@ class SmartArrangePage(QtWidgets.QWidget):
                 self.log("WARNING", f"执行{operation_text}操作：进行分类和重命名")
 
             file_name_parts = []
-            for i in range(self.selected_layout.count()):
-                button = self.selected_layout.itemAt(i).widget()
+            # 使用布局管理器的count方法而不是QFrame的count方法
+            for i in range(self.selected_frame.layout().count()):
+                button = self.selected_frame.layout().itemAt(i).widget()
                 if isinstance(button, QtWidgets.QPushButton):
                     tag_name = button.text()
                     if button.property('original_text') == '自定义' and button.property('custom_content') is not None:
@@ -175,10 +177,10 @@ class SmartArrangePage(QtWidgets.QWidget):
                 operation_summary += f", 目标路径: {self.destination_root}"
 
             self.log("INFO", f"摘要: {operation_summary}")
-            self.parent.toolButton_startSmartArrange.setText("停止整理")
+            self.parent.btnStartSmartArrange.setText("停止整理")
 
     def on_thread_finished(self):
-        self.parent.toolButton_startSmartArrange.setText("开始整理")
+        self.parent.btnStartSmartArrange.setText("开始整理")
         self.SmartArrange_thread = None
         self.update_progress_bar(100)
 
@@ -188,22 +190,22 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.update_combobox_state(level)
 
     def update_combobox_state(self, level):
-        current_text = getattr(self.parent, f'comboBox_level_{level}').currentText()
+        current_text = getattr(self.parent, f'comboClassificationLevel{level}').currentText()
 
         if current_text == "不分类":
             for i in range(level + 1, 6):
-                getattr(self.parent, f'comboBox_level_{i}').setEnabled(False)
-                getattr(self.parent, f'comboBox_level_{i}').setCurrentIndex(0)
+                getattr(self.parent, f'comboClassificationLevel{i}').setEnabled(False)
+                getattr(self.parent, f'comboClassificationLevel{i}').setCurrentIndex(0)
         else:
             if level < 5:
-                getattr(self.parent, f'comboBox_level_{level + 1}').setEnabled(True)
+                getattr(self.parent, f'comboClassificationLevel{level + 1}').setEnabled(True)
                 self.update_combobox_state(level + 1)
 
         SmartArrange_paths = [
-            self.get_specific_value(getattr(self.parent, f'comboBox_level_{i}').currentText())
+            self.get_specific_value(getattr(self.parent, f'comboClassificationLevel{i}').currentText())
             for i in range(1, 6)
-            if getattr(self.parent, f'comboBox_level_{i}').isEnabled() and
-               getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类"
+            if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
+                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
         ]
 
         if SmartArrange_paths:
@@ -211,13 +213,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         else:
             preview_text = "顶层目录（不分类）"
 
-        self.parent.label_PreviewRoute.setText(preview_text)
+        self.parent.previewRoute.setText(preview_text)
 
         self.SmartArrange_settings = [
-            getattr(self.parent, f'comboBox_level_{i}').currentText()
+            getattr(self.parent, f'comboClassificationLevel{i}').currentText()
             for i in range(1, 6)
-            if getattr(self.parent, f'comboBox_level_{i}').isEnabled() and
-               getattr(self.parent, f'comboBox_level_{i}').currentText() != "不分类"
+            if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
+                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
         ]
 
         self.update_operation_display()
@@ -225,7 +227,8 @@ class SmartArrangePage(QtWidgets.QWidget):
     def update_operation_display(self):
         has_SmartArrange = len(self.SmartArrange_settings) > 0
 
-        has_filename = self.selected_layout.count() > 0
+        # 使用布局管理器的count方法而不是QFrame的count方法
+        has_filename = self.selected_frame.layout().count() > 0
 
         if has_SmartArrange and has_filename:
             operation_type = "分类并重命名"
@@ -236,7 +239,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         else:
             operation_type = "提取到顶层目录"
 
-        operation_mode = "移动" if self.parent.comboBox_operation.currentIndex() == 0 else "复制"
+        operation_mode = "移动" if self.parent.fileOperation.currentIndex() == 0 else "复制"
 
         move_color = "#FF6B6B"
         copy_color = "#4ECDC4"
@@ -246,27 +249,27 @@ class SmartArrangePage(QtWidgets.QWidget):
             if len(display_path) > 20:
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
             if operation_mode == "移动":
-                self.parent.label_CopyRoute.setText(
+                self.parent.copyRoute.setText(
                     f'<span style="color:{move_color}">{operation_mode}到: {display_path} ({operation_type})</span>'
                 )
             else:
-                self.parent.label_CopyRoute.setText(
+                self.parent.copyRoute.setText(
                     f'<span style="color:{copy_color}">{operation_mode}到: {display_path} ({operation_type})</span>'
                 )
         else:
             if operation_mode == "移动":
-                self.parent.label_CopyRoute.setText(
+                self.parent.copyRoute.setText(
                     f'<span style="color:{move_color}">{operation_mode}文件 ({operation_type})</span>'
                 )
             else:
-                self.parent.label_CopyRoute.setText(
+                self.parent.copyRoute.setText(
                     f'<span style="color:{copy_color}">{operation_mode}文件 ({operation_type})</span>'
                 )
 
     def set_combo_box_states(self):
-        self.parent.comboBox_level_1.setEnabled(True)
+        self.parent.comboClassificationLevel1.setEnabled(True)
         for i in range(2, 6):
-            combo_box = getattr(self.parent, f'comboBox_level_{i}')
+            combo_box = getattr(self.parent, f'comboClassificationLevel{i}')
             combo_box.setEnabled(False)
             combo_box.setCurrentIndex(0)
 
@@ -298,7 +301,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         return True
 
     def move_tag(self, button):
-        if self.selected_layout.count() >= 5:
+        if self.selected_frame.count() >= 5:
             return
 
         original_style = button.styleSheet()
@@ -338,9 +341,13 @@ class SmartArrangePage(QtWidgets.QWidget):
             else:
                 return
 
-        self.available_layout.removeWidget(button)
+        # 使用布局管理器移除控件
+        self.available_frame.layout().removeWidget(button)
+        button.hide()  # 确保控件被隐藏
 
-        self.selected_layout.addWidget(button)
+        # 使用布局管理器添加控件
+        self.selected_frame.layout().addWidget(button)
+        button.show()  # 确保控件可见
 
         button.clicked.disconnect()
         button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
@@ -349,16 +356,17 @@ class SmartArrangePage(QtWidgets.QWidget):
 
         self.update_operation_display()
 
-        if self.selected_layout.count() >= 5:
+        if self.selected_frame.count() >= 5:
             for btn in self.tag_buttons.values():
-                if btn.parent() == self.available_layout:
+                if btn.parent() == self.available_frame:
                     btn.setEnabled(False)
 
     def update_example_label(self):
         now = datetime.now()
-        selected_buttons = [self.selected_layout.itemAt(i).widget() for i in range(self.selected_layout.count())
-                            if isinstance(self.selected_layout.itemAt(i).widget(), QtWidgets.QPushButton)]
-        current_separator = self.separator_mapping.get(self.parent.comboBox_separator.currentText(), "")
+        # 使用布局管理器的count方法而不是QFrame的count方法
+        selected_buttons = [self.selected_frame.layout().itemAt(i).widget() for i in range(self.selected_frame.layout().count())
+                            if isinstance(self.selected_frame.layout().itemAt(i).widget(), QtWidgets.QPushButton)]
+        current_separator = self.separator_mapping.get(self.parent.fileNameSeparator.currentText(), "")
 
         example_parts = []
         for button in selected_buttons:
@@ -384,7 +392,7 @@ class SmartArrangePage(QtWidgets.QWidget):
                 example_parts.append(full_text)
 
         example_text = current_separator.join(example_parts) if example_parts else "请点击标签以组成文件名"
-        self.parent.label_PreviewName.setText(example_text)
+        self.parent.previewName.setText(example_text)
 
     @staticmethod
     def _get_weekday(date):
@@ -408,9 +416,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.log_signal.emit(level, log_message)
 
     def move_tag_back(self, button):
-        self.selected_layout.removeWidget(button)
+        # 使用布局管理器移除控件
+        self.selected_frame.layout().removeWidget(button)
+        button.hide()  # 确保控件被隐藏
 
-        self.available_layout.addWidget(button)
+        # 使用布局管理器添加控件
+        self.available_frame.layout().addWidget(button)
+        button.show()  # 确保控件可见
 
         if button.property('original_style') is not None:
             button.setStyleSheet(button.property('original_style'))
