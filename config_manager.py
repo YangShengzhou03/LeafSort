@@ -26,61 +26,48 @@ class ConfigManager:
     
     def _load_config(self) -> Dict[str, Any]:
         """加载配置文件"""
-        default_config = {
-            "version": self.CONFIG_VERSION,
-            "folders": [],
-            "api_limits": {
-                "gaode": {
-                    "daily_calls": 0,
-                    "last_reset_date": "",
-                    "max_daily_calls": 500
-                }
-            },
-            "settings": {},
-            "last_modified": datetime.now().isoformat()
-        }
+        default_config = self._get_default_config()
         
         try:
             if self.config_file.exists():
                 with open(self.config_file, 'r', encoding='utf-8') as f:
                     config = json.load(f)
-                    # 确保所有必需的键存在
-                    for key in default_config:
-                        if key not in config:
-                            config[key] = default_config[key]
-                        elif key == "api_limits":
-
-                            for api_name, api_defaults in default_config["api_limits"].items():
-                                if api_name not in config["api_limits"]:
-                                    config["api_limits"][api_name] = api_defaults
-                                else:
-                                    for field, default_value in api_defaults.items():
-                                        if field not in config["api_limits"][api_name]:
-                                            config["api_limits"][api_name][field] = default_value
+                    # 递归更新配置，确保所有必需的键存在
+                    self._update_config_with_defaults(config, default_config)
                     return config
         except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"加载配置文件时出错了: {e}")
+            logger.warning(f"加载配置文件出错: {e}")
         
         return default_config
+    
+    def _update_config_with_defaults(self, config: Dict[str, Any], default_config: Dict[str, Any]):
+        """递归更新配置，确保所有必需的键存在"""
+        for key, default_value in default_config.items():
+            if key not in config:
+                config[key] = default_value
+            elif isinstance(default_value, dict) and isinstance(config[key], dict):
+                # 递归处理嵌套字典
+                self._update_config_with_defaults(config[key], default_value)
     
     def _validate_and_migrate_config(self):
         """验证配置并进行必要的迁移"""
         with self._lock:
             self.config["version"] = self.CONFIG_VERSION
+            self.config["last_modified"] = datetime.now().isoformat()
             
-            if "last_modified" not in self.config:
-                self.config["last_modified"] = datetime.now().isoformat()
-            
+            # 清理重复文件夹路径
             seen_paths = set()
             unique_folders = []
             for folder in self.config["folders"]:
-                if folder.get("path") not in seen_paths:
-                    seen_paths.add(folder.get("path"))
+                path = folder.get("path")
+                if path and path not in seen_paths:
+                    seen_paths.add(path)
                     unique_folders.append(folder)
             
             if len(unique_folders) != len(self.config["folders"]):
+                duplicate_count = len(self.config["folders"]) - len(unique_folders)
                 self.config["folders"] = unique_folders
-                logger.info(f"已清理 {len(seen_paths) - len(unique_folders)} 个重复的文件夹路径")
+                logger.info(f"已清理 {duplicate_count} 个重复的文件夹路径")
                 self.save_config()
     
     def _load_location_cache(self) -> Dict[str, Any]:
@@ -101,40 +88,47 @@ class ConfigManager:
         with self._lock:
             try:
                 self.config["last_modified"] = datetime.now().isoformat()
-                
-                self.config_file.parent.mkdir(parents=True, exist_ok=True)
+                self._ensure_directory(self.config_file.parent)
                 
                 with open(self.config_file, 'w', encoding='utf-8') as f:
                     json.dump(self.config, f, ensure_ascii=False, indent=2)
                 return True
             except IOError as e:
-                logger.error(f"保存配置文件时出错了: {e}")
+                logger.error(f"保存配置文件出错: {e}")
                 return False
     
     def save_location_cache(self) -> bool:
+        """保存位置缓存到文件"""
         with self._lock:
             try:
-                self.cache_file.parent.mkdir(parents=True, exist_ok=True)
+                self._ensure_directory(self.cache_file.parent)
                 
                 with open(self.cache_file, 'w', encoding='utf-8') as f:
                     json.dump(self.location_cache, f, ensure_ascii=False, indent=2)
                 return True
             except IOError as e:
-                logger.error(f"保存位置缓存文件时出错了: {e}")
+                logger.error(f"保存位置缓存文件出错: {e}")
                 return False
     
+    def _ensure_directory(self, directory: Path):
+        """确保目录存在，如果不存在则创建"""
+        directory.mkdir(parents=True, exist_ok=True)
+    
     def add_folder(self, folder_path: str, include_sub: bool = True) -> bool:
+        """添加文件夹到配置中"""
         with self._lock:
             folder_path = os.path.normpath(folder_path)
             
+            # 检查文件夹是否有效
             if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
                 logger.warning(f"尝试添加无效文件夹: {folder_path}")
                 return False
             
-            for folder in self.config["folders"]:
-                if folder["path"] == folder_path:
-                    return False
+            # 检查是否已存在
+            if any(folder["path"] == folder_path for folder in self.config["folders"]):
+                return False
             
+            # 添加新文件夹
             self.config["folders"].append({
                 "path": folder_path,
                 "include_sub": include_sub,
@@ -184,21 +178,17 @@ class ConfigManager:
             return self.config["folders"].copy()
     
     def get_valid_folders(self) -> List[Dict[str, Any]]:
+        """获取所有有效的文件夹（存在且为目录）"""
         with self._lock:
-            valid_folders = []
-            for folder in self.config["folders"]:
-                if os.path.exists(folder["path"]) and os.path.isdir(folder["path"]):
-                    valid_folders.append(folder.copy())
-            return valid_folders
+            return [folder.copy() for folder in self.config["folders"] 
+                    if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
     
     def clear_invalid_folders(self) -> int:
+        """清除无效的文件夹，返回清除的数量"""
         with self._lock:
             original_count = len(self.config["folders"])
-            valid_folders = []
-            for folder in self.config["folders"]:
-                if os.path.exists(folder["path"]) and os.path.isdir(folder["path"]):
-                    valid_folders.append(folder)
-            self.config["folders"] = valid_folders
+            self.config["folders"] = [folder for folder in self.config["folders"] 
+                                      if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
             removed_count = original_count - len(self.config["folders"])
             
             if removed_count > 0:

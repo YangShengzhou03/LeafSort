@@ -5,7 +5,8 @@
     "gaode": {
       "daily_calls": 0,
       "last_reset_date": "",
-      "max_daily_calls": 500
+      "max_daily_calls": 500,
+      "last_call_time": null
     }
   },
   "settings": {
@@ -16,10 +17,36 @@
     "exif_latitude": "",
     "exif_longitude": "",
     "exif_shoot_time_index": 0,
-    "exif_shoot_time": "2025:11:22 17:15:33",
+    "exif_shoot_time": "2025:11:22 17:53:32",
     "exif_star_rating": 0,
     "exif_camera_brand": "不写入",
-    "exif_camera_model": ""
+    "exif_camera_model": "",
+    "thumbnail_size": 200,
+    "max_cache_size": 10000,
+    "default_view": "grid",
+    "dark_mode": false,
+    "auto_update_metadata": true,
+    "use_gps_cache": true,
+    "map_provider": "gaode",
+    "show_thumbnails": true,
+    "enable_exif_edit": true,
+    "remember_window_size": true,
+    "max_threads": 4,
+    "memory_limit_mb": 2048,
+    "amap_api_key": "0db079da53e08cbb62b52a42f657b994",
+    "last_opened_folder": "",
+    "window_position": {
+      "x": 100,
+      "y": 100
+    },
+    "window_size": {
+      "width": 942,
+      "height": 580
+    }
   },
-  "last_modified": "2025-11-22T17:15:33.474730"
+  "last_modified": "2025-11-22T17:53:32.569337",
+  "cache_settings": {
+    "max_location_cache_size": 50000,
+    "cache_expiry_days": 30
+  }
 }

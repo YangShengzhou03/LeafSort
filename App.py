@@ -32,16 +32,20 @@ def setup_local_server():
 
 def handle_application_exception(exc_type, exc_value, exc_traceback):
     """自定义异常处理器，显示友好的错误信息"""
+    # 不处理键盘中断
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
         
+    # 格式化错误信息
     error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     app_instance = QtWidgets.QApplication.instance()
     
+    # 确保有应用实例
     if not app_instance:
         return
         
+    # 尝试显示错误对话框
     try:
         user_error_msg = f"{exc_type.__name__}: {str(exc_value)}"
         msg = QtWidgets.QMessageBox()
@@ -58,22 +62,25 @@ def handle_new_connection(server, window_ref):
     """处理新的服务器连接"""
     socket = server.nextPendingConnection()
     if socket:
-        socket.readyRead.connect(lambda: handle_socket_data(socket, window_ref))
+        # 使用局部函数保存socket引用，避免lambda闭包问题
+        def process_socket_data():
+            handle_socket_data(socket, window_ref)
+        socket.readyRead.connect(process_socket_data)
 
 def handle_socket_data(socket, window_ref):
     """处理来自套接字的数据"""
     try:
         if socket.bytesAvailable() > 0:
             data = socket.readAll().data()
-            window = window_ref()
-            if data == BRING_TO_FRONT_COMMAND and window:
-                window.activateWindow()
-                window.raise_()
-                window.showNormal()
+            if data == BRING_TO_FRONT_COMMAND:
+                window = window_ref()
+                if window:
+                    window.activateWindow()
+                    window.raise_()
+                    window.showNormal()
     finally:
         # 确保即使发生错误也会清理套接字
-        if socket:
-            socket.deleteLater()
+        socket.deleteLater()
 
 def main():
     """应用程序主函数"""
@@ -121,7 +128,7 @@ def main():
         return 1
     
     finally:
-        # 简化资源清理
+        # 资源清理
         try:
             if local_server:
                 local_server.close()
