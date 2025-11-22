@@ -170,17 +170,35 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         # 简化日志组件查找逻辑
         log_components = {
-            0: 'textBrowser_import_info',
-            1: 'smartArrangeLogOutputTextEdit',
-            2: 'textBrowser_duplication_log',
-            3: 'textBrowser_EXIF_log'
+            0: 'textBrowser_import_info',  # 导入信息显示组件
+            1: 'txtSmartArrangeLog',  # 智能整理日志组件
+            2: 'textBrowser_ThumbnailGenLog',  # 缩略图生成日志框
+            3: 'txtWriteEXIFLog'  # EXIF写入日志组件
         }
         
         try:
-            component_name = log_components.get(self.stackedWidget.currentIndex())
+            # 添加调试信息
+            current_index = self.stackedWidget.currentIndex()
+            component_name = log_components.get(current_index)
+            
+            # 调试输出
+            print(f"[调试] 当前页面索引: {current_index}, 目标日志组件: {component_name}")
+            
             if component_name:
-                log_widget = getattr(self, component_name, None)
-                if log_widget and hasattr(log_widget, 'append'):
-                    log_widget.append(log_message)
-        except Exception:
+                # 检查组件是否存在
+                if hasattr(self, component_name):
+                    log_widget = getattr(self, component_name)
+                    if log_widget and hasattr(log_widget, 'append'):
+                        print(f"[调试] 成功访问日志组件: {component_name}")
+                        log_widget.append(log_message)
+                    else:
+                        print(f"[调试] 组件存在但缺少append方法: {component_name}")
+                else:
+                    print(f"[调试] 组件不存在: {component_name}")
+                    # 尝试在所有可能的日志组件中查找
+                    for name, widget_name in log_components.items():
+                        if hasattr(self, widget_name):
+                            print(f"[调试] 发现可用的日志组件: {widget_name}")
+        except Exception as e:
+            print(f"[调试] 日志处理异常: {str(e)}")
             pass  # 静默失败，避免日志功能影响主程序运行

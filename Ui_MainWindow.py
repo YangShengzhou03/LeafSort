@@ -2654,13 +2654,13 @@ class Ui_MainWindow(object):
         self.logLayout.setContentsMargins(9, 6, 9, 9)
         self.logLayout.setSpacing(0)
         self.logLayout.setObjectName("logLayout")
-        self.smartArrangeLogOutputTextEdit = QtWidgets.QTextEdit(parent=self.horizontalFrame_2)
-        self.smartArrangeLogOutputTextEdit.setMinimumSize(QtCore.QSize(0, 0))
+        self.txtSmartArrangeLog = QtWidgets.QTextEdit(parent=self.horizontalFrame_2)
+        self.txtSmartArrangeLog.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
         font.setPointSize(-1)
-        self.smartArrangeLogOutputTextEdit.setFont(font)
-        self.smartArrangeLogOutputTextEdit.setStyleSheet("QTextEdit {\n"
+        self.txtSmartArrangeLog.setFont(font)
+        self.txtSmartArrangeLog.setStyleSheet("QTextEdit {\n"
 "    border: 1.5px solid qradialgradient(\n"
 "        cx:0.5, cy:0.5,\n"
 "        radius: 1.2,\n"
@@ -2743,9 +2743,9 @@ class Ui_MainWindow(object):
 "    );\n"
 "    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);\n"
 "}")
-        self.smartArrangeLogOutputTextEdit.setReadOnly(True)
-        self.smartArrangeLogOutputTextEdit.setObjectName("smartArrangeLogOutputTextEdit")
-        self.logLayout.addWidget(self.smartArrangeLogOutputTextEdit)
+        self.txtSmartArrangeLog.setReadOnly(True)
+        self.txtSmartArrangeLog.setObjectName("txtSmartArrangeLog")
+        self.logLayout.addWidget(self.txtSmartArrangeLog)
         self.layoutClassificationContent.addWidget(self.horizontalFrame_2)
         self.layoutClassificationPage.addLayout(self.layoutClassificationContent)
         self.stackedWidget.addWidget(self.pageClassification)
@@ -2937,10 +2937,10 @@ class Ui_MainWindow(object):
         self.ratingInputLayout.addWidget(self.star)
         self.starLayout = QtWidgets.QHBoxLayout()
         self.starLayout.setObjectName("starLayout")
-        self.starButton1 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
-        self.starButton1.setMinimumSize(QtCore.QSize(22, 22))
-        self.starButton1.setMaximumSize(QtCore.QSize(22, 22))
-        self.starButton1.setStyleSheet("QPushButton {\n"
+        self.btnStar1 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
+        self.btnStar1.setMinimumSize(QtCore.QSize(22, 22))
+        self.btnStar1.setMaximumSize(QtCore.QSize(22, 22))
+        self.btnStar1.setStyleSheet("QPushButton {\n"
 "    border: none;\n"
 "    background-color: transparent;\n"
 "    color: transparent;\n"
@@ -2949,17 +2949,17 @@ class Ui_MainWindow(object):
 "QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
-        self.starButton1.setText("")
+        self.btnStar1.setText("")
         icon10 = QtGui.QIcon()
         icon10.addPixmap(QtGui.QPixmap("resources/img/page_4/星级_暗.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.starButton1.setIcon(icon10)
-        self.starButton1.setIconSize(QtCore.QSize(20, 20))
-        self.starButton1.setObjectName("starButton1")
-        self.starLayout.addWidget(self.starButton1)
-        self.ratingStar2Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
-        self.ratingStar2Button.setMinimumSize(QtCore.QSize(22, 22))
-        self.ratingStar2Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar2Button.setStyleSheet("QPushButton {\n"
+        self.btnStar1.setIcon(icon10)
+        self.btnStar1.setIconSize(QtCore.QSize(20, 20))
+        self.btnStar1.setObjectName("btnStar1")
+        self.starLayout.addWidget(self.btnStar1)
+        self.btnStar2 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
+        self.btnStar2.setMinimumSize(QtCore.QSize(22, 22))
+        self.btnStar2.setMaximumSize(QtCore.QSize(22, 22))
+        self.btnStar2.setStyleSheet("QPushButton {\n"
 "    border: none;\n"
 "    background-color: transparent;\n"
 "    color: transparent;\n"
@@ -2968,15 +2968,15 @@ class Ui_MainWindow(object):
 "QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
-        self.ratingStar2Button.setText("")
-        self.ratingStar2Button.setIcon(icon10)
-        self.ratingStar2Button.setIconSize(QtCore.QSize(20, 20))
-        self.ratingStar2Button.setObjectName("ratingStar2Button")
-        self.starLayout.addWidget(self.ratingStar2Button)
-        self.ratingStar3Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
-        self.ratingStar3Button.setMinimumSize(QtCore.QSize(22, 22))
-        self.ratingStar3Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar3Button.setStyleSheet("QPushButton {\n"
+        self.btnStar2.setText("")
+        self.btnStar2.setIcon(icon10)
+        self.btnStar2.setIconSize(QtCore.QSize(20, 20))
+        self.btnStar2.setObjectName("btnStar2")
+        self.starLayout.addWidget(self.btnStar2)
+        self.btnStar3 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
+        self.btnStar3.setMinimumSize(QtCore.QSize(22, 22))
+        self.btnStar3.setMaximumSize(QtCore.QSize(22, 22))
+        self.btnStar3.setStyleSheet("QPushButton {\n"
 "    border: none;\n"
 "    background-color: transparent;\n"
 "    color: transparent;\n"
@@ -2985,15 +2985,15 @@ class Ui_MainWindow(object):
 "QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
-        self.ratingStar3Button.setText("")
-        self.ratingStar3Button.setIcon(icon10)
-        self.ratingStar3Button.setIconSize(QtCore.QSize(20, 20))
-        self.ratingStar3Button.setObjectName("ratingStar3Button")
-        self.starLayout.addWidget(self.ratingStar3Button)
-        self.ratingStar4Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
-        self.ratingStar4Button.setMinimumSize(QtCore.QSize(22, 22))
-        self.ratingStar4Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar4Button.setStyleSheet("QPushButton {\n"
+        self.btnStar3.setText("")
+        self.btnStar3.setIcon(icon10)
+        self.btnStar3.setIconSize(QtCore.QSize(20, 20))
+        self.btnStar3.setObjectName("btnStar3")
+        self.starLayout.addWidget(self.btnStar3)
+        self.btnStar4 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
+        self.btnStar4.setMinimumSize(QtCore.QSize(22, 22))
+        self.btnStar4.setMaximumSize(QtCore.QSize(22, 22))
+        self.btnStar4.setStyleSheet("QPushButton {\n"
 "    border: none;\n"
 "    background-color: transparent;\n"
 "    color: transparent;\n"
@@ -3002,15 +3002,15 @@ class Ui_MainWindow(object):
 "QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
-        self.ratingStar4Button.setText("")
-        self.ratingStar4Button.setIcon(icon10)
-        self.ratingStar4Button.setIconSize(QtCore.QSize(20, 20))
-        self.ratingStar4Button.setObjectName("ratingStar4Button")
-        self.starLayout.addWidget(self.ratingStar4Button)
-        self.ratingStar5Button = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
-        self.ratingStar5Button.setMinimumSize(QtCore.QSize(22, 22))
-        self.ratingStar5Button.setMaximumSize(QtCore.QSize(22, 22))
-        self.ratingStar5Button.setStyleSheet("QPushButton {\n"
+        self.btnStar4.setText("")
+        self.btnStar4.setIcon(icon10)
+        self.btnStar4.setIconSize(QtCore.QSize(20, 20))
+        self.btnStar4.setObjectName("btnStar4")
+        self.starLayout.addWidget(self.btnStar4)
+        self.btnStar5 = QtWidgets.QPushButton(parent=self.horizontalFrame_9)
+        self.btnStar5.setMinimumSize(QtCore.QSize(22, 22))
+        self.btnStar5.setMaximumSize(QtCore.QSize(22, 22))
+        self.btnStar5.setStyleSheet("QPushButton {\n"
 "    border: none;\n"
 "    background-color: transparent;\n"
 "    color: transparent;\n"
@@ -3019,11 +3019,11 @@ class Ui_MainWindow(object):
 "QPushButton:hover {\n"
 "    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
-        self.ratingStar5Button.setText("")
-        self.ratingStar5Button.setIcon(icon10)
-        self.ratingStar5Button.setIconSize(QtCore.QSize(20, 20))
-        self.ratingStar5Button.setObjectName("ratingStar5Button")
-        self.starLayout.addWidget(self.ratingStar5Button)
+        self.btnStar5.setText("")
+        self.btnStar5.setIcon(icon10)
+        self.btnStar5.setIconSize(QtCore.QSize(20, 20))
+        self.btnStar5.setObjectName("btnStar5")
+        self.starLayout.addWidget(self.btnStar5)
         self.ratingInputLayout.addLayout(self.starLayout)
         self.ratingInputLayout.setStretch(1, 1)
         self.detailsHeaderLayout.addLayout(self.ratingInputLayout)
@@ -3928,13 +3928,13 @@ class Ui_MainWindow(object):
         self.exifToolbarLayout.setContentsMargins(9, 6, 9, 9)
         self.exifToolbarLayout.setSpacing(0)
         self.exifToolbarLayout.setObjectName("exifToolbarLayout")
-        self.textEdit_WriteEXIF_Log = QtWidgets.QTextEdit(parent=self.horizontalFrame_log)
-        self.textEdit_WriteEXIF_Log.setMinimumSize(QtCore.QSize(0, 0))
+        self.txtWriteEXIFLog = QtWidgets.QTextEdit(parent=self.horizontalFrame_log)
+        self.txtWriteEXIFLog.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
         font.setFamily("Segoe UI")
         font.setPointSize(-1)
-        self.textEdit_WriteEXIF_Log.setFont(font)
-        self.textEdit_WriteEXIF_Log.setStyleSheet("QTextEdit {\n"
+        self.txtWriteEXIFLog.setFont(font)
+        self.txtWriteEXIFLog.setStyleSheet("QTextEdit {\n"
 "    border: 1.5px solid qradialgradient(\n"
 "        cx:0.5, cy:0.5,\n"
 "        radius: 1.2,\n"
@@ -4017,9 +4017,9 @@ class Ui_MainWindow(object):
 "    );\n"
 "    box-shadow: 0 0 0 2px rgba(134, 119, 253, 0.15);\n"
 "}")
-        self.textEdit_WriteEXIF_Log.setReadOnly(True)
-        self.textEdit_WriteEXIF_Log.setObjectName("textEdit_WriteEXIF_Log")
-        self.exifToolbarLayout.addWidget(self.textEdit_WriteEXIF_Log)
+        self.txtWriteEXIFLog.setReadOnly(True)
+        self.txtWriteEXIFLog.setObjectName("txtWriteEXIFLog")
+        self.exifToolbarLayout.addWidget(self.txtWriteEXIFLog)
         self.detailsPageLayout.addWidget(self.horizontalFrame_log)
         self.stackedWidget.addWidget(self.imageDetailsPage)
         self.mainContentLayout.addWidget(self.stackedWidget)

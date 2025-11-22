@@ -4156,7 +4156,7 @@ border-bottom-left-radius:0px;</string>
                        <number>9</number>
                       </property>
                       <item>
-                       <widget class="QTextEdit" name="smartArrangeLogOutputTextEdit">
+                       <widget class="QTextEdit" name="txtSmartArrangeLog">
                         <property name="minimumSize">
                          <size>
                           <width>0</width>
@@ -4602,7 +4602,7 @@ QLineEdit:disabled {
                       <item>
                        <layout class="QHBoxLayout" name="starLayout">
                         <item>
-                         <widget class="QPushButton" name="starButton1">
+                         <widget class="QPushButton" name="btnStar1">
                           <property name="minimumSize">
                            <size>
                             <width>22</width>
@@ -4642,7 +4642,7 @@ QPushButton:hover {
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="ratingStar2Button">
+                         <widget class="QPushButton" name="btnStar2">
                           <property name="minimumSize">
                            <size>
                             <width>22</width>
@@ -4682,7 +4682,7 @@ QPushButton:hover {
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="ratingStar3Button">
+                         <widget class="QPushButton" name="btnStar3">
                           <property name="minimumSize">
                            <size>
                             <width>22</width>
@@ -4722,7 +4722,7 @@ QPushButton:hover {
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="ratingStar4Button">
+                         <widget class="QPushButton" name="btnStar4">
                           <property name="minimumSize">
                            <size>
                             <width>22</width>
@@ -4762,7 +4762,7 @@ QPushButton:hover {
                          </widget>
                         </item>
                         <item>
-                         <widget class="QPushButton" name="ratingStar5Button">
+                         <widget class="QPushButton" name="btnStar5">
                           <property name="minimumSize">
                            <size>
                             <width>22</width>
@@ -6001,7 +6001,7 @@ border-bottom-left-radius:0px;</string>
                      <number>9</number>
                     </property>
                     <item>
-                     <widget class="QTextEdit" name="textEdit_WriteEXIF_Log">
+                     <widget class="QTextEdit" name="txtWriteEXIFLog">
                       <property name="minimumSize">
                        <size>
                         <width>0</width>

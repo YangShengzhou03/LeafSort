@@ -5,64 +5,94 @@ from datetime import datetime
 import requests
 
 from PyQt6 import QtCore
-from PyQt6.QtCore import pyqtSlot, QDateTime
+from PyQt6.QtCore import pyqtSlot, QDateTime, pyqtSignal
 from PyQt6.QtWidgets import QWidget, QMessageBox
 from write_exif_thread import WriteExifThread
 from common import get_resource_path
 from config_manager import config_manager
 
 
-class WriteExifPage(QWidget):    
+class WriteExifPage(QWidget):
+    log_signal = pyqtSignal(str, str)   
+    
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
         self.is_running = False
         self.worker = None
-        try:
-            self.parent.log("info", "属性写入页面初始化")
-        except (AttributeError, TypeError):
-            pass
-        self.folder_page = self.parent.folder_page
-
+        self.folder_page = self.parent.folder_page if hasattr(parent, 'folder_page') else None
+        
+        # 初始化数据和组件
         self.selected_star = 0
         self.star_buttons = []
         self.camera_lens_mapping = {}
         self.error_messages = []
+        self.camera_data = None
+        
+        # 初始化界面和连接信号
+        self._safe_log("INFO", "属性写入页面初始化")
         self.init_ui()
-        self.setup_connections()
-        
-    def init_page(self):
-        """初始化页面组件和数据"""
-        """
-        初始化EXIF写入页面的组件和数据。
-        
-        主要功能:
-            - 记录初始化日志
-            - 获取文件夹页面对象
-            - 设置控件连接
-            - 加载相机镜头映射数据
-        
-        异常处理:
-            - 当父窗口没有log方法时，静默处理
-        """
+    
+    def _safe_log(self, level, message):
+        """安全的日志记录方法，避免属性错误"""
         try:
-            self.parent.log("info", "初始化属性写入页面")
+            if hasattr(self.parent, 'log'):
+                self.parent.log(level, message)
         except (AttributeError, TypeError):
-            pass
-        self.folder_page = self.parent.folder_page
+            pass  # 静默失败，避免日志功能影响主程序
+    
+    def init_ui(self):
+        """初始化用户界面"""
+        # 初始化星级按钮
+        self._init_star_buttons()
+        
+        # 初始化相机数据
+        self._init_camera_data()
+        
+        # 设置控件连接
         self.setup_connections()
+        
+        # 加载配置
         self.load_camera_lens_mapping()
+        self._safe_log('INFO', "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
+    
+    def _init_star_buttons(self):
+        """初始化星级评分按钮"""
+        self.star_buttons = []
+        # 定义按钮名称映射
+        button_names = {
+            1: 'btnStar1',
+            2: 'btnStar2',
+            3: 'btnStar3',
+            4: 'btnStar4',
+            5: 'btnStar5'
+        }
+        
+        for i in range(1, 6):
+            btn_name = button_names.get(i)
+            if hasattr(self.parent, btn_name):
+                btn = getattr(self.parent, btn_name)
+                btn.setStyleSheet(
+                    "QPushButton { "
+                    f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});\n"
+                    "border: none; padding: 0; }" "\n"
+                    "QPushButton:hover { background-color: transparent; }"
+                )
+                btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
+                btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
+                btn.clicked.connect(lambda _, idx=i: self.set_selected_star(idx))
+                self.star_buttons.append(btn)
 
     def init_ui(self):
         """初始化用户界面"""
         self.star_buttons = []
         # 定义按钮名称映射
         button_names = {
-            1: 'starButton1',
-            2: 'ratingStar2Button',
-            3: 'ratingStar3Button',
-            4: 'ratingStar4Button',
-            5: 'ratingStar5Button'
+            1: 'btnStar1',
+            2: 'btnStar2',
+            3: 'btnStar3',
+            4: 'btnStar4',
+            5: 'btnStar5'
         }
         
         for i in range(1, 6):
@@ -256,6 +286,13 @@ class WriteExifPage(QWidget):
 
     def setup_connections(self):
         """设置所有控件的信号连接"""
+        # 连接日志信号
+        try:
+            self.log_signal.disconnect(self.handle_log_signal)
+        except (TypeError, RuntimeError):
+            pass  # 如果没有连接，忽略错误
+        self.log_signal.connect(self.handle_log_signal)
+        
         # 直接连接控件
         self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
             
@@ -567,14 +604,53 @@ class WriteExifPage(QWidget):
         """更新进度条"""
         self.parent.progressBar_EXIF.setValue(value)
 
+    def handle_log_signal(self, level, message):
+        # 添加调试信息
+        print(f"[调试-WriteExif] 收到日志信号: {level} - {message}")
+        
+        # 确保即使没有日志组件，程序也不会崩溃
+        if hasattr(self.parent, 'txtWriteEXIFLog'):
+            print(f"[调试-WriteExif] 检测到日志组件: txtWriteEXIFLog")
+            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
+            color = color_map.get(level, '#000000')
+            try:
+                self.parent.txtWriteEXIFLog.append(f'<span style="color:{color}">{message}</span>')
+                print(f"[调试-WriteExif] 成功写入日志到组件")
+            except Exception as e:
+                print(f"无法写入EXIF日志: {e}")
+        else:
+            print(f"[调试-WriteExif] 未检测到txtWriteEXIFLog组件")
+            # 如果没有日志组件，打印到控制台
+            print(f"[{level}] {message}")
+            # 同时尝试使用parent的log方法作为备选
+            try:
+                print(f"[调试-WriteExif] 尝试使用父窗口的log方法")
+                self.parent.log(level, message)
+            except Exception as e:
+                print(f"[调试-WriteExif] 调用父窗口log方法失败: {e}")
+
     def log(self, level, message):
         """记录日志消息"""
+        print(f"[调试-WriteExif] 调用log方法: {level} - {message}")
+        
         if level == 'ERROR':
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.error_messages.append(f"[{timestamp}] [{level}] {message}")
         
-        # 直接使用parent的log方法
-        self.parent.log(level, message)
+        log_message = f"[{level}] {message}"
+        try:
+            print(f"[调试-WriteExif] 发射日志信号")
+            self.log_signal.emit(level, log_message)
+        except Exception as e:
+            # 确保即使信号发射失败，程序也不会崩溃
+            print(f"无法发送EXIF日志信号: {e}")
+            print(log_message)
+            # 尝试使用parent的log方法作为备选
+            try:
+                print(f"[调试-WriteExif] 备选: 调用父窗口log方法")
+                self.parent.log(level, message)
+            except Exception as e:
+                print(f"[调试-WriteExif] 备选调用失败: {e}")
 
     def on_finished(self):
         """处理EXIF写入完成事件"""

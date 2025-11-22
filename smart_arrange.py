@@ -62,6 +62,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.parent.fileNameSeparator.currentIndexChanged.connect(self.update_example_label)
 
     def connect_signals(self):
+        # 连接日志信号
+        try:
+            self.log_signal.disconnect(self.handle_log_signal)
+        except (TypeError, RuntimeError):
+            pass  # 如果没有连接，忽略错误
+        self.log_signal.connect(self.handle_log_signal)
+        
         # 确保按钮存在并启用
         if hasattr(self.parent, 'btnStartSmartArrange'):
             # 先断开可能存在的连接，避免重复连接
@@ -538,11 +545,11 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def handle_log_signal(self, level, message):
         # 确保即使没有日志组件，程序也不会崩溃
-        if hasattr(self.parent, 'textEdit_SmartArrange_Log'):
+        if hasattr(self.parent, 'txtSmartArrangeLog'):
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
             color = color_map.get(level, '#000000')
             try:
-                self.parent.textEdit_SmartArrange_Log.append(f'<span style="color:{color}">{message}</span>')
+                self.parent.txtSmartArrangeLog.append(f'<span style="color:{color}">{message}</span>')
             except Exception as e:
                 print(f"无法写入日志: {e}")
         else:
@@ -550,14 +557,24 @@ class SmartArrangePage(QtWidgets.QWidget):
             print(f"[{level}] {message}")
 
     def log(self, level, message):
+        # 添加调试信息
+        print(f"[调试-SmartArrange] 调用log方法: {level} - {message}")
+        
         # 移除时间戳以简化日志
         log_message = f"[{level}] {message}"
         try:
+            print(f"[调试-SmartArrange] 发射日志信号")
             self.log_signal.emit(level, log_message)
         except Exception as e:
             # 确保即使信号发射失败，程序也不会崩溃
             print(f"无法发送日志信号: {e}")
             print(log_message)
+            # 尝试使用parent的log方法作为备选
+            try:
+                print(f"[调试-SmartArrange] 备选: 调用父窗口log方法")
+                self.parent.log(level, message)
+            except Exception as e:
+                print(f"[调试-SmartArrange] 备选调用失败: {e}")
 
     def move_tag_back(self, button):
         self.selected_frame.layout().removeWidget(button)
