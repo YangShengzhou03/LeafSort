@@ -81,11 +81,9 @@ class WriteExifPage(QWidget):
                 with open(data_path, 'r', encoding='utf-8') as f:
                     self.camera_lens_mapping = json.load(f)
             else:
-                if hasattr(self.parent, 'log'):
-                    self.parent.log('WARNING', "相机镜头映射文件不存在，将使用默认镜头信息")
+                self.parent.log('WARNING', "相机镜头映射文件不存在，将使用默认镜头信息")
         except Exception as e:
-              if hasattr(self.parent, 'log'):
-                  self.parent.log('WARNING', f"加载相机镜头映射数据失败: {str(e)}")
+              self.parent.log('WARNING', f"加载相机镜头映射数据失败: {str(e)}")
               self.camera_lens_mapping = {}
 
     def get_lens_info_for_camera(self, brand, model):
@@ -103,15 +101,31 @@ class WriteExifPage(QWidget):
             pass
     
     def _on_model_changed(self, index):
-        if index > 0 and hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
-            brand = self.brandComboBox.currentText()
-            model = self.modelComboBox.currentText()
-            self.get_lens_info_for_camera(brand, model)
-        
-        self.update_button_state()
-        if hasattr(self, 'dateTimeEdit_shootTime'):
-            self.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
-            self.dateTimeEdit_shootTime.hide()
+        try:
+            if index > 0:
+                # 通过父窗口获取当前选择的品牌和型号
+                brand = self.parent.cameraBrand.currentText()
+                # 尝试获取相机型号下拉框的当前文本
+                try:
+                    camera_model_combo = getattr(self.parent, 'cameraModel', None)
+                    if camera_model_combo:
+                        model = camera_model_combo.currentText()
+                        self.get_lens_info_for_camera(brand, model)
+                except (AttributeError, TypeError):
+                    pass
+            
+            self.update_button_state()
+            # 确保通过父窗口访问日期时间编辑器
+            try:
+                self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
+                self.parent.dateTimeEdit_shootTime.hide()
+            except (AttributeError, TypeError):
+                pass
+        except Exception as e:
+            try:
+                self.parent.log("error", f"型号改变事件处理错误: {str(e)}")
+            except (AttributeError, TypeError):
+                pass
 
     def _load_camera_data(self):
         """从JSON文件加载相机品牌和型号数据"""
@@ -129,8 +143,7 @@ class WriteExifPage(QWidget):
                 return json.load(f)
         except (FileNotFoundError, json.JSONDecodeError, IOError) as e:
             # 如果文件不存在或解析错误，记录警告并返回None
-            if hasattr(self, 'parent') and hasattr(self.parent, 'log'):
-                self.parent.log('WARNING', f'无法加载相机数据文件 {json_path}: {str(e)}')
+            self.parent.log('WARNING', f'无法加载相机数据文件 {json_path}: {str(e)}')
             return None
     
     def init_camera_brand_model(self):
@@ -159,45 +172,51 @@ class WriteExifPage(QWidget):
             except (AttributeError, TypeError):
                 pass
         self.camera_data = camera_data
-        if hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
-            self.brandComboBox.currentIndexChanged.connect(self._on_brand_changed)
-            self.modelComboBox.currentIndexChanged.connect(self._on_model_changed)
+        # 通过父窗口访问正确的组件名称
+        try:
+            # 确保已经正确设置了相机品牌下拉框的连接
+            pass  # 连接已经在上面的try块中设置
+        except (AttributeError, TypeError):
+            try:
+                self.parent.log("warning", "无法设置相机品牌/型号下拉框连接")
+            except (AttributeError, TypeError):
+                pass
         
     def _on_brand_changed(self, index):
         """当相机品牌改变时，更新型号下拉框"""
         try:
-            self.modelComboBox.clear()
-            if index > 0:
-                brand = self.brandComboBox.currentText()
-                models = ['不写入'] + self.camera_data.get(brand, [])
-                self.modelComboBox.addItems(models)
-        except (AttributeError, TypeError):
-            pass
-        # 使用hasattr检查确保控件存在
-        if hasattr(self, 'modelComboBox') and hasattr(self, 'brandComboBox'):
-            self.modelComboBox.clear()
-            if index > 0:
-                brand = self.brandComboBox.currentText()
-                if brand in self.camera_data:
-                    for model in sorted(self.camera_data[brand]):
-                        self.modelComboBox.addItem(model)
+            # 尝试获取相机型号下拉框并更新
+            # 注意：从UI定义看，可能需要找到正确的相机型号下拉框名称
+            # 这里我们假设UI中有一个名为cameraModel的组件
+            try:
+                camera_model_combo = getattr(self.parent, 'cameraModel', None)
+                if camera_model_combo:
+                    camera_model_combo.clear()
+                    if index > 0:
+                        brand = self.parent.cameraBrand.currentText()
+                        models = ['不写入'] + self.camera_data.get(brand, [])
+                        camera_model_combo.addItems(models)
+            except (AttributeError, TypeError):
+                try:
+                    self.parent.log("warning", "无法更新相机型号下拉框")
+                except (AttributeError, TypeError):
+                    pass
+        except Exception as e:
+            try:
+                self.parent.log("error", f"品牌改变事件处理错误: {str(e)}")
+            except (AttributeError, TypeError):
+                pass
         
 
 
     def setup_connections(self):
-        # 为所有控件连接添加hasattr检查
-        if hasattr(self.parent, 'btnStartExif'):
-            self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'btnStartExif按钮不存在，跳过连接')
+        # 直接连接控件
+        self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
             
         # 为位置更新按钮添加连接（如果存在）
         # 注意：在UI文件中没有找到pushButton_Position的直接对应组件
         
-        if hasattr(self.parent, 'shootTimeSource'):
-            self.parent.shootTimeSource.currentIndexChanged.connect(self.on_combobox_time_changed)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'shootTimeSource组合框不存在，跳过连接')
+        self.parent.shootTimeSource.currentIndexChanged.connect(self.on_combobox_time_changed)
             
         # 为所有文本框连接添加hasattr检查
         # 使用正确的组件名称
@@ -210,22 +229,14 @@ class WriteExifPage(QWidget):
         }
         
         for actual_name, old_name in text_fields_mapping.items():
-            if hasattr(self.parent, actual_name):
-                getattr(self.parent, actual_name).textChanged.connect(self.save_exif_settings)
-            elif hasattr(self.parent, 'log'):
-                self.parent.log('WARNING', f'{old_name}文本框不存在，跳过连接')
+            getattr(self.parent, actual_name).textChanged.connect(self.save_exif_settings)
                 
-        if hasattr(self.parent, 'cameraBrand'):
-            self.parent.cameraBrand.currentIndexChanged.connect(self.save_exif_settings)
-        if hasattr(self.parent, 'cameraModel'):
-            self.parent.cameraModel.currentIndexChanged.connect(self.save_exif_settings)
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'cameraModel组合框不存在，跳过连接')
+        self.parent.cameraBrand.currentIndexChanged.connect(self.save_exif_settings)
+        self.parent.cameraModel.currentIndexChanged.connect(self.save_exif_settings)
             
         # 星级按钮连接已经在init_ui中处理
 
     def on_combobox_location_changed(self, index):
-        if hasattr(self.parent, 'lineEdit_EXIF_longitude') and hasattr(self.parent, 'lineEdit_EXIF_latitude') and hasattr(self.parent, 'horizontalFrame'):
             if index == 1:
                 self.parent.lineEdit_EXIF_longitude.show()
                 self.parent.lineEdit_EXIF_latitude.show()
@@ -236,27 +247,17 @@ class WriteExifPage(QWidget):
                 self.parent.horizontalFrame.show()
 
     def on_combobox_time_changed(self, index):
-        if hasattr(self.parent, 'shootTimeSource') and self.parent.shootTimeSource.currentIndex() == 2:
-            if hasattr(self.parent, 'dateTimeEdit_shootTime'):
-                self.parent.dateTimeEdit_shootTime.show()
+        if self.parent.shootTimeSource.currentIndex() == 2:
+            self.parent.dateTimeEdit_shootTime.show()
         else:
-            if hasattr(self.parent, 'dateTimeEdit_shootTime'):
-                self.parent.dateTimeEdit_shootTime.hide()
+            self.parent.dateTimeEdit_shootTime.hide()
 
     def update_button_state(self):
-        # 检查btnStartExif是在self还是parent中
-        if hasattr(self, 'btnStartExif'):
-            if self.is_running:
-                self.btnStartExif.setText("停止")
-            else:
-                self.btnStartExif.setText("开始")
-        elif hasattr(self.parent, 'btnStartExif'):
-            if self.is_running:
-                self.parent.btnStartExif.setText("停止")
-            else:
-                self.parent.btnStartExif.setText("开始")
-        elif hasattr(self.parent, 'log'):
-            self.parent.log('WARNING', 'btnStartExif按钮不存在，跳过按钮状态更新')
+        # 直接使用parent中的btnStartExif
+        if self.is_running:
+            self.parent.btnStartExif.setText("停止")
+        else:
+            self.parent.btnStartExif.setText("开始")
 
     def toggle_exif_writing(self):
         if self.is_running:
@@ -401,17 +402,17 @@ class WriteExifPage(QWidget):
                            "点击\"导入文件夹\"按钮添加包含图片的文件夹")
             return False
         
-        camera_brand = self.parent.cameraBrand.currentText() if hasattr(self.parent, 'cameraBrand') and self.parent.cameraBrand.currentIndex() > 0 else None
-        camera_model = self.parent.cameraModel.currentText() if hasattr(self.parent, 'cameraModel') and self.parent.cameraModel.currentIndex() > 0 else None
+        camera_brand = self.parent.cameraBrand.currentText() if self.parent.cameraBrand.currentIndex() > 0 else None
+        camera_model = self.parent.cameraModel.currentText() if self.parent.cameraModel.currentIndex() > 0 else None
         
         if camera_brand and not camera_model:
             camera_model = self.get_default_model_for_brand(camera_brand)
         
-        # 获取文本框内容，使用getattr和默认值避免属性不存在的错误
-        title = getattr(self.parent, 'titleLineEdit', None).text() if hasattr(self.parent, 'titleLineEdit') else ''
-        author = getattr(self.parent, 'authorLineEdit', None).text() if hasattr(self.parent, 'authorLineEdit') else ''
-        subject = getattr(self.parent, 'themeLineEdit', None).text() if hasattr(self.parent, 'themeLineEdit') else ''
-        copyright = getattr(self.parent, 'copyrightLineEdit', None).text() if hasattr(self.parent, 'copyrightLineEdit') else ''
+        # 直接获取文本框内容
+        title = self.parent.titleLineEdit.text()
+        author = self.parent.authorLineEdit.text()
+        subject = self.parent.themeLineEdit.text()
+        copyright = self.parent.copyrightLineEdit.text()
         
         params = {
             'folders_dict': folders,
@@ -430,7 +431,7 @@ class WriteExifPage(QWidget):
             'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
         
-        location_type = self.parent.locationComboBox.currentIndex() if hasattr(self.parent, 'locationComboBox') else 0
+        location_type = self.parent.locationComboBox.currentIndex()
         if location_type == 0:
             address = self.parent.lineEdit_EXIF_Position.text()
             if address:
@@ -585,15 +586,8 @@ class WriteExifPage(QWidget):
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.error_messages.append(f"[{timestamp}] [{level}] {message}")
         
-        if hasattr(self.parent, 'log'):
-            self.parent.log(level, message)
-        else:
-            try:
-                c = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'DEBUG': '#008000', 'INFO': '#8677FD'}
-                self.parent.textEdit_WriteEXIF_Log.append(
-                    f'<span style="color:{c.get(level, "#000000")}">[{datetime.now().strftime("%H:%M:%S")}] [{level}] {message}</span>')
-            except Exception as e:
-                print(f"日志更新错误: {e}")
+        # 直接使用parent的log方法
+        self.parent.log(level, message)
 
     def on_finished(self):
         self.is_running = False
@@ -617,58 +611,47 @@ class WriteExifPage(QWidget):
 
     def load_exif_settings(self):
         try:
-            # 安全加载设置，为所有控件添加hasattr检查
+            # 直接使用控件
             if title := config_manager.get_setting("exif_title"):
-                if hasattr(self.parent, 'titleLineEdit'):
-                    self.parent.titleLineEdit.setText(title)
+                self.parent.titleLineEdit.setText(title)
             
             if author := config_manager.get_setting("exif_author"):
-                if hasattr(self.parent, 'authorLineEdit'):
-                    self.parent.authorLineEdit.setText(author)
+                self.parent.authorLineEdit.setText(author)
             
             if subject := config_manager.get_setting("exif_subject"):
-                if hasattr(self.parent, 'themeLineEdit'):
-                    self.parent.themeLineEdit.setText(subject)
+                self.parent.themeLineEdit.setText(subject)
             
             if copyright := config_manager.get_setting("exif_copyright"):
-                if hasattr(self.parent, 'copyrightLineEdit'):
-                    self.parent.copyrightLineEdit.setText(copyright)
+                self.parent.copyrightLineEdit.setText(copyright)
             
-            # 修复positionLineEdit不存在的问题，使用lineEdit_EXIF_Position代替
+            # 使用lineEdit_EXIF_Position
             if position := config_manager.get_setting("exif_position"):
-                if hasattr(self.parent, 'lineEdit_EXIF_Position'):
-                    self.parent.lineEdit_EXIF_Position.setText(position)
+                self.parent.lineEdit_EXIF_Position.setText(position)
             
             if latitude := config_manager.get_setting("exif_latitude"):
-                if hasattr(self.parent, 'lineEdit_EXIF_latitude'):
-                    self.parent.lineEdit_EXIF_latitude.setText(latitude)
+                self.parent.lineEdit_EXIF_latitude.setText(latitude)
             
             if longitude := config_manager.get_setting("exif_longitude"):
-                if hasattr(self.parent, 'lineEdit_EXIF_longitude'):
-                    self.parent.lineEdit_EXIF_longitude.setText(longitude)
+                self.parent.lineEdit_EXIF_longitude.setText(longitude)
             
             if location_index := config_manager.get_setting("exif_location_index"):
-                if hasattr(self.parent, 'locationComboBox'):
-                    self.parent.locationComboBox.setCurrentIndex(int(location_index))
-                    self.on_combobox_location_changed(int(location_index))
+                self.parent.locationComboBox.setCurrentIndex(int(location_index))
+                self.on_combobox_location_changed(int(location_index))
             
             if camera_brand := config_manager.get_setting("exif_camera_brand"):
-                if hasattr(self.parent, 'brandComboBox'):
-                    index = self.parent.brandComboBox.findText(camera_brand)
-                    if index >= 0:
-                        self.parent.brandComboBox.setCurrentIndex(index)
-                        self._on_brand_changed(index)
+                index = self.parent.brandComboBox.findText(camera_brand)
+                if index >= 0:
+                    self.parent.brandComboBox.setCurrentIndex(index)
+                    self._on_brand_changed(index)
             
             if camera_model := config_manager.get_setting("exif_camera_model"):
-                if hasattr(self.parent, 'modelComboBox'):
-                    index = self.parent.modelComboBox.findText(camera_model)
-                    if index >= 0:
-                        self.parent.modelComboBox.setCurrentIndex(index)
+                index = self.parent.modelComboBox.findText(camera_model)
+                if index >= 0:
+                    self.parent.modelComboBox.setCurrentIndex(index)
             
             if shoot_time_index := config_manager.get_setting("exif_shoot_time_index"):
-                if hasattr(self.parent, 'shootTimeSource'):
-                    self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_index))
-                    self.on_combobox_time_changed(int(shoot_time_index))
+                self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_index))
+                self.on_combobox_time_changed(int(shoot_time_index))
             
             if star_rating := config_manager.get_setting("exif_star_rating"):
                 self.set_selected_star(int(star_rating))
@@ -677,44 +660,32 @@ class WriteExifPage(QWidget):
 
     def save_exif_settings(self):
         try:
-            # 安全获取文本框内容，使用hasattr检查
-            if hasattr(self.parent, 'titleLineEdit'):
-                config_manager.update_setting("exif_title", self.parent.titleLineEdit.text())
+            # 直接使用控件
+            config_manager.update_setting("exif_title", self.parent.titleLineEdit.text())
             
-            if hasattr(self.parent, 'authorLineEdit'):
-                config_manager.update_setting("exif_author", self.parent.authorLineEdit.text())
+            config_manager.update_setting("exif_author", self.parent.authorLineEdit.text())
             
-            if hasattr(self.parent, 'themeLineEdit'):
-                config_manager.update_setting("exif_subject", self.parent.themeLineEdit.text())
+            config_manager.update_setting("exif_subject", self.parent.themeLineEdit.text())
             
-            if hasattr(self.parent, 'copyrightLineEdit'):
-                config_manager.update_setting("exif_copyright", self.parent.copyrightLineEdit.text())
+            config_manager.update_setting("exif_copyright", self.parent.copyrightLineEdit.text())
             
-            # 修复positionLineEdit不存在的问题，使用lineEdit_EXIF_Position代替
-            if hasattr(self.parent, 'lineEdit_EXIF_Position'):
-                config_manager.update_setting("exif_position", self.parent.lineEdit_EXIF_Position.text())
+            # 使用lineEdit_EXIF_Position
+            config_manager.update_setting("exif_position", self.parent.lineEdit_EXIF_Position.text())
             
-            if hasattr(self.parent, 'lineEdit_EXIF_latitude'):
-                config_manager.update_setting("exif_latitude", self.parent.lineEdit_EXIF_latitude.text())
+            config_manager.update_setting("exif_latitude", self.parent.lineEdit_EXIF_latitude.text())
             
-            if hasattr(self.parent, 'lineEdit_EXIF_longitude'):
-                config_manager.update_setting("exif_longitude", self.parent.lineEdit_EXIF_longitude.text())
+            config_manager.update_setting("exif_longitude", self.parent.lineEdit_EXIF_longitude.text())
             
-            if hasattr(self.parent, 'locationComboBox'):
-                config_manager.update_setting("exif_location_index", self.parent.locationComboBox.currentIndex())
+            config_manager.update_setting("exif_location_index", self.parent.locationComboBox.currentIndex())
             
-            if hasattr(self.parent, 'brandComboBox'):
-                config_manager.update_setting("exif_camera_brand", self.parent.brandComboBox.currentText())
+            config_manager.update_setting("exif_camera_brand", self.parent.brandComboBox.currentText())
             
-            if hasattr(self.parent, 'modelComboBox'):
-                config_manager.update_setting("exif_camera_model", self.parent.modelComboBox.currentText())
+            config_manager.update_setting("exif_camera_model", self.parent.modelComboBox.currentText())
             
-            if hasattr(self.parent, 'shootTimeSource'):
-                config_manager.update_setting("exif_shoot_time_index", self.parent.shootTimeSource.currentIndex())
+            config_manager.update_setting("exif_shoot_time_index", self.parent.shootTimeSource.currentIndex())
             
-            if hasattr(self.parent, 'dateTimeEdit_shootTime'):
-                config_manager.update_setting("exif_shoot_time", 
-                                            self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
+            config_manager.update_setting("exif_shoot_time", 
+                                        self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
             
             config_manager.update_setting("exif_star_rating", self.selected_star)
         except Exception as e:
@@ -723,9 +694,8 @@ class WriteExifPage(QWidget):
     def refresh(self):
         """刷新页面状态"""
         try:
-            if hasattr(self, 'brandComboBox') and hasattr(self, 'modelComboBox'):
-                self.brandComboBox.setCurrentIndex(0)
-                self.modelComboBox.setCurrentIndex(0)
+            self.brandComboBox.setCurrentIndex(0)
+            self.modelComboBox.setCurrentIndex(0)
         except (AttributeError, TypeError):
             pass
         try:
@@ -734,10 +704,9 @@ class WriteExifPage(QWidget):
             # 重置状态
             self._reset_state()
             
-            # 重新检查文件夹页面引用
-            if hasattr(self.parent, 'folder_page'):
-                self.folder_page = self.parent.folder_page
-                self.log("INFO", "已重新获取文件夹页面引用")
+            # 获取文件夹页面引用
+            self.folder_page = self.parent.folder_page
+            self.log("INFO", "已重新获取文件夹页面引用")
                 
             # 刷新UI组件状态
             self._update_ui_components()
@@ -753,13 +722,12 @@ class WriteExifPage(QWidget):
             self.selected_star = 0
             
             # 停止正在运行的工作线程
-            if hasattr(self, 'worker') and self.worker:
+            if self.worker:
                 self.worker.stop()
                 self.worker = None
                 
             # 重置进度条
-            if hasattr(self.parent, 'progressBar_EXIF'):
-                self.parent.progressBar_EXIF.setValue(0)
+            self.parent.progressBar_EXIF.setValue(0)
                 
             # 重置按钮状态
             self.is_running = False

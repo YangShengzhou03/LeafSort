@@ -1109,18 +1109,19 @@ class SmartArrangeThread(QtCore.QThread):
                 # 如果是浮点数格式，直接使用
                 lat = gps_lat
                 lon = gps_lon
-            elif hasattr(gps_lat, 'values') and hasattr(gps_lon, 'values'):  # 暂时保留，后续需要完全移除
-                # 如果是EXIF格式的度分秒数据，使用convert_to_degrees方法转换
-                lat = self.convert_to_degrees(gps_lat)
-                lon = self.convert_to_degrees(gps_lon)
             else:
-                # 其他情况，尝试转换为浮点数
                 try:
-                    lat = float(gps_lat)
-                    lon = float(gps_lon)
-                except (ValueError, TypeError):
-                    lat = None
-                    lon = None
+                    # 尝试作为度分秒数据转换
+                    lat = self.convert_to_degrees(gps_lat)
+                    lon = self.convert_to_degrees(gps_lon)
+                except (AttributeError, TypeError, ValueError):
+                    # 如果转换失败，尝试转换为浮点数
+                    try:
+                        lat = float(gps_lat)
+                        lon = float(gps_lon)
+                    except (ValueError, TypeError):
+                        lat = None
+                        lon = None
             
             if lat is not None and lon is not None:
                 # 应用方向参考
