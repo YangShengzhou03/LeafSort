@@ -478,8 +478,13 @@ class SmartArrangePage(QtWidgets.QWidget):
         if hasattr(self.parent, 'txtSmartArrangeLog'):
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
             color = color_map.get(level, '#000000')
+            
+            # 添加时间戳到日志消息
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            
             try:
-                self.parent.txtSmartArrangeLog.append(f'<span style="color:{color}">{message}</span>')
+                self.parent.txtSmartArrangeLog.append(f'<span style="color:{color}">{formatted_message}</span>')
             except Exception as e:
                 print(f"无法写入日志: {e}")
         else:

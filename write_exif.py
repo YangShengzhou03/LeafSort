@@ -47,10 +47,15 @@ class WriteExifPage(QWidget):
     def _get_parent_component(self, component_name):
         """获取父组件引用，使用缓存优化性能"""
         if component_name not in self._cached_parent_components:
-            if hasattr(self.parent, component_name):
-                self._cached_parent_components[component_name] = getattr(self.parent, component_name)
-            else:
-                self._cached_parent_components[component_name] = None
+            try:
+                # 尝试直接获取组件，避免hasattr检查失败
+                component = getattr(self.parent, component_name)
+                self._cached_parent_components[component_name] = component
+            except AttributeError:
+                # 如果组件不存在，记录错误但不缓存None，下次重新尝试
+                print(f"警告: 父组件 '{component_name}' 不存在")
+                # 不缓存None值，下次重新尝试获取
+                return None
         return self._cached_parent_components[component_name]
     
     def init_ui(self):
@@ -84,6 +89,15 @@ class WriteExifPage(QWidget):
         
         # 记录欢迎信息
         self._safe_log('INFO', "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
+        
+        # 直接向txtWriteEXIFLog组件添加初始欢迎信息
+        log_component = self._get_parent_component('txtWriteEXIFLog')
+        if log_component:
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            welcome_message = f"<span style='color:#8677FD'>[{timestamp}] INFO 欢迎使用图像属性写入功能！</span>"
+            welcome_message += f"<br><span style='color:#8677FD'>[{timestamp}] INFO 请选择要写入EXIF信息的图片文件。</span>"
+            welcome_message += f"<br><span style='color:#8677FD'>[{timestamp}] INFO 不写入的项留空即可，文件一旦写入无法还原。</span>"
+            log_component.setHtml(welcome_message)
 
     def _init_star_buttons(self):
         """初始化星级评分按钮"""
@@ -641,8 +655,13 @@ class WriteExifPage(QWidget):
         if log_component:
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
             color = color_map.get(level, '#000000')
+            
+            # 添加时间戳到日志消息
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            
             try:
-                log_component.append(f'<span style="color:{color}">{message}</span>')
+                log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
             except Exception as e:
                 print(f"无法写入EXIF日志: {e}")
         else:
