@@ -19,9 +19,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.last_selected_button_index = -1
         self.destination_root = None
         
-        # 初始化布局变量
-        self.available_layout = None
-        self.selected_layout = None
+        # 不再使用实例变量存储布局引用
         
         # 使用正确的UI组件名称并添加属性检查
         self.tag_buttons = {}
@@ -60,10 +58,6 @@ class SmartArrangePage(QtWidgets.QWidget):
         
         # 初始化布局引用
         self._initialize_layouts()
-        
-        # 添加布局属性检查
-        self.available_layout = getattr(self.parent, 'layoutTagsInput', None)
-        self.selected_layout = getattr(self.parent, 'layoutRenameContent', None)
         
         self.smart_arrange_thread = None
         self.smart_arrange_settings = []
@@ -329,8 +323,11 @@ class SmartArrangePage(QtWidgets.QWidget):
         file_name_structure = []
         
         # 遍历layout中的所有项目，确保按添加顺序获取（即用户点击顺序）
-        for i in range(self.selected_layout.count()):
-            widget = self.selected_layout.itemAt(i).widget()
+        # 获取frameRename的布局
+        selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+        if selected_layout:
+            for i in range(selected_layout.count()):
+                widget = selected_layout.itemAt(i).widget()
             if isinstance(widget, QtWidgets.QPushButton):
                 original_text = widget.property('original_text') or widget.text()
                 
@@ -501,7 +498,9 @@ class SmartArrangePage(QtWidgets.QWidget):
                     break
             except AttributeError:
                 continue
-        has_rename = self.selected_layout.count() > 0
+        # 获取frameRename的布局
+        selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+        has_rename = selected_layout.count() > 0 if selected_layout else False
         
         # 生成操作类型描述
         action_desc = []
@@ -538,7 +537,9 @@ class SmartArrangePage(QtWidgets.QWidget):
             
             # 添加重命名信息
             if has_rename:
-                tag_count = self.selected_layout.count()
+                # 获取frameRename的布局
+                selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+                tag_count = selected_layout.count() if selected_layout else 0
                 info_parts.append(f"将添加{tag_count}个标签到文件名")
             
             # 添加目标信息
@@ -612,7 +613,9 @@ class SmartArrangePage(QtWidgets.QWidget):
     
     def update_operation_display(self):
         # 获取选择的标签数量
-        selected_tags_count = self.selected_layout.count()
+        # 获取frameRename的布局
+        selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+        selected_tags_count = selected_layout.count() if selected_layout else 0
         
         has_SmartArrange = len(self.SmartArrange_settings) > 0
         
@@ -705,16 +708,20 @@ class SmartArrangePage(QtWidgets.QWidget):
         try:
             self.log("DEBUG", f"开始移动标签: button={button}, button.text()={button.text() if button else None}")
             
-            # 确保布局存在，如果不存在尝试重新初始化
-            if not self.available_layout or not self.selected_layout:
-                self.log("WARNING", "布局组件不存在，尝试重新初始化")
-                self._initialize_layouts()
-                
-                # 如果重新初始化后仍然不存在，记录详细信息
-                if not self.available_layout or not self.selected_layout:
-                    self.log("ERROR", "布局组件不存在，无法移动标签")
-                    self.log("DEBUG", f"available_layout: {self.available_layout}, selected_layout: {self.selected_layout}")
-                    return
+            # 直接使用frameRenameTags和frameRename组件的布局
+            if not hasattr(self.parent, 'frameRenameTags') or not hasattr(self.parent, 'frameRename'):
+                self.log("ERROR", "frameRenameTags或frameRename组件不存在，无法移动标签")
+                return
+            
+            # 获取两个框架的布局
+            available_layout = self.parent.frameRenameTags.layout()
+            selected_layout = self.parent.frameRename.layout()
+            
+            # 确保布局存在
+            if not available_layout or not selected_layout:
+                self.log("ERROR", "布局组件不存在，无法移动标签")
+                self.log("DEBUG", f"available_layout: {available_layout}, selected_layout: {selected_layout}")
+                return
             
             # 确保按钮是有效的标签按钮
             if button not in self.tag_buttons.values():
@@ -722,8 +729,8 @@ class SmartArrangePage(QtWidgets.QWidget):
                 return
             
             # 检查按钮当前是否在待选区域
-            is_in_available = self._is_button_in_layout(button, self.available_layout)
-            is_in_selected = self._is_button_in_layout(button, self.selected_layout)
+            is_in_available = self._is_button_in_layout(button, available_layout)
+            is_in_selected = self._is_button_in_layout(button, selected_layout)
             
             self.log("DEBUG", f"按钮位置: available={is_in_available}, selected={is_in_selected}")
             
@@ -733,7 +740,7 @@ class SmartArrangePage(QtWidgets.QWidget):
                 return
                 
             # 限制最多选择5个标签
-            selected_count = self.selected_layout.count()
+            selected_count = selected_layout.count()
             self.log("DEBUG", f"已选区域标签数量: {selected_count}")
             
             if selected_count >= 5:
@@ -783,7 +790,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             
             # 从当前所在的任何布局中移除
             if is_in_available:
-                self.available_layout.removeWidget(button)
+                available_layout.removeWidget(button)
             else:
                 # 尝试从父部件中移除
                 parent = button.parent()
@@ -791,7 +798,7 @@ class SmartArrangePage(QtWidgets.QWidget):
                     parent.layout().removeWidget(button)
                 
             # 添加到已选区域
-            self.selected_layout.addWidget(button)
+            selected_layout.addWidget(button)
             
             # 更改按钮样式为已选择状态
             button.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 4px; padding: 2px 8px;")
@@ -808,38 +815,28 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.update_operation_display()
             
             # 强制刷新布局
-            self.selected_layout.update()
-            self.available_layout.update()
+            selected_layout.update()
+            available_layout.update()
             try:
                 self.parent.update()
             except AttributeError:
                 pass
             
             self.log("INFO", f"成功将标签 '{button.text()}' 移动到已选区域")
-            self.update_operation_display()
-            
-            # 强制刷新布局
-            self.available_layout.update()
-            self.selected_layout.update()
-            try:
-                self.parent.update()
-            except AttributeError:
-                pass
             
             # 如果已选满5个标签，禁用剩余的可用标签
-            if self.selected_layout.count() >= 5:
+            if selected_layout.count() >= 5:
                 for btn in self.tag_buttons.values():
-                    if btn.parent() == self.available_layout:
+                    # 检查按钮是否在available_layout中
+                    if self._is_button_in_layout(btn, available_layout):
                         btn.setEnabled(False)
-            
-            self.log("INFO", f"成功将标签 '{button.text()}' 移动到已选区域")
             
         except Exception as e:
             self.log("ERROR", f"移动标签时出错: {str(e)}", exc_info=True)
             # 尝试恢复按钮到原位置
             try:
-                if self.available_layout and button:
-                    self.available_layout.addWidget(button)
+                if available_layout and button:
+                    available_layout.addWidget(button)
                     self.log("DEBUG", "已尝试将按钮恢复到待选区域")
             except Exception as recover_e:
                 self.log("ERROR", f"恢复按钮位置失败: {str(recover_e)}")
@@ -853,40 +850,47 @@ class SmartArrangePage(QtWidgets.QWidget):
         current_separator = self.separator_mapping.get(self.parent.comboBox_separator.currentText(), "-")
         
         example_parts = []
-        # 严格按照布局中的顺序获取标签，确保与用户点击顺序一致
-        for i in range(self.selected_layout.count()):
-            try:
-                widget = self.selected_layout.itemAt(i).widget()
-                if isinstance(widget, QtWidgets.QPushButton):
-                    # 获取原始标签名（而不是显示的截断文本）
-                    original_text = widget.property('original_text') or widget.text()
-                    
-                    # 处理自定义标签的特殊情况
-                    if original_text == '自定义':
-                        custom_content = widget.property('custom_content')
-                        if custom_content is not None:
-                            # 使用完整的自定义内容作为示例，更好地展示实际效果
-                            example_parts.append(custom_content)
-                        else:
-                            example_parts.append("自定义内容")
-                    else:
-                        # 根据原始标签名获取对应的示例文本
-                        parts = {
-                            "原名": "IMG_1234",
-                            "年份": f"{now.year}",
-                            "月份": f"{now.month:02d}",
-                            "日": f"{now.day:02d}",
-                            "星期": f"{self._get_weekday(now)}",
-                            "时间": f"{now.strftime('%H%M%S')}",
-                            "品牌": "佳能",
-                            "型号": "EOS 5D Mark IV",
-                            "位置": "浙大"
-                        }
-                        # 使用get方法避免KeyError，并提供默认值
-                        example_parts.append(parts.get(original_text, original_text))
-            except Exception as e:
-                # 添加错误处理，确保即使出现异常也不会影响整个功能
-                self.log("WARNING", f"更新文件名预览时出错: {str(e)}")
+        
+        # 直接使用frameRename的布局，而不是self.selected_layout
+        if hasattr(self.parent, 'frameRename') and self.parent.frameRename:
+            selected_layout = self.parent.frameRename.layout()
+            if selected_layout:
+                # 严格按照布局中的顺序获取标签，确保与用户点击顺序一致
+                for i in range(selected_layout.count()):
+                    try:
+                        widget = selected_layout.itemAt(i).widget()
+                        if isinstance(widget, QtWidgets.QPushButton):
+                            # 获取原始标签名（而不是显示的截断文本）
+                            original_text = widget.property('original_text') or widget.text()
+                            
+                            # 处理自定义标签的特殊情况
+                            if original_text == '自定义':
+                                custom_content = widget.property('custom_content')
+                                if custom_content is not None:
+                                    # 使用完整的自定义内容作为示例，更好地展示实际效果
+                                    example_parts.append(custom_content)
+                                else:
+                                    example_parts.append("自定义内容")
+                            else:
+                                # 根据原始标签名获取对应的示例文本
+                                parts = {
+                                    "原名": "IMG_1234",
+                                    "年份": f"{now.year}",
+                                    "月份": f"{now.month:02d}",
+                                    "日": f"{now.day:02d}",
+                                    "星期": f"{self._get_weekday(now)}",
+                                    "时间": f"{now.strftime('%H%M%S')}",
+                                    "品牌": "佳能",
+                                    "型号": "EOS 5D Mark IV",
+                                    "位置": "浙大"
+                                }
+                                # 使用get方法避免KeyError，并提供默认值
+                                example_parts.append(parts.get(original_text, original_text))
+                    except Exception as e:
+                        # 添加错误处理，确保即使出现异常也不会影响整个功能
+                        self.log("WARNING", f"更新文件名预览时出错: {str(e)}")
+        else:
+            self.log("DEBUG", "frameRename组件或其布局不存在")
         
         # 过滤掉空部分，确保文件名预览不会出现多余的分隔符
         example_parts = [part for part in example_parts if part]
@@ -959,17 +963,22 @@ class SmartArrangePage(QtWidgets.QWidget):
         try:
             self.log("DEBUG", f"开始将标签移回: button={button}, button.text()={button.text() if button else None}")
             
-            # 确保布局存在，如果不存在尝试重新初始化
-            if not self.available_layout or not self.selected_layout:
-                self.log("WARNING", "布局组件不存在，尝试重新初始化")
-                self._initialize_layouts()
-                
-                # 如果重新初始化后仍然不存在，显示错误信息
-                if not self.available_layout or not self.selected_layout:
-                    self.log("ERROR", "布局组件不存在，无法移动标签")
-                    self.log("DEBUG", f"available_layout: {self.available_layout}, selected_layout: {self.selected_layout}")
-                    QMessageBox.warning(self, "错误", "标签移动区域初始化失败，请刷新页面重试")
-                    return
+            # 直接使用frameRenameTags和frameRename组件的布局
+            if not hasattr(self.parent, 'frameRenameTags') or not hasattr(self.parent, 'frameRename'):
+                self.log("ERROR", "frameRenameTags或frameRename组件不存在，无法移动标签")
+                QMessageBox.warning(self, "错误", "标签移动区域初始化失败，请刷新页面重试")
+                return
+            
+            # 获取两个框架的布局
+            available_layout = self.parent.frameRenameTags.layout()
+            selected_layout = self.parent.frameRename.layout()
+            
+            # 确保布局存在
+            if not available_layout or not selected_layout:
+                self.log("ERROR", "布局组件不存在，无法移动标签")
+                self.log("DEBUG", f"available_layout: {available_layout}, selected_layout: {selected_layout}")
+                QMessageBox.warning(self, "错误", "标签移动区域初始化失败，请刷新页面重试")
+                return
             
             # 确保按钮是有效的标签按钮
             if button not in self.tag_buttons.values():
@@ -977,8 +986,8 @@ class SmartArrangePage(QtWidgets.QWidget):
                 return
             
             # 检查按钮当前是否在已选区域
-            is_in_selected = self._is_button_in_layout(button, self.selected_layout)
-            is_in_available = self._is_button_in_layout(button, self.available_layout)
+            is_in_selected = self._is_button_in_layout(button, selected_layout)
+            is_in_available = self._is_button_in_layout(button, available_layout)
             
             self.log("DEBUG", f"按钮位置: selected={is_in_selected}, available={is_in_available}")
             
@@ -989,7 +998,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             
             # 从当前所在的任何布局中移除
             if is_in_selected:
-                self.selected_layout.removeWidget(button)
+                selected_layout.removeWidget(button)
             else:
                 # 尝试从父部件中移除
                 parent = button.parent()
@@ -997,7 +1006,7 @@ class SmartArrangePage(QtWidgets.QWidget):
                     parent.layout().removeWidget(button)
             
             # 添加回待选区域
-            self.available_layout.addWidget(button)
+            available_layout.addWidget(button)
             
             # 恢复原始样式
             if button.property('original_style') is not None:
@@ -1033,8 +1042,8 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.update_operation_display()
             
             # 强制刷新布局
-            self.selected_layout.update()
-            self.available_layout.update()
+            selected_layout.update()
+            available_layout.update()
             try:
                 self.parent.update()
             except AttributeError:
@@ -1058,185 +1067,75 @@ class SmartArrangePage(QtWidgets.QWidget):
         try:
             self.log("INFO", "开始初始化布局组件引用")
             
-            # 重置布局引用
-            self.available_layout = None
-            self.selected_layout = None
-            
-            # 方法1: 直接从parent获取布局引用（最优先）
+            # 直接从parent获取layoutTagsInput布局（可用标签区域）
             try:
-                layout = self.parent.layoutTagsInput
-                if isinstance(layout, QtWidgets.QHBoxLayout):
-                    self.available_layout = layout
-                    self.log("INFO", "直接从parent获取layoutTagsInput布局成功")
-                else:
-                    self.log("DEBUG", f"parent的layoutTagsInput不是QHBoxLayout类型: {type(layout)}")
-            except AttributeError:
-                pass
+                if hasattr(self.parent, 'layoutTagsInput'):
+                    layout = self.parent.layoutTagsInput
+                    if layout:
+                        self.log("INFO", "直接从parent获取layoutTagsInput布局成功")
+            except Exception as e:
+                self.log("DEBUG", f"获取layoutTagsInput时出错: {str(e)}")
             
+            # 直接从parent获取layoutRenameContent布局（已选标签区域）
             try:
-                layout = self.parent.layoutRenameContent
-                if isinstance(layout, QtWidgets.QHBoxLayout):
-                    self.selected_layout = layout
-                    self.log("INFO", "直接从parent获取layoutRenameContent布局成功")
-                else:
-                    self.log("DEBUG", f"parent的layoutRenameContent不是QHBoxLayout类型: {type(layout)}")
-            except AttributeError:
-                pass
+                if hasattr(self.parent, 'layoutRenameContent'):
+                    layout = self.parent.layoutRenameContent
+                    if layout:
+                        self.log("INFO", "直接从parent获取layoutRenameContent布局成功")
+            except Exception as e:
+                self.log("DEBUG", f"获取layoutRenameContent时出错: {str(e)}")
             
-            # 方法2: 如果直接获取失败，通过frame获取布局
-            if not self.available_layout:
-                try:
+            # 检查frameRenameTags组件的布局
+            try:
+                if hasattr(self.parent, 'frameRenameTags'):
                     frame = self.parent.frameRenameTags
                     if frame:
-                        # 优先使用frame的layout()方法
-                        layout = frame.layout()
-                        if layout and isinstance(layout, QtWidgets.QHBoxLayout):
-                            self.available_layout = layout
+                        # 尝试获取frame的布局
+                        if hasattr(frame, 'layout'):
+                            layout = frame.layout()
                             self.log("INFO", "通过frameRenameTags.layout()获取布局成功")
-                        else:
-                            try:
-                                frame_layout = frame.layoutTagsInput
-                                if isinstance(frame_layout, QtWidgets.QHBoxLayout):
-                                    self.available_layout = frame_layout
-                                    self.log("INFO", "通过frameRenameTags.layoutTagsInput获取布局成功")
-                            except AttributeError:
-                                pass
-                except AttributeError:
-                    pass
+            except Exception as e:
+                self.log("DEBUG", f"通过frameRenameTags获取布局时出错: {str(e)}")
             
-            if not self.selected_layout:
-                try:
+            # 检查frameRename组件的布局
+            try:
+                if hasattr(self.parent, 'frameRename'):
                     frame = self.parent.frameRename
                     if frame:
-                        # 优先使用frame的layout()方法
-                        layout = frame.layout()
-                        if layout and isinstance(layout, QtWidgets.QHBoxLayout):
-                            self.selected_layout = layout
+                        # 尝试获取frame的布局
+                        if hasattr(frame, 'layout'):
+                            layout = frame.layout()
                             self.log("INFO", "通过frameRename.layout()获取布局成功")
-                        else:
-                            try:
-                                frame_layout = frame.layoutRenameContent
-                                if isinstance(frame_layout, QtWidgets.QHBoxLayout):
-                                    self.selected_layout = frame_layout
-                                    self.log("INFO", "通过frameRename.layoutRenameContent获取布局成功")
-                            except AttributeError:
-                                pass
-                except AttributeError:
-                    pass
+            except Exception as e:
+                self.log("DEBUG", f"通过frameRename获取布局时出错: {str(e)}")
             
-            # 方法3: 递归查找所有子部件，确保能找到正确的布局
-            if not self.available_layout or not self.selected_layout:
-                try:
-                    # 定义一个递归函数来查找布局
-                    def find_layout(widget, target_name):
-                        # 检查widget的布局
-                        widget_layout = widget.layout()
-                        if widget_layout and isinstance(widget_layout, QtWidgets.QHBoxLayout):
-                            # 根据widget名称判断是否是目标布局
-                            try:
-                                if target_name == 'layoutTagsInput' and widget.objectName() == 'frameRenameTags':
-                                    return widget_layout
-                                elif target_name == 'layoutRenameContent' and widget.objectName() == 'frameRename':
-                                    return widget_layout
-                            except AttributeError:
-                                pass
-                        
-                        # 检查widget的属性
-                        try:
-                            layout = getattr(widget, target_name)
-                            if isinstance(layout, QtWidgets.QHBoxLayout):
-                                return layout
-                        except AttributeError:
-                            pass
-                        
-                        # 递归查找子部件
-                        for child in widget.findChildren(QtWidgets.QWidget):
-                            # 检查子部件的布局
-                            child_layout = child.layout()
-                            if child_layout and isinstance(child_layout, QtWidgets.QHBoxLayout):
-                                try:
-                                    if target_name == 'layoutTagsInput' and child.objectName() == 'frameRenameTags':
-                                        return child_layout
-                                    elif target_name == 'layoutRenameContent' and child.objectName() == 'frameRename':
-                                        return child_layout
-                                except AttributeError:
-                                    pass
-                            
-                            # 检查子部件的属性
-                            try:
-                                layout = getattr(child, target_name)
-                                if isinstance(layout, QtWidgets.QHBoxLayout):
-                                    return layout
-                            except AttributeError:
-                                pass
-                            
-                            # 继续递归
-                            result = find_layout(child, target_name)
-                            if result:
-                                return result
-                        return None
-                    
-                    if not self.available_layout:
-                        found_layout = find_layout(self.parent, 'layoutTagsInput')
-                        if found_layout:
-                            self.available_layout = found_layout
-                            self.log("INFO", "通过递归查找获取layoutTagsInput布局成功")
-                    
-                    if not self.selected_layout:
-                        found_layout = find_layout(self.parent, 'layoutRenameContent')
-                        if found_layout:
-                            self.selected_layout = found_layout
-                            self.log("INFO", "通过递归查找获取layoutRenameContent布局成功")
-                except Exception as e:
-                    self.log("DEBUG", f"递归查找布局失败: {str(e)}")
+            # 添加详细的调试信息，用于故障排查
+            self.log("INFO", "已成功获取布局组件引用")
             
-            # 最后手段：强制使用frame的布局，不进行类型检查
-            if not self.selected_layout:
-                try:
-                    frame = self.parent.frameRename
-                    if frame:
-                        direct_layout = frame.layout()
-                        if direct_layout:
-                            self.selected_layout = direct_layout
-                            self.log("INFO", "作为最后手段，直接使用frameRename的布局")
-                except AttributeError:
-                    pass
-            
-            # 最终类型验证和清理
-            if self.available_layout and not isinstance(self.available_layout, QtWidgets.QHBoxLayout):
-                self.log("ERROR", f"available_layout不是QHBoxLayout类型: {type(self.available_layout)}")
-                self.available_layout = None
-            
-            if self.selected_layout and not isinstance(self.selected_layout, QtWidgets.QHBoxLayout):
-                self.log("ERROR", f"selected_layout不是QHBoxLayout类型: {type(self.selected_layout)}")
-                self.selected_layout = None
-            
-            # 记录最终结果
-            if self.available_layout and self.selected_layout:
-                self.log("INFO", "已成功获取所有布局组件引用")
-                # 添加成功获取的布局详情
-                self.log("DEBUG", f"available_layout类型: {type(self.available_layout)}, 项目数量: {self.available_layout.count()}")
-                self.log("DEBUG", f"selected_layout类型: {type(self.selected_layout)}, 项目数量: {self.selected_layout.count()}")
-            else:
-                self.log("WARNING", f"无法获取所有布局组件: available={bool(self.available_layout)}, selected={bool(self.selected_layout)}")
-                # 添加更详细的调试信息
-                try:
+            # 检查frameRenameTags的详细信息
+            try:
+                if hasattr(self.parent, 'frameRenameTags'):
                     frame = self.parent.frameRenameTags
-                    frame_layout = frame.layout() if frame else None
-                    self.log("DEBUG", f"frameRenameTags: 存在={bool(frame)}, 类型={type(frame) if frame else None}, 布局={type(frame_layout) if frame_layout else None}")
-                except AttributeError:
-                    pass
-                try:
+                    frame_layout = frame.layout() if frame and hasattr(frame, 'layout') else None
+                    self.log("DEBUG", f"frameRenameTags: 存在={bool(frame)}, 布局={frame_layout is not None}")
+            except Exception as e:
+                self.log("DEBUG", f"检查frameRenameTags时出错: {str(e)}")
+            
+            # 检查frameRename的详细信息
+            try:
+                if hasattr(self.parent, 'frameRename'):
                     frame = self.parent.frameRename
-                    frame_layout = frame.layout() if frame else None
-                    self.log("DEBUG", f"frameRename: 存在={bool(frame)}, 类型={type(frame) if frame else None}, 布局={type(frame_layout) if frame_layout else None}")
-                except AttributeError:
-                    pass
+                    frame_layout = frame.layout() if frame and hasattr(frame, 'layout') else None
+                    self.log("DEBUG", f"frameRename: 存在={bool(frame)}, 布局={frame_layout is not None}")
+            except Exception as e:
+                self.log("DEBUG", f"检查frameRename时出错: {str(e)}")
+            
+            self.log("DEBUG", "_initialize_layouts完成")
         except Exception as e:
-            self.log("ERROR", f"初始化布局时发生异常: {str(e)}")
+            self.log("ERROR", f"初始化布局时发生异常: {str(e)}", exc_info=True)
             
         # 最后确保即使出错，也进行记录
-        self.log("DEBUG", f"_initialize_layouts完成，available_layout={bool(self.available_layout)}, selected_layout={bool(self.selected_layout)}")
+        self.log("DEBUG", "_initialize_layouts完成")
     
     def refresh(self):
         """刷新智能整理页面"""
@@ -1257,7 +1156,11 @@ class SmartArrangePage(QtWidgets.QWidget):
             self._initialize_layouts()
                 
             # 检查布局是否成功获取
-            if not self.available_layout or not self.selected_layout:
+            # 获取frameRenameTags的布局
+            available_layout = self.parent.frameRenameTags.layout() if hasattr(self.parent, 'frameRenameTags') and self.parent.frameRenameTags else None
+            # 获取frameRename的布局
+            selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+            if not available_layout or not selected_layout:
                 self.log("ERROR", "无法获取布局组件，刷新失败")
                 return
                 
@@ -1306,10 +1209,13 @@ class SmartArrangePage(QtWidgets.QWidget):
             # 清除所有已选标签并恢复到可用区域
             selected_buttons = []
             try:
-                for i in range(self.selected_layout.count()):
-                    widget = self.selected_layout.itemAt(i).widget()
-                    if isinstance(widget, QtWidgets.QPushButton):
-                        selected_buttons.append(widget)
+                # 获取frameRename的布局
+                selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+                if selected_layout:
+                    for i in range(selected_layout.count()):
+                        widget = selected_layout.itemAt(i).widget()
+                        if isinstance(widget, QtWidgets.QPushButton):
+                            selected_buttons.append(widget)
                 
                 for button in selected_buttons:
                     self.move_tag_back(button)
@@ -1324,12 +1230,20 @@ class SmartArrangePage(QtWidgets.QWidget):
         """处理标签按钮点击事件，根据按钮位置决定移动方向"""
         try:
             # 确保布局存在，如果不存在尝试重新初始化
-            if not self.available_layout or not self.selected_layout:
+            # 获取frameRenameTags的布局
+            available_layout = self.parent.frameRenameTags.layout() if hasattr(self.parent, 'frameRenameTags') and self.parent.frameRenameTags else None
+            # 获取frameRename的布局
+            selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+            if not available_layout or not selected_layout:
                 self.log("WARNING", "布局组件不存在，尝试重新初始化")
                 self._initialize_layouts()
                 
                 # 如果重新初始化后仍然不存在，显示错误信息
-                if not self.available_layout or not self.selected_layout:
+                # 获取frameRenameTags的布局
+                available_layout = self.parent.frameRenameTags.layout() if hasattr(self.parent, 'frameRenameTags') and self.parent.frameRenameTags else None
+                # 获取frameRename的布局
+                selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+                if not available_layout or not selected_layout:
                     self.log("ERROR", "布局组件不存在，无法移动标签")
                     QMessageBox.warning(self, "错误", "标签移动区域初始化失败，请刷新页面重试")
                     return
@@ -1340,8 +1254,13 @@ class SmartArrangePage(QtWidgets.QWidget):
                 return
             
             # 检查按钮当前位置
-            in_available = self._is_button_in_layout(button, self.available_layout)
-            in_selected = self._is_button_in_layout(button, self.selected_layout)
+            # 获取frameRenameTags的布局
+            available_layout = self.parent.frameRenameTags.layout() if hasattr(self.parent, 'frameRenameTags') and self.parent.frameRenameTags else None
+            # 获取frameRename的布局
+            selected_layout = self.parent.frameRename.layout() if hasattr(self.parent, 'frameRename') and self.parent.frameRename else None
+            
+            in_available = self._is_button_in_layout(button, available_layout)
+            in_selected = self._is_button_in_layout(button, selected_layout)
             
             self.log("DEBUG", f"按钮位置检查: available={in_available}, selected={in_selected}")
             

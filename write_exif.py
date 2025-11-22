@@ -2,6 +2,8 @@ import json
 import os
 import requests
 from datetime import datetime
+
+from PyQt6 import QtCore
 from PyQt6.QtCore import pyqtSlot, QDateTime
 from PyQt6.QtWidgets import QWidget, QMessageBox
 from write_exif_thread import WriteExifThread
