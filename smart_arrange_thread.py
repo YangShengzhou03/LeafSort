@@ -1,13 +1,10 @@
 import datetime
-import io
 import json
 import os
 import subprocess
 import logging
 from pathlib import Path
 import threading
-import time
-# ThreadPoolExecutor 和 as_completed 未使用，已移除导入
 
 import exifread
 import pillow_heif
@@ -17,7 +14,6 @@ from PyQt6 import QtCore
 from common import get_resource_path
 from config_manager import config_manager
 
-# 配置日志记录
 logger = logging.getLogger(__name__)
 
 IMAGE_EXTENSIONS = (
@@ -113,13 +109,10 @@ class SmartArrangeThread(QtCore.QThread):
         self.province_data = {}
 
     def calculate_total_files(self):
-        """计算总文件数"""
         try:
             self.total_files = 0
             for folder_info in self.folders:
                 folder_path = Path(folder_info['path'])
-                
-                # 路径验证
                 if not self._validate_folder_path(folder_path):
                     continue
                     
@@ -128,11 +121,7 @@ class SmartArrangeThread(QtCore.QThread):
                 else:
                     self._count_files_direct(folder_path)
                     
-            logger.info(f"总文件数: {self.total_files}")
-            self.log("DEBUG", f"总文件数: {self.total_files}")
-            
         except Exception as e:
-            logger.error(f"计算总文件数时出错: {str(e)}")
             self.log("ERROR", f"计算文件数量失败: {str(e)}")
             self.total_files = 0
 
@@ -142,7 +131,7 @@ class SmartArrangeThread(QtCore.QThread):
                 self.city_data = json.load(f)
             with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
                 self.province_data = json.load(f)
-        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
+        except Exception:
             self.city_data, self.province_data = {'features': []}, {'features': []}
 
     def run(self):
@@ -596,38 +585,15 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level, message):
-        """增强的日志系统，支持更详细的日志级别和分类"""
-        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')[:-3]
+        # 简化日志记录
+        log_message = f"[{level}] {message}"
+        self.log_signal.emit(level, log_message, "#000000")
         
-        # 根据日志级别添加颜色标记（用于UI显示）
-        color_map = {
-            "DEBUG": "#888888",
-            "INFO": "#000000",
-            "WARNING": "#FF8C00",
-            "ERROR": "#FF0000",
-            "SUCCESS": "#008000",
-            "PROGRESS": "#0000FF"
-        }
-        color = color_map.get(level, "#000000")
-        
-        # 增强的日志消息格式
-        log_message = f"[{current_time}] [{level}] {message}"
-        
-        # 发送信号时包含更多信息
-        self.log_signal.emit(level, log_message, color)
-        
-        # 同时记录到Python日志系统
+        # 仅记录关键错误
         if level == "ERROR":
             logger.error(message)
-        elif level == "WARNING":
-            logger.warning(message)
-        elif level == "DEBUG":
-            logger.debug(message)
-        else:
-            logger.info(message)
     
     def get_exif_data(self, file_path):
-        """获取文件的EXIF数据，增强了错误处理和兼容性"""
         exif_data = {}
         file_path_obj = Path(file_path)
         suffix = file_path_obj.suffix.lower()
@@ -636,31 +602,25 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             file_size = file_path_obj.stat().st_size
             if file_size > 500 * 1024 * 1024:  # 500MB限制
-                self.log("WARNING", f"跳过过大的文件: {file_path_obj.name} ({file_size / 1024 / 1024:.1f}MB)")
                 exif_data['DateTime'] = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
                 return exif_data
-        except Exception as e:
-            self.log("WARNING", f"获取文件大小失败: {file_path}, 错误: {str(e)}")
+        except Exception:
+            pass
         
-        # 安全地获取文件系统时间
+        # 获取文件系统时间
         try:
             create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
             modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
-        except Exception as e:
-            self.log("WARNING", f"获取文件系统时间失败: {file_path}, 错误: {str(e)}")
-            # 使用当前时间作为最后备选
+        except Exception:
             current_time = datetime.datetime.now()
             create_time = modify_time = current_time
         
         date_taken = None
         
         try:
-            # 扩展文件格式支持范围
             if suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
-                # 如果主要方法失败，尝试备选方法
                 if not date_taken:
-                    self.log("DEBUG", f"尝试备选方法提取图像EXIF数据: {file_path}")
                     date_taken = self._try_alternative_exif_extraction(file_path_obj, exif_data)
             elif suffix == '.heic':
                 date_taken = self._process_heic_exif(file_path_obj, exif_data)
@@ -673,29 +633,25 @@ class SmartArrangeThread(QtCore.QThread):
             elif suffix.lower() in ('.arw', '.cr2', '.cr3', '.nef', '.orf', '.sr2', '.raf', '.dng', '.rw2', 
                                   '.pef', '.nrw', '.kdc', '.mos', '.iiq', '.fff', '.x3f', '.3fr', '.mef', 
                                   '.mrw', '.erf', '.raw', '.rwz', '.ari'):
-                # 扩展RAW格式支持
+                # 处理RAW格式
                 try:
-                    # 先尝试exiftool提取RAW文件元数据，更可靠
-                    metadata = self._get_video_metadata(file_path, timeout=20)  # RAW文件可能需要更长时间
+                    metadata = self._get_video_metadata(file_path, timeout=20)
                     if metadata and 'DateTime' in metadata:
                         try:
-                            # 尝试将字符串转换为datetime对象
                             date_str = metadata['DateTime']
                             date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            # 复制其他元数据
                             for key, value in metadata.items():
                                 if key not in exif_data:
                                     exif_data[key] = value
                         except (ValueError, TypeError):
-                            self.log("DEBUG", f"解析exiftool返回的日期时间失败: {date_str}")
+                            pass
                     
-                    # 如果exiftool失败，尝试原生方法
                     if not date_taken:
                         date_taken = self._process_raw_exif(file_path_obj, exif_data)
-                except Exception as e:
-                    self.log("WARNING", f"处理RAW文件时出错: {file_path}, 错误: {str(e)}")
+                except Exception:
+                    pass
             elif suffix in VIDEO_EXTENSIONS:
-                # 为其他视频格式提供支持
+                # 处理其他视频格式
                 try:
                     metadata = self._get_video_metadata(file_path, timeout=15)
                     if metadata and 'DateTime' in metadata:
@@ -706,13 +662,13 @@ class SmartArrangeThread(QtCore.QThread):
                                 if key not in exif_data:
                                     exif_data[key] = value
                         except (ValueError, TypeError):
-                            self.log("DEBUG", f"解析视频日期时间失败: {date_str}")
-                except Exception as e:
-                    self.log("DEBUG", f"提取视频元数据失败: {file_path}, 错误: {str(e)}")
+                            pass
+                except Exception:
+                    pass
             elif suffix in AUDIO_EXTENSIONS:
-                # 为音频文件提供支持
+                # 处理音频文件
                 try:
-                    metadata = self._get_video_metadata(file_path, timeout=10)  # 音频文件通常处理更快
+                    metadata = self._get_video_metadata(file_path, timeout=10)
                     if metadata and 'DateTime' in metadata:
                         try:
                             date_str = metadata['DateTime']
@@ -721,19 +677,16 @@ class SmartArrangeThread(QtCore.QThread):
                                 if key not in exif_data:
                                     exif_data[key] = value
                         except (ValueError, TypeError):
-                            self.log("DEBUG", f"解析音频日期时间失败: {date_str}")
-                except Exception as e:
-                    self.log("DEBUG", f"提取音频元数据失败: {file_path}, 错误: {str(e)}")
-            else:
-                self.log("DEBUG", f"不支持的文件类型: {suffix}")
+                            pass
+                except Exception:
+                    pass
 
             # 确定最终的日期时间
             final_datetime = self._determine_best_datetime(date_taken, create_time, modify_time)
             exif_data['DateTime'] = final_datetime
                 
-        except Exception as e:
-            self.log("WARNING", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
-            # 确保即使出错也有日期时间信息
+        except Exception:
+            # 出错时使用修改时间
             exif_data['DateTime'] = modify_time.strftime('%Y-%m-%d %H:%M:%S')
         
         # 添加基本文件信息
@@ -746,25 +699,20 @@ class SmartArrangeThread(QtCore.QThread):
         return exif_data
         
     def _try_alternative_exif_extraction(self, file_path_obj, exif_data):
-        """尝试备选方法提取EXIF数据"""
         try:
-            # 尝试使用PIL作为备选方法
             from PIL import Image, ExifTags
             with Image.open(file_path_obj) as img:
                 try:
                     exif = img._getexif()
                     if exif:
-                        # 转换EXIF标签
                         exif_translated = {}
                         for tag, value in exif.items():
                             tag_name = ExifTags.TAGS.get(tag, tag)
                             exif_translated[tag_name] = value
                         
-                        # 提取日期时间
                         if 'DateTime' in exif_translated:
                             try:
                                 date_taken = datetime.datetime.strptime(exif_translated['DateTime'], '%Y:%m:%d %H:%M:%S')
-                                # 提取相机信息
                                 if 'Make' in exif_translated:
                                     exif_data['camera'] = exif_translated['Make']
                                 if 'Model' in exif_translated:
@@ -774,8 +722,8 @@ class SmartArrangeThread(QtCore.QThread):
                                 pass
                 except (ValueError, TypeError, KeyError):
                     pass
-        except (OSError, ValueError, TypeError) as e:
-            self.log("DEBUG", f"备选EXIF提取方法失败: {str(e)}")
+        except (OSError, ValueError, TypeError):
+            pass
         
         return None
 
@@ -786,23 +734,14 @@ class SmartArrangeThread(QtCore.QThread):
             date_taken = self.parse_exif_datetime(tags)
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
-        except Exception as e:
-            self.log("DEBUG", f"处理图片EXIF数据时出错 {file_path}: {str(e)}")
+        except Exception:
             return None
 
     def _process_raw_exif(self, file_path, exif_data):
-        """处理RAW格式文件（ARW、CR2、CR3、NEF等）的EXIF信息读取"""
-        
-        # 检查文件是否存在
-        if not os.path.exists(file_path):
-            self.log("DEBUG", f"文件不存在: {file_path}")
-            return None
-        
         # 文件大小检查
         try:
             file_size = os.path.getsize(file_path)
             if file_size > 200 * 1024 * 1024:  # 200MB限制
-                self.log("DEBUG", f"RAW文件过大，跳过: {file_path} ({file_size / 1024 / 1024:.1f}MB)")
                 return None
         except (OSError, FileNotFoundError):
             pass
@@ -811,7 +750,6 @@ class SmartArrangeThread(QtCore.QThread):
         exiftool_path = os.path.join(os.path.dirname(__file__), "resources", "exiftool", "exiftool.exe")
         
         if not os.path.exists(exiftool_path):
-            self.log("DEBUG", "exiftool工具不存在，无法读取RAW格式文件EXIF信息")
             return None
         
         try:
@@ -820,8 +758,6 @@ class SmartArrangeThread(QtCore.QThread):
             result = subprocess.run(cmd, capture_output=True, text=False, timeout=15, check=False)
             
             if result.returncode != 0:
-                error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
-                self.log("DEBUG", f"读取 {file_path} 的EXIF数据失败: {error_msg}")
                 return None
             
             exif_data_str = result.stdout.decode('utf-8', errors='ignore')
@@ -834,11 +770,7 @@ class SmartArrangeThread(QtCore.QThread):
             
             return date_taken
                 
-        except subprocess.TimeoutExpired:
-            self.log("DEBUG", f"读取 {file_path} 的EXIF数据超时")
-            return None
-        except Exception as e:
-            self.log("DEBUG", f"读取 {file_path} 的EXIF数据时出错: {str(e)}")
+        except (subprocess.TimeoutExpired, Exception):
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
@@ -917,15 +849,16 @@ class SmartArrangeThread(QtCore.QThread):
             date_taken = self.parse_exif_datetime(tags)
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
-        else:
-            self.log("DEBUG", "HEIC文件没有EXIF数据")
-            return None
+        return None
 
     def _process_png_exif(self, file_path):
-        with Image.open(file_path) as img:
-            creation_time = img.info.get('Creation Time')
-            if creation_time:
-                return self.parse_datetime(creation_time)
+        try:
+            with Image.open(file_path) as img:
+                creation_time = img.info.get('Creation Time')
+                if creation_time:
+                    return self.parse_datetime(creation_time)
+        except Exception:
+            pass
         return None
 
     def _process_mp4_exif(self, file_path, exif_data):

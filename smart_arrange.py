@@ -58,10 +58,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
         self.parent.fileOperation.currentIndexChanged.connect(self.handle_operation_change)
-
         self.parent.fileNameSeparator.currentIndexChanged.connect(self.update_example_label)
-
-        self.log("DEBUG", "欢迎使用图像分类整理，您可在上方构建文件路径与文件名结构。")
 
     def connect_signals(self):
         self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
@@ -136,14 +133,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             operation_type = self.parent.fileOperation.currentIndex()
             operation_text = "移动" if operation_type == 0 else "复制"
 
-            if not SmartArrange_structure and not file_name_structure:
-                self.log("WARNING", f"执行{operation_text}操作：将文件夹中的所有文件提取到顶层目录")
-            elif not SmartArrange_structure:
-                self.log("WARNING", f"执行{operation_text}操作：仅重命名文件，不进行分类")
-            elif not file_name_structure:
-                self.log("WARNING", f"执行{operation_text}操作：仅进行分类，不重命名文件")
-            else:
-                self.log("WARNING", f"执行{operation_text}操作：进行分类和重命名")
+            # 操作类型已在后续摘要中记录，简化此处逻辑
 
             file_name_parts = []
             # 使用布局管理器的count方法而不是QFrame的count方法
@@ -151,16 +141,8 @@ class SmartArrangePage(QtWidgets.QWidget):
                 button = self.selected_frame.layout().itemAt(i).widget()
                 if isinstance(button, QtWidgets.QPushButton):
                     tag_name = button.text()
-                    if button.property('original_text') == '自定义' and button.property('custom_content') is not None:
-                        file_name_parts.append({
-                            'tag': tag_name,
-                            'content': button.property('custom_content')
-                        })
-                    else:
-                        file_name_parts.append({
-                            'tag': tag_name,
-                            'content': None
-                        })
+                    content = button.property('custom_content') if button.property('original_text') == '自定义' and button.property('custom_content') is not None else None
+                    file_name_parts.append({'tag': tag_name, 'content': content})
 
             operation_summary = f"操作类型: {operation_text}"
             if SmartArrange_structure:
@@ -183,8 +165,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         self.parent.btnStartSmartArrange.setText("开始整理")
         self.SmartArrange_thread = None
         self.update_progress_bar(100)
-
-        QMessageBox.information(self, "操作完成", "文件整理操作已完成！\n\n您可以在目标位置查看整理后的文件。")
+        QMessageBox.information(self, "操作完成", "文件整理操作已完成！")
 
     def handle_combobox_selection(self, level, index):
         self.update_combobox_state(level)
@@ -287,18 +268,16 @@ class SmartArrangePage(QtWidgets.QWidget):
         }.get(text, text)
 
     def is_valid_windows_filename(self, filename):
+        # 简化的文件名验证
         invalid_chars = '<>:"/\\|?*'
-        if any(char in filename for char in invalid_chars):
-            return False
-        if filename in (
-        'CON', 'PRN', 'AUX', 'NUL', 'COM1', 'COM2', 'COM3', 'COM4', 'COM5', 'COM6', 'COM7', 'COM8', 'COM9', 'LPT1',
-        'LPT2', 'LPT3', 'LPT4', 'LPT5', 'LPT6', 'LPT7', 'LPT8', 'LPT9'):
-            return False
-        if filename.endswith('.') or filename.endswith(' '):
-            return False
-        if len(filename) > 255:
-            return False
-        return True
+        reserved_names = {'CON', 'PRN', 'AUX', 'NUL'}
+        reserved_names.update({f'COM{i}' for i in range(1, 10)})
+        reserved_names.update({f'LPT{i}' for i in range(1, 10)})
+        
+        return (not any(char in filename for char in invalid_chars) and
+                filename not in reserved_names and
+                not filename.endswith(('.', ' ')) and
+                len(filename) <= 255)
 
     def move_tag(self, button):
         if self.selected_frame.layout().count() >= 5:
@@ -323,16 +302,7 @@ class SmartArrangePage(QtWidgets.QWidget):
 
             if ok and custom_text:
                 if not self.is_valid_windows_filename(custom_text):
-                    QMessageBox.warning(
-                        self,
-                        "文件名无效",
-                        f"输入的文件名 '{custom_text}' 不符合Windows命名规范！\n\n"
-                        "不允许的字符"
-                        "不能使用保留文件名: CON, PRN, AUX, NUL, COM1-9, LPT1-9\n"
-                        "不能以点(.)或空格结尾\n"
-                        "长度不能超过255个字符\n\n"
-                        "请修改后重试。"
-                    )
+                    QMessageBox.warning(self, "文件名无效", f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
                     return
 
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
@@ -363,7 +333,6 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def update_example_label(self):
         now = datetime.now()
-        # 使用布局管理器的count方法而不是QFrame的count方法
         selected_buttons = [self.selected_frame.layout().itemAt(i).widget() for i in range(self.selected_frame.layout().count())
                             if isinstance(self.selected_frame.layout().itemAt(i).widget(), QtWidgets.QPushButton)]
         current_separator = self.separator_mapping.get(self.parent.fileNameSeparator.currentText(), "")
@@ -373,8 +342,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             button_text = button.text()
             if button.property('original_text') == '自定义' and button.property('custom_content') is not None:
                 custom_content = button.property('custom_content')
-                display_content = custom_content[:3] if len(custom_content) > 3 else custom_content
-                example_parts.append(display_content)
+                example_parts.append(custom_content[:3] if len(custom_content) > 3 else custom_content)
             else:
                 parts = {
                     "原名": "IMG_1234",
@@ -385,11 +353,9 @@ class SmartArrangePage(QtWidgets.QWidget):
                     "时间": f"{now.strftime('%H%M%S')}",
                     "品牌": "佳能",
                     "型号": "EOS 5D Mark IV",
-                    "位置": "浙大",
-                    "自定义": "自定义内容"
+                    "位置": "浙大"
                 }
-                full_text = parts.get(button_text, button_text)
-                example_parts.append(full_text)
+                example_parts.append(parts.get(button_text, button_text))
 
         example_text = current_separator.join(example_parts) if example_parts else "请点击标签以组成文件名"
         self.parent.previewName.setText(example_text)
@@ -400,29 +366,18 @@ class SmartArrangePage(QtWidgets.QWidget):
 
     def handle_log_signal(self, level, message):
         if hasattr(self.parent, 'textEdit_SmartArrange_Log'):
-            color_map = {
-                'ERROR': '#FF0000',
-                'WARNING': '#FFA500',
-                'DEBUG': '#008000',
-                'INFO': '#8677FD'
-            }
+            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
             color = color_map.get(level, '#000000')
-            self.parent.textEdit_SmartArrange_Log.append(
-                f'<span style="color:{color}">{message}</span>')
+            self.parent.textEdit_SmartArrange_Log.append(f'<span style="color:{color}">{message}</span>')
 
     def log(self, level, message):
-        current_time = datetime.now().strftime('%H:%M:%S')
-        log_message = f"[{current_time}] [{level}] {message}"
-        self.log_signal.emit(level, log_message)
+        # 移除时间戳以简化日志
+        self.log_signal.emit(level, f"[{level}] {message}")
 
     def move_tag_back(self, button):
-        # 使用布局管理器移除控件
         self.selected_frame.layout().removeWidget(button)
-        button.hide()  # 确保控件被隐藏
-
-        # 使用布局管理器添加控件
         self.available_frame.layout().addWidget(button)
-        button.show()  # 确保控件可见
+        button.show()
 
         if button.property('original_style') is not None:
             button.setStyleSheet(button.property('original_style'))
