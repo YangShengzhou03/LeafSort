@@ -4570,7 +4570,7 @@ QLineEdit:disabled {
                          <string/>
                         </property>
                         <property name="placeholderText">
-                         <string>图像标题</string>
+                         <string>请输入图像标题</string>
                         </property>
                        </widget>
                       </item>
@@ -5289,7 +5289,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>YangShengzhou</string>
+                         <string>请输入作者姓名</string>
                         </property>
                        </widget>
                       </item>
@@ -5348,7 +5348,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>图像主题</string>
+                         <string>请输入图像主题</string>
                         </property>
                        </widget>
                       </item>
@@ -5413,7 +5413,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>©2025 LeafView. </string>
+                         <string>©2024 LeafView</string>
                         </property>
                        </widget>
                       </item>
@@ -5431,7 +5431,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;</string>
                    </property>
-                   <layout class="QHBoxLayout" name="saveButtonsLayout" stretch="1,1">
+                   <layout class="QHBoxLayout" name="saveButtonsLayout" stretch="0,1">
                     <property name="spacing">
                      <number>18</number>
                     </property>
@@ -5705,7 +5705,7 @@ QDateTimeEdit:disabled {
 }</string>
                         </property>
                         <property name="text">
-                         <string>拍摄地点 </string>
+                         <string>拍摄地点</string>
                         </property>
                        </widget>
                       </item>
@@ -5748,7 +5748,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>纬度</string>
+                         <string>请输入纬度 (如: 39.9042)</string>
                         </property>
                        </widget>
                       </item>
@@ -5791,7 +5791,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>经度</string>
+                         <string>请输入经度 (如: 116.4074)</string>
                         </property>
                        </widget>
                       </item>
@@ -5914,8 +5914,8 @@ QToolButton:pressed {
 }</string>
                       </property>
                       <property name="text">
-                       <string>开始写入</string>
-                      </property>
+                         <string>开始写入EXIF信息</string>
+                        </property>
                       <property name="iconSize">
                        <size>
                         <width>24</width>
@@ -5968,8 +5968,8 @@ border: 1px solid rgba(134, 119, 253, 0.2);
 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);</string>
                       </property>
                       <property name="text">
-                       <string>准备就绪 - 请选择文件并配置参数开始处理</string>
-                      </property>
+                     <string>就绪 - 请选择图片文件并配置EXIF参数开始处理</string>
+                    </property>
                      </widget>
                     </item>
                    </layout>
