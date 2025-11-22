@@ -129,9 +129,9 @@ class SmartArrangePage(QtWidgets.QWidget):
                     if self.SmartArrange_thread.isRunning():
                         self.SmartArrange_thread.stop()
                         self.log("DEBUG", "Old thread stopped")
-            except Exception as e:
-                self.log("WARNING", f"Error handling old thread: {str(e)}")
-                self.SmartArrange_thread = None
+                except Exception as e:
+                    self.log("WARNING", f"Error handling old thread: {str(e)}")
+                    self.SmartArrange_thread = None
 
             self.log("DEBUG", "Showing confirmation dialog")
             
