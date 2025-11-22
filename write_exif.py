@@ -476,7 +476,7 @@ class WriteExifPage(QWidget):
             'author': author,
             'subject': subject,
             'rating': str(self.selected_star),
-            'copyright': copyright_text,
+            'copyright_text': copyright_text,
             'position': None,
             'shoot_time': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
