@@ -76,7 +76,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             dialog = SettingsDialog(self)
             dialog.exec()
         except Exception as e:
-            QtWidgets.QMessageBox.warning(self, "错误", f"打开设置对话框时出错: {str(e)}")
+            QtWidgets.QMessageBox.warning(self, "错误", f"打开设置对话框时出错: {e}")
     
     def _toggle_maximize(self):
         """切换窗口最大化/正常状态"""
@@ -160,7 +160,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 target_widget.setText(folder_path)
                 self.log("INFO", f"已选择{dialog_title.replace('选择', '')}: {folder_path}")
         except Exception as e:
-            self.log("ERROR", f"打开{dialog_title}对话框失败: {str(e)}")
+            self.log("ERROR", f"打开{dialog_title}对话框失败: {e}")
     
     def log(self, level, message):
         """记录日志消息到当前页面的日志组件"""
@@ -177,28 +177,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         }
         
         try:
-            # 添加调试信息
             current_index = self.stackedWidget.currentIndex()
             component_name = log_components.get(current_index)
             
-            # 调试输出
-            print(f"[调试] 当前页面索引: {current_index}, 目标日志组件: {component_name}")
-            
-            if component_name:
-                # 检查组件是否存在
-                if hasattr(self, component_name):
-                    log_widget = getattr(self, component_name)
-                    if log_widget and hasattr(log_widget, 'append'):
-                        print(f"[调试] 成功访问日志组件: {component_name}")
-                        log_widget.append(log_message)
-                    else:
-                        print(f"[调试] 组件存在但缺少append方法: {component_name}")
-                else:
-                    print(f"[调试] 组件不存在: {component_name}")
-                    # 尝试在所有可能的日志组件中查找
-                    for name, widget_name in log_components.items():
-                        if hasattr(self, widget_name):
-                            print(f"[调试] 发现可用的日志组件: {widget_name}")
-        except Exception as e:
-            print(f"[调试] 日志处理异常: {str(e)}")
+            if component_name and hasattr(self, component_name):
+                log_widget = getattr(self, component_name)
+                if log_widget and hasattr(log_widget, 'append'):
+                    log_widget.append(log_message)
+        except Exception:
             pass  # 静默失败，避免日志功能影响主程序运行

@@ -3779,12 +3779,12 @@ QComboBox:focus {
                             </property>
                             <item>
                              <property name="text">
-                              <string>移动文件</string>
+                              <string>复制文件</string>
                              </property>
                             </item>
                             <item>
                              <property name="text">
-                              <string>复制文件</string>
+                              <string>移动文件</string>
                              </property>
                             </item>
                            </widget>
@@ -3892,7 +3892,7 @@ QComboBox:focus {
                               <string notr="true">QLabel {
 	qproperty-alignment: 'AlignLeft | AlignVCenter';
 	background:rgba(0, 0, 0, 0);
-    color: #333333;
+    color: rgb(255, 0, 0);
     border: none;
 }</string>
                              </property>
@@ -5914,8 +5914,8 @@ QToolButton:pressed {
 }</string>
                       </property>
                       <property name="text">
-                         <string>开始写入EXIF信息</string>
-                        </property>
+                       <string>开始写入EXIF信息</string>
+                      </property>
                       <property name="iconSize">
                        <size>
                         <width>24</width>
@@ -5968,8 +5968,8 @@ border: 1px solid rgba(134, 119, 253, 0.2);
 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);</string>
                       </property>
                       <property name="text">
-                     <string>就绪 - 请选择图片文件并配置EXIF参数开始处理</string>
-                    </property>
+                       <string>就绪 - 请选择图片文件并配置EXIF参数开始处理</string>
+                      </property>
                      </widget>
                     </item>
                    </layout>

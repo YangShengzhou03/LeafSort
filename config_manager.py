@@ -47,7 +47,6 @@ class ConfigManager:
         return default_config
     
     def _update_config_with_defaults(self, config: Dict[str, Any], default_config: Dict[str, Any]):
-        """递归更新配置，确保所有必需的键存在"""
         for key, default_value in default_config.items():
             if key not in config:
                 config[key] = default_value

@@ -2519,7 +2519,7 @@ class Ui_MainWindow(object):
         self.copyRoute.setStyleSheet("QLabel {\n"
 "    qproperty-alignment: \'AlignLeft | AlignVCenter\';\n"
 "    background:rgba(0, 0, 0, 0);\n"
-"    color: #333333;\n"
+"    color: rgb(255, 0, 0);\n"
 "    border: none;\n"
 "}")
         self.copyRoute.setText("")
@@ -4133,8 +4133,8 @@ class Ui_MainWindow(object):
         self.timeSource1.setItemText(2, _translate("MainWindow", "创建时间"))
         self.timeSource1.setItemText(3, _translate("MainWindow", "修改时间"))
         self.operation.setText(_translate("MainWindow", "整理方式"))
-        self.fileOperation.setItemText(0, _translate("MainWindow", "移动文件"))
-        self.fileOperation.setItemText(1, _translate("MainWindow", "复制文件"))
+        self.fileOperation.setItemText(0, _translate("MainWindow", "复制文件"))
+        self.fileOperation.setItemText(1, _translate("MainWindow", "移动文件"))
         self.previewRoute.setText(_translate("MainWindow", "不分类"))
         self.separatorLabel2.setText(_translate("MainWindow", "/"))
         self.previewName.setText(_translate("MainWindow", "文件名不变"))

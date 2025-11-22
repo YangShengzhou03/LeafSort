@@ -10,7 +10,6 @@ SHARED_MEMORY_KEY = "LeafView_SharedMemory"
 BRING_TO_FRONT_COMMAND = b'bringToFront'
 
 def bring_existing_to_front():
-    """尝试与现有实例通信并将其置于前台"""
     try:
         with closing(QLocalSocket()) as socket:
             if socket.connectToServer(APP_SERVER_NAME) and socket.waitForConnected(500):
@@ -21,8 +20,7 @@ def bring_existing_to_front():
     return False
 
 def setup_local_server():
-    """设置本地服务器以支持单实例功能"""
-    QLocalServer.removeServer(APP_SERVER_NAME)  # 确保没有旧实例
+    QLocalServer.removeServer(APP_SERVER_NAME)
     try:
         server = QLocalServer()
         return server if server.listen(APP_SERVER_NAME) else None
@@ -30,7 +28,6 @@ def setup_local_server():
         return None
 
 def handle_application_exception(exc_type, exc_value, exc_traceback):
-    """自定义异常处理器，显示友好的错误信息"""
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
@@ -42,7 +39,7 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
         return
         
     try:
-        user_error_msg = f"{exc_type.__name__}: {str(exc_value)}"
+        user_error_msg = f"{exc_type.__name__}: {exc_value}"
         msg = QtWidgets.QMessageBox()
         msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
         msg.setWindowTitle("应用程序错误")
@@ -51,10 +48,9 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
         msg.setDetailedText(error_message)
         msg.exec()
     except Exception:
-        pass  # 忽略消息框显示错误
+        pass
 
 def handle_socket_data(socket, window_ref):
-    """处理来自套接字的数据"""
     try:
         if socket.bytesAvailable() > 0 and socket.readAll().data() == BRING_TO_FRONT_COMMAND:
             window = window_ref()
@@ -66,34 +62,28 @@ def handle_socket_data(socket, window_ref):
         socket.deleteLater()
 
 def main():
-    """应用程序主函数"""
     sys.excepthook = handle_application_exception
     local_server = None
     shared_memory = None
     
     try:
-        # 初始化应用程序
         app = QtWidgets.QApplication(sys.argv)
         app.setApplicationName("LeafView")
         app.setApplicationVersion("1.3")
         
-        # 单实例检查
         shared_memory = QtCore.QSharedMemory(SHARED_MEMORY_KEY)
         if shared_memory.attach():
             return 0 if bring_existing_to_front() else 1
         
-        # 创建共享内存
         if not shared_memory.create(1):
             QtWidgets.QMessageBox.critical(None, "启动错误", "初始化应用程序失败。可能已有实例在运行。")
             return 1
         
-        # 设置本地服务器和主窗口
         local_server = setup_local_server()
         window = MainWindow()
         window.move(300, 100)
         window.show()
         
-        # 连接服务器信号（直接连接，避免多余的闭包）
         if local_server:
             def handle_connection():
                 socket = local_server.nextPendingConnection()
@@ -104,7 +94,7 @@ def main():
         return app.exec()
     
     except Exception as e:
-        error_msg = f"应用程序启动失败: {str(e)}"
+        error_msg = f"应用程序启动失败: {e}"
         try:
             QtWidgets.QMessageBox.critical(None, "致命错误", error_msg)
         except Exception:
@@ -112,14 +102,13 @@ def main():
         return 1
     
     finally:
-        # 资源清理
         try:
             if local_server:
                 local_server.close()
             if shared_memory and shared_memory.isAttached():
                 shared_memory.detach()
         except Exception:
-            pass  # 忽略清理过程中的错误
+            pass
 
 
 if __name__ == '__main__':
