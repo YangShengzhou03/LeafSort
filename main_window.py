@@ -44,8 +44,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 连接信号槽
         self._connect_signals()
         
-        # 初始化UI
-        self.init_ui()
 
     def _init_window(self):
         self.setWindowTitle("枫叶相册")
@@ -53,20 +51,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
         
-    def init_ui(self):
-        # 初始化各功能页面
-        for page_name, page in self.pages.items():
-            try:
-                page.init_page()
-            except Exception as e:
-                print(f"初始化{page_name}页面失败: {str(e)}")
-        
-        # 设置导航菜单的初始状态
-        self.listNavigationMenu.setCurrentRow(0)
-        
     def _connect_signals(self):
         """连接信号槽"""
-        # 设置按钮点击事件
+        # 设置按钮连接
         try:
             # 设置按钮连接
             self.btnSettings.clicked.connect(self._show_settings)
@@ -188,34 +175,3 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self._drag_position = QPoint()
         except AttributeError:
             pass
-            
-    def log(self, level, message):
-        """日志记录功能"""
-        # 实现日志记录功能，将日志显示在UI上
-        timestamp = QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
-        log_message = f"[{timestamp}] [{level}] {message}\n"
-        
-        # 根据当前活动页面显示在对应的日志组件中
-        try:
-            current_index = self.stackedWidget.currentIndex()
-            
-            # 定义页面索引到可能的日志组件名称的映射
-            log_components = {
-                0: ['textBrowser_import_info'],
-                1: ['smartArrangeLogOutputTextEdit'],
-                2: ['textBrowser_duplication_log', 'textBrowser_duplication', 'textBrowser_log_duplication'],
-                3: ['textBrowser_EXIF_log', 'textBrowser_exif', 'textBrowser_log_exif']
-            }
-            
-            # 尝试使用映射中的组件
-            if current_index in log_components:
-                for component_name in log_components[current_index]:
-                    try:
-                        getattr(self, component_name).append(log_message)
-                        break
-                    except (AttributeError, TypeError):
-                        pass
-        except Exception as e:
-            print(f"写入日志到UI失败: {str(e)}")
-            
-        print(log_message)
