@@ -78,9 +78,8 @@ def handle_socket_data(socket, window_ref):
 def main():
     """应用程序主函数"""
     sys.excepthook = handle_application_exception
-    app = None
-    shared_memory = None
     local_server = None
+    shared_memory = None
     
     try:
         # 初始化应用程序
@@ -92,9 +91,7 @@ def main():
         shared_memory = QtCore.QSharedMemory(SHARED_MEMORY_KEY)
         if shared_memory.attach():
             # 尝试激活现有实例
-            if bring_existing_to_front():
-                return 0
-            return 1
+            return 0 if bring_existing_to_front() else 1
         
         # 创建共享内存
         if not shared_memory.create(1):
@@ -124,17 +121,14 @@ def main():
         return 1
     
     finally:
-        # 资源清理
-        if local_server:
-            try:
+        # 简化资源清理
+        try:
+            if local_server:
                 local_server.close()
-            except Exception:
-                pass
-        if shared_memory and shared_memory.isAttached():
-            try:
+            if shared_memory and shared_memory.isAttached():
                 shared_memory.detach()
-            except Exception:
-                pass
+        except Exception:
+            pass  # 忽略清理过程中的错误
 
 
 if __name__ == '__main__':

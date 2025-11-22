@@ -16,6 +16,7 @@ class ConfigManager:
     
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
+        """初始化配置管理器"""
         self.config_file = Path(get_resource_path(config_file))
         self.cache_file = Path(get_resource_path(cache_file))
         self._lock = threading.RLock()
@@ -24,6 +25,7 @@ class ConfigManager:
         self._validate_and_migrate_config()
     
     def _load_config(self) -> Dict[str, Any]:
+        """加载配置文件"""
         default_config = {
             "version": self.CONFIG_VERSION,
             "folders": [],
@@ -47,7 +49,7 @@ class ConfigManager:
                         if key not in config:
                             config[key] = default_config[key]
                         elif key == "api_limits":
-                            # 确保api_limits结构完整
+
                             for api_name, api_defaults in default_config["api_limits"].items():
                                 if api_name not in config["api_limits"]:
                                     config["api_limits"][api_name] = api_defaults
@@ -62,6 +64,7 @@ class ConfigManager:
         return default_config
     
     def _validate_and_migrate_config(self):
+        """验证配置并进行必要的迁移"""
         with self._lock:
             self.config["version"] = self.CONFIG_VERSION
             
@@ -81,6 +84,7 @@ class ConfigManager:
                 self.save_config()
     
     def _load_location_cache(self) -> Dict[str, Any]:
+        """加载位置缓存文件"""
         default_cache = {}
         
         try:
@@ -93,6 +97,7 @@ class ConfigManager:
         return default_cache
     
     def save_config(self) -> bool:
+        """保存配置到文件"""
         with self._lock:
             try:
                 self.config["last_modified"] = datetime.now().isoformat()

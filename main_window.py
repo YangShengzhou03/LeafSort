@@ -156,31 +156,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_position = QPoint()
     
-    def _on_browse_source(self):
-        """处理源文件夹浏览按钮点击"""
+    def _browse_directory(self, dialog_title, target_widget):
+        """通用目录浏览函数"""
         try:
             folder_path = QtWidgets.QFileDialog.getExistingDirectory(
-                self, "选择源文件夹", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
+                self, dialog_title, "", QtWidgets.QFileDialog.Option.ShowDirsOnly
             )
             
             if folder_path:
-                self.inputSourceFolder.setText(folder_path)
-                self.log("INFO", f"已选择源文件夹: {folder_path}")
+                target_widget.setText(folder_path)
+                self.log("INFO", f"已选择{dialog_title.replace('选择', '')}: {folder_path}")
         except Exception as e:
-            self.log("ERROR", f"打开源文件夹选择对话框失败: {str(e)}")
+            self.log("ERROR", f"打开{dialog_title}对话框失败: {str(e)}")
+    
+    def _on_browse_source(self):
+        """处理源文件夹浏览按钮点击"""
+        self._browse_directory("选择源文件夹", self.inputSourceFolder)
     
     def _on_browse_target(self):
         """处理目标文件夹浏览按钮点击"""
-        try:
-            folder_path = QtWidgets.QFileDialog.getExistingDirectory(
-                self, "选择目标文件夹", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
-            )
-            
-            if folder_path:
-                self.inputTargetFolder.setText(folder_path)
-                self.log("INFO", f"已选择目标文件夹: {folder_path}")
-        except Exception as e:
-            self.log("ERROR", f"打开目标文件夹选择对话框失败: {str(e)}")
+        self._browse_directory("选择目标文件夹", self.inputTargetFolder)
     
     def log(self, level, message):
         """记录日志消息到当前页面的日志组件"""
@@ -189,25 +184,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         log_message = f"[{timestamp}] [{level}] {message}\n"
         
         try:
-            # 定义各页面对应的日志组件
-            log_components = {
-                0: ['textBrowser_import_info'],
-                1: ['smartArrangeLogOutputTextEdit'],
-                2: ['textBrowser_duplication_log', 'textBrowser_duplication', 'textBrowser_log_duplication'],
-                3: ['textBrowser_EXIF_log', 'textBrowser_exif', 'textBrowser_log_exif']
+            # 定义各页面对应的主要日志组件（简化版本）
+            primary_log_components = {
+                0: 'textBrowser_import_info',
+                1: 'smartArrangeLogOutputTextEdit',
+                2: 'textBrowser_duplication_log',
+                3: 'textBrowser_EXIF_log'
             }
             
             # 获取当前页面索引并尝试输出日志
             current_index = self.stackedWidget.currentIndex()
-            if current_index in log_components:
-                for component_name in log_components[current_index]:
-                    try:
-                        log_widget = getattr(self, component_name, None)
-                        if log_widget and hasattr(log_widget, 'append'):
-                            log_widget.append(log_message)
-                            break
-                    except (AttributeError, TypeError):
-                        continue
+            component_name = primary_log_components.get(current_index)
+            
+            if component_name:
+                log_widget = getattr(self, component_name, None)
+                if log_widget and hasattr(log_widget, 'append'):
+                    log_widget.append(log_message)
         except Exception:
             # 静默失败，避免日志功能影响主程序运行
             pass

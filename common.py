@@ -9,6 +9,7 @@ from playwright.sync_api import sync_playwright
 
 
 def get_resource_path(relative_path):
+    """获取资源文件的绝对路径"""
     try:
         base_path = Path(sys._MEIPASS)
     except Exception:
@@ -18,69 +19,58 @@ def get_resource_path(relative_path):
 
 
 def detect_media_type(file_path):
+    """检测文件的媒体类型并返回详细信息"""
     if not os.path.isfile(file_path):
         raise FileNotFoundError(f"这个文件不存在: {file_path}")
 
-    mime_to_ext = {
-        'image/jpeg': ('jpg', 'image'),
-        'image/png': ('png', 'image'),
-        'image/gif': ('gif', 'image'),
-        'image/tiff': ('tiff', 'image'),
-        'image/webp': ('webp', 'image'),
-        'image/heic': ('heic', 'image'),
-        'image/avif': ('avif', 'image'),
-        'image/heif': ('heif', 'image'),
-        
-        'image/x-canon-cr2': ('cr2', 'image'),
-        'image/x-canon-cr3': ('cr3', 'image'),
-        'image/x-nikon-nef': ('nef', 'image'),
-        'image/x-sony-arw': ('arw', 'image'),
-        'image/x-olympus-orf': ('orf', 'image'),
-        'image/x-panasonic-raw': ('raw', 'image'),
-        'image/x-fuji-raf': ('raf', 'image'),
-        'image/x-adobe-dng': ('dng', 'image'),
-        'image/x-samsung-srw': ('srw', 'image'),
-        'image/x-pentax-pef': ('pef', 'image'),
-        'image/x-kodak-dcr': ('dcr', 'image'),
-        'image/x-kodak-k25': ('k25', 'image'),
-        'image/x-kodak-kdc': ('kdc', 'image'),
-        'image/x-minolta-mrw': ('mrw', 'image'),
-        'image/x-sigma-x3f': ('x3f', 'image'),
-        
-        'video/mp4': ('mp4', 'video'),
-        'video/x-msvideo': ('avi', 'video'),
-        'video/x-matroska': ('mkv', 'video'),
-        'video/quicktime': ('mov', 'video'),
-        'video/x-ms-wmv': ('wmv', 'video'),
-        'video/mpeg': ('mpeg', 'video'),
-        'video/webm': ('webm', 'video'),
-        'video/x-flv': ('flv', 'video'),
-        'video/3gpp': ('3gp', 'video'),
-        'video/3gpp2': ('3g2', 'video'),
-        'video/x-m4v': ('m4v', 'video'),
-        'video/x-ms-asf': ('asf', 'video'),
-        'video/x-mng': ('mng', 'video'),
-        'video/x-sgi-movie': ('movie', 'video'),
-        'application/vnd.apple.mpegurl': ('m3u8', 'video'),
-        'application/x-mpegurl': ('m3u8', 'video'),
-        'video/mp2t': ('ts', 'video'),
-        'video/MP2T': ('ts', 'video'),
-        
-        'audio/mpeg': ('mp3', 'audio'),
-        'audio/wav': ('wav', 'audio'),
-        'audio/x-wav': ('wav', 'audio'),
-        'audio/flac': ('flac', 'audio'),
-        'audio/aac': ('aac', 'audio'),
-        'audio/x-m4a': ('m4a', 'audio'),
-        'audio/ogg': ('ogg', 'audio'),
-        'audio/webm': ('webm', 'audio'),
-        'audio/amr': ('amr', 'audio'),
-        'audio/x-ms-wma': ('wma', 'audio'),
-        'audio/x-aiff': ('aiff', 'audio'),
-        'audio/x-midi': ('midi', 'audio'),
-        
-        'application/octet-stream': ('bin', 'other'),
+    # 优化媒体类型映射定义，按类别分组
+    mime_to_ext = {}
+    
+    # 常见图片格式
+    image_formats = {
+        'jpeg': 'jpg', 'png': 'png', 'gif': 'gif', 'tiff': 'tiff',
+        'webp': 'webp', 'heic': 'heic', 'avif': 'avif', 'heif': 'heif'
     }
+    for format_name, ext in image_formats.items():
+        mime_to_ext[f'image/{format_name}'] = (ext, 'image')
+    
+    # RAW图片格式
+    raw_formats = {
+        'x-canon-cr2': 'cr2', 'x-canon-cr3': 'cr3', 'x-nikon-nef': 'nef',
+        'x-sony-arw': 'arw', 'x-olympus-orf': 'orf', 'x-panasonic-raw': 'raw',
+        'x-fuji-raf': 'raf', 'x-adobe-dng': 'dng', 'x-samsung-srw': 'srw',
+        'x-pentax-pef': 'pef', 'x-kodak-dcr': 'dcr', 'x-kodak-k25': 'k25',
+        'x-kodak-kdc': 'kdc', 'x-minolta-mrw': 'mrw', 'x-sigma-x3f': 'x3f'
+    }
+    for format_name, ext in raw_formats.items():
+        mime_to_ext[f'image/{format_name}'] = (ext, 'image')
+    
+    # 视频格式
+    video_formats = {
+        'mp4': 'mp4', 'x-msvideo': 'avi', 'x-matroska': 'mkv',
+        'quicktime': 'mov', 'x-ms-wmv': 'wmv', 'mpeg': 'mpeg',
+        'webm': 'webm', 'x-flv': 'flv', '3gpp': '3gp', '3gpp2': '3g2',
+        'x-m4v': 'm4v', 'x-ms-asf': 'asf', 'x-mng': 'mng',
+        'x-sgi-movie': 'movie', 'mp2t': 'ts', 'MP2T': 'ts'
+    }
+    for format_name, ext in video_formats.items():
+        mime_to_ext[f'video/{format_name}'] = (ext, 'video')
+    
+    # 特殊视频格式
+    mime_to_ext['application/vnd.apple.mpegurl'] = ('m3u8', 'video')
+    mime_to_ext['application/x-mpegurl'] = ('m3u8', 'video')
+    
+    # 音频格式
+    audio_formats = {
+        'mpeg': 'mp3', 'wav': 'wav', 'x-wav': 'wav', 'flac': 'flac',
+        'aac': 'aac', 'x-m4a': 'm4a', 'ogg': 'ogg', 'webm': 'webm',
+        'amr': 'amr', 'x-ms-wma': 'wma', 'x-aiff': 'aiff', 'x-midi': 'midi'
+    }
+    for format_name, ext in audio_formats.items():
+        mime_to_ext[f'audio/{format_name}'] = (ext, 'audio')
+    
+    # 其他格式
+    mime_to_ext['application/octet-stream'] = ('bin', 'other')
 
     file_ext = os.path.splitext(file_path)[1].lower().lstrip('.')
     
@@ -119,6 +109,7 @@ def detect_media_type(file_path):
 
 
 def get_address_from_coordinates(lat, lon):
+    """根据经纬度获取地址信息"""
     headers = {'accept': '*/*', 'accept-language': 'zh-CN,zh;q=0.9',
                'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
                'user-agent': 'Mozilla/5.0'}
@@ -165,10 +156,6 @@ def get_address_from_coordinates(lat, lon):
 
     cookies, key = get_cookies_key()
     addr = get_address(cookies, key)
-    if not addr:
-        cookies, key = get_cookies_key()
-        addr = get_address(cookies, key)
-
     return addr or "获取失败"
 
 
