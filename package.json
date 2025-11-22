@@ -1,0 +1,62 @@
+{
+  "name": "leafview",
+  "version": "1.0.0",
+  "description": "基于 Electron + Vue3 + Element Plus 的现代数字资产管理工具，对标 Eagle 软件",
+  "main": "dist-electron/main.js",
+  "scripts": {
+    "dev": "vite",
+    "build": "vue-tsc --noEmit && vite build && electron-builder",
+    "build:electron": "vue-tsc --noEmit && vite build && electron-builder",
+    "preview": "vite preview",
+    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
+    "electron:build": "npm run build && electron-builder",
+    "pack": "electron-builder --dir"
+  },
+  "dependencies": {
+    "vue": "^3.3.4",
+    "vue-router": "^4.2.4",
+    "pinia": "^2.1.6",
+    "element-plus": "^2.3.8",
+    "@element-plus/icons-vue": "^2.1.0",
+    "axios": "^1.4.0",
+    "file-type": "^18.0.0",
+    "exifreader": "^4.0.0",
+    "image-size": "^1.0.2",
+    "chokidar": "^3.5.3",
+    "fs-extra": "^11.1.1",
+    "path": "^0.12.7",
+    "crypto-js": "^4.1.1"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.2.3",
+    "@vue/tsconfig": "^0.4.0",
+    "typescript": "^5.0.2",
+    "vite": "^4.3.9",
+    "vue-tsc": "^1.4.2",
+    "electron": "^23.0.0",
+    "electron-builder": "^24.6.3",
+    "concurrently": "^8.0.1",
+    "wait-on": "^7.0.1"
+  },
+  "build": {
+    "appId": "com.leafview.app",
+    "productName": "LeafView",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "dist-electron/**/*"
+    ],
+    "mac": {
+      "category": "public.app-category.graphics-design"
+    },
+    "win": {
+      "target": "nsis"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}
