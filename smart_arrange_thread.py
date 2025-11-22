@@ -7,7 +7,7 @@ from pathlib import Path
 import threading
 import time
 import io
-
+from common import get_address_from_coordinates
 import exifread
 import pillow_heif
 from PIL import Image
@@ -1648,7 +1648,7 @@ class SmartArrangeThread(QtCore.QThread):
                 return cached_address
             
             # 尝试获取地址信息
-            address = self._get_address_from_coordinates(lat, lon)
+            address = get_address_from_coordinates(lat, lon)
             if address and address != "未知位置":
                 config_manager.cache_location(lat, lon, address)
                 return address
@@ -1888,21 +1888,3 @@ class SmartArrangeThread(QtCore.QThread):
                 model = model.strip().strip('"\'')
             return model
         return "未知设备"
-        
-    def _get_geographic_location(self, exif_data, location_type):
-        """根据GPS信息获取地理位置"""
-        if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
-            province, city = self.get_city_and_province(
-                exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
-            )
-            return province if location_type == 'province' else city
-        return "未知省份" if location_type == 'province' else "未知城市"
-    
-    def _get_address_from_coordinates(self, _lat, _lon):
-        """根据坐标获取地址信息"""
-        try:
-            # 避免import-outside-toplevel警告，这里不导入requests
-            # 如果需要实际实现地址解析，可以使用现有的地理编码功能
-            return "未知位置"
-        except (ValueError, TypeError, KeyError):
-            return "未知位置"
