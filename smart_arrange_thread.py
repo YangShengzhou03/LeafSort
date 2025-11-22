@@ -6,8 +6,8 @@ import subprocess
 import logging
 from pathlib import Path
 import threading
+import time
 # ThreadPoolExecutor 和 as_completed 未使用，已移除导入
-# time 未使用，已移除导入
 
 import exifread
 import pillow_heif
@@ -818,7 +818,7 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             # 使用exiftool读取EXIF信息
             cmd = [exiftool_path, file_path]
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=15)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=15, check=False)
             
             if result.returncode != 0:
                 error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
@@ -1764,6 +1764,17 @@ class SmartArrangeThread(QtCore.QThread):
             return False
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
+        """根据分类级别获取文件夹名称
+        
+        Args:
+            level: 分类级别（如"年份"、"月份"、"拍摄设备"等）
+            exif_data: EXIF数据字典
+            file_time: 文件时间对象
+            file_path: 文件路径
+            
+        Returns:
+            str: 文件夹名称，如果为"不分类"则返回None
+        """
         if level == "不分类":
             return None
         elif level == "年份" and file_time:

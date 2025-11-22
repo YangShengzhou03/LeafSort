@@ -290,7 +290,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             if total_files > 10000:
                 self.log("WARNING", f"检测到大量文件({total_files}+)，可能需要较长时间")
                 # 对于大量文件，默认跳过详细确认，只显示提示
-                self._show_operation_status(f"开始处理大量文件...", 2000)
+                self._show_operation_status("开始处理大量文件...", 2000)
             
             # 检查目标路径，使用更简洁的错误处理
             if self.parent.lineEdit_destination.text():
@@ -442,7 +442,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.log("INFO", "整理完成")
             
             # 生成更详细的成功消息
-            success_message = f"文件整理成功！"
+            success_message = "文件整理成功！"
             if success_count > 0:
                 success_message += f"\n成功处理: {success_count} 个文件"
             if fail_count > 0:

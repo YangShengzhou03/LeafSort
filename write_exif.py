@@ -1,7 +1,8 @@
 import json
 import os
-import requests
 from datetime import datetime
+
+import requests
 
 from PyQt6 import QtCore
 from PyQt6.QtCore import pyqtSlot, QDateTime
@@ -32,6 +33,18 @@ class WriteExifPage(QWidget):
         
     def init_page(self):
         """初始化页面组件和数据"""
+        """
+        初始化EXIF写入页面的组件和数据。
+        
+        主要功能:
+            - 记录初始化日志
+            - 获取文件夹页面对象
+            - 设置控件连接
+            - 加载相机镜头映射数据
+        
+        异常处理:
+            - 当父窗口没有log方法时，静默处理
+        """
         try:
             self.parent.log("info", "初始化属性写入页面")
         except (AttributeError, TypeError):
@@ -41,6 +54,7 @@ class WriteExifPage(QWidget):
         self.load_camera_lens_mapping()
 
     def init_ui(self):
+        """初始化用户界面"""
         self.star_buttons = []
         # 定义按钮名称映射
         button_names = {
@@ -76,6 +90,7 @@ class WriteExifPage(QWidget):
         self.parent.log('INFO', "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
         
     def load_camera_lens_mapping(self):
+        """加载相机镜头映射数据"""
         try:
             data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                                     'resources', 'json', 'camera_lens_mapping.json')
@@ -89,6 +104,7 @@ class WriteExifPage(QWidget):
               self.camera_lens_mapping = {}
 
     def get_lens_info_for_camera(self, brand, model):
+        """获取指定相机品牌和型号的镜头信息"""
         if brand in self.camera_lens_mapping:
             brand_data = self.camera_lens_mapping[brand]
             if model in brand_data:
@@ -97,12 +113,24 @@ class WriteExifPage(QWidget):
 
     def _update_camera_brand_model(self):
         """更新相机品牌和型号下拉框"""
+        """
+        更新相机品牌和型号下拉框的默认状态。
+        
+        主要功能:
+            - 设置日期时间编辑器为当前时间
+            - 处理可能的属性访问异常
+        
+        异常处理:
+            - AttributeError: 当组件不存在时
+            - TypeError: 当组件类型不匹配时
+        """
         try:
             self.parent.dateTimeEdit_shootTime.setDateTime(QtCore.QDateTime.currentDateTime())
         except (AttributeError, TypeError):
             pass
     
     def _on_model_changed(self, index):
+        """当相机型号改变时的处理函数"""
         try:
             if index > 0:
                 # 通过父窗口获取当前选择的品牌和型号
@@ -149,6 +177,7 @@ class WriteExifPage(QWidget):
             return None
     
     def init_camera_brand_model(self):
+        """初始化相机品牌和型号下拉框"""
         camera_data = self._load_camera_data()
 
         if not camera_data:
@@ -185,7 +214,21 @@ class WriteExifPage(QWidget):
                 pass
         
     def _on_brand_changed(self, index):
-        """当相机品牌改变时，更新型号下拉框"""
+        """
+        根据用户选择的相机品牌，更新相机型号下拉框的内容。
+        
+        参数:
+            index (int): 当前选中的品牌下拉框索引，0 表示“不写入”
+        
+        逻辑:
+            - 如果 index > 0（即选择了具体品牌），则读取该品牌对应的所有型号，
+              并在型号下拉框中填充“不写入”及所有可用型号。
+            - 如果 index == 0（即“不写入”），则清空型号下拉框。
+        
+        异常处理:
+            - 若无法获取型号下拉框组件，记录警告日志。
+            - 其他异常记录错误日志。
+        """
         try:
             # 尝试获取相机型号下拉框并更新
             # 注意：从UI定义看，可能需要找到正确的相机型号下拉框名称
@@ -212,6 +255,7 @@ class WriteExifPage(QWidget):
 
 
     def setup_connections(self):
+        """设置所有控件的信号连接"""
         # 直接连接控件
         self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
             
@@ -239,22 +283,25 @@ class WriteExifPage(QWidget):
         # 星级按钮连接已经在init_ui中处理
 
     def on_combobox_location_changed(self, index):
-            if index == 1:
-                self.parent.lineEdit_EXIF_longitude.show()
-                self.parent.lineEdit_EXIF_latitude.show()
-                self.parent.horizontalFrame.hide()
-            else:
-                self.parent.lineEdit_EXIF_longitude.hide()
-                self.parent.lineEdit_EXIF_latitude.hide()
-                self.parent.horizontalFrame.show()
+        """当位置选择下拉框改变时的处理函数"""
+        if index == 1:
+            self.parent.lineEdit_EXIF_longitude.show()
+            self.parent.lineEdit_EXIF_latitude.show()
+            self.parent.horizontalFrame.hide()
+        else:
+            self.parent.lineEdit_EXIF_longitude.hide()
+            self.parent.lineEdit_EXIF_latitude.hide()
+            self.parent.horizontalFrame.show()
 
     def on_combobox_time_changed(self, index):
+        """当拍摄时间来源下拉框改变时的处理函数"""
         if self.parent.shootTimeSource.currentIndex() == 2:
             self.parent.dateTimeEdit_shootTime.show()
         else:
             self.parent.dateTimeEdit_shootTime.hide()
 
     def update_button_state(self):
+        """更新开始/停止按钮的文本状态"""
         # 直接使用parent中的btnStartExif
         if self.is_running:
             self.parent.btnStartExif.setText("停止")
@@ -262,6 +309,7 @@ class WriteExifPage(QWidget):
             self.parent.btnStartExif.setText("开始")
 
     def toggle_exif_writing(self):
+        """切换EXIF写入状态"""
         if self.is_running:
             self.stop_exif_writing()
             self.is_running = False
@@ -272,6 +320,7 @@ class WriteExifPage(QWidget):
         self.update_button_state()
 
     def connect_worker_signals(self):
+        """连接工作线程的信号"""
         if self.worker:
             self.worker.progress_updated.connect(self.update_progress)
             self.worker.log_signal.connect(self.log)
@@ -279,16 +328,19 @@ class WriteExifPage(QWidget):
 
     @pyqtSlot(int)
     def highlight_stars(self, count):
+        """高亮显示星级评分"""
         for i, btn in enumerate(self.star_buttons, 1):
             icon = "星级_亮.svg" if i <= count else "星级_暗.svg"
             btn.setStyleSheet(f"QPushButton {{ image: url({get_resource_path(f'resources/img/page_4/{icon}')}); border: none; padding: 0; }}")
 
     @pyqtSlot(int)
     def set_selected_star(self, star):
+        """设置选中的星级"""
         self.selected_star = star
         self.highlight_stars(star)
 
     def get_location(self, address):
+        """通过地址获取位置坐标"""
         try:
             url = "https://restapi.amap.com/v3/geocode/geo"
             amap_key = '0db079da53e08cbb62b52a42f657b994'
@@ -310,46 +362,46 @@ class WriteExifPage(QWidget):
                 location = data['geocodes'][0]['location'].split(',')
                 self.log("INFO", f"成功获取位置坐标: 纬度={location[1]}, 经度={location[0]}")
                 return location
-            else:
-                error_info = data.get('info', '未知错误')
-                error_code = data.get('infocode', '未知错误码')
-                self.log("ERROR", f"高德地图API返回错误: {error_info} (错误码: {error_code})")
+            
+            error_info = data.get('info', '未知错误')
+            error_code = data.get('infocode', '未知错误码')
+            self.log("ERROR", f"高德地图API返回错误: {error_info} (错误码: {error_code})")
+            
+            if len(address) > 10:
+                simplified_address = address[:10]
+                self.log("INFO", f"尝试使用简化地址再次请求: {simplified_address}")
+                params['address'] = simplified_address
+                response = requests.get(url, params=params, timeout=5)
+                response.raise_for_status()
+                data = response.json()
                 
-                if len(address) > 10:
-                    simplified_address = address[:10]
-                    self.log("INFO", f"尝试使用简化地址再次请求: {simplified_address}")
-                    params['address'] = simplified_address
-                    response = requests.get(url, params=params, timeout=5)
-                    response.raise_for_status()
-                    data = response.json()
-                    
-                    if data.get('status') == '1' and int(data.get('count', 0)) > 0:
-                        location = data['geocodes'][0]['location'].split(',')
-                        self.log("INFO", f"使用简化地址成功获取位置坐标: 纬度={location[1]}, 经度={location[0]}")
-                        return location
+                if data.get('status') == '1' and int(data.get('count', 0)) > 0:
+                    location = data['geocodes'][0]['location'].split(',')
+                    self.log("INFO", f"使用简化地址成功获取位置坐标: 纬度={location[1]}, 经度={location[0]}")
+                    return location
         except Exception as e:
             self.log("ERROR", f"获取位置失败: {str(e)}")
         return None
 
     def get_location_by_ip(self):
+        """通过IP地址获取位置信息"""
         try:
             response = requests.get('https://ipinfo.io', timeout=5)
             data = response.json()
             if 'loc' in data:
                 lat, lon = data['loc'].split(',')
-                location = f"{data.get('city', '')}, {data.get('region', '')}, {data.get('country', '')}"
-                self.parent.lineEdit_EXIF_Position.setText(location)
+                # No position field in UI, skip setting location text
                 return lat, lon
-            else:
-                self.log("ERROR", "无法解析位置信息\n\n"
-                             "IP地址定位服务返回的数据格式异常")
-                return None
+            self.log("ERROR", "无法解析位置信息\n\n"
+                         "IP地址定位服务返回的数据格式异常")
+            return None
         except Exception as e:
             self.log("ERROR", f"获取位置信息失败: {str(e)}\n\n"
                          "请检查网络连接或稍后重试")
             return None
 
     def parse_dms_coordinates(self, lat_str, lon_str):
+        """解析度分秒格式的坐标"""
         try:
             lat_parts = lat_str.strip().replace(' ', '').split(';')
             if len(lat_parts) != 3:
@@ -372,18 +424,19 @@ class WriteExifPage(QWidget):
             
             if -90 <= lat_decimal <= 90 and -180 <= lon_decimal <= 180:
                 return lat_decimal, lon_decimal
-            else:
-                return None
+            return None
                 
         except Exception as e:
             self.log("ERROR", f"解析度分秒坐标失败: {str(e)}")
             return None
 
     def update_position_by_ip(self):
+        """通过IP地址更新位置信息"""
         location_info = self.get_location_by_ip()
         if location_info is not None:
             lat, lon = location_info
-            self.parent.lineEdit_EXIF_Position.setText(f"{lat}, {lon}")
+            # No position field in UI, skip setting location text
+        # self.parent.lineEdit_EXIF_Position.setText(f"{lat}, {lon}")
             self.log("WARNING", f"当前纬度={lat}, 经度={lon}，位置已加载，可直接开始。")
         else:
             self.log("ERROR", "获取位置信息失败\n\n"
@@ -393,6 +446,7 @@ class WriteExifPage(QWidget):
                          "• 防火墙或代理设置阻止了网络请求")
 
     def start_exif_writing(self):
+        """开始EXIF信息写入操作"""
         if not self.folder_page:
             self.log("ERROR", "文件夹页面未初始化\n\n"
                          "请重新启动应用程序或联系技术支持")
@@ -414,7 +468,7 @@ class WriteExifPage(QWidget):
         title = self.parent.titleLineEdit.text()
         author = self.parent.authorLineEdit.text()
         subject = self.parent.themeLineEdit.text()
-        copyright = self.parent.copyrightLineEdit.text()
+        copyright_text = self.parent.copyrightLineEdit.text()
         
         params = {
             'folders_dict': folders,
@@ -422,71 +476,22 @@ class WriteExifPage(QWidget):
             'author': author,
             'subject': subject,
             'rating': str(self.selected_star),
-            'copyright': copyright,
+            'copyright': copyright_text,
             'position': None,
-            'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
+            'shoot_time': self.parent.dateTimeEdit_shootTime.dateTime().toString(
                 "yyyy:MM:dd HH:mm:ss")
             if self.parent.shootTimeSource.currentIndex() == 2
             else self.parent.shootTimeSource.currentIndex(),
-            'cameraBrand': camera_brand,
-            'cameraModel': camera_model,
-            'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
+            'camera_brand': camera_brand,
+            'camera_model': camera_model,
+            'lens_model': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
         
-        # Location handling - default to address-based location
-        location_type = 0  # Default to address-based location
+        # Location handling - default to manual coordinates
+        location_type = 1  # Default to manual coordinates
         if location_type == 0:
-            address = self.parent.lineEdit_EXIF_Position.text()
-            if address:
-                import re
-                coord_pattern = r'^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$'
-                coord_match = re.match(coord_pattern, address)
-                
-                if coord_match:
-                    lat, lon = coord_match.groups()
-                    try:
-                        lat_float = float(lat)
-                        lon_float = float(lon)
-                        if -90 <= lat_float <= 90 and -180 <= lon_float <= 180:
-                            params['position'] = f"{lat_float},{lon_float}"
-                        else:
-                            self.log("ERROR", "坐标范围无效\n\n"
-                                     "• 经度应在-180到180之间\n"
-                                     "• 纬度应在-90到90之间")
-                            return False
-                    except ValueError:
-                        self.log("ERROR", "坐标格式无效\n\n"
-                                 "请输入有效的数字格式")
-                        return False
-                else:
-                    dms_pattern = r'纬度\s*([0-9;.\s]+)\s*经度\s*([0-9;.\s]+)'
-                    dms_match = re.match(dms_pattern, address)
-                    
-                    if not dms_match:
-                        dms_pattern = r'([0-9;.\s]+)\s*,\s*([0-9;.\s]+)'
-                        dms_match = re.match(dms_pattern, address)
-                    
-                    if dms_match:
-                        lat_str, lon_str = dms_match.groups()
-                        coords = self.parse_dms_coordinates(lat_str, lon_str)
-                        if coords:
-                            lat_decimal, lon_decimal = coords
-                            params['position'] = f"{lat_decimal},{lon_decimal}"
-                            self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
-                        else:
-                            self.log("ERROR", "度分秒坐标格式无效\n\n"
-                                     "请确保格式为：纬度30;6;51.50999999999474 经度120;23;53.3499999999766317")
-                            return False
-                    else:
-                        if coords := self.get_location(address):
-                            params['position'] = ','.join(coords)
-                        else:
-                            self.log("ERROR", f"无法找到地址'{address}'对应的地理坐标\n\n"
-                                       "请检查：\n"
-                                       "• 地址拼写是否正确\n"
-                                       "• 是否包含详细的门牌号或地标\n"
-                                       "• 高德地图API密钥是否有效")
-                            return False
+            # No address field in UI, skip address-based location
+            pass
         elif location_type == 1:
             longitude = self.parent.lineEdit_EXIF_longitude.text()
             latitude = self.parent.lineEdit_EXIF_latitude.text()
@@ -515,43 +520,18 @@ class WriteExifPage(QWidget):
                                      "• 纬度应在-90到90之间\n\n"
                                      "请检查输入的数值是否正确")
                             return False
-                    else:
-                        self.log("ERROR", "经纬度格式无效\n\n"
-                                 "请输入有效的数字格式，例如：\n"
-                                 "• 十进制格式: 经度116.397128, 纬度39.916527\n"
-                                 "• 度分秒格式: 经度120;23;53.34, 纬度30;6;51.51")
-                        return False
-            else:
-                self.log("ERROR", "请输入经纬度信息\n\n"
-                             "请在对应的文本框中输入经度和纬度值")
-                return False
+                    self.log("ERROR", "经纬度格式无效\n\n"
+                             "请输入有效的数字格式，例如：\n"
+                             "• 十进制格式: 经度116.397128, 纬度39.916527\n"
+                             "• 度分秒格式: 经度120;23;53.34, 纬度30;6;51.51")
+                    return False
+            self.log("ERROR", "请输入经纬度信息\n\n"
+                         "请在对应的文本框中输入经度和纬度值")
+            return False
         
         self.save_exif_settings()
         
-        camera_brand = self.parent.brandComboBox.currentText() if self.parent.brandComboBox.currentIndex() > 0 else None
-        camera_model = self.parent.modelComboBox.currentText() if self.parent.modelComboBox.currentIndex() > 0 else None
-        
-        if camera_brand and not camera_model:
-            camera_model = self.get_default_model_for_brand(camera_brand)
-        
-        params = {
-            'folders_dict': folders,
-            'title': self.parent.lineEdit_EXIF_Title.text(),
-            'author': self.parent.lineEdit_EXIF_Author.text(),
-            'subject': self.parent.lineEdit_EXIF_Theme.text(),
-            'rating': str(self.selected_star),
-            'copyright': self.parent.lineEdit_EXIF_Copyright.text(),
-            'position': None,
-            'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
-                "yyyy:MM:dd HH:mm:ss")
-            if self.parent.shootTimeSource.currentIndex() == 2
-            else self.parent.shootTimeSource.currentIndex(),
-            'cameraBrand': camera_brand,
-            'cameraModel': camera_model,
-            'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
-        }
-        
-        operation_summary = f"操作类型: EXIF信息写入"
+        operation_summary = "操作类型: EXIF信息写入"
         if params.get('title'):
             operation_summary += f", 标题: {params['title']}"
         if params.get('author'):
@@ -572,6 +552,7 @@ class WriteExifPage(QWidget):
         return True
 
     def stop_exif_writing(self):
+        """停止EXIF写入操作"""
         if self.worker:
             self.worker.stop()
             self.worker.wait(1000)
@@ -582,9 +563,11 @@ class WriteExifPage(QWidget):
         self.update_button_state()
 
     def update_progress(self, value):
+        """更新进度条"""
         self.parent.progressBar_EXIF.setValue(value)
 
     def log(self, level, message):
+        """记录日志消息"""
         if level == 'ERROR':
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.error_messages.append(f"[{timestamp}] [{level}] {message}")
@@ -593,6 +576,7 @@ class WriteExifPage(QWidget):
         self.parent.log(level, message)
 
     def on_finished(self):
+        """处理EXIF写入完成事件"""
         self.is_running = False
         self.update_button_state()
         
@@ -613,6 +597,7 @@ class WriteExifPage(QWidget):
             )
 
     def load_exif_settings(self):
+        """加载EXIF设置"""
         try:
             # 直接使用控件
             if title := config_manager.get_setting("exif_title"):
@@ -624,12 +609,10 @@ class WriteExifPage(QWidget):
             if subject := config_manager.get_setting("exif_subject"):
                 self.parent.themeLineEdit.setText(subject)
             
-            if copyright := config_manager.get_setting("exif_copyright"):
-                self.parent.copyrightLineEdit.setText(copyright)
+            if copyright_text := config_manager.get_setting("exif_copyright"):
+                self.parent.copyrightLineEdit.setText(copyright_text)
             
-            # 使用lineEdit_EXIF_Position
-            if position := config_manager.get_setting("exif_position"):
-                self.parent.lineEdit_EXIF_Position.setText(position)
+            # No position field in UI, skip loading position setting
             
             if latitude := config_manager.get_setting("exif_latitude"):
                 self.parent.lineEdit_EXIF_latitude.setText(latitude)
@@ -663,6 +646,7 @@ class WriteExifPage(QWidget):
             self.log("WARNING", f"加载EXIF设置时出错: {str(e)}")
 
     def save_exif_settings(self):
+        """保存EXIF设置"""
         try:
             # 直接使用控件
             config_manager.update_setting("exif_title", self.parent.titleLineEdit.text())
@@ -674,7 +658,7 @@ class WriteExifPage(QWidget):
             config_manager.update_setting("exif_copyright", self.parent.copyrightLineEdit.text())
             
             # 使用正确的控件名称
-            config_manager.update_setting("exif_position", self.parent.lineEdit_EXIF_Position.text())
+            # No position field in UI, skip saving position setting
             
             config_manager.update_setting("exif_latitude", self.parent.lineEdit_EXIF_latitude.text())
             
