@@ -66,6 +66,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             except Exception as e:
                 print(f"连接窗口控制按钮信号失败: {str(e)}")
                 
+            # 浏览按钮连接
+            try:
+                self.btnBrowseSource.clicked.connect(self._on_browse_source)
+                self.btnBrowseTarget.clicked.connect(self._on_browse_target)
+            except Exception as e:
+                print(f"连接浏览按钮信号失败: {str(e)}")
+                
             # 为拖动窗口做准备
             self.mousePressEvent = self._on_mouse_press
             self.mouseMoveEvent = self._on_mouse_move
@@ -175,3 +182,62 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self._drag_position = QPoint()
         except AttributeError:
             pass
+    
+    def _on_browse_source(self):
+        """源文件夹浏览按钮点击处理"""
+        try:
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(
+                self, "选择源文件夹", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
+            )
+            
+            if folder_path:
+                self.inputSourceFolder.setText(folder_path)
+                self.log("INFO", f"已选择源文件夹: {folder_path}")
+        except Exception as e:
+            print(f"打开源文件夹选择对话框失败: {str(e)}")
+            self.log("ERROR", f"打开源文件夹选择对话框失败: {str(e)}")
+    
+    def _on_browse_target(self):
+        """目标文件夹浏览按钮点击处理"""
+        try:
+            folder_path = QtWidgets.QFileDialog.getExistingDirectory(
+                self, "选择目标文件夹", "", QtWidgets.QFileDialog.Option.ShowDirsOnly
+            )
+            
+            if folder_path:
+                self.inputTargetFolder.setText(folder_path)
+                self.log("INFO", f"已选择目标文件夹: {folder_path}")
+        except Exception as e:
+            print(f"打开目标文件夹选择对话框失败: {str(e)}")
+            self.log("ERROR", f"打开目标文件夹选择对话框失败: {str(e)}")
+    
+    def log(self, level, message):
+        """日志记录功能"""
+        # 实现日志记录功能，将日志显示在UI上
+        timestamp = QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
+        log_message = f"[{timestamp}] [{level}] {message}\n"
+        
+        # 根据当前活动页面显示在对应的日志组件中
+        try:
+            current_index = self.stackedWidget.currentIndex()
+            
+            # 定义页面索引到可能的日志组件名称的映射
+            log_components = {
+                0: ['textBrowser_import_info'],
+                1: ['smartArrangeLogOutputTextEdit'],
+                2: ['textBrowser_duplication_log', 'textBrowser_duplication', 'textBrowser_log_duplication'],
+                3: ['textBrowser_EXIF_log', 'textBrowser_exif', 'textBrowser_log_exif']
+            }
+            
+            # 尝试使用映射中的组件
+            if current_index in log_components:
+                for component_name in log_components[current_index]:
+                    try:
+                        getattr(self, component_name).append(log_message)
+                        break
+                    except (AttributeError, TypeError):
+                        pass
+        except Exception as e:
+            print(f"写入日志到UI失败: {str(e)}")
+            
+        print(log_message)
