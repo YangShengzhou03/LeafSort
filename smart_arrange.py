@@ -301,7 +301,7 @@ class SmartArrangePage(QtWidgets.QWidget):
         return True
 
     def move_tag(self, button):
-        if self.selected_frame.count() >= 5:
+        if self.selected_frame.layout().count() >= 5:
             return
 
         original_style = button.styleSheet()
@@ -356,7 +356,7 @@ class SmartArrangePage(QtWidgets.QWidget):
 
         self.update_operation_display()
 
-        if self.selected_frame.count() >= 5:
+        if self.selected_frame.layout().count() >= 5:
             for btn in self.tag_buttons.values():
                 if btn.parent() == self.available_frame:
                     btn.setEnabled(False)
