@@ -144,51 +144,48 @@ class SmartArrangePage(QtWidgets.QWidget):
     def toggle_smart_arrange(self):
         """智能整理开关，简化用户交互流程"""
         if self.smart_arrange_thread and self.smart_arrange_thread.isRunning():
-            # 停止操作保持不变
+            # 停止操作
             self.smart_arrange_thread.stop()
-            # 使用正确的按钮名称并添加属性检查
+            
+            # 设置按钮文本
             if hasattr(self.parent, 'btnStartSmartArrange'):
                 self.parent.btnStartSmartArrange.setText("开始整理")
             elif hasattr(self.parent, 'toolButton_startSmartArrange'):
                 self.parent.toolButton_startSmartArrange.setText("开始整理")
+                
+            # 重置进度条
             try:
                 self.parent.progressBar_classification.setValue(0)
             except AttributeError:
                 pass
+                
             self._show_operation_status("整理已停止", 2000)
         else:
+            # 获取文件夹列表
             folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not folders:
-                self.log("WARNING", "请先导入一个包含文件的文件夹。")
                 self._show_operation_status("请先添加文件夹", 2500)
                 return
                 
-            # 添加快速模式支持：如果只有一个文件夹且文件数少于100，自动跳过确认
+            # 检查是否启用快速模式
             quick_mode = False
             if len(folders) == 1:
                 folder_path = Path(folders[0]['path'])
-                if folder_path.exists():
+                if folder_path.exists() and not folders[0].get('include_sub', 0):
                     try:
-                        if not folders[0].get('include_sub', 0):
-                            file_count = len([f for f in folder_path.iterdir() if f.is_file()])
-                            if file_count > 0 and file_count < 100:
-                                quick_mode = True
-                                self.log("INFO", f"启用快速模式：单个文件夹且文件数较少({file_count})")
+                        file_count = len([f for f in folder_path.iterdir() if f.is_file()])
+                        if 0 < file_count < 100:
+                            quick_mode = True
                     except Exception:
-                        pass
+                        pass  # 忽略文件计数错误，继续执行
             
-            # 快速模式下跳过确认，直接预检查
-            if not quick_mode:
-                # 快速确认流程
-                if not self._quick_confirm_operation():
-                    return
-                
-            # 智能预检查
-            if not self._smart_pre_check(folders):
+            # 非快速模式需要确认
+            if not quick_mode and not self._quick_confirm_operation():
                 return
                 
-            # 启动整理线程
-            self._start_smart_arrange_thread(folders)
+            # 预检查和启动线程
+            if self._smart_pre_check(folders):
+                self._start_smart_arrange_thread(folders)
 
     def _quick_confirm_operation(self):
         """快速确认操作，减少用户交互"""
@@ -705,141 +702,92 @@ class SmartArrangePage(QtWidgets.QWidget):
     
     def move_tag(self, button):
         """将标签从待选区域移动到已选区域"""
-        try:
-            self.log("DEBUG", f"开始移动标签: button={button}, button.text()={button.text() if button else None}")
+        # 简化的控件检查
+        if not button or button not in self.tag_buttons.values():
+            return
+        
+        # 获取布局
+        available_layout = self.parent.frameRenameTags.layout()
+        selected_layout = self.parent.frameRename.layout()
+        
+        if not available_layout or not selected_layout:
+            return
+        
+        # 检查按钮位置
+        is_in_available = self._is_button_in_layout(button, available_layout)
+        is_in_selected = self._is_button_in_layout(button, selected_layout)
+        
+        # 如果按钮已在已选区域，不执行操作
+        if is_in_selected:
+            return
             
-            # 直接使用frameRenameTags和frameRename组件的布局
-            if not hasattr(self.parent, 'frameRenameTags') or not hasattr(self.parent, 'frameRename'):
-                self.log("ERROR", "frameRenameTags或frameRename组件不存在，无法移动标签")
-                return
+        # 限制最多选择5个标签
+        if selected_layout.count() >= 5:
+            QMessageBox.information(self, "提示", "最多只能选择5个标签")
+            return
+        
+        # 保存按钮的原始样式和文本
+        button.setProperty('original_style', button.styleSheet())
+        original_text = button.text()
+        button.setProperty('original_text', original_text)
+        
+        # 处理自定义标签
+        if original_text == '自定义':
+            input_dialog = QInputDialog(self)
+            input_dialog.setWindowTitle("自定义标签")
+            input_dialog.setLabelText("请输入自定义部分的文件名内容:")
+            input_dialog.setTextEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
+            input_dialog.setTextValue("")
+            input_dialog.findChild(QtWidgets.QLineEdit).setMaxLength(255)
             
-            # 获取两个框架的布局
-            available_layout = self.parent.frameRenameTags.layout()
-            selected_layout = self.parent.frameRename.layout()
+            ok, custom_text = input_dialog.getText(self, "自定义标签", "请输入自定义部分的文件名内容:")
             
-            # 确保布局存在
-            if not available_layout or not selected_layout:
-                self.log("ERROR", "布局组件不存在，无法移动标签")
-                self.log("DEBUG", f"available_layout: {available_layout}, selected_layout: {selected_layout}")
-                return
-            
-            # 确保按钮是有效的标签按钮
-            if button not in self.tag_buttons.values():
-                self.log("DEBUG", f"按钮不是有效的标签按钮: {button}")
-                return
-            
-            # 检查按钮当前是否在待选区域
-            is_in_available = self._is_button_in_layout(button, available_layout)
-            is_in_selected = self._is_button_in_layout(button, selected_layout)
-            
-            self.log("DEBUG", f"按钮位置: available={is_in_available}, selected={is_in_selected}")
-            
-            # 如果按钮已经在已选区域，不执行操作
-            if is_in_selected:
-                self.log("DEBUG", f"按钮 {button.text() if button else '未知'} 已经在已选区域")
-                return
-                
-            # 限制最多选择5个标签
-            selected_count = selected_layout.count()
-            self.log("DEBUG", f"已选区域标签数量: {selected_count}")
-            
-            if selected_count >= 5:
-                QMessageBox.information(self, "提示", "最多只能选择5个标签")
-                return
-            
-            # 保存按钮的原始样式
-            original_style = button.styleSheet()
-            button.setProperty('original_style', original_style)
-            
-            # 保存按钮的原始文本
-            original_text = button.text()
-            button.setProperty('original_text', original_text)
-            
-            # 处理自定义标签
-            if original_text == '自定义':
-                input_dialog = QInputDialog(self)
-                input_dialog.setWindowTitle("自定义标签")
-                input_dialog.setLabelText("请输入自定义部分的文件名内容:")
-                input_dialog.setTextEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
-                input_dialog.setTextValue("")
-                input_dialog.findChild(QtWidgets.QLineEdit).setMaxLength(255)
-                
-                ok = input_dialog.exec()
-                custom_text = input_dialog.textValue()
-                
+            if not (ok and custom_text) or not self.is_valid_windows_filename(custom_text):
                 if ok and custom_text:
-                    if not self.is_valid_windows_filename(custom_text):
-                        QMessageBox.warning(
-                            self,
-                            "文件名无效",
-                            f"输入的文件名 '{custom_text}' 不符合Windows命名规范！\n\n"
-                            "不允许的字符"
-                            "不能使用保留文件名: CON, PRN, AUX, NUL, COM1-9, LPT1-9\n"
-                            "不能以点(.)或空格结尾\n"
-                            "长度不能超过255个字符\n\n"
-                            "请修改后重试。"
-                        )
-                        return
-                    
-                    # 显示简短版本，但保存完整内容
-                    display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
-                    button.setText(display_text)
-                    button.setProperty('custom_content', custom_text)
-                else:
-                    return
+                    QMessageBox.warning(
+                        self,
+                        "文件名无效",
+                        f"输入的文件名 '{custom_text}' 不符合Windows命名规范！\n\n"
+                        "不允许的字符、保留文件名、不能以点或空格结尾、长度不能超过255个字符"
+                    )
+                return
             
-            # 从当前所在的任何布局中移除
-            if is_in_available:
-                available_layout.removeWidget(button)
-            else:
-                # 尝试从父部件中移除
-                parent = button.parent()
-                if parent and parent.layout():
-                    parent.layout().removeWidget(button)
-                
-            # 添加到已选区域
-            selected_layout.addWidget(button)
-            
-            # 更改按钮样式为已选择状态
-            button.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 4px; padding: 2px 8px;")
-            
-            # 更改按钮的点击事件处理函数
-            try:
-                button.clicked.disconnect()
-            except (TypeError, RuntimeError):
-                pass  # 忽略未连接的错误
-            button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
-            
-            # 更新示例和操作显示
-            self.update_example_label()
-            self.update_operation_display()
-            
-            # 强制刷新布局
-            selected_layout.update()
-            available_layout.update()
-            try:
-                self.parent.update()
-            except AttributeError:
-                pass
-            
-            self.log("INFO", f"成功将标签 '{button.text()}' 移动到已选区域")
-            
-            # 如果已选满5个标签，禁用剩余的可用标签
-            if selected_layout.count() >= 5:
-                for btn in self.tag_buttons.values():
-                    # 检查按钮是否在available_layout中
-                    if self._is_button_in_layout(btn, available_layout):
-                        btn.setEnabled(False)
-            
-        except Exception as e:
-            self.log("ERROR", f"移动标签时出错: {str(e)}", exc_info=True)
-            # 尝试恢复按钮到原位置
-            try:
-                if available_layout and button:
-                    available_layout.addWidget(button)
-                    self.log("DEBUG", "已尝试将按钮恢复到待选区域")
-            except Exception as recover_e:
-                self.log("ERROR", f"恢复按钮位置失败: {str(recover_e)}")
+            # 显示简短版本，但保存完整内容
+            display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
+            button.setText(display_text)
+            button.setProperty('custom_content', custom_text)
+        
+        # 从当前布局移除并添加到已选区域
+        if is_in_available:
+            available_layout.removeWidget(button)
+        elif button.parent() and button.parent().layout():
+            button.parent().layout().removeWidget(button)
+        
+        selected_layout.addWidget(button)
+        
+        # 更改按钮样式和点击事件
+        button.setStyleSheet("background-color: #4CAF50; color: white; border-radius: 4px; padding: 2px 8px;")
+        
+        # 安全地断开连接
+        try:
+            button.clicked.disconnect()
+        except (TypeError, RuntimeError):
+            pass
+        button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
+        
+        # 更新显示
+        self.update_example_label()
+        self.update_operation_display()
+        
+        # 强制刷新布局
+        selected_layout.update()
+        available_layout.update()
+        
+        # 如果已选满5个标签，禁用剩余的可用标签
+        if selected_layout.count() >= 5:
+            for btn in self.tag_buttons.values():
+                if self._is_button_in_layout(btn, available_layout):
+                    btn.setEnabled(False)
     
     def _get_weekday(self, date):
         weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
@@ -1062,78 +1010,9 @@ class SmartArrangePage(QtWidgets.QWidget):
                 
     def _initialize_layouts(self):
         """初始化布局组件引用"""
-        try:
-            self.log("INFO", "开始初始化布局组件引用")
-            
-            # 直接从parent获取layoutTagsInput布局（可用标签区域）
-            try:
-                if hasattr(self.parent, 'layoutTagsInput'):
-                    layout = self.parent.layoutTagsInput
-                    if layout:
-                        self.log("INFO", "直接从parent获取layoutTagsInput布局成功")
-            except Exception as e:
-                self.log("DEBUG", f"获取layoutTagsInput时出错: {str(e)}")
-            
-            # 直接从parent获取layoutRenameContent布局（已选标签区域）
-            try:
-                if hasattr(self.parent, 'layoutRenameContent'):
-                    layout = self.parent.layoutRenameContent
-                    if layout:
-                        self.log("INFO", "直接从parent获取layoutRenameContent布局成功")
-            except Exception as e:
-                self.log("DEBUG", f"获取layoutRenameContent时出错: {str(e)}")
-            
-            # 检查frameRenameTags组件的布局
-            try:
-                if hasattr(self.parent, 'frameRenameTags'):
-                    frame = self.parent.frameRenameTags
-                    if frame:
-                        # 尝试获取frame的布局
-                        if hasattr(frame, 'layout'):
-                            layout = frame.layout()
-                            self.log("INFO", "通过frameRenameTags.layout()获取布局成功")
-            except Exception as e:
-                self.log("DEBUG", f"通过frameRenameTags获取布局时出错: {str(e)}")
-            
-            # 检查frameRename组件的布局
-            try:
-                if hasattr(self.parent, 'frameRename'):
-                    frame = self.parent.frameRename
-                    if frame:
-                        # 尝试获取frame的布局
-                        if hasattr(frame, 'layout'):
-                            layout = frame.layout()
-                            self.log("INFO", "通过frameRename.layout()获取布局成功")
-            except Exception as e:
-                self.log("DEBUG", f"通过frameRename获取布局时出错: {str(e)}")
-            
-            # 添加详细的调试信息，用于故障排查
-            self.log("INFO", "已成功获取布局组件引用")
-            
-            # 检查frameRenameTags的详细信息
-            try:
-                if hasattr(self.parent, 'frameRenameTags'):
-                    frame = self.parent.frameRenameTags
-                    frame_layout = frame.layout() if frame and hasattr(frame, 'layout') else None
-                    self.log("DEBUG", f"frameRenameTags: 存在={bool(frame)}, 布局={frame_layout is not None}")
-            except Exception as e:
-                self.log("DEBUG", f"检查frameRenameTags时出错: {str(e)}")
-            
-            # 检查frameRename的详细信息
-            try:
-                if hasattr(self.parent, 'frameRename'):
-                    frame = self.parent.frameRename
-                    frame_layout = frame.layout() if frame and hasattr(frame, 'layout') else None
-                    self.log("DEBUG", f"frameRename: 存在={bool(frame)}, 布局={frame_layout is not None}")
-            except Exception as e:
-                self.log("DEBUG", f"检查frameRename时出错: {str(e)}")
-            
-            self.log("DEBUG", "_initialize_layouts完成")
-        except Exception as e:
-            self.log("ERROR", f"初始化布局时发生异常: {str(e)}", exc_info=True)
-            
-        # 最后确保即使出错，也进行记录
-        self.log("DEBUG", "_initialize_layouts完成")
+        self.log("DEBUG", "初始化布局组件引用")
+        # 简化初始化，这些组件在正常情况下应该存在
+        # 布局检查将在实际使用时进行，而不是在这里预先检查
     
     def refresh(self):
         """刷新智能整理页面"""
@@ -1289,108 +1168,71 @@ class SmartArrangePage(QtWidgets.QWidget):
             QMessageBox.warning(self, "错误", f"标签移动失败: {str(e)}")
     
     def _is_button_in_layout(self, button, layout):
-        """检查按钮是否在指定布局中，增强版带详细日志"""
+        """检查按钮是否在指定布局中"""
         if not layout or not button:
-            self.log("DEBUG", f"无效的按钮或布局: button={button}, layout={layout}")
             return False
         
         try:
-            # 方法1: 遍历布局中的所有项
+            # 遍历布局中的所有项检查按钮
             for i in range(layout.count()):
                 item = layout.itemAt(i)
                 if item and item.widget() == button:
-                    try:
-                        button_text = button.text()
-                    except AttributeError:
-                        button_text = '未知'
-                    self.log("DEBUG", f"方法1找到按钮在布局中: button={button_text}")
                     return True
             
-            # 方法2: 检查按钮的父布局链
+            # 检查按钮的父布局链
             current = button.parent()
-            chain = []
-            while current:
-                chain.append(current)
+            chain_count = 0
+            while current and chain_count < 10:  # 防止无限循环
                 try:
                     if current.layout() == layout:
-                        try:
-                            button_text = button.text()
-                        except AttributeError:
-                            button_text = '未知'
-                        self.log("DEBUG", f"方法2通过父部件链找到按钮在布局中: button={button_text}")
                         return True
                 except AttributeError:
                     pass
                 current = current.parent()
-                
-                # 防止无限循环
-                if len(chain) > 10:
-                    break
-            
-            # 方法3: 尝试直接检查按钮与布局的关联
-            try:
-                # 获取按钮的当前父布局（如果有）
-                try:
-                    parent = button.parent()
-                    if parent:
-                        try:
-                            parent_layout = parent.layout()
-                        except AttributeError:
-                            parent_layout = 'None'
-                        self.log("DEBUG", f"按钮父部件: {parent}, 父布局: {parent_layout}")
-                except AttributeError:
-                    pass
-                
-                # 调试信息
-                try:
-                    button_text = button.text()
-                except AttributeError:
-                    button_text = '未知'
-                self.log("DEBUG", f"按钮 {button_text} 不在布局中，布局项数量: {layout.count()}")
-            except Exception as debug_e:
-                self.log("DEBUG", f"调试按钮布局关系时出错: {debug_e}")
+                chain_count += 1
                 
             return False
-        except Exception as e:
-            self.log("DEBUG", f"检查按钮是否在布局中时出错: {str(e)}")
+        except Exception:
             return False
     
     def _reset_state(self):
         """重置页面状态"""
-        try:
-            # 停止正在运行的线程
+        # 停止正在运行的线程
+        if hasattr(self, 'smart_arrange_thread') and self.smart_arrange_thread:
             try:
-                if self.smart_arrange_thread and self.smart_arrange_thread.isRunning():
+                if self.smart_arrange_thread.isRunning():
                     self.smart_arrange_thread.stop()
-                    self.smart_arrange_thread = None
-            except AttributeError:
+                self.smart_arrange_thread = None
+            except Exception:
                 pass
-            
-            # 重新初始化UI组件引用 - 移除未使用的循环
-                
-            # 重置进度条
+        
+        # 重置进度条
+        if hasattr(self, 'parent') and hasattr(self.parent, 'progressBar_classification'):
             try:
                 self.parent.progressBar_classification.setValue(0)
-            except AttributeError:
+            except Exception:
                 pass
                 
-            # 重置操作按钮，使用正确的名称
-            try:
-                self.parent.btnStartSmartArrange.setText("开始整理")
-            except AttributeError:
+        # 重置操作按钮
+        if hasattr(self, 'parent'):
+            # 尝试使用主要按钮名称
+            if hasattr(self.parent, 'btnStartSmartArrange'):
                 try:
-                    self.parent.toolButton_startSmartArrange.setText("开始整理")
-                except AttributeError:
-                    pass
+                    self.parent.btnStartSmartArrange.setText("开始整理")
+                except Exception:
+                    # 尝试使用替代按钮名称
+                    if hasattr(self.parent, 'toolButton_startSmartArrange'):
+                        try:
+                            self.parent.toolButton_startSmartArrange.setText("开始整理")
+                        except Exception:
+                            pass
                 
-            # 重置操作类型
+        # 重置操作类型
+        if hasattr(self, 'parent') and hasattr(self.parent, 'fileOperation'):
             try:
                 self.parent.fileOperation.setCurrentIndex(0)
-            except AttributeError:
+            except Exception:
                 pass
                 
-            # 重置目标路径
-            self.destination_root = None
-            
-        except Exception as e:
-            self.log("ERROR", f"重置状态时出错: {str(e)}")
+        # 重置目标路径
+        self.destination_root = None

@@ -61,9 +61,10 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
     error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     print(f"Unhandled exception: {exc_type.__name__}: {exc_value}\n{error_message}")
     
-    # Try to show error to user if possible
-    try:
-        if QtWidgets.QApplication.instance():
+    # Show error to user if possible
+    app_instance = QtWidgets.QApplication.instance()
+    if app_instance:
+        try:
             # Extract a more user-friendly error message
             user_error_msg = f"{exc_type.__name__}: {str(exc_value)}"
             
@@ -74,79 +75,73 @@ def handle_application_exception(exc_type, exc_value, exc_traceback):
             msg.setInformativeText(user_error_msg)
             msg.setDetailedText(error_message)
             msg.exec()
-    except Exception as e:
-        print(f"Failed to show error dialog: {str(e)}")
+        except Exception:
+            # 简化错误处理，如果无法显示对话框则忽略
+            pass
 
+
+def handle_new_connection(server, window_ref):
+    """Handle new socket connections"""
+    try:
+        socket = server.nextPendingConnection()
+        if socket:
+            socket.readyRead.connect(lambda: handle_socket_data(socket, window_ref))
+    except Exception:
+        # 简化异常处理，仅记录错误
+        print("Error handling new connection")
+
+def handle_socket_data(socket, window_ref):
+    """Handle data received from socket"""
+    try:
+        data = socket.readAll().data()
+        window = window_ref()  # Get current window reference
+        if data == BRING_TO_FRONT_COMMAND and window:
+            window.activateWindow()
+            window.raise_()
+            window.showNormal()
+            print("Window brought to front via IPC")
+    except Exception:
+        # 简化异常处理，不再使用traceback
+        print("Error handling socket data")
+    finally:
+        # 简化资源清理
+        try:
+            socket.deleteLater()
+        except Exception:
+            pass
 
 def main():
-    """Main application entry point with improved error handling"""
+    """Main application entry point"""
     shared_memory = None
     local_server = None
     window = None
     
+    # Set global exception handler
+    sys.excepthook = handle_application_exception
+    
     try:
-        # Set global exception handler
-        sys.excepthook = handle_application_exception
-        
         # Create application instance
         app = QtWidgets.QApplication(sys.argv)
         app.setApplicationName("LeafView")
         app.setApplicationVersion("1.3")
         
         # Try to detect existing instance
-        try:
-            shared_memory = QtCore.QSharedMemory(SHARED_MEMORY_KEY)
-            if shared_memory.attach():
-                if bring_existing_to_front():
-                    print("Another instance already running, bringing it to front.")
-                    sys.exit(0)
-                else:
-                    print("Failed to bring existing instance to front.")
-                    sys.exit(1)
-            
-            if not shared_memory.create(1):
-                QtWidgets.QMessageBox.critical(None, "启动错误", 
-                    "初始化应用程序失败。可能已有实例在运行。")
-                sys.exit(1)
-        except Exception as e:
-            print(f"Error in single instance check: {str(e)}")
-            # Continue anyway
-            pass
+        shared_memory = QtCore.QSharedMemory(SHARED_MEMORY_KEY)
+        if shared_memory.attach():
+            if bring_existing_to_front():
+                print("Another instance already running, bringing it to front.")
+                sys.exit(0)
+            sys.exit(1)
+        
+        if not shared_memory.create(1):
+            QtWidgets.QMessageBox.critical(None, "启动错误", 
+                "初始化应用程序失败。可能已有实例在运行。")
+            sys.exit(1)
         
         # Setup local server for inter-process communication
         local_server = setup_local_server()
         if not local_server:
             print("Warning: Failed to setup local server for IPC")
-        
-        def handle_new_connection():
-            try:
-                socket = local_server.nextPendingConnection()
-                if socket:
-                    socket.readyRead.connect(lambda: handle_socket_data(socket))
-            except Exception as e:
-                print(f"Error handling new connection: {str(e)}")
-        
-        def handle_socket_data(socket):
-            try:
-                data = socket.readAll().data()
-                if data == BRING_TO_FRONT_COMMAND and window:
-                    window.activateWindow()
-                    window.raise_()
-                    window.showNormal()
-                    print("Window brought to front via IPC")
-                else:
-                    print(f"Unknown socket data received: {data}")
-            except Exception as e:
-                print(f"Error handling socket data: {str(e)}")
-                traceback.print_exc()
-            finally:
-                try:
-                    socket.deleteLater()
-                except Exception as e:
-                    print(f"Error cleaning up socket: {str(e)}")
-        
-        if local_server:
-            local_server.newConnection.connect(handle_new_connection)
         
         # Create and show main window
         print("Creating main window...")
@@ -155,11 +150,16 @@ def main():
         window.show()
         print("Main window created and shown")
         
+        # Setup IPC callbacks with window reference
+        if local_server:
+            # 使用lambda保持对window的引用
+            local_server.newConnection.connect(lambda: handle_new_connection(local_server, lambda: window))
+        
         # Show warning message
         try:
             window.log("WARNING", "文件整理、重命名和属性写入等操作一旦执行无法恢复，操作前请务必备份好原数据。")
-        except Exception as e:
-            print(f"Error showing warning message: {str(e)}")
+        except Exception:
+            pass
         
         # Start event loop
         exit_code = app.exec()
@@ -169,11 +169,13 @@ def main():
     except Exception as e:
         error_msg = f"应用程序启动失败: {str(e)}"
         print(f"Fatal error: {error_msg}")
-        traceback.print_exc()
+        
+        # 简化错误对话框显示
         try:
             QtWidgets.QMessageBox.critical(None, "致命错误", error_msg)
-        except:
-            print("Failed to show error message dialog")
+        except Exception:
+            pass
+        
         return 1
     finally:
         # Cleanup resources
@@ -183,16 +185,15 @@ def main():
         if local_server:
             try:
                 local_server.close()
-            except Exception as e:
-                print(f"Error closing local server: {str(e)}")
+            except Exception:
+                pass
         
         # Cleanup shared memory
         if shared_memory and shared_memory.isAttached():
             try:
                 shared_memory.detach()
-                print("Shared memory detached")
-            except Exception as e:
-                print(f"Error detaching shared memory: {str(e)}")
+            except Exception:
+                pass
         
         print("Application shutdown complete")
 

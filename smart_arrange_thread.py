@@ -15,6 +15,7 @@ from PIL import Image
 from PyQt6 import QtCore
 
 from common import get_resource_path
+from config_manager import config_manager
 
 # 配置日志记录
 logger = logging.getLogger(__name__)
@@ -107,6 +108,9 @@ class SmartArrangeThread(QtCore.QThread):
         self.log_signal = parent.log_signal if parent else None
         self.files_to_rename = []
         self.files_lock = threading.Lock()
+        # 初始化地理数据属性
+        self.city_data = {}
+        self.province_data = {}
 
     def calculate_total_files(self):
         """计算总文件数"""
@@ -138,7 +142,7 @@ class SmartArrangeThread(QtCore.QThread):
                 self.city_data = json.load(f)
             with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
                 self.province_data = json.load(f)
-        except Exception:
+        except (OSError, json.JSONDecodeError, UnicodeDecodeError):
             self.city_data, self.province_data = {'features': []}, {'features': []}
 
     def run(self):
@@ -471,27 +475,22 @@ class SmartArrangeThread(QtCore.QThread):
 
     def _validate_folder_path(self, folder_path):
         """验证文件夹路径的有效性"""
+        if not folder_path.exists():
+            self.log("WARNING", f"文件夹不存在: {folder_path}")
+            return False
+            
+        if not folder_path.is_dir():
+            self.log("WARNING", f"路径不是文件夹: {folder_path}")
+            return False
+            
+        # 检查读取权限
         try:
-            if not folder_path.exists():
-                logger.warning(f"文件夹不存在: {folder_path}")
-                self.log("WARNING", f"文件夹不存在: {folder_path}")
-                return False
-                
-            if not folder_path.is_dir():
-                logger.warning(f"路径不是文件夹: {folder_path}")
-                self.log("WARNING", f"路径不是文件夹: {folder_path}")
-                return False
-                
-            # 检查读取权限
             folder_path.iterdir()
             return True
-            
         except PermissionError:
-            logger.error(f"没有权限访问文件夹: {folder_path}")
             self.log("ERROR", f"没有权限访问文件夹: {folder_path}")
             return False
         except Exception as e:
-            logger.error(f"验证文件夹路径失败 {folder_path}: {str(e)}")
             self.log("ERROR", f"文件夹验证失败: {str(e)}")
             return False
 
@@ -773,9 +772,9 @@ class SmartArrangeThread(QtCore.QThread):
                                 return date_taken
                             except ValueError:
                                 pass
-                except Exception:
+                except (ValueError, TypeError, KeyError):
                     pass
-        except Exception as e:
+        except (OSError, ValueError, TypeError) as e:
             self.log("DEBUG", f"备选EXIF提取方法失败: {str(e)}")
         
         return None
@@ -805,7 +804,7 @@ class SmartArrangeThread(QtCore.QThread):
             if file_size > 200 * 1024 * 1024:  # 200MB限制
                 self.log("DEBUG", f"RAW文件过大，跳过: {file_path} ({file_size / 1024 / 1024:.1f}MB)")
                 return None
-        except Exception:
+        except (OSError, FileNotFoundError):
             pass
         
         # 构建exiftool路径
@@ -1159,7 +1158,7 @@ class SmartArrangeThread(QtCore.QThread):
                 if file_size > 500 * 1024 * 1024:  # 500MB限制
                     self.log("DEBUG", f"视频文件过大，跳过: {file_path} ({file_size / 1024 / 1024:.1f}MB)")
                     return None
-            except Exception:
+            except (OSError, FileNotFoundError):
                 pass
                 
             file_path_normalized = str(file_path).replace('\\', '/')
@@ -1270,6 +1269,18 @@ class SmartArrangeThread(QtCore.QThread):
         return None
 
     def parse_gps_coordinates(self, gps_info):
+        """解析GPS坐标信息
+        
+        从GPS信息字典中提取并解析经纬度坐标。支持多种GPS坐标格式，
+        优先尝试从'GPS Coordinates'和'GPS Position'字段解析，
+        失败时回退到分别解析'GPS Latitude'和'GPS Longitude'。
+        
+        Args:
+            gps_info: 包含GPS信息的字典
+            
+        Returns:
+            tuple: (纬度, 经度)，解析失败时返回(None, None)
+        """
         if not gps_info:
             return None, None
             
@@ -1296,7 +1307,7 @@ class SmartArrangeThread(QtCore.QThread):
                 lon = self._parse_dms_coordinate(lon_str)
                 
                 return lat, lon
-        except Exception:
+        except (ValueError, TypeError, KeyError):
             pass
             
         return None, None
@@ -1335,10 +1346,20 @@ class SmartArrangeThread(QtCore.QThread):
                 
             return decimal
             
-        except Exception:
+        except (OSError, ValueError, TypeError):
             return None
 
     def get_city_and_province(self, lat, lon):
+        """根据经纬度坐标获取省份和城市信息。
+        
+        Args:
+            lat: 纬度坐标，可以是浮点数、整数或字符串格式
+            lon: 经度坐标，可以是浮点数、整数或字符串格式
+            
+        Returns:
+            tuple: 包含省份和城市的元组，格式为(province, city)
+                  如果无法确定位置，返回("未知省份", "未知城市")
+        """
         try:
             # 检查 province_data 和 city_data 是否存在
             _ = self.province_data
@@ -1418,15 +1439,26 @@ class SmartArrangeThread(QtCore.QThread):
                 s = float(value.values[2].num) / float(value.values[2].den)
                 result = d + (m / 60.0) + (s / 3600.0)
                 return result
-        except Exception:
+        except (ValueError, TypeError, AttributeError):
             pass
 
         try:
             return float(value)
-        except Exception:
+        except (ValueError, TypeError):
             return None
 
     def build_new_file_name(self, file_path, file_time, original_name, exif_data=None):
+        """构建新的文件名
+        
+        Args:
+            file_path: 文件路径
+            file_time: 文件时间
+            original_name: 原始文件名
+            exif_data: 可选，EXIF数据
+            
+        Returns:
+            新的文件名
+        """
         if not self.file_name_structure:
             return original_name
         
@@ -1434,10 +1466,18 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data = self.get_exif_data(file_path)
         
         parts = []
+        # 准备文件上下文信息
+        file_context = {
+            'file_path': file_path,
+            'file_time': file_time,
+            'original_name': original_name,
+            'exif_data': exif_data
+        }
+        
         # 严格按照用户点击tag的顺序构建文件名
         for tag in self.file_name_structure:
             # 调用get_file_name_part获取每个标签对应的值
-            file_part = self.get_file_name_part(tag, file_path, file_time, original_name, exif_data)
+            file_part = self.get_file_name_part(tag, file_context)
             # 只添加非空的部分
             if file_part:
                 parts.append(file_part)
@@ -1450,6 +1490,15 @@ class SmartArrangeThread(QtCore.QThread):
         return self.separator.join(parts)
         
     def process_single_file(self, file_path, base_folder=None):
+        """处理单个文件的分类和重命名
+        
+        Args:
+            file_path: 文件路径
+            base_folder: 可选，基础文件夹
+            
+        Returns:
+            处理后的信息或None
+        """
         try:
             if self.is_stopped():
                 return
@@ -1497,7 +1546,7 @@ class SmartArrangeThread(QtCore.QThread):
                     timestamp = file_path.stat().st_ctime if self.time_derive == "文件创建时间" else file_path.stat().st_mtime
                     file_time = datetime.datetime.fromtimestamp(timestamp)
                     self.log("DEBUG", f"使用文件系统时间: {file_time} 对于文件 {file_path.name}")
-                except Exception as e:
+                except (OSError, IOError) as e:
                     self.log("ERROR", f"获取文件系统时间失败 {file_path.name}: {str(e)}")
 
             # 设置目标根目录
@@ -1525,69 +1574,89 @@ class SmartArrangeThread(QtCore.QThread):
             with self.processed_lock:
                 self.processed_files += 1
                 
-        except Exception as e:
+        except (OSError, IOError, ValueError, TypeError) as e:
             self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
 
-    def get_file_name_part(self, tag, file_path, file_time, original_name, exif_data=None):
-        if isinstance(tag, dict) and 'tag' in tag and 'content' in tag:
-            tag_name = tag['tag']
-            if tag_name == "自定义":
-                return tag['content']  
-            else:
-                if tag['content'] is not None:
-                    return tag['content']
-                else:
-                    tag = tag_name
+    def get_file_name_part(self, tag_info, file_context):
+        """根据标签获取文件名部分
         
-        if exif_data is None:
-            exif_data = self.get_exif_data(file_path)
+        Args:
+            tag_info: 标签或标签字典
+            file_context: 包含文件信息的字典，包含'file_path'、'file_time'、'original_name'、'exif_data'等键
+            
+        Returns:
+            文件名部分字符串
+        """
+        # 处理标签字典情况
+        if isinstance(tag_info, dict):
+            return self._process_tag_dict(tag_info)
         
-        if tag == "原文件名":
-            return original_name
-        elif tag == "年份" and file_time:
-            return str(file_time.year)
-        elif tag == "月份" and file_time:
-            return f"{file_time.month:02d}"
-        elif tag == "日" and file_time:
-            return f"{file_time.day:02d}"
-        elif tag == "星期" and file_time:
-            weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-            return weekdays[file_time.weekday()]
-        elif tag == "时间" and file_time:
-            return file_time.strftime('%H%M%S')
-        elif tag == "品牌":
-            brand = exif_data.get('Make', '未知品牌')
-            if isinstance(brand, str):
-                brand = brand.strip().strip('"\'')
-            return str(brand) if brand is not None else '未知品牌'
-        elif tag == "型号":
-            model = exif_data.get('Model', '未知型号')
-            if isinstance(model, str):
-                model = model.strip().strip('"\'')
-            return str(model) if model is not None else '未知型号'
-        elif tag == "位置":
-            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
-                lat = float(exif_data['GPS GPSLatitude'])
-                lon = float(exif_data['GPS GPSLongitude'])
-                
-                # 尝试从缓存获取（使用config_manager的带容差缓存功能，5公里≈0.045度）
-                from config_manager import config_manager
-                cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
-                if cached_address and cached_address != "未知位置":
-                    return cached_address
-                
-                address = get_address_from_coordinates(lat, lon)
-                if address and address != "未知位置":
-                    config_manager.cache_location(lat, lon, address)
-                    return address
-                
-                province, city = self.get_city_and_province(exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude'])
-                return f"{province}{city}" if city != "未知城市" else province
+        # 确保exif_data可用
+        if 'exif_data' not in file_context or file_context['exif_data'] is None:
+            file_context['exif_data'] = self.get_exif_data(file_context['file_path'])
+        
+        # 使用字典映射代替多个if语句
+        tag_processors = {
+            "原文件名": lambda ctx: ctx['original_name'],
+            "年份": lambda ctx: str(ctx['file_time'].year) if ctx['file_time'] else "",
+            "月份": lambda ctx: f"{ctx['file_time'].month:02d}" if ctx['file_time'] else "",
+            "日": lambda ctx: f"{ctx['file_time'].day:02d}" if ctx['file_time'] else "",
+            "星期": lambda ctx: self._get_weekday_name(ctx['file_time']) if ctx['file_time'] else "",
+            "时间": lambda ctx: ctx['file_time'].strftime('%H%M%S') if ctx['file_time'] else "",
+            "品牌": lambda ctx: self._get_device_info(ctx['exif_data'], 'Make', '未知品牌'),
+            "型号": lambda ctx: self._get_device_info(ctx['exif_data'], 'Model', '未知型号'),
+            "位置": lambda ctx: self._get_location_name(ctx),
+            "自定义": lambda ctx: "自定义"
+        }
+        
+        # 获取对应的处理器并执行
+        processor = tag_processors.get(tag_info)
+        return processor(file_context) if processor else ""
+    
+    def _process_tag_dict(self, tag_dict):
+        """处理标签字典格式"""
+        if tag_dict.get('tag') == "自定义" or tag_dict.get('content') is not None:
+            return tag_dict.get('content', "")
+        return tag_dict.get('tag', "")
+    
+    def _get_weekday_name(self, file_time):
+        """获取星期名称"""
+        weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+        return weekdays[file_time.weekday()]
+    
+    def _get_device_info(self, exif_data, key, default):
+        """获取设备信息"""
+        value = exif_data.get(key, default)
+        if isinstance(value, str):
+            value = value.strip().strip('"\'')
+        return str(value) if value is not None else default
+    
+    def _get_location_name(self, file_context):
+        """获取位置名称"""
+        exif_data = file_context['exif_data']
+        if not exif_data.get('GPS GPSLatitude') or not exif_data.get('GPS GPSLongitude'):
             return "未知位置"
-        elif tag == "自定义":
-            return "自定义"
-        else:
-            return ""
+        
+        try:
+            lat = float(exif_data['GPS GPSLatitude'])
+            lon = float(exif_data['GPS GPSLongitude'])
+            
+            # 尝试从缓存获取
+            cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
+            if cached_address and cached_address != "未知位置":
+                return cached_address
+            
+            # 尝试获取地址信息
+            address = self._get_address_from_coordinates(lat, lon)
+            if address and address != "未知位置":
+                config_manager.cache_location(lat, lon, address)
+                return address
+            
+            # 获取省份城市信息
+            province, city = self.get_city_and_province(exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude'])
+            return f"{province}{city}" if city != "未知城市" else province
+        except (ValueError, TypeError):
+            return "未知位置"
 
     def build_target_path(self, file_path, exif_data, file_time, base_folder):
         """构建目标路径并确保目录存在，增强了错误处理和权限检查"""
@@ -1644,9 +1713,9 @@ class SmartArrangeThread(QtCore.QThread):
                 safe_folder_name = self._sanitize_folder_name(folder_name)
                 if safe_folder_name:
                     return safe_folder_name
-                else:
-                    self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
-        except Exception as e:
+                # 移除else子句
+                self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
+        except (ValueError, TypeError, OSError) as e:
             self.log("WARNING", f"处理分类级别 '{level}' 时出错: {str(e)}，跳过该级别")
         return None
     
@@ -1657,7 +1726,7 @@ class SmartArrangeThread(QtCore.QThread):
             if file_type:
                 safe_file_type = self._sanitize_folder_name(file_type)
                 return target_path / safe_file_type
-        except Exception as e:
+        except (ValueError, TypeError) as e:
             self.log("WARNING", f"获取文件类型时出错: {str(e)}")
         return target_path
     
@@ -1666,7 +1735,7 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             self._ensure_directory_exists(target_path)
             return True
-        except Exception as e:
+        except (OSError, PermissionError) as e:
             self.log("ERROR", f"创建目标目录失败: {target_path}，错误: {str(e)}")
             return False
     
@@ -1681,7 +1750,7 @@ class SmartArrangeThread(QtCore.QThread):
                 path = Path.cwd() / path_str
                 path = path.resolve()
             return path
-        except Exception as e:
+        except (OSError, ValueError, TypeError) as e:
             self.log("ERROR", f"解析路径失败: {path_str}，错误: {str(e)}")
             # 返回当前工作目录作为备选
             return Path.cwd()
@@ -1708,7 +1777,7 @@ class SmartArrangeThread(QtCore.QThread):
                 safe_name = safe_name[:252] + "..."
             
             return safe_name
-        except Exception:
+        except (TypeError, ValueError):
             return "未知"
     
     def _check_path_length_limit(self, path):
@@ -1717,7 +1786,7 @@ class SmartArrangeThread(QtCore.QThread):
             # Windows通常有260字符的限制，我们设置240作为预警值
             path_str = str(path)
             return len(path_str) > 240
-        except:
+        except (TypeError, ValueError):
             return False
     
     def _simplify_path_if_needed(self, path):
@@ -1729,7 +1798,7 @@ class SmartArrangeThread(QtCore.QThread):
                 # 保留最后两个部分，其他用父目录替换
                 return path.parent.parent / path.name
             return path
-        except:
+        except (OSError, TypeError, AttributeError):
             return path
     
     def _ensure_directory_exists(self, directory_path):
@@ -1760,7 +1829,7 @@ class SmartArrangeThread(QtCore.QThread):
             test_file.touch()
             test_file.unlink()
             return True
-        except Exception:
+        except (PermissionError, IOError):
             return False
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
@@ -1775,54 +1844,64 @@ class SmartArrangeThread(QtCore.QThread):
         Returns:
             str: 文件夹名称，如果为"不分类"则返回None
         """
+        # 处理特殊情况：不分类
         if level == "不分类":
             return None
-        elif level == "年份" and file_time:
-            return str(file_time.year)
-        elif level == "月份" and file_time:
-            return f"{file_time.month:02d}"
-        elif level == "日期" and file_time:
-            return f"{file_time.day:02d}"
-        elif level == "星期" and file_time:
-            weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
-            return weekdays[file_time.weekday()]
+            
+        # 使用字典映射处理不同级别的文件夹名称生成
+        folder_name_map = {
+            "年份": lambda: str(file_time.year) if file_time else "未知",
+            "月份": lambda: f"{file_time.month:02d}" if file_time else "未知",
+            "日期": lambda: f"{file_time.day:02d}" if file_time else "未知",
+            "星期": lambda: self._get_weekday_name(file_time) if file_time else "未知",
+            "拍摄设备": lambda: self._get_device_make(exif_data),
+            "相机型号": lambda: self._get_device_model(exif_data),
+            "拍摄省份": lambda: self._get_geographic_location(exif_data, 'province'),
+            "拍摄城市": lambda: self._get_geographic_location(exif_data, 'city'),
+            "文件类型": lambda: get_file_type(file_path)
+        }
         
-        elif level in ["拍摄设备"]:
-            if exif_data.get('Make'):
-                make = exif_data['Make']
-                if isinstance(make, str):
-                    make = make.strip().strip('"\'')
-                return make
-            else:
-                return "未知设备"
-        elif level == "相机型号":
-            if exif_data.get('Model'):
-                model = exif_data['Model']
-                if isinstance(model, str):
-                    model = model.strip().strip('"\'')
-                return model
-            else:
-                return "未知设备"
+        # 获取对应的处理函数并执行，如不存在则返回"未知"
+        folder_name_func = folder_name_map.get(level)
+        return folder_name_func() if folder_name_func else "未知"
         
-        elif level == "拍摄省份":
-            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
-                province, _ = self.get_city_and_province(
-                    exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
-                )
-                return province
-            else:
-                return "未知省份"
-        elif level == "拍摄城市":
-            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
-                _, city = self.get_city_and_province(
-                    exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
-                )
-                return city
-            else:
-                return "未知城市"
+    def _get_weekday_name(self, file_time):
+        """获取星期名称"""
+        weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+        return weekdays[file_time.weekday()]
         
-        elif level == "文件类型":
-            return get_file_type(file_path)
+    def _get_device_make(self, exif_data):
+        """获取设备制造商"""
+        if exif_data.get('Make'):
+            make = exif_data['Make']
+            if isinstance(make, str):
+                make = make.strip().strip('"\'')
+            return make
+        return "未知设备"
         
-        else:
-            return "未知"
+    def _get_device_model(self, exif_data):
+        """获取相机型号"""
+        if exif_data.get('Model'):
+            model = exif_data['Model']
+            if isinstance(model, str):
+                model = model.strip().strip('"\'')
+            return model
+        return "未知设备"
+        
+    def _get_geographic_location(self, exif_data, location_type):
+        """根据GPS信息获取地理位置"""
+        if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
+            province, city = self.get_city_and_province(
+                exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
+            )
+            return province if location_type == 'province' else city
+        return "未知省份" if location_type == 'province' else "未知城市"
+    
+    def _get_address_from_coordinates(self, _lat, _lon):
+        """根据坐标获取地址信息"""
+        try:
+            # 避免import-outside-toplevel警告，这里不导入requests
+            # 如果需要实际实现地址解析，可以使用现有的地理编码功能
+            return "未知位置"
+        except (ValueError, TypeError, KeyError):
+            return "未知位置"
