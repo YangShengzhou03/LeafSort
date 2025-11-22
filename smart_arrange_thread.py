@@ -88,7 +88,7 @@ class SmartArrangeThread(QtCore.QThread):
     progress_signal = QtCore.pyqtSignal(int)
 
     def __init__(self, parent=None, folders=None, classification_structure=None, file_name_structure=None,
-                 destination_root=None, separator="-", time_derive="文件创建时间"):
+                 destination_root=None, separator="-", time_derive="文件创建时间", operation_type=0):
         super().__init__(parent)
         self.parent = parent
         self.folders = folders or []
@@ -97,6 +97,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.destination_root = destination_root
         self.separator = separator
         self.time_derive = time_derive
+        self.operation_type = operation_type  # 0: 移动, 1: 复制
         self._is_running = True
         self._stop_flag = False
         self._stop_lock = threading.Lock()
@@ -331,19 +332,20 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 # 执行文件操作，增加更多错误处理
                 try:
-                    if self.destination_root:
-                        import shutil
-                        # 复制文件时保留元数据
+                    import shutil
+                    # 使用operation_type参数决定操作类型，0:移动, 1:复制
+                    if hasattr(self, 'operation_type') and self.operation_type == 1:
+                        # 复制文件
                         shutil.copy2(old_path, unique_path)
                         self.log("INFO", f"复制文件成功: {old_path.name} -> {unique_path.name}")
                     else:
+                        # 移动文件
                         if old_path.parent == unique_path.parent:
                             # 同一目录下重命名
                             old_path.rename(unique_path)
                             self.log("DEBUG", f"重命名文件成功: {old_path.name} -> {unique_path.name}")
                         else:
                             # 跨目录移动
-                            import shutil
                             # 先尝试直接移动
                             try:
                                 shutil.move(old_path, unique_path)
@@ -406,10 +408,13 @@ class SmartArrangeThread(QtCore.QThread):
                 if file_path != target_path:
                     try:
                         import shutil
-                        if self.destination_root:
+                        # 使用operation_type参数决定操作类型，0:移动, 1:复制
+                        if hasattr(self, 'operation_type') and self.operation_type == 1:
+                            # 复制文件
                             shutil.copy2(file_path, target_path)
                             self.log("INFO", f"复制文件: {file_path} -> {target_path}")
                         else:
+                            # 移动文件
                             shutil.move(file_path, target_path)
                             self.log("INFO", f"移动文件: {file_path} -> {target_path}")
                         
@@ -422,7 +427,8 @@ class SmartArrangeThread(QtCore.QThread):
                     except Exception as e:
                         self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
         
-        operation_type = "复制" if self.destination_root else "移动"
+        # 使用operation_type参数决定操作类型描述
+        operation_type = "复制" if (hasattr(self, 'operation_type') and self.operation_type == 1) else "移动"
         self.log("INFO", f"处理完成，共{operation_type} {file_count} 个文件")
 
     def delete_empty_folders(self):

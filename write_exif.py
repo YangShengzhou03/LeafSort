@@ -452,7 +452,8 @@ class WriteExifPage(QWidget):
                          "请重新启动应用程序或联系技术支持")
             return False
             
-        folders = self.folder_page.get_all_folders()
+        # 使用config_manager获取有效文件夹列表，替代不存在的get_all_folders方法
+        folders = config_manager.get_valid_folders()
         if not folders:
             self.log("WARNING", "请先导入一个有效的文件夹\n\n"
                            "点击\"导入文件夹\"按钮添加包含图片的文件夹")

@@ -19,12 +19,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """初始化主窗口"""
         super().__init__()
         
-        # 页面相关初始化
+        # 初始化变量
         self.current_page_index = -1
         self.page_cache = {}
         self._drag_position = QPoint()
         
-        # 初始化UI
+        # 初始化UI和组件
         self.setupUi(self)
         self._init_window()
         self._init_system_tray()
@@ -45,7 +45,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         # 连接信号槽
         self._connect_signals()
-        
 
     def _init_window(self):
         """初始化窗口属性"""
@@ -63,8 +62,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnClose.clicked.connect(self.hide_to_tray)
         
         # 文件浏览按钮
-        self.btnBrowseSource.clicked.connect(self._on_browse_source)
-        self.btnBrowseTarget.clicked.connect(self._on_browse_target)
+        self.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.inputSourceFolder))
+        self.btnBrowseTarget.clicked.connect(lambda: self._browse_directory("选择目标文件夹", self.inputTargetFolder))
         
         # 窗口拖动事件
         self.mousePressEvent = self._on_mouse_press
@@ -95,14 +94,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """创建托盘菜单"""
         self.tray_menu = QMenu()
         
-        # 创建菜单动作
+        # 创建并添加菜单动作
         self.action_show = QAction("显示窗口", self)
         self.action_show.triggered.connect(self._show_window)
         
         self.action_exit = QAction("退出", self)
         self.action_exit.triggered.connect(self._exit_application)
         
-        # 添加菜单项
         self.tray_menu.addAction(self.action_show)
         self.tray_menu.addSeparator()
         self.tray_menu.addAction(self.action_exit)
@@ -122,10 +120,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _tray_icon_activated(self, reason):
         """处理托盘图标激活事件"""
         if reason == QSystemTrayIcon.ActivationReason.Trigger:
-            if self.isHidden():
-                self._show_window()
-            else:
-                self.hide()
+            self._show_window() if self.isHidden() else self.hide()
                 
     def hide_to_tray(self):
         """隐藏窗口到系统托盘"""
@@ -139,11 +134,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def _on_mouse_press(self, event):
         """处理鼠标按下事件，实现窗口拖动"""
-        if event.button() == Qt.MouseButton.LeftButton:
-            # 仅在窗口标题区域(顶部60px)允许拖动
-            if self.rect().contains(event.pos()) and event.pos().y() < 60:
-                self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
-                event.accept()
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()) and event.pos().y() < 60:
+            self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
+            event.accept()
     
     def _on_mouse_move(self, event):
         """处理鼠标移动事件，实现窗口拖动"""
@@ -169,37 +162,25 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         except Exception as e:
             self.log("ERROR", f"打开{dialog_title}对话框失败: {str(e)}")
     
-    def _on_browse_source(self):
-        """处理源文件夹浏览按钮点击"""
-        self._browse_directory("选择源文件夹", self.inputSourceFolder)
-    
-    def _on_browse_target(self):
-        """处理目标文件夹浏览按钮点击"""
-        self._browse_directory("选择目标文件夹", self.inputTargetFolder)
-    
     def log(self, level, message):
         """记录日志消息到当前页面的日志组件"""
         # 格式化日志消息
         timestamp = QtCore.QDateTime.currentDateTime().toString("yyyy-MM-dd HH:mm:ss")
         log_message = f"[{timestamp}] [{level}] {message}\n"
         
+        # 简化日志组件查找逻辑
+        log_components = {
+            0: 'textBrowser_import_info',
+            1: 'smartArrangeLogOutputTextEdit',
+            2: 'textBrowser_duplication_log',
+            3: 'textBrowser_EXIF_log'
+        }
+        
         try:
-            # 定义各页面对应的主要日志组件（简化版本）
-            primary_log_components = {
-                0: 'textBrowser_import_info',
-                1: 'smartArrangeLogOutputTextEdit',
-                2: 'textBrowser_duplication_log',
-                3: 'textBrowser_EXIF_log'
-            }
-            
-            # 获取当前页面索引并尝试输出日志
-            current_index = self.stackedWidget.currentIndex()
-            component_name = primary_log_components.get(current_index)
-            
+            component_name = log_components.get(self.stackedWidget.currentIndex())
             if component_name:
                 log_widget = getattr(self, component_name, None)
                 if log_widget and hasattr(log_widget, 'append'):
                     log_widget.append(log_message)
         except Exception:
-            # 静默失败，避免日志功能影响主程序运行
-            pass
+            pass  # 静默失败，避免日志功能影响主程序运行
