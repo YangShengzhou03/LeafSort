@@ -18,34 +18,26 @@ from config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
-# 文件扩展名定义 - 简化为常见格式，保留完整功能
 IMAGE_EXTENSIONS = (
-    # 常见图像格式
     '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
-    # 相机RAW格式
     '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
-    # 其他格式
     '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'
 )
 
 VIDEO_EXTENSIONS = (
-    # 常见视频格式
     '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.webm'
 )
 
 AUDIO_EXTENSIONS = (
-    # 常见音频格式
     '.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a'
 )
 
 DOCUMENT_EXTENSIONS = (
-    # 常见文档格式
     '.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx',
     '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'
 )
 
 ARCHIVE_EXTENSIONS = (
-    # 常见压缩格式
     '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar'
 )
 
@@ -81,7 +73,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.destination_root = destination_root
         self.separator = separator
         self.time_derive = time_derive
-        self.operation_type = operation_type  # 0: 复制, 1: 移动
+        self.operation_type = operation_type
         self._is_running = True
         self._stop_flag = False
         self._stop_lock = threading.Lock()
@@ -91,10 +83,8 @@ class SmartArrangeThread(QtCore.QThread):
         self.log_signal = parent.log_signal if parent else None
         self.files_to_rename = []
         self.files_lock = threading.Lock()
-        # 初始化地理数据属性
         self.city_data = {}
         self.province_data = {}
-        # 初始化exiftool守护进程
         self.exiftool_process = None
         self.exiftool_available = False
         self._initialize_exiftool()

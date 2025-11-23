@@ -9,25 +9,17 @@ from common import get_resource_path
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
         super().__init__()
-        
         self.setupUi(self)
-        
         self._drag_position = QPoint()
         self.tray_icon = None
-        
         self._initialize_pages()
-        
         self._setup_ui()
         self._connect_signals()
         
     def _initialize_pages(self):
-        # 初始化各功能页面
         self.folder_page = FolderPage(self)
-        # 关键修复：传递folder_page参数给SmartArrangeManager
         self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
         self.write_exif_page = WriteExifManager(self)
-        
-        # 确保SmartArrangeManager能获取用户选择的文件夹
         print("INFO: 已初始化所有页面，SmartArrangeManager已连接到FolderPage")
 
     def _setup_ui(self):
@@ -35,7 +27,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-        
         self._setup_system_tray()
         
     def _setup_system_tray(self):
@@ -56,7 +47,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.activated.connect(self._handle_tray_activation)
 
     def _connect_signals(self):
-        # 移除对_show_settings的连接，因为该方法已被移除
         self.btnMinimize.clicked.connect(self.showMinimized)
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
@@ -77,14 +67,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
     def _hide_to_tray(self):
         self.hide()
-        self.tray_icon and self.tray_icon.show()
+        if self.tray_icon:
+            self.tray_icon.show()
     
     def _show_window(self):
         self.show()
         self.raise_()
     
     def _exit_app(self):
-        self.tray_icon.hide()
+        if self.tray_icon:
+            self.tray_icon.hide()
         QtWidgets.QApplication.quit()
     
     def _handle_tray_activation(self, reason):
@@ -94,7 +86,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._hide_to_tray()
     
     def _toggle_maximize(self):
-        self.showNormal() if self.isMaximized() else self.showMaximized()
+        if self.isMaximized():
+            self.showNormal()
+        else:
+            self.showMaximized()
     
     def closeEvent(self, event):
         event.ignore()
