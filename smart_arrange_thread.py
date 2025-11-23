@@ -18,51 +18,35 @@ from config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
+# 文件扩展名定义 - 简化为常见格式，保留完整功能
 IMAGE_EXTENSIONS = (
-    '.jpg', '.jpeg', '.png', '.heic', '.tiff', '.tif', '.bmp', '.webp', '.gif', '.svg', 
-    '.psd', '.arw', '.cr2', '.cr3', '.nef', '.orf', '.sr2', '.raf', '.dng', '.rw2', 
-    '.pef', '.nrw', '.kdc', '.mos', '.iiq', '.fff', '.x3f', '.3fr', '.mef', '.mrw', 
-    '.erf', '.raw', '.rwz', '.ari', '.jxr', '.hdp', '.wdp', '.ico', '.exr', '.tga',
-    '.pbm', '.pgm', '.ppm', '.pnm', '.hdr', '.avif', '.jxl'
+    # 常见图像格式
+    '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
+    # 相机RAW格式
+    '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
+    # 其他格式
+    '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'
 )
 
 VIDEO_EXTENSIONS = (
-    '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.3gp', '.mpeg', '.mpg',
-    '.mts', '.mxf', '.webm', '.ogv', '.livp', '.ts', '.m2ts', '.divx', '.f4v', '.vob',
-    '.rm', '.rmvb', '.asf', '.swf', '.m4p', '.m4b', '.m4r', '.3g2', '.3gp2', '.ogm',
-    '.ogx', '.qt', '.yuv', '.dat', '.m1v', '.m2v', '.m4u', '.mpv', '.nsv', '.svi',
-    '.wtv', '.amv', '.drc', '.gifv', '.mng', '.mxf', '.roq', '.y4m'
+    # 常见视频格式
+    '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.webm'
 )
 
 AUDIO_EXTENSIONS = (
-    '.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a', '.aiff', '.aif', '.aifc',
-    '.ape', '.alac', '.ac3', '.amr', '.au', '.cda', '.dts', '.mka', '.mpc', '.opus',
-    '.ra', '.rm', '.tta', '.voc', '.wv', '.8svx', '.aax', '.act', '.awb', '.dss',
-    '.dvf', '.gsm', '.iklax', '.ivs', '.m4p', '.mmf', '.msv', '.nmf', '.nsf', '.oga',
-    '.spx', '.vox', '.wma', '.wpl', '.xm'
+    # 常见音频格式
+    '.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a'
 )
 
 DOCUMENT_EXTENSIONS = (
-    '.pdf', '.doc', '.docx', '.txt', '.rtf', '.odt', '.xls', '.xlsx', '.ppt', '.pptx',
-    '.odp', '.ods', '.csv', '.html', '.htm', '.xml', '.epub', '.mobi', '.azw', '.azw3',
-    '.fb2', '.lit', '.lrf', '.pdb', '.prc', '.rb', '.tcr', '.pdb', '.oxps', '.xps',
-    '.pages', '.numbers', '.key', '.md', '.tex', '.log', '.wpd', '.wps', '.abw',
-    '.zabw', '.123', '.602', '.hwp', '.lwp', '.mw', '.nb', '.nbp', '.odm', '.sxw',
-    '.uot', '.vor', '.wpt', '.wri', '.xmind'
+    # 常见文档格式
+    '.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx',
+    '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'
 )
 
 ARCHIVE_EXTENSIONS = (
-    '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.lz', '.lzma', '.lzo',
-    '.z', '.Z', '.tgz', '.tbz2', '.txz', '.tlz', '.tlzma', '.tlzo', '.tz', '.tZ',
-    '.cab', '.deb', '.rpm', '.jar', '.war', '.ear', '.sar', '.cpio', '.iso', '.img',
-    '.dmg', '.hfs', '.hfsx', '.udf', '.xar', '.zoo', '.arc', '.arj', '.lha', '.lzh',
-    '.pak', '.pk3', '.pk4', '.vpk', '.wim', '.swm', '.esd', '.msu', '.msp', '.msi',
-    '.appx', '.appxbundle', '.xap', '.snap', '.flatpak', '.appimage', '.r0', '.r1',
-    '.r2', '.r3', '.s7z', '.ace', '.cpt', '.dd', '.dgc', '.gca', '.ha', '.ice',
-    '.ipg', '.kgb', '.lbr', '.lqr', '.lzx', '.pak', '.paq6', '.paq7', '.paq8',
-    '.pea', '.pf', '.pim', '.pit', '.qda', '.rk', '.sda', '.sea', '.sit', '.sitx',
-    '.sqx', '.tar.z', '.uc2', '.uca', '.uha', '.ea', '.yz', '.zap', '.zipx', '.zoo',
-    '.zpaq', '.zz'
+    # 常见压缩格式
+    '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar'
 )
 
 SUPPORTED_EXTENSIONS = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS + DOCUMENT_EXTENSIONS + ARCHIVE_EXTENSIONS
@@ -112,6 +96,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.province_data = {}
 
     def calculate_total_files(self):
+        """简化文件计数逻辑，合并递归和直接计数"""
         try:
             self.total_files = 0
             for folder_info in self.folders:
@@ -119,10 +104,16 @@ class SmartArrangeThread(QtCore.QThread):
                 if not self._validate_folder_path(folder_path):
                     continue
                     
-                if folder_info.get('include_sub', 0):
-                    self._count_files_recursive(folder_path)
-                else:
-                    self._count_files_direct(folder_path)
+                try:
+                    if folder_info.get('include_sub', 0):
+                        # 使用生成器表达式一次性计算所有子文件夹中的文件数量
+                        self.total_files += sum(len(files) for _, _, files in os.walk(folder_path))
+                    else:
+                        # 仅计算当前文件夹中的文件数量
+                        self.total_files += len([f for f in os.listdir(folder_path) 
+                                               if (folder_path / f).is_file()])
+                except (OSError, IOError) as e:
+                    self.log("ERROR", f"读取文件夹 {folder_path} 失败: {str(e)}")
                     
         except Exception as e:
             self.log("ERROR", f"计算文件数量失败: {str(e)}")

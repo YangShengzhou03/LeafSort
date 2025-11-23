@@ -38,20 +38,26 @@ class ConfigManager:
                 return func(self, *args, **kwargs)
         return wrapper
     
+    def _load_file(self, file_path: Path, default_value: Any) -> Any:
+        """通用文件加载方法，减少重复代码"""
+        try:
+            if file_path.exists():
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.warning(f"加载文件失败 {file_path}: {e}")
+        return default_value
+    
     def _load_config(self) -> Dict[str, Any]:
         """加载配置文件，如果不存在则返回默认配置"""
         default_config = self._get_default_config()
+        config = self._load_file(self.config_file, default_config)
         
-        try:
-            if self.config_file.exists():
-                with open(self.config_file, 'r', encoding='utf-8') as f:
-                    config = json.load(f)
-                    self._update_config_with_defaults(config, default_config)
-                    return config
-        except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"加载配置文件失败: {e}")
+        # 如果配置被加载（不是默认配置），则更新默认值
+        if config is not default_config:
+            self._update_config_with_defaults(config, default_config)
         
-        return default_config
+        return config
     
     def _update_config_with_defaults(self, config: Dict[str, Any], default_config: Dict[str, Any]):
         """使用默认值更新配置"""
@@ -84,27 +90,24 @@ class ConfigManager:
     
     def _load_location_cache(self) -> Dict[str, Any]:
         """加载位置缓存文件"""
+        return self._load_file(self.cache_file, {})
+    
+    def _save_file_no_lock(self, file_path: Path, data: Any) -> bool:
+        """通用文件保存方法，减少重复代码"""
         try:
-            if self.cache_file.exists():
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except (json.JSONDecodeError, IOError) as e:
-            logger.warning(f"加载位置缓存文件失败: {e}")
-        
-        return {}
+            self._ensure_directory(file_path.parent)
+            
+            with open(file_path, 'w', encoding='utf-8') as f:
+                json.dump(data, f, ensure_ascii=False, indent=2)
+            return True
+        except IOError as e:
+            logger.error(f"保存文件失败 {file_path}: {e}")
+            return False
     
     def _save_config_no_lock(self) -> bool:
         """无锁保存配置"""
-        try:
-            self.config["last_modified"] = datetime.now().isoformat()
-            self._ensure_directory(self.config_file.parent)
-            
-            with open(self.config_file, 'w', encoding='utf-8') as f:
-                json.dump(self.config, f, ensure_ascii=False, indent=2)
-            return True
-        except IOError as e:
-            logger.error(f"保存配置文件失败: {e}")
-            return False
+        self.config["last_modified"] = datetime.now().isoformat()
+        return self._save_file_no_lock(self.config_file, self.config)
     
     @_thread_safe_method
     def save_config(self) -> bool:
@@ -114,15 +117,7 @@ class ConfigManager:
     @_thread_safe_method
     def save_location_cache(self) -> bool:
         """保存位置缓存"""
-        try:
-            self._ensure_directory(self.cache_file.parent)
-            
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
-                json.dump(self.location_cache, f, ensure_ascii=False, indent=2)
-            return True
-        except IOError as e:
-            logger.error(f"保存位置缓存文件失败: {e}")
-            return False
+        return self._save_file_no_lock(self.cache_file, self.location_cache)
     
     def _ensure_directory(self, directory: Path):
         """确保目录存在"""
@@ -238,17 +233,29 @@ class ConfigManager:
         
         return self.save_location_cache()
     
-    @_thread_safe_method
-    def get_cached_location(self, latitude: float, longitude: float) -> Optional[str]:
-        """获取缓存的位置信息"""
-        cache_key = f"{latitude:.6f},{longitude:.6f}"
+    def _get_cache_key(self, latitude: float, longitude: float) -> str:
+        """生成缓存键"""
+        return f"{latitude:.6f},{longitude:.6f}"
+    
+    def _update_cache_access_time(self, cached_data: Dict[str, Any]):
+        """更新缓存访问时间"""
+        cached_data["last_accessed"] = datetime.now().timestamp()
+    
+    def _get_cached_location_no_lock(self, latitude: float, longitude: float) -> Optional[str]:
+        """无锁获取缓存位置信息"""
+        cache_key = self._get_cache_key(latitude, longitude)
         cached_data = self.location_cache.get(cache_key)
         
         if cached_data:
-            cached_data["last_accessed"] = datetime.now().timestamp()
+            self._update_cache_access_time(cached_data)
             return cached_data["address"]
         
         return None
+    
+    @_thread_safe_method
+    def get_cached_location(self, latitude: float, longitude: float) -> Optional[str]:
+        """获取缓存的位置信息"""
+        return self._get_cached_location_no_lock(latitude, longitude)
     
     @_thread_safe_method
     def get_cached_location_with_tolerance(self, latitude: float, longitude: float, tolerance: float = 0.01) -> Optional[str]:
@@ -257,27 +264,18 @@ class ConfigManager:
         if exact_match:
             return exact_match
         
+        tolerance_squared = tolerance ** 2
         for cache_key, cached_data in self.location_cache.items():
             try:
                 cached_lat, cached_lon = map(float, cache_key.split(','))
-                distance = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2) ** 0.5
-                if distance <= tolerance:
-                    cached_data["last_accessed"] = datetime.now().timestamp()
+                # 避免计算平方根以提高性能
+                distance_squared = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2)
+                if distance_squared <= tolerance_squared:
+                    self._update_cache_access_time(cached_data)
                     return cached_data["address"]
             except (ValueError, IndexError):
                 logger.warning(f"无效的缓存键: {cache_key}")
                 continue
-        
-        return None
-    
-    def _get_cached_location_no_lock(self, latitude: float, longitude: float) -> Optional[str]:
-        """无锁获取缓存位置信息"""
-        cache_key = f"{latitude:.6f},{longitude:.6f}"
-        cached_data = self.location_cache.get(cache_key)
-        
-        if cached_data:
-            cached_data["last_accessed"] = datetime.now().timestamp()
-            return cached_data["address"]
         
         return None
     
@@ -324,11 +322,9 @@ class ConfigManager:
         """获取多个设置"""
         if keys:
             return {key: self.config["settings"].get(key) for key in keys}
-        else:
-            default_config = self._get_default_config()
-            result = default_config["settings"].copy()
-            result.update(self.config["settings"])
-            return result
+        
+        # 合并默认设置和当前设置，确保返回完整的设置集
+        return self.config["settings"].copy()
     
     @_thread_safe_method
     def reset_settings(self, keys: List[str] = None) -> bool:
@@ -351,20 +347,22 @@ class ConfigManager:
     
     def _validate_setting(self, key: str, value: Any) -> bool:
         """验证设置值"""
+        # 简化验证规则，只验证关键设置
         validation_rules = {
             "thumbnail_size": lambda v: isinstance(v, int) and 0 < v <= 2000,
             "max_cache_size": lambda v: isinstance(v, int) and v >= 0,
             "default_view": lambda v: isinstance(v, str) and v in ["grid", "list"],
-            "dark_mode": lambda v: isinstance(v, bool),
-            "auto_update_metadata": lambda v: isinstance(v, bool),
-            "use_gps_cache": lambda v: isinstance(v, bool),
             "map_provider": lambda v: isinstance(v, str) and v in ["gaode", "baidu", "bing", "google"]
         }
+        
+        # 对于布尔类型的设置，直接检查类型
+        if key in ["dark_mode", "auto_update_metadata", "use_gps_cache", "show_thumbnails", "enable_exif_edit", "remember_window_size"]:
+            return isinstance(value, bool)
         
         if key in validation_rules:
             return validation_rules[key](value)
         
-        logger.debug(f"未知设置键: {key}")
+        # 其他设置默认通过验证
         return True
     
     def _get_default_config(self) -> Dict[str, Any]:

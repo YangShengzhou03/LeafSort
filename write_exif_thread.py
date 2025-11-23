@@ -47,10 +47,6 @@ class WriteExifThread(QThread):
                 pass
 
     def run(self):
-        total_files = 0
-        success_count = 0
-        error_count = 0
-        
         image_paths = self._collect_image_paths()
         total_files = len(image_paths)
         
@@ -65,114 +61,71 @@ class WriteExifThread(QThread):
         self.log_signal.emit("WARNING", f"开始处理 {total_files} 张图片")
         self.progress_updated.emit(0)
         
-        futures = self._create_processing_tasks(image_paths, error_count)
-        
-        if futures:
-            success_count, error_count = self._execute_futures(futures, success_count, error_count)
+        success_count, error_count = self._process_all_images(image_paths)
         
         self._log_completion_summary(success_count, error_count, total_files)
         self.finished_conversion.emit()
     
-    def _create_processing_tasks(self, image_paths, error_count):
-        """创建图像处理任务，避免嵌套try-except"""
-        futures = {}
-        with ThreadPoolExecutor(max_workers=min(4, os.cpu_count() or 1)) as executor:
-            for path in image_paths:
-                if self._stop_requested:
-                    break
+    def _process_all_images(self, image_paths):
+        """处理所有图像，简化的任务执行流程"""
+        success_count = 0
+        error_count = 0
+        max_workers = min(4, os.cpu_count() or 1)
+        
+        # 预先过滤文件，避免在executor内部进行过滤
+        valid_paths = []
+        for path in image_paths:
+            if self._stop_requested:
+                break
                 
-                # 检查文件大小
-                file_size = self._check_file_size(path)
+            # 检查文件大小
+            try:
+                file_size = os.path.getsize(path)
                 if file_size > 500 * 1024 * 1024:
                     self.log_signal.emit("ERROR", f"文件 {os.path.basename(path)} 太大了(超过500MB)，暂不支持处理")
                     error_count += 1
                     continue
+            except (IOError, OSError) as e:
+                self.log_signal.emit("ERROR", f"获取文件大小失败 {os.path.basename(path)}: {str(e)}")
+                error_count += 1
+                continue
                 
-                # 提交任务
-                future = self._submit_task(executor, path)
-                if future:
-                    futures[future] = path
-            
-            return futures
-    
-    def _check_file_size(self, file_path):
-        """检查文件大小"""
-        try:
-            return os.path.getsize(file_path)
-        except (IOError, OSError, ValueError, TypeError) as e:
-            self.log_signal.emit("ERROR", f"获取文件大小失败 {os.path.basename(file_path)}: {str(e)}")
-            return 0
-    
-    def _submit_task(self, executor, file_path):
-        """提交任务到执行器
+            valid_paths.append(path)
         
-        Args:
-            executor: ThreadPoolExecutor实例
-            file_path: 要处理的文件路径
+        # 使用线程池处理有效文件
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
+            # 提交所有任务
+            future_to_path = {executor.submit(self.process_image, path): path for path in valid_paths}
             
-        Returns:
-            Future对象或None（如果提交失败）
-        """
-        try:
-            return executor.submit(self.process_image, file_path)
-        except (IOError, OSError, ValueError, TypeError) as e:
-            self.log_signal.emit("ERROR", f"添加文件 {os.path.basename(file_path)} 到任务队列失败: {str(e)}")
-            return None
-    
-    def _execute_futures(self, futures, success_count, error_count):
-        """执行所有futures任务并处理结果
-        
-        Args:
-            futures: Future对象字典
-            success_count: 成功计数
-            error_count: 错误计数
-            
-        Returns:
-            tuple: (success_count, error_count) 更新后的计数
-        """
-        try:
-            for i, future in enumerate(as_completed(futures), 1):
+            # 处理结果
+            for i, future in enumerate(as_completed(future_to_path), 1):
                 if self._stop_requested:
-                    self._cancel_all_tasks(futures)
+                    self._cancel_all_tasks(future_to_path)
                     break
                 
-                # 处理单个future结果
-                success, error = self._process_future_result(future, futures)
-                success_count += success
-                error_count += error
+                path = future_to_path[future]
+                try:
+                    future.result(timeout=30)
+                    success_count += 1
+                except TimeoutError:
+                    self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时间太长，已超时")
+                    error_count += 1
+                except (IOError, ValueError, TypeError) as e:
+                    self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
+                    error_count += 1
                 
                 # 更新进度
-                progress = int((i / len(futures)) * 100)
+                progress = int((i / len(future_to_path)) * 100)
                 self.progress_updated.emit(progress)
-        except (IOError, OSError, ValueError, TypeError) as e:
-            self.log_signal.emit("ERROR", f"任务调度过程中发生错误: {str(e)}")
-            error_count += 1
         
         return success_count, error_count
     
     def _cancel_all_tasks(self, futures):
+        """取消所有任务"""
         for f in futures:
             f.cancel()
         time.sleep(0.1)
         self.log_signal.emit("DEBUG", "EXIF写入操作已成功中止")
-    
-    def _process_future_result(self, future, futures):
-        success = 0
-        error = 0
-        
-        try:
-            future.result(timeout=30)
-            success = 1
-        except TimeoutError:
-            file_path = futures[future]
-            self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时间太长，已超时")
-            error = 1
-        except (IOError, ValueError, TypeError) as e:
-            file_path = futures[future]
-            self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(file_path)} 时出错: {str(e)}")
-            error = 1
-        
-        return success, error
     
     def _log_completion_summary(self, success_count, error_count, total_files):
         self.log_signal.emit("DEBUG", "=" * 40)
@@ -180,24 +133,36 @@ class WriteExifThread(QThread):
         self.log_signal.emit("DEBUG", "=" * 3 + "LeafView © 2025 Yangshengzhou.All Rights Reserved" + "=" * 3)
 
     def _collect_image_paths(self):
-        image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv', '.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf')
+        """收集所有图像路径"""
+        # 简化图像扩展名列表，只保留常见格式
+        image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv')
+        # 相机RAW格式单独列出
+        raw_extensions = ('.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf')
+        all_extensions = image_extensions + raw_extensions
+        
         image_paths = []
         
         for folder_path, include_sub in self.folders_dict.items():
-            self._process_folder(folder_path, include_sub, image_extensions, image_paths)
-                
+            if os.path.isdir(folder_path):
+                if include_sub:
+                    # 递归遍历子文件夹
+                    for root, _, files in os.walk(folder_path):
+                        if self._stop_requested:
+                            break
+                        image_paths.extend([os.path.join(root, f) for f in files 
+                                          if os.path.splitext(f)[1].lower() in all_extensions])
+                else:
+                    # 仅处理当前文件夹
+                    try:
+                        files = [f for f in os.listdir(folder_path) 
+                                if os.path.isfile(os.path.join(folder_path, f)) 
+                                and os.path.splitext(f)[1].lower() in all_extensions]
+                        image_paths.extend([os.path.join(folder_path, f) for f in files])
+                    except (IOError, OSError) as e:
+                        self.log_signal.emit("ERROR", f"读取文件夹 {folder_path} 失败: {str(e)}")
+        
         logger.info("共收集到 %d 个图像文件", len(image_paths))
         return image_paths
-    
-    def _process_folder(self, folder_path, include_sub, image_extensions, image_paths):
-        """处理单个文件夹
-        
-        Args:
-            folder_path: 文件夹路径
-            include_sub: 是否包含子文件夹（1为包含，0为不包含）
-            image_extensions: 支持的图像扩展名元组
-            image_paths: 存储图像路径的列表
-        """
         # 检查文件夹是否存在
         if not os.path.exists(folder_path):
             logger.warning("文件夹不存在: %s", folder_path)
