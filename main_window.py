@@ -6,8 +6,8 @@ from PyQt6.QtGui import QAction
 from SettingsDialog import SettingsDialog
 from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
-from smart_arrange import SmartArrangePage
-from write_exif import WriteExifPage
+from smart_arrange import SmartArrangeManager
+from write_exif import WriteExifManager
 from common import get_resource_path
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -33,8 +33,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """初始化各个功能页面"""
         # 简化页面初始化，只传递必要的parent参数
         self.folder_page = FolderPage(self)
-        self.smart_arrange_page = SmartArrangePage(self)
-        self.write_exif_page = WriteExifPage(self)
+        self.smart_arrange_page = SmartArrangeManager(self)
+        self.write_exif_page = WriteExifManager(self)
 
     def _setup_ui(self):
         """设置UI"""

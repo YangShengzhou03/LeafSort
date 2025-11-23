@@ -1,10 +1,8 @@
 from datetime import datetime
-from PyQt6 import QtWidgets
-from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QInputDialog, QMessageBox, QFileDialog
+from PyQt6.QtCore import pyqtSignal, QObject
 from smart_arrange_thread import SmartArrangeThread
 
-class SmartArrangePage(QtWidgets.QWidget):
+class SmartArrangeManager(QObject):
     log_signal = pyqtSignal(str, str)
 
     def __init__(self, parent=None, folder_page=None):
@@ -495,10 +493,7 @@ class SmartArrangePage(QtWidgets.QWidget):
             self.log_signal.emit(level, log_message)
         except Exception:
             print(log_message)
-            try:
-                self.parent.log(level, message)
-            except Exception:
-                pass
+            pass
 
     def move_tag_back(self, button):
         self.selected_frame.layout().removeWidget(button)

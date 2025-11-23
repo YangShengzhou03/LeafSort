@@ -2,15 +2,14 @@ import os
 import json
 import re
 from datetime import datetime
-from PyQt6.QtWidgets import QWidget, QMessageBox
-from PyQt6.QtCore import pyqtSignal, QThread
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtCore import pyqtSignal, QThread, QObject
 from common import get_resource_path
 from config_manager import config_manager
 from write_exif_thread import WriteExifThread
 
 
-class WriteExifPage(QWidget):
+class WriteExifManager(QObject):
     log_signal = pyqtSignal(str, str)
     
     def __init__(self, parent=None):
@@ -206,25 +205,7 @@ class WriteExifPage(QWidget):
             return lat_decimal, lon_decimal
         return None
 
-    def get_location(self, address):
-        """通过地址获取地理位置坐标
-        
-        Args:
-            address: 地址字符串
-            
-        Returns:
-            坐标元组 (纬度, 经度)，获取失败返回None
-        """
-        try:
-            from common import get_address_from_coordinates
-            result = get_address_from_coordinates(address)
-            if result and 'location' in result:
-                location = result['location'].split(',')
-                if len(location) == 2:
-                    return float(location[1]), float(location[0])
-        except Exception as e:
-            self._safe_log("ERROR", f"获取地理位置失败: {e}")
-        return None
+
 
     def _setup_connections(self):
         """设置信号连接
@@ -482,10 +463,6 @@ class WriteExifPage(QWidget):
             self.log_signal.emit(level, log_message)
         except Exception:
             print(log_message)
-            try:
-                self.parent.log(level, message)
-            except Exception:
-                pass
 
     def on_finished(self):
         """处理EXIF写入完成事件"""
@@ -620,4 +597,4 @@ class WriteExifPage(QWidget):
             self.load_exif_settings()
         except Exception as e:
             self._safe_log("ERROR", f"更新UI组件时出错: {e}")
-
+
