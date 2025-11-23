@@ -264,7 +264,8 @@ class Ui_MainWindow(object):
         self.layoutSidebarDivider.addWidget(self.lineSidebar)
         self.layoutMainContainer.addLayout(self.layoutSidebarDivider)
         self.frameContentArea = QtWidgets.QFrame(parent=self.mainContainer)
-        self.frameContentArea.setStyleSheet("border-radius: 16px;")
+        self.frameContentArea.setStyleSheet("border-radius: 16px;\n"
+"background: transparent;")
         self.frameContentArea.setObjectName("frameContentArea")
         self.layoutContent = QtWidgets.QVBoxLayout(self.frameContentArea)
         self.layoutContent.setContentsMargins(0, 0, 0, 0)

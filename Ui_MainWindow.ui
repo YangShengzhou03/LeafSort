@@ -436,7 +436,8 @@ QScrollBar::add-line:vertical, QScrollBar::sub-line:vertical {
        <item>
         <widget class="QFrame" name="frameContentArea">
          <property name="styleSheet">
-          <string notr="true">border-radius: 16px;</string>
+          <string notr="true">border-radius: 16px;
+background: transparent;</string>
          </property>
          <layout class="QVBoxLayout" name="layoutContent" stretch="0,12">
           <property name="spacing">
