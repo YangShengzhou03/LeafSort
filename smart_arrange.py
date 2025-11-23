@@ -104,7 +104,7 @@ class SmartArrangeManager(QObject):
             if not folders:
                 self.log("WARNING", "No folder selected")
                 try:
-                    QtWidgets.QMessageBox.warning(self, "警告", "请先选择要整理的文件夹！")
+                    QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要整理的文件夹！")
                 except Exception as e:
                     self.log("ERROR", f"Failed to show warning message: {e}")
                 return
@@ -112,7 +112,7 @@ class SmartArrangeManager(QObject):
             self.log("DEBUG", f"folders: {len(folders)}")
             
             if not self.destination_root:
-                folder = QFileDialog.getExistingDirectory(self, "Select folder",
+                folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
                                                           options=QFileDialog.Option.ShowDirsOnly)
                 if not folder:
                     self.log("WARNING", "No destination")
@@ -135,7 +135,7 @@ class SmartArrangeManager(QObject):
             self.log("DEBUG", "confirm")
             
             reply = QMessageBox.question(
-                self,
+                self.parent,
                 "Confirm?",
                 "Operation cannot be undone!\n\n"
                 "• Move: Files moved, originals removed\n"
@@ -236,7 +236,7 @@ class SmartArrangeManager(QObject):
         
         if not stopped_status:
             try:
-                QMessageBox.information(self, "完成", "操作已完成！")
+                QMessageBox.information(self.parent, "完成", "操作已完成！")
             except Exception as e:
                 self.log("WARNING", f"{str(e)}")
         
@@ -345,7 +345,7 @@ class SmartArrangeManager(QObject):
         button.setProperty('original_text', original_text)
 
         if original_text == '自定义':
-            input_dialog = QInputDialog(self)
+            input_dialog = QInputDialog(self.parent)
             input_dialog.setWindowTitle("自定义标签")
             input_dialog.setLabelText("请输入自定义部分的文件名内容:")
             input_dialog.setTextEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
@@ -357,7 +357,7 @@ class SmartArrangeManager(QObject):
 
             if ok and custom_text:
                 if not self.is_valid_windows_filename(custom_text):
-                    QMessageBox.warning(self, "文件名无效", f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
+                    QMessageBox.warning(self.parent, "文件名无效", f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
                     return
 
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
