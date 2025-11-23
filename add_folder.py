@@ -64,10 +64,10 @@ class FolderPage(QtWidgets.QWidget):
                 elif os.path.isdir(item_path):
                     top_folder_count += 1
         except (OSError, FileNotFoundError, PermissionError) as e:
-            pass
+            print(f"读取文件夹信息时出错: {str(e)}")
         
         # 使用两列布局显示信息
-        info += f"\n{'-' * 60}\n"
+        info += f"\n{'-' * 10}注意！会递归遍历处理子文件夹{'-' * 10}\n"
         info += f"{'顶层内容统计':<60}\n"
         info += f"{'顶层文件数量：' + str(top_file_count):<30} {'顶层文件夹数量：' + str(top_folder_count):<30}\n"
         info += f"{'-' * 60}\n"        

@@ -125,7 +125,8 @@ class SmartArrangeThread(QtCore.QThread):
                 self.city_data = json.load(f)
             with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
                 self.province_data = json.load(f)
-        except Exception:
+        except Exception as e:
+            self.log("WARNING", f"加载地理数据失败: {str(e)}")
             self.city_data, self.province_data = {'features': []}, {'features': []}
 
     def run(self):
@@ -139,7 +140,7 @@ class SmartArrangeThread(QtCore.QThread):
 
             for folder_info in self.folders:
                 if self._stop_flag:
-                    self.log("WARNING", "您已经取消了整理文件的操作")
+                    self.log("WARNING", "已取消文件整理操作")
                     break
                     
                 # 增强的目标文件夹验证
@@ -153,10 +154,10 @@ class SmartArrangeThread(QtCore.QThread):
                         self.process_folder_with_classification(folder_info)
                     success_count += 1
                 except (OSError, IOError) as e:
-                    self.log("ERROR", f"文件操作失败 {folder_info['path']}: {str(e)}")
+                    self.log("ERROR", f"文件操作失败: {str(e)}")
                     fail_count += 1
                 except Exception as e:
-                    self.log("ERROR", f"处理文件夹失败 {folder_info['path']}: {str(e)}")
+                    self.log("ERROR", f"文件夹处理失败: {str(e)}")
                     fail_count += 1
             
             if not self._stop_flag:
@@ -174,14 +175,12 @@ class SmartArrangeThread(QtCore.QThread):
                     try:
                         self.delete_empty_folders()
                     except Exception as e:
-                        self.log("WARNING", f"删除空文件夹时出错了: {str(e)}")
+                        self.log("WARNING", f"删除空文件夹出错: {str(e)}")
 
-                self.log("DEBUG", "="*40)
-                self.log("DEBUG", f"文件整理完成了，成功处理了 {success_count} 个文件，失败了 {fail_count} 个文件")
-                self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
+                self.log("INFO", f"整理完成，成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
                 self.progress_signal.emit(100)
             else:
-                self.log("WARNING", "您已经取消了整理文件的操作")
+                self.log("WARNING", "已取消文件整理操作")
                 
         except Exception as e:
             self.log("ERROR", f"整理文件时遇到了严重问题: {str(e)}")
@@ -825,14 +824,14 @@ class SmartArrangeThread(QtCore.QThread):
                 try:
                     lat_str = line.split(':', 1)[1].strip()
                     gps_lat = self._parse_dms_coordinate(lat_str)
-                except (ValueError, IndexError):
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug(f"解析GPS纬度失败: {str(e)}")
             elif 'GPS Longitude' in line and ':' in line:
                 try:
                     lon_str = line.split(':', 1)[1].strip()
                     gps_lon = self._parse_dms_coordinate(lon_str)
-                except (ValueError, IndexError):
-                    pass
+                except (ValueError, IndexError) as e:
+                    logger.debug(f"解析GPS经度失败: {str(e)}")
         
         if gps_lat is not None and gps_lon is not None:
             exif_data['GPS GPSLatitude'] = gps_lat
@@ -1155,8 +1154,8 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 return datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
                 
-        except (ValueError, TypeError):
-            pass
+        except (ValueError, TypeError) as e:
+            logger.debug(f"解析EXIF日期时间失败: {str(e)}")
             
         return None
 
@@ -1550,6 +1549,9 @@ class SmartArrangeThread(QtCore.QThread):
         # 确保exif_data可用
         if 'exif_data' not in file_context or file_context['exif_data'] is None:
             file_context['exif_data'] = self.get_exif_data(file_context['file_path'])
+        
+        # 处理单个标签
+        return self._process_tag(tag_info, file_context)
         
     def _get_original_name(self, ctx):
         """获取原始文件名"""

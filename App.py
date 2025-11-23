@@ -33,8 +33,8 @@ def main():
                 socket.write(BRING_TO_FRONT_COMMAND)
                 socket.waitForBytesWritten(1000)
                 return 0
-        except (QtCore.QObject.QObjectError, ConnectionError):
-            pass
+        except (QtCore.QObject.QObjectError, ConnectionError) as e:
+            print(f"连接服务器失败: {str(e)}")
     
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("LeafView")
@@ -45,8 +45,8 @@ def main():
     try:
         local_server = QLocalServer()
         local_server.listen(APP_SERVER_NAME)
-    except Exception:
-        pass
+    except Exception as e:
+        print(f"创建本地服务器失败: {str(e)}")
     
     try:
         window = MainWindow()
@@ -73,8 +73,8 @@ def main():
         error_msg = f"应用程序启动失败: {e}"
         try:
             QtWidgets.QMessageBox.critical(None, "致命错误", error_msg)
-        except Exception:
-            pass
+        except Exception as e:
+            print(f"显示错误消息失败: {str(e)}")
         return 1
     finally:
         if local_server:

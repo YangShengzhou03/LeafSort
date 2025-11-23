@@ -141,7 +141,6 @@ class GeocodingService:
                     saved = json.load(f)
                     return saved.get("cookies"), saved.get("key")
             except Exception:
-                # 静默处理错误，返回None
                 pass
         return None, None
     
@@ -165,7 +164,6 @@ class GeocodingService:
                 browser.close()
                 return cookies, key
         except Exception:
-            # 静默处理错误，返回None
             return None, None
     
     def _save_credentials(self, cookies, key):
@@ -174,7 +172,6 @@ class GeocodingService:
             with open("cookies.json", "w", encoding="utf-8") as f:
                 json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
         except Exception:
-            # 静默处理错误
             pass
     
     def _call_geocoding_api(self, loc, cookies, key):
@@ -191,7 +188,6 @@ class GeocodingService:
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                 return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
         except Exception:
-            # 静默处理错误
             pass
         
         return "获取地址失败"

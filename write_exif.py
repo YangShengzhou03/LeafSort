@@ -52,11 +52,7 @@ class WriteExifManager(QObject):
         self.highlight_stars(0)
 
     def highlight_stars(self, count):
-        """高亮显示指定数量的星级按钮
-        
-        Args:
-            count: 要显示的星数 (0-5)
-        """
+        """高亮显示指定数量的星级按钮"""
         star_on = get_resource_path("assets/star_on.png")
         star_off = get_resource_path("assets/star_off.png")
         
@@ -67,21 +63,13 @@ class WriteExifManager(QObject):
                 button.setIcon(QPixmap(star_off))
 
     def set_selected_star(self, star):
-        """设置选中的星级
-        
-        Args:
-            star: 星级数值 (0-5)
-        """
+        """设置选中的星级"""
         self.selected_star = star
         self.highlight_stars(star)
         self._safe_log("INFO", f"已选择 {star} 星评分")
 
     def load_camera_lens_mapping(self):
-        """加载相机镜头映射数据
-        
-        Returns:
-            相机品牌到镜头型号的映射字典
-        """
+        """加载相机镜头映射数据"""
         mapping_file = get_resource_path("assets/camera_lens_mapping.json")
         try:
             with open(mapping_file, 'r', encoding='utf-8') as f:
@@ -91,10 +79,7 @@ class WriteExifManager(QObject):
             return {}
 
     def init_camera_brand_model(self):
-        """初始化相机品牌和型号下拉框
-        
-        加载相机数据并填充品牌和型号选择下拉框。
-        """
+        """初始化相机品牌和型号下拉框"""
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -107,19 +92,15 @@ class WriteExifManager(QObject):
         camera_data = self.load_camera_lens_mapping()
         
         # 添加默认选项
-        camera_brand_combo.addItem("请选择相机品牌")
-        camera_model_combo.addItem("请选择相机型号")
+        camera_brand_combo.addItem("选择品牌")
+        camera_model_combo.addItem("选择型号")
         
         # 填充品牌数据
         for brand in sorted(camera_data.keys()):
             camera_brand_combo.addItem(brand)
 
     def _on_brand_changed(self, index):
-        """处理相机品牌变更事件
-        
-        Args:
-            index: 选中的品牌索引
-        """
+        """处理相机品牌变更事件"""
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -127,7 +108,7 @@ class WriteExifManager(QObject):
             return
             
         camera_model_combo.clear()
-        camera_model_combo.addItem("请选择相机型号")
+        camera_model_combo.addItem("选择型号")
         
         if index <= 0:
             return
@@ -140,11 +121,7 @@ class WriteExifManager(QObject):
                 camera_model_combo.addItem(model)
 
     def _on_model_changed(self, index):
-        """处理相机型号变更事件
-        
-        Args:
-            index: 选中的型号索引
-        """
+        """处理相机型号变更事件"""
         if index <= 0:
             return
             
@@ -444,8 +421,8 @@ class WriteExifManager(QObject):
             print(f"[{level}] {message}")
             try:
                 self.parent.log(level, message)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"无法将日志传递给父组件: {e}")
 
     def log(self, level, message):
         """记录日志消息
@@ -461,7 +438,8 @@ class WriteExifManager(QObject):
         log_message = f"[{level}] {message}"
         try:
             self.log_signal.emit(level, log_message)
-        except Exception:
+        except Exception as e:
+            print(f"无法发出日志信号: {e}")
             print(log_message)
 
     def on_finished(self):

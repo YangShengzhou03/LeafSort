@@ -43,8 +43,9 @@ class WriteExifThread(QThread):
                 self.lat, self.lon = map(float, position.split(','))
                 if not (-90 <= self.lat <= 90) or not (-180 <= self.lon <= 180):
                     self.lat, self.lon = None, None
-            except ValueError:
-                pass
+            except ValueError as e:
+                self.log_signal.emit("ERROR", f"解析坐标值失败: {str(e)}")
+                self.lat, self.lon = None, None
 
     def run(self):
         image_paths = self._collect_image_paths()
@@ -163,17 +164,6 @@ class WriteExifThread(QThread):
         
         logger.info("共收集到 %d 个图像文件", len(image_paths))
         return image_paths
-        # 检查文件夹是否存在
-        if not os.path.exists(folder_path):
-            logger.warning("文件夹不存在: %s", folder_path)
-            self.log_signal.emit("WARNING", "文件夹不存在: %s", folder_path)
-            return
-        
-        # 根据是否包含子文件夹选择不同的处理方式
-        if include_sub == 1:
-            self._process_folder_with_subfolders(folder_path, image_extensions, image_paths)
-        else:
-            self._process_folder_without_subfolders(folder_path, image_extensions, image_paths)
     
     def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
         """处理包含子文件夹的情况"""
@@ -404,7 +394,8 @@ class WriteExifThread(QThread):
             exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = datetime.now().strftime("%Y:%m:%d %H:%M:%S").encode('utf-8')
             updated_fields.append(f"拍摄时间: {datetime.now().strftime('%Y:%m:%d %H:%M:%S')}")
         elif shoot_time == 3:
-            pass
+            logger.warning("拍摄时间选项3未实现: %s", shoot_time)
+            self.log_signal.emit("WARNING", "拍摄时间选项3未实现")
         else:
             try:
                 datetime.strptime(shoot_time, "%Y:%m:%d %H:%M:%S")
@@ -452,8 +443,8 @@ class WriteExifThread(QThread):
                             png_info.add_text(key, img.text[key])
                         except (KeyError, ValueError, TypeError) as e:
                             logger.warning("复制PNG文本信息失败 %s: %s", key, str(e))
-        except AttributeError:
-            pass
+        except AttributeError as e:
+            self.log_signal.emit("WARNING", f"复制PNG文本数据时出错: {str(e)}")
     
     def _add_png_creation_time(self, image_path, img, png_info):
         shoot_time = self.exif_config.get('shoot_time', None)
@@ -509,8 +500,8 @@ class WriteExifThread(QThread):
                 if heif_file.exif:
                     heif_exif = piexif.load(heif_file.exif)
                     exif_dict.update(heif_exif)
-            except AttributeError:
-                pass
+            except AttributeError as e:
+                logger.debug("HEIF文件缺少exif属性: %s", str(e))
         except (IOError, ValueError) as e:
             logger.debug("加载HEIF EXIF数据失败: %s", str(e))
         
@@ -522,8 +513,8 @@ class WriteExifThread(QThread):
             if 'exif' in image.info:
                 info_exif = piexif.load(image.info['exif'])
                 exif_dict.update(info_exif)
-        except (KeyError, ValueError, TypeError):
-            pass
+        except (KeyError, ValueError, TypeError) as e:
+            logger.debug("从image.info加载EXIF失败: %s", str(e))
         
         # 尝试再次打开文件加载EXIF（作为备选方案）
         try:
@@ -536,8 +527,8 @@ class WriteExifThread(QThread):
                     pil_exif = None
                 if pil_exif:
                     self._load_pil_exif_data_to_dict(pil_exif, exif_dict)
-        except (IOError, OSError, ValueError):
-            pass
+        except (IOError, OSError, ValueError) as e:
+            logger.debug("再次打开文件加载EXIF失败: %s", str(e))
         
         return exif_dict
     
@@ -1127,7 +1118,7 @@ class WriteExifThread(QThread):
                 if not has_time:
                     date_obj = date_obj.replace(hour=0, minute=0, second=0)
                 return date_obj
-        except ValueError:
-            pass
+        except ValueError as e:
+            logger.debug("解析日期字符串失败: %s", str(e))
         
-        return None
+        return None

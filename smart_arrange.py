@@ -59,23 +59,21 @@ class SmartArrangeManager(QObject):
     def connect_signals(self):
         try:
             self.log_signal.disconnect(self.handle_log_signal)
-        except (TypeError, RuntimeError):
-            pass
+        except (TypeError, RuntimeError) as e:
+            self.log("DEBUG", f"断开log_signal信号连接失败: {str(e)}")
         self.log_signal.connect(self.handle_log_signal)
         
         if hasattr(self.parent, 'btnStartSmartArrange'):
             try:
                 self.parent.btnStartSmartArrange.clicked.disconnect(self.toggle_SmartArrange)
-            except (TypeError, RuntimeError):
-                pass
+            except (TypeError, RuntimeError) as e:
+                self.log("DEBUG", f"断开btnStartSmartArrange信号连接失败: {str(e)}")
             
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
             
             if not self.parent.btnStartSmartArrange.isEnabled():
                 self.parent.btnStartSmartArrange.setEnabled(True)
-                self.log("INFO", "Start arrange button has been enabled")
-            
-            self.log("INFO", "Button signal connected to toggle_SmartArrange method")
+                self.log("INFO", "开始整理按钮已启用")
         else:
             self.log("ERROR", "btnStartSmartArrange button not found")
 
@@ -91,8 +89,7 @@ class SmartArrangeManager(QObject):
             self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "stop")
-                self.log("DEBUG", "stopping")
+                self.log("DEBUG", "停止操作")
             except Exception as e:
                 self.log("ERROR", f"{str(e)}")
                 self.parent.btnStartSmartArrange.setText("Start Arrange")
@@ -193,16 +190,16 @@ class SmartArrangeManager(QObject):
                 
                 try:
                     self.SmartArrange_thread.log_signal.disconnect()
-                except (TypeError, RuntimeError):
-                    pass
+                except (TypeError, RuntimeError) as e:
+                    self.log("DEBUG", f"断开log_signal连接失败: {str(e)}")
                 try:
                     self.SmartArrange_thread.progress_signal.disconnect()
-                except (TypeError, RuntimeError):
-                    pass
+                except (TypeError, RuntimeError) as e:
+                    self.log("DEBUG", f"断开progress_signal连接失败: {str(e)}")
                 try:
                     self.SmartArrange_thread.finished.disconnect()
-                except (TypeError, RuntimeError):
-                    pass
+                except (TypeError, RuntimeError) as e:
+                    self.log("DEBUG", f"断开finished信号连接失败: {str(e)}")
                 
                 self.SmartArrange_thread.log_signal.connect(self.handle_log_signal)
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
@@ -418,12 +415,7 @@ class SmartArrangeManager(QObject):
         return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        """处理日志信号
-        
-        Args:
-            level: 日志级别
-            message: 日志消息
-        """
+        """处理日志信号"""
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
         if log_component:
@@ -442,8 +434,8 @@ class SmartArrangeManager(QObject):
             try:
                 if hasattr(self.parent, 'log'):
                     self.parent.log(level, message)
-            except Exception:
-                pass
+            except Exception as e:
+                print(f"调用父组件log方法失败: {str(e)}")
 
     def log(self, level, message):
         try:
