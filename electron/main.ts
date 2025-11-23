@@ -1,5 +1,5 @@
 import { app, BrowserWindow, Menu, shell, ipcMain, dialog } from 'electron'
-import { join } from 'path'
+import path, { join } from 'path'
 import fs from 'fs'
 import { isDev } from './utils'
 

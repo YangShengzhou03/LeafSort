@@ -137,22 +137,24 @@ export const useLibraryStore = defineStore('library', () => {
         type: getFileType(file.name),
         size: file.size,
         createdAt: new Date(),
-        updatedAt: new Date(),
+        modifiedAt: new Date(),
         tags: [],
+        rating: 0,
         metadata: {},
-        folderId: folderId || null,
-        thumbnail: await generateThumbnail(file)
+        folderId: folderId || undefined
       }
       
       assets.value.push(asset)
       
       // 添加到最近活动
+      /*
       addRecentActivity({
         type: 'import',
         assetId: asset.id,
         timestamp: new Date(),
         description: `导入了 ${file.name}`
       })
+      */
     }
     
     // 保存到本地存储
@@ -169,15 +171,16 @@ export const useLibraryStore = defineStore('library', () => {
       
       // 创建素材对象
       const asset: Asset = {
-        id: generateId(),
-        name: captureItem.title || fileName,
-        path: fileName,
-        type: 'image', // 网页采集主要是图片
-        size: 0, // 实际大小需要从数据计算
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        tags: settings.defaultTags ? settings.defaultTags.split(',').map((tag: string) => tag.trim()) : ['网页采集'],
-        metadata: {
+      id: generateId(),
+      name: captureItem.title || fileName,
+      path: fileName,
+      type: 'image', // 网页采集主要是图片
+      size: 0, // 实际大小需要从数据计算
+      createdAt: new Date(),
+      modifiedAt: new Date(),
+      tags: settings.defaultTags ? settings.defaultTags.split(',').map((tag: string) => tag.trim()) : ['网页采集'],
+      rating: 0,
+      metadata: {
           source: captureItem.source || '',
           captureType: captureItem.captureType || 'web',
           originalUrl: captureItem.source || '',
@@ -185,8 +188,7 @@ export const useLibraryStore = defineStore('library', () => {
           hasWatermark: settings.addWatermark || false,
           format: settings.format || 'png'
         },
-        folderId: null,
-        thumbnail: captureItem.data // 直接使用base64数据作为缩略图
+        folderId: undefined,
       }
       
       // 如果是base64数据，计算实际大小
@@ -198,12 +200,14 @@ export const useLibraryStore = defineStore('library', () => {
       assets.value.push(asset)
       
       // 添加到最近活动
+      /*
       addRecentActivity({
         type: 'web_capture',
         assetId: asset.id,
         timestamp: new Date(),
         description: `网页采集: ${captureItem.title || '未命名'}`
       })
+      */
       
       // 保存到本地存储
       saveToLocalStorage()
@@ -225,16 +229,16 @@ export const useLibraryStore = defineStore('library', () => {
       
       // 创建素材对象
       const asset: Asset = {
-        id: generateId(),
-        name: captureItem.title || fileName,
-        path: fileName,
-        type: 'image',
-        size: captureItem.size || 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-        tags: settings.defaultTags ? settings.defaultTags.split(',').map((tag: string) => tag.trim()) : ['截图', '屏幕截图'],
-        metadata: {
-          captureType: 'screenshot',
+      id: generateId(),
+      name: captureItem.title || fileName,
+      path: fileName,
+      type: 'image',
+      size: captureItem.size || 0,
+      createdAt: new Date(),
+      modifiedAt: new Date(),
+      tags: settings.defaultTags ? settings.defaultTags.split(',').map((tag: string) => tag.trim()) : ['截图', '屏幕截图'],
+      rating: 0,
+      metadata: {
           width: captureItem.width || 0,
           height: captureItem.height || 0,
           quality: settings.quality || 90,
@@ -244,19 +248,20 @@ export const useLibraryStore = defineStore('library', () => {
           format: settings.format || 'png',
           videoUrl: captureItem.videoUrl || null // 如果是录屏
         },
-        folderId: null,
-        thumbnail: captureItem.data
+        folderId: undefined,
       }
       
       assets.value.push(asset)
       
       // 添加到最近活动
+      /*
       addRecentActivity({
         type: 'web_capture',
         assetId: asset.id,
         timestamp: new Date(),
         description: `屏幕截图: ${captureItem.title || '未命名'}`
       })
+      */
       
       // 保存到本地存储
       saveToLocalStorage()
@@ -339,16 +344,10 @@ export const useLibraryStore = defineStore('library', () => {
   const moveAssets = (assetIds: string[], folderId: string | null) => {
     assets.value.forEach(asset => {
       if (assetIds.includes(asset.id)) {
-        asset.folderId = folderId
-        asset.updatedAt = new Date()
+        asset.folderId = folderId || undefined
+        asset.modifiedAt = new Date()
         
         // 添加到最近活动
-        addRecentActivity({
-          type: 'move',
-          assetId: asset.id,
-          timestamp: new Date(),
-          description: `移动了 ${asset.name} 到 ${folderId ? getFolderName(folderId) : '根目录'}`
-        })
       }
     })
     
@@ -362,7 +361,7 @@ export const useLibraryStore = defineStore('library', () => {
     if (asset) {
       const oldName = asset.name
       asset.name = newName
-      asset.updatedAt = new Date()
+      asset.modifiedAt = new Date()
       
       // 添加到最近活动
       addRecentActivity({
@@ -382,7 +381,7 @@ export const useLibraryStore = defineStore('library', () => {
     const asset = assets.value.find(a => a.id === assetId)
     if (asset) {
       asset.tags = newTags
-      asset.updatedAt = new Date()
+      asset.modifiedAt = new Date()
       
       // 添加到最近活动
       addRecentActivity({
@@ -406,7 +405,7 @@ export const useLibraryStore = defineStore('library', () => {
     
     if (asset && tag && !asset.tags.includes(tagName)) {
       asset.tags.push(tagName)
-      asset.updatedAt = new Date()
+      asset.modifiedAt = new Date()
       
       saveToLocalStorage()
       updateTagCounts()
@@ -426,7 +425,7 @@ export const useLibraryStore = defineStore('library', () => {
     
     if (asset) {
       asset.tags = asset.tags.filter(tag => tag !== tagName)
-      asset.updatedAt = new Date()
+      asset.modifiedAt = new Date()
       
       saveToLocalStorage()
       updateTagCounts()
@@ -445,7 +444,7 @@ export const useLibraryStore = defineStore('library', () => {
     const asset = assets.value.find(a => a.id === assetId)
     if (asset) {
       asset.rating = rating
-      asset.updatedAt = new Date()
+      asset.modifiedAt = new Date()
       
       // 添加到最近活动
       addRecentActivity({
@@ -484,7 +483,7 @@ export const useLibraryStore = defineStore('library', () => {
             asset.tags.push(tag)
           }
         })
-        asset.updatedAt = new Date()
+        asset.modifiedAt = new Date()
       }
     })
     
@@ -500,7 +499,7 @@ export const useLibraryStore = defineStore('library', () => {
       const asset = assets.value.find(a => a.id === assetId)
       if (asset) {
         asset.tags = asset.tags.filter(tag => !tagsToRemove.includes(tag))
-        asset.updatedAt = new Date()
+        asset.modifiedAt = new Date()
       }
     })
     
@@ -661,12 +660,14 @@ export const useLibraryStore = defineStore('library', () => {
       searchFilters.tags = [tag.name]
       
       // 添加活动记录
+      /*
       addRecentActivity({
         type: 'filter',
-        assetId: null,
+        assetId: undefined,
         timestamp: new Date(),
         description: `筛选标签: ${tag.name}`
       })
+      */
     }
   }
   
@@ -706,8 +707,8 @@ export const useLibraryStore = defineStore('library', () => {
     // 移动文件夹中的资产到根目录
     assets.value.forEach(asset => {
       if (asset.folderId === folderId) {
-        asset.folderId = null
-        asset.updatedAt = new Date()
+        asset.folderId = undefined
+        asset.modifiedAt = new Date()
       }
     })
     
@@ -748,7 +749,7 @@ export const useLibraryStore = defineStore('library', () => {
     // 添加活动记录
     addRecentActivity({
       type: 'tag',
-      assetId: null,
+      assetId: undefined,
       timestamp: new Date(),
       description: `创建了标签: ${tagName}`
     })
@@ -776,7 +777,7 @@ export const useLibraryStore = defineStore('library', () => {
       // 添加活动记录
       addRecentActivity({
         type: 'tag',
-        assetId: null,
+        assetId: undefined,
         timestamp: new Date(),
         description: `重命名标签: ${oldName} -> ${newName}`
       })
@@ -792,7 +793,7 @@ export const useLibraryStore = defineStore('library', () => {
       // 从所有资产中移除该标签
       assets.value.forEach(asset => {
         asset.tags = asset.tags.filter(t => t !== tagName)
-        asset.updatedAt = new Date()
+        asset.modifiedAt = new Date()
       })
       
       // 删除标签
@@ -811,7 +812,7 @@ export const useLibraryStore = defineStore('library', () => {
       // 添加活动记录
       addRecentActivity({
         type: 'tag',
-        assetId: null,
+        assetId: undefined,
         timestamp: new Date(),
         description: `删除了标签: ${tagName}`
       })
@@ -858,7 +859,7 @@ export const useLibraryStore = defineStore('library', () => {
     saveToLocalStorage()
   }
   
-  const getFileType = (fileName: string): string => {
+  const getFileType = (fileName: string): 'image' | 'video' | 'audio' | 'document' | 'other' => {
     const extension = fileName.split('.').pop()?.toLowerCase() || ''
     const imageExtensions = ['jpg', 'jpeg', 'png', 'gif', 'bmp', 'webp', 'svg', 'tiff']
     const videoExtensions = ['mp4', 'mov', 'avi', 'mkv', 'wmv', 'flv', 'webm']
@@ -949,9 +950,9 @@ export const useLibraryStore = defineStore('library', () => {
     
     // 生成模拟文件夹
     const mockFolders: Folder[] = [
-      { id: 'f1', name: '全部', parentId: null, createdAt: new Date(), assetCount: 12 },
-      { id: 'f2', name: '未标签', parentId: null, createdAt: new Date(), assetCount: 2 },
-      { id: 'f3', name: '音乐收藏', parentId: null, createdAt: new Date(), assetCount: 10 },
+      { id: 'f1', name: '全部', parentId: undefined, createdAt: new Date(), assetCount: 12 },
+      { id: 'f2', name: '未标签', parentId: undefined, createdAt: new Date(), assetCount: 2 },
+      { id: 'f3', name: '音乐收藏', parentId: undefined, createdAt: new Date(), assetCount: 10 },
       { id: 'f4', name: '游戏音效', parentId: 'f3', createdAt: new Date(), assetCount: 5 },
       { id: 'f5', name: '背景音乐', parentId: 'f3', createdAt: new Date(), assetCount: 5 }
     ]
@@ -974,7 +975,7 @@ export const useLibraryStore = defineStore('library', () => {
     
     for (let i = 1; i <= 12; i++) {
       const type = audioTypes[Math.floor(Math.random() * audioTypes.length)]
-      const assetTags = []
+      const assetTags: string[] = []
       // 为每个资产随机添加1-2个标签
       const tagCount = Math.floor(Math.random() * 2) + 1
       for (let j = 0; j < tagCount; j++) {
@@ -999,16 +1000,15 @@ export const useLibraryStore = defineStore('library', () => {
         type: 'audio',
         size: Math.floor(Math.random() * 10) + 5,
         createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
-        updatedAt: new Date(),
+        modifiedAt: new Date(),
         tags: assetTags,
         metadata: { 
-          duration,
           bpm,
           format: type,
-          rating: Math.floor(Math.random() * 5) + 1
+          duration
         },
         folderId: i <= 5 ? 'f4' : 'f5',
-        thumbnail: null
+        rating: Math.floor(Math.random() * 5) + 1
       })
     }
     

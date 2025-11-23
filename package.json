@@ -41,6 +41,7 @@
     "electron-builder": "^24.6.3",
     "rimraf": "^5.0.1",
     "sass": "^1.94.2",
+    "terser": "^5.44.1",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
     "vite-plugin-electron": "^0.29.0",
@@ -64,7 +65,9 @@
       {
         "from": "assets",
         "to": "assets",
-        "filter": ["**/*"]
+        "filter": [
+          "**/*"
+        ]
       }
     ],
     "mac": {
@@ -75,13 +78,20 @@
       "target": [
         {
           "target": "nsis",
-          "arch": ["x64", "ia32"]
+          "arch": [
+            "x64",
+            "ia32"
+          ]
         }
       ],
       "icon": "resources/icons/icon.ico"
     },
     "linux": {
-      "target": ["AppImage", "deb", "rpm"],
+      "target": [
+        "AppImage",
+        "deb",
+        "rpm"
+      ],
       "category": "Graphics",
       "icon": "resources/icons"
     },

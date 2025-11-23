@@ -40,7 +40,7 @@
                 class="history-item"
                 @click="searchMainHistoryItem(history)"
               >
-                <el-icon size="14"><History /></el-icon>
+                <el-icon size="14"><Search /></el-icon>
                 <span>{{ history }}</span>
               </div>
             </div>
@@ -75,7 +75,7 @@
           
           <el-dropdown @command="handleViewCommand">
             <el-button>
-              <el-icon><Setting /></el-icon>
+              <el-icon><Menu /></el-icon>
               视图
             </el-button>
             <template #dropdown>
@@ -236,7 +236,7 @@
                     <div class="asset-overlay">
                       <div class="asset-actions">
                         <el-button size="small" circle @click.stop="previewAsset(asset)">
-                          <el-icon><Play /></el-icon>
+                          <el-icon><VideoPlay /></el-icon>
                         </el-button>
                         <el-button size="small" circle @click.stop="editAsset(asset)">
                           <el-icon><Edit /></el-icon>
@@ -288,8 +288,8 @@
             <div class="detail-header">
               <h3>{{ selectedAsset.name }}</h3>
               <el-button size="small" type="text" @click="selectedAsset = null">
-                <el-icon><Close /></el-icon>
-              </el-button>
+            <el-icon><Close /></el-icon>
+          </el-button>
             </div>
             <div class="detail-content">
               <!-- 预览区域 -->
@@ -303,8 +303,8 @@
                     </div>
                     <div class="player-controls">
                       <el-button size="large" circle>
-                        <el-icon><Play /></el-icon>
-                      </el-button>
+                          <el-icon><VideoPlay /></el-icon>
+                        </el-button>
                       <div class="progress-bar">
                         <div class="progress-fill" style="width: 30%"></div>
                       </div>
@@ -409,6 +409,7 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue';
+import { ElMessage } from 'element-plus';
 import {
   Collection,
   Document,
@@ -419,7 +420,6 @@ import {
   Mute,
   Promotion,
   Search,
-  Settings,
   Star,
   Sunny,
   User,
@@ -429,12 +429,25 @@ import {
   Download,
   Share,
   Plus,
-  X
+  Grid,
+  List,
+  Picture
 } from '@element-plus/icons-vue';
+import { useLibraryStore } from '@/stores/library';
+
+// 创建store实例
+const libraryStore = useLibraryStore();
+// 确保currentLibrary有默认值
+const currentLibrary = ref({
+  name: '默认素材库'
+});
 
 // 基本数据
 const searchKeyword = ref('');
 const selectedAsset = ref(null);
+const showMainSearchHistory = ref(false);
+const mainSearchInputRef = ref(null);
+const viewMode = ref('grid');
 // 基本数据
 const sidebarOpen = ref(true); // 侧边栏默认打开
 const hasAssets = ref(true); // 默认显示模拟素材，实际项目中应根据是否有导入的素材库设置
@@ -449,6 +462,28 @@ function selectFolder() {
   ElMessage.info('选择文件夹功能已触发');
   // 实际项目中这里会调用文件系统API选择文件夹
   // 选择成功后设置hasAssets.value = true
+}
+
+// 搜索相关函数
+function performSearchWithHistory() {
+  if (searchKeyword.value.trim()) {
+    libraryStore.addSearchHistory(searchKeyword.value.trim());
+    showMainSearchHistory.value = false;
+  }
+}
+
+function clearMainSearchHistory() {
+  libraryStore.clearSearchHistory();
+}
+
+function searchMainHistoryItem(keyword) {
+  searchKeyword.value = keyword;
+  showMainSearchHistory.value = false;
+}
+
+function handleViewCommand(command) {
+  console.log('View command:', command);
+  // 处理视图命令
 }
 
 // 生成音频波形数据的函数 - 改进以更接近原型图的波形效果

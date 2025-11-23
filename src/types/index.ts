@@ -40,6 +40,26 @@ export interface AssetMetadata {
   }
   colorPalette?: string[]
   dominantColor?: string
+  // 音频相关元数据
+  bpm?: number
+  sampleRate?: string
+  bitRate?: string
+  channels?: string
+  artist?: string
+  album?: string
+  // 图像和视频相关元数据
+  width?: number
+  height?: number
+  quality?: number
+  hasWatermark?: boolean
+  watermarkText?: string
+  includeCursor?: boolean
+  videoUrl?: string | null
+  // 网页采集相关元数据
+  source?: string
+  captureType?: string
+  duration?: string
+  originalUrl?: string
 }
 
 // 文件夹类型
