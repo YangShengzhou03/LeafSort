@@ -418,13 +418,32 @@ class SmartArrangeManager(QObject):
         return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        if hasattr(self.parent, 'txtSmartArrangeLog'):
+        """处理日志信号
+        
+        Args:
+            level: 日志级别
+            message: 日志消息
+        """
+        log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
+        
+        if log_component:
+            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
+            color = color_map.get(level, '#006400')
+            
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            formatted_message = f"[{timestamp}] {message}"
+            
             try:
-                self.parent.txtSmartArrangeLog.append(message)
+                log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
             except Exception as e:
-                print(f"{e}")
+                print(f"无法写入整理日志: {e}")
         else:
-            print(message)
+            print(f"[{level}] {message}")
+            try:
+                if hasattr(self.parent, 'log'):
+                    self.parent.log(level, message)
+            except Exception:
+                pass
 
     def log(self, level, message):
         try:
