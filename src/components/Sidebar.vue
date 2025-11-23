@@ -1,204 +1,372 @@
 <template>
   <div class="sidebar">
-    <!-- 素材库信息 -->
-    <div class="library-info" v-if="currentLibrary">
-      <div class="library-header">
-        <el-icon size="24"><FolderOpened /></el-icon>
-        <div class="library-details">
-          <div class="library-name">{{ currentLibrary.name }}</div>
-          <div class="library-stats">
-            {{ currentLibrary.assetCount }} 个素材 • {{ formatFileSize(currentLibrary.size) }}
-          </div>
-        </div>
-      </div>
-      
-      <div class="library-actions">
-        <el-button size="small" @click="importAssets">
-          <el-icon><Plus /></el-icon>
-          导入
-        </el-button>
-        <el-button size="small" @click="showLibrarySettings">
-          <el-icon><Setting /></el-icon>
-        </el-button>
+    <!-- 顶部标题 -->
+    <div class="sidebar-header">
+      <div class="logo">
+        <el-icon size="20" color="#00B42A"><FolderOpened /></el-icon>
+        <span class="logo-text">Eagle</span>
       </div>
     </div>
 
-    <!-- 快速操作 -->
-    <div class="quick-actions">
-      <el-button 
-        type="primary" 
-        size="large" 
-        class="quick-action-btn"
-        @click="importAssets"
-      >
-        <el-icon><UploadFilled /></el-icon>
-        快速导入
-      </el-button>
-      
-      <div class="action-grid">
-        <div class="action-item" @click="takeScreenshot">
-          <el-icon><Camera /></el-icon>
-          <span>截图</span>
-        </div>
-        <div class="action-item" @click="startWebCapture">
-          <el-icon><Globe /></el-icon>
-          <span>网页采集</span>
-        </div>
-        <div class="action-item" @click="showSmartFolders">
-          <el-icon><MagicStick /></el-icon>
-          <span>智能整理</span>
-        </div>
-        <div class="action-item" @click="showSearch">
-          <el-icon><Search /></el-icon>
-          <span>高级搜索</span>
-        </div>
+    <!-- 快捷导航 -->
+    <div class="quick-nav">
+      <div class="nav-item active" @click="selectAll">
+        <el-icon size="18"><Collection /></el-icon>
+        <span>全部</span>
+        <span class="count">2553</span>
+      </div>
+      <div class="nav-item" @click="selectUnclassified">
+        <el-icon size="18"><Folder /></el-icon>
+        <span>未分类</span>
+        <span class="count">1082</span>
+      </div>
+      <div class="nav-item" @click="selectUntagged">
+        <el-icon size="18"><TagIcon /></el-icon>
+        <span>未标签</span>
+        <span class="count">1882</span>
+      </div>
+      <div class="nav-item" @click="selectTagManager">
+        <el-icon size="18"><Ticket /></el-icon>
+        <span>标签管理</span>
+        <span class="count">142</span>
+      </div>
+      <div class="nav-item" @click="selectTrash">
+        <el-icon size="18"><Delete /></el-icon>
+        <span>回收站</span>
+        <span class="count">36</span>
+      </div>
+    </div>
+
+    <!-- 智能文件夹 -->
+    <div class="smart-folders-section">
+      <div class="section-title">
+        <el-icon size="16"><MagicStick /></el-icon>
+        <span>智能文件夹</span>
+      </div>
+      <div class="nav-item" @click="selectSmartFolder('recent')">
+        <el-icon size="18" color="#1677FF"><Clock /></el-icon>
+        <span>最近收集</span>
+        <span class="count">113</span>
       </div>
     </div>
 
     <!-- 文件夹树 -->
     <div class="folders-section">
-      <div class="section-header">
-        <span>文件夹</span>
-        <el-button size="small" text @click="createFolder">
-          <el-icon><FolderAdd /></el-icon>
-        </el-button>
-      </div>
-      
-      <el-tree
-        ref="folderTreeRef"
-        :data="folderTree"
-        :props="treeProps"
-        node-key="id"
-        :expand-on-click-node="false"
-        :default-expanded-keys="expandedKeys"
-        @node-click="handleFolderClick"
-        @node-contextmenu="handleFolderContextMenu"
-      >
-        <template #default="{ node, data }">
-          <div class="tree-node">
-            <el-icon v-if="data.type === 'smart-folder'" class="smart-folder-icon">
-              <MagicStick />
-            </el-icon>
-            <span class="node-label">{{ node.label }}</span>
-            <span class="node-count">{{ data.assetCount || 0 }}</span>
+      <!-- 灵感采集 -->
+      <div class="folder-group">
+        <div class="section-title" @click="toggleFolderGroup('inspiration')">
+          <el-icon size="16">{{ isExpanded('inspiration') ? 'ArrowUp' : 'ArrowDown' }}</el-icon>
+          <span>灵感采集</span>
+          <span class="count">665</span>
+        </div>
+        <div v-if="isExpanded('inspiration')" class="folder-children">
+          <div class="nav-item sub-item" @click="selectFolder('illustration')">
+            <el-icon size="18" color="#FF7D00"><Picture /></el-icon>
+            <span>插画</span>
+            <span class="count">275</span>
           </div>
-        </template>
-      </el-tree>
-    </div>
-
-    <!-- 标签云 -->
-    <div class="tags-section">
-      <div class="section-header">
-        <span>标签</span>
-        <el-button size="small" text @click="createTag">
-          <el-icon><Plus /></el-icon>
-        </el-button>
-      </div>
-      
-      <div class="tags-cloud">
-        <el-tag 
-          v-for="tag in popularTags"
-          :key="tag.id"
-          :color="tag.color"
-          size="small"
-          class="tag-item"
-          :class="{ 'active-tag': libraryStore.activeTagId === tag.id }"
-          closable
-          @click="filterByTag(tag)"
-          @close="deleteTag(tag)"
-          @contextmenu.prevent="renameTag(tag)"
-        >
-          {{ tag.name }} ({{ tag.assetCount }})
-        </el-tag>
-        
-        <el-button 
-          v-if="tags.length > 5" 
-          size="small" 
-          text 
-          @click="showAllTags = !showAllTags"
-        >
-          {{ showAllTags ? '收起' : `查看更多 (${tags.length - 5})` }}
-        </el-button>
-      </div>
-    </div>
-
-    <!-- 最近活动 -->
-    <div class="recent-section">
-      <div class="section-header">
-        <span>最近活动</span>
-      </div>
-      
-      <div class="recent-list">
-        <div 
-          v-for="activity in recentActivities" 
-          :key="activity.id"
-          class="activity-item"
-          @click="handleActivityClick(activity)"
-        >
-          <el-icon class="activity-icon">
-            <component :is="getActivityIcon(activity.type)" />
-          </el-icon>
-          <div class="activity-info">
-            <div class="activity-title">{{ activity.title }}</div>
-            <div class="activity-time">{{ formatRelativeTime(activity.timestamp) }}</div>
+          <div class="nav-item sub-item" @click="selectFolder('photography')">
+            <el-icon size="18" color="#1677FF"><Camera /></el-icon>
+            <span>摄影</span>
+            <span class="count">881</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('interior')">
+            <el-icon size="18" color="#00B42A"><OfficeBuilding /></el-icon>
+            <span>室内设计</span>
+            <span class="count">103</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('game')">
+            <el-icon size="18" color="#722ED1"><StampFilled /></el-icon>
+            <span>游戏概念</span>
+            <span class="count">234</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('ui')">
+            <el-icon size="18" color="#F53F3F"><Monitor /></el-icon>
+            <span>UI设计</span>
+            <span class="count">159</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('animation')">
+            <el-icon size="18" color="#FF7D00"><VideoCamera /></el-icon>
+            <span>动画</span>
+            <span class="count">117</span>
           </div>
         </div>
       </div>
-    </div>
 
-    <!-- 文件夹右键菜单 -->
-    <el-dropdown-menu
-      v-if="contextMenu.visible"
-      :style="{ 
-        left: contextMenu.x + 'px', 
-        top: contextMenu.y + 'px',
-        position: 'fixed',
-        zIndex: 9999
-      }"
-    >
-      <el-dropdown-item @click="renameFolder">
-        <el-icon><Edit /></el-icon>
-        重命名
-      </el-dropdown-item>
-      <el-dropdown-item @click="deleteFolder">
-        <el-icon><Delete /></el-icon>
-        删除
-      </el-dropdown-item>
-      <el-dropdown-item divided @click="exportFolder">
-        <el-icon><Download /></el-icon>
-        导出文件夹
-      </el-dropdown-item>
-    </el-dropdown-menu>
+      <!-- 设计素材 -->
+      <div class="folder-group">
+        <div class="section-title" @click="toggleFolderGroup('design')">
+          <el-icon size="16">{{ isExpanded('design') ? 'ArrowUp' : 'ArrowDown' }}</el-icon>
+          <span>设计素材</span>
+          <span class="count">117</span>
+        </div>
+        <div v-if="isExpanded('design')" class="folder-children">
+          <div class="nav-item sub-item" @click="selectFolder('packaging')">
+            <el-icon size="18" color="#F7BA1E"><Package /></el-icon>
+            <span>包装模板</span>
+            <span class="count">108</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('icons')">
+            <el-icon size="18" color="#4E5969"><Setting /></el-icon>
+            <span>图标</span>
+            <span class="count">91</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('fonts')">
+            <el-icon size="18" color="#909399"><Font /></el-icon>
+            <span>字体</span>
+            <span class="count">85</span>
+          </div>
+          <div class="nav-item sub-item" @click="selectFolder('audio')">
+            <el-icon size="18" color="#13C2C2"><Microphone /></el-icon>
+            <span>音频</span>
+            <span class="count">52</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 教程 -->
+      <div class="folder-group">
+        <div class="section-title" @click="toggleFolderGroup('tutorial')">
+          <el-icon size="16">{{ isExpanded('tutorial') ? 'ArrowUp' : 'ArrowDown' }}</el-icon>
+          <span>教程</span>
+          <span class="count">202</span>
+        </div>
+        <div v-if="isExpanded('tutorial')" class="folder-children">
+          <div class="nav-item sub-item" @click="selectFolder('figma')">
+            <el-icon size="18" color="#00B42A"><EditPen /></el-icon>
+            <span>Figma</span>
+            <span class="count">148</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 精选 -->
+      <div class="nav-item" @click="selectFolder('favorites')">
+        <el-icon size="18" color="#F7BA1E"><Star /></el-icon>
+        <span>精选</span>
+      </div>
+    </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted, onUnmounted } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ref, computed, onMounted } from 'vue'
 import { useLibraryStore } from '@/stores/library'
-import { Folder, Tag } from '@/types'
+import type { Folder } from '@/types'
+
+// 定义事件
+const emit = defineEmits<{
+  'folder-click': [folderId: string]
+  'tag-click': [tagId: string]
+  'search-panel-toggle': []
+}>()
+
+// Store
+const libraryStore = useLibraryStore()
+
+// 响应式数据
+const expandedGroups = ref<Record<string, boolean>>({
+  inspiration: true,
+  design: true,
+  tutorial: true
+})
+
+// 方法
+const toggleFolderGroup = (group: string) => {
+  expandedGroups.value[group] = !expandedGroups.value[group]
+}
+
+const isExpanded = (group: string) => {
+  return expandedGroups.value[group] || false
+}
+
+const selectAll = () => {
+  emit('folder-click', 'all')
+}
+
+const selectUnclassified = () => {
+  emit('folder-click', 'unclassified')
+}
+
+const selectUntagged = () => {
+  emit('folder-click', 'untagged')
+}
+
+const selectTagManager = () => {
+  emit('folder-click', 'tag-manager')
+}
+
+const selectTrash = () => {
+  emit('folder-click', 'trash')
+}
+
+const selectSmartFolder = (folderId: string) => {
+  emit('folder-click', `smart-${folderId}`)
+}
+
+const selectFolder = (folderId: string) => {
+  emit('folder-click', folderId)
+}
+
+// 格式化文件大小
+const formatFileSize = (bytes: number): string => {
+  if (bytes === 0) return '0 B'
+  const k = 1024
+  const sizes = ['B', 'KB', 'MB', 'GB']
+  const i = Math.floor(Math.log(bytes) / Math.log(k))
+  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+}
 
 // 图标导入
 import {
   FolderOpened,
-  Plus,
-  Setting,
-  UploadFilled,
-  Camera,
-  Globe,
-  MagicStick,
-  Search,
-  FolderAdd,
-  Edit,
+  Collection,
+  Folder,
+  TagIcon,
+  Ticket,
   Delete,
-  Download,
+  MagicStick,
+  Clock,
+  ArrowUp,
+  ArrowDown,
   Picture,
+  Camera,
+  OfficeBuilding,
+  StampFilled,
+  Monitor,
   VideoCamera,
-  Document,
-  Collection
+  Package,
+  Setting,
+  Font,
+  Microphone,
+  EditPen,
+  Star
 } from '@element-plus/icons-vue'
+</script>
 
-const libraryStore = useLibraryStore()
+<style scoped lang="scss">
+.sidebar {
+  width: 240px;
+  height: 100vh;
+  background-color: #1E1E1E;
+  border-right: 1px solid #333;
+  overflow-y: auto;
+  color: #DADADA;
+  font-size: 14px;
+}
+
+/* 顶部标题 */
+.sidebar-header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #333;
+  display: flex;
+  align-items: center;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.logo-text {
+  font-size: 16px;
+  font-weight: 500;
+  color: #FFFFFF;
+}
+
+/* 快捷导航 */
+.quick-nav {
+  padding: 8px 0;
+  border-bottom: 1px solid #333;
+}
+
+/* 导航项通用样式 */
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  cursor: pointer;
+  gap: 12px;
+  transition: all 0.2s ease;
+  position: relative;
+
+  &:hover {
+    background-color: #2A2A2A;
+  }
+
+  &.active {
+    background-color: #2A2A2A;
+    color: #FFFFFF;
+
+    &::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      height: 100%;
+      width: 3px;
+      background-color: #00B42A;
+    }
+  }
+
+  .count {
+    margin-left: auto;
+    font-size: 12px;
+    color: #888;
+  }
+
+  &.sub-item {
+    padding-left: 40px;
+    font-size: 13px;
+  }
+}
+
+/* 智能文件夹 */
+.smart-folders-section {
+  padding: 12px 0;
+  border-bottom: 1px solid #333;
+}
+
+/* 分组标题 */
+.section-title {
+  display: flex;
+  align-items: center;
+  padding: 8px 16px;
+  font-size: 12px;
+  color: #888;
+  gap: 6px;
+  cursor: pointer;
+
+  &:hover {
+    background-color: #2A2A2A;
+  }
+}
+
+/* 文件夹分组 */
+.folders-section {
+  padding: 12px 0;
+}
+
+.folder-group {
+  margin-bottom: 4px;
+}
+
+.folder-children {
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
+}
+</style>
 
 // 响应式数据
 const showAllTags = ref(false)
@@ -568,7 +736,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .sidebar {
   width: 280px;

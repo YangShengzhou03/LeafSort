@@ -1,86 +1,7 @@
 <template>
   <div class="home-container">
-    <!-- 欢迎页面 -->
-    <div v-if="!currentLibrary" class="welcome-page">
-      <div class="welcome-content">
-        <div class="welcome-header">
-          <el-icon size="64" color="var(--el-color-primary)">
-            <FolderOpened />
-          </el-icon>
-          <h1>欢迎使用 LeafView</h1>
-          <p>您的数字素材管理专家，对标 Eagle 的强大功能</p>
-        </div>
-
-        <div class="welcome-actions">
-          <el-button type="primary" size="large" @click="createLibrary">
-            <el-icon><Plus /></el-icon>
-            创建新素材库
-          </el-button>
-          <el-button size="large" @click="openLibrary">
-            <el-icon><FolderOpened /></el-icon>
-            打开现有素材库
-          </el-button>
-        </div>
-
-        <div class="recent-libraries" v-if="recentLibraries.length > 0">
-          <h3>最近打开的素材库</h3>
-          <div class="library-list">
-            <div 
-              v-for="lib in recentLibraries" 
-              :key="lib.id"
-              class="library-item"
-              @click="openLibraryFromRecent(lib)"
-            >
-              <el-icon size="24"><FolderIcon /></el-icon>
-              <div class="library-info">
-                <div class="library-name">{{ lib.name }}</div>
-                <div class="library-path">{{ lib.path }}</div>
-                <div class="library-stats">
-                  {{ lib.assetCount }} 个素材 • {{ formatFileSize(lib.size) }}
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <div class="feature-showcase">
-          <h3>核心功能特性</h3>
-          <div class="features-grid">
-            <div class="feature-item">
-              <el-icon size="32" color="var(--el-color-primary)">
-                <UploadFilled />
-              </el-icon>
-              <h4>高效素材收集</h4>
-              <p>支持拖拽、截图、网页采集等多种方式</p>
-            </div>
-            <div class="feature-item">
-              <el-icon size="32" color="var(--el-color-success)">
-                <Collection />
-              </el-icon>
-              <h4>智能整理</h4>
-              <p>自动分类、标签管理、智能文件夹</p>
-            </div>
-            <div class="feature-item">
-              <el-icon size="32" color="var(--el-color-warning)">
-                <Search />
-              </el-icon>
-              <h4>精准检索</h4>
-              <p>多条件筛选、关键词搜索、颜色搜索</p>
-            </div>
-            <div class="feature-item">
-              <el-icon size="32" color="var(--el-color-danger)">
-                <Edit />
-              </el-icon>
-              <h4>素材处理</h4>
-              <p>批量编辑、格式转换、水印添加</p>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- 素材库主界面 - 三栏布局 -->
-    <div v-else class="library-interface">
+    <!-- 主界面 - 三栏布局 -->
+    <div class="library-interface">
       <!-- 顶部工具栏 -->
       <div class="toolbar">
         <div class="toolbar-left">
@@ -127,6 +48,10 @@
         </div>
         
         <div class="toolbar-right">
+          <el-button type="primary" @click="selectFolder">
+            <el-icon><FolderOpen /></el-icon>
+            选择文件夹
+          </el-button>
           <el-button-group>
             <el-button 
               :type="viewMode === 'grid' ? 'primary' : ''"
@@ -164,103 +89,311 @@
         </div>
       </div>
 
+/* 空状态样式 */
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 60px 20px;
+  text-align: center;
+  background-color: #0a0b0f;
+}
+
+.empty-icon {
+  font-size: 64px;
+  color: rgba(255, 255, 255, 0.2);
+  margin-bottom: 20px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: #ffffff;
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.6);
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+
       <!-- 三栏布局 -->
-      <div class="main-layout">
-        <!-- 左侧侧边栏 -->
-        <div class="sidebar-container">
-          <Sidebar 
-            @folder-click="handleFolderClick"
-            @tag-click="handleTagClick"
-            @search-panel-toggle="searchPanelVisible = !searchPanelVisible"
-          />
-        </div>
-        
-        <!-- 中间内容区域 -->
-        <div class="content-container">
-          <!-- 搜索面板 -->
-          <div class="search-panel" v-show="searchPanelVisible">
-            <SearchPanel @search="handleSearch" />
-          </div>
-          
-          <!-- 素材展示 -->
-          <div class="assets-container">
-            <div 
-              class="assets-grid"
-              :class="viewMode + '-view'"
-            >
-              <div
-                v-for="asset in filteredAssets"
-                :key="asset.id"
-                class="asset-item"
-                :class="{ selected: selectedAssets.includes(asset.id) }"
-                @click="selectAsset(asset)"
-                @dblclick="openAsset(asset)"
-              >
-                <div class="asset-thumbnail-container">
-                  <img 
-                    :src="getThumbnailUrl(asset)" 
-                    :alt="asset.name"
-                    class="asset-thumbnail"
-                    @error="handleImageError"
-                  />
-                  <div class="asset-overlay">
-                    <el-icon class="asset-type-icon">
-                      <component :is="getAssetTypeIcon(asset.type)" />
-                    </el-icon>
-                    <div class="asset-actions">
-                      <el-button size="small" circle @click.stop="previewAsset(asset)">
-                        <el-icon><View /></el-icon>
-                      </el-button>
-                      <el-button size="small" circle @click.stop="editAsset(asset)">
-                        <el-icon><Edit /></el-icon>
-                      </el-button>
-                    </div>
+        <div class="main-layout">
+          <!-- 左侧侧边栏 -->
+          <div class="sidebar-container">
+            <div class="sidebar">
+              <!-- 侧边栏导航 -->
+              <div class="sidebar-nav">
+                <div class="nav-section">
+                  <div class="nav-title">分类</div>
+                  <div class="nav-item active">
+                    <el-icon><Collection /></el-icon>
+                    <span>音频</span>
+                    <span class="item-count">285</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Picture /></el-icon>
+                    <span>图片</span>
+                    <span class="item-count">143</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><VideoPlay /></el-icon>
+                    <span>视频</span>
+                    <span class="item-count">34</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Document /></el-icon>
+                    <span>文档</span>
+                    <span class="item-count">117</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Collection /></el-icon>
+                    <span>收藏夹</span>
+                    <span class="item-count">20</span>
                   </div>
                 </div>
-                
-                <div class="asset-info">
-                  <div class="asset-name">{{ asset.name }}</div>
-                  <div class="asset-meta">
-                    {{ formatFileSize(asset.size) }} • {{ formatDate(asset.createdAt) }}
+              </div>
+              <div class="nav-section">
+                  <div class="nav-title">标签</div>
+                  <div class="nav-item">
+                    <el-icon><Promotion /></el-icon>
+                    <span>流行</span>
+                    <span class="item-count">275</span>
                   </div>
-                  <div class="asset-tags">
-                    <el-tag
-                      v-for="tag in asset.tags.slice(0, 2)"
-                      :key="tag"
-                      size="small"
-                      class="tag"
-                    >
-                      {{ tag }}
-                    </el-tag>
-                    <span v-if="asset.tags.length > 2" class="more-tags">
-                      +{{ asset.tags.length - 2 }}
-                    </span>
+                  <div class="nav-item">
+                    <el-icon><Headset /></el-icon>
+                    <span>背景音乐</span>
+                    <span class="item-count">113</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Sunny /></el-icon>
+                    <span>轻松</span>
+                    <span class="item-count">117</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Mute /></el-icon>
+                    <span>环境音</span>
+                    <span class="item-count">129</span>
+                  </div>
+                  <div class="nav-item">
+                    <el-icon><Star /></el-icon>
+                    <span>标记 1</span>
+                    <span class="item-count">108</span>
+                  </div>
+                </div>
+            </div>
+          </div>
+          
+          <!-- 中间内容区域 -->
+          <div class="content-container">
+            <!-- 素材展示 -->
+            <div class="assets-container">
+              <!-- 空状态 - 无素材库时显示 -->
+              <div class="empty-state" v-if="!hasAssets">
+                <div class="empty-icon">
+                  <el-icon><Folder /></el-icon>
+                </div>
+                <h3 class="empty-title">选择素材库文件夹</h3>
+                <p class="empty-description">
+                  您还没有选择素材库文件夹。请点击上方的"选择文件夹"按钮，导入您的素材库。
+                </p>
+                <el-button type="primary" @click="selectFolder">
+                  <el-icon><Folder /></el-icon> 选择文件夹
+                </el-button>
+              </div>
+              <div v-else class="assets-grid">
+                <div
+                  v-for="asset in filteredAssets"
+                  :key="asset.id"
+                  class="asset-item"
+                  :class="{ selected: selectedAsset && selectedAsset.id === asset.id }"
+                  @click="selectAsset(asset)"
+                  @dblclick="openAsset(asset)"
+                >
+                  <div class="asset-thumbnail-container">
+                    <!-- 音频文件特殊处理 -->
+                    <template v-if="asset.type === 'audio'">
+                      <div class="audio-visualizer">
+                        <div class="wave-container">
+                          <div v-for="(bar, index) in generateWaveformBars(asset.id)" :key="index" 
+                               class="waveform-bar" 
+                               :style="{ height: bar + '%', animationDelay: index * 0.08 + 's' }"></div>
+                        </div>
+                      </div>
+                    </template>
+                    <!-- 图片类型文件 -->
+                    <template v-else>
+                      <img 
+                        :src="asset.thumbnail" 
+                        :alt="asset.name"
+                        class="asset-thumbnail"
+                      />
+                    </template>
+                    <div class="asset-overlay">
+                      <div class="asset-actions">
+                        <el-button size="small" circle @click.stop="previewAsset(asset)">
+                          <el-icon><Play /></el-icon>
+                        </el-button>
+                        <el-button size="small" circle @click.stop="editAsset(asset)">
+                          <el-icon><Edit /></el-icon>
+                        </el-button>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div class="asset-info">
+                    <div class="asset-name">{{ asset.name }}</div>
+                    <!-- 音频元信息 -->
+                    <div v-if="asset.type === 'audio'" class="asset-meta">
+                      <span style="display: inline-block; min-width: 55px;">{{ asset.metadata.duration }}</span>
+                      <span>{{ asset.metadata.format }}/BPM:{{ asset.metadata.bpm }}</span>
+                    </div>
+                    <!-- 图片元信息 -->
+                    <div v-else class="asset-meta">
+                      {{ asset.size }} • {{ asset.metadata.resolution }}
+                    </div>
+                    
+                    <!-- 音频波形显示 - 详细波形 -->
+                    <div v-if="asset.type === 'audio'" class="audio-waveform">
+                      <div v-for="(bar, index) in generateDetailedWaveform(asset.id)" :key="index" 
+                           class="detailed-waveform-bar" 
+                           :style="{ height: bar + '%', animationDelay: index * 0.05 + 's' }"></div>
+                    </div>
+                    
+                    <div class="asset-tags">
+                      <el-tag
+                        v-for="tag in asset.tags.slice(0, 2)"
+                        :key="tag"
+                        size="small"
+                        class="tag"
+                      >
+                        {{ tag }}
+                      </el-tag>
+                      <span v-if="asset.tags.length > 2" class="more-tags">
+                        +{{ asset.tags.length - 2 }}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            
-            <div v-if="filteredAssets.length === 0" class="empty-state">
-              <el-icon size="64" color="var(--el-text-color-placeholder)">
-                <Files />
-              </el-icon>
-              <p>暂无素材</p>
-              <el-button type="primary" @click="importAssets">
-                <el-icon><Plus /></el-icon>
-                导入素材
+          </div>
+          
+          <!-- 右侧详情面板 -->
+          <div class="detail-panel" v-if="selectedAsset">
+            <div class="detail-header">
+              <h3>{{ selectedAsset.name }}</h3>
+              <el-button size="small" type="text" @click="selectedAsset = null">
+                <el-icon><Close /></el-icon>
               </el-button>
+            </div>
+            <div class="detail-content">
+              <!-- 预览区域 -->
+              <div class="detail-preview">
+                <template v-if="selectedAsset.type === 'audio'">
+                  <div class="audio-player">
+                    <div class="audio-wave-container">
+                      <div v-for="(bar, index) in generateWaveformBars(selectedAsset.id)" :key="index" 
+                           class="waveform-bar large" 
+                           :style="{ height: bar + '%', animationDelay: index * 0.08 + 's' }"></div>
+                    </div>
+                    <div class="player-controls">
+                      <el-button size="large" circle>
+                        <el-icon><Play /></el-icon>
+                      </el-button>
+                      <div class="progress-bar">
+                        <div class="progress-fill" style="width: 30%"></div>
+                      </div>
+                      <span class="time-display">01:15 / {{ selectedAsset.metadata.duration }}</span>
+                    </div>
+                  </div>
+                </template>
+                <template v-else>
+                  <img 
+                    :src="selectedAsset.thumbnail" 
+                    :alt="selectedAsset.name"
+                    class="detail-image"
+                  />
+                </template>
+              </div>
+              
+              <!-- 信息区域 -->
+              <div class="detail-info">
+                <div class="info-group">
+                  <div class="info-label">类型</div>
+                  <div class="info-value">{{ selectedAsset.type === 'audio' ? '音频' : '图片' }}</div>
+                </div>
+                <div class="info-group">
+                  <div class="info-label">文件</div>
+                  <div class="info-value">{{ selectedAsset.metadata.format }}</div>
+                </div>
+                <div class="info-group">
+                  <div class="info-label">时长</div>
+                  <div class="info-value">{{ selectedAsset.metadata.duration || '-' }}</div>
+                </div>
+                <div class="info-group">
+                  <div class="info-label">尺寸</div>
+                  <div class="info-value">{{ selectedAsset.metadata.resolution || '-' }}</div>
+                </div>
+                <div class="info-group">
+                  <div class="info-label">BPM</div>
+                  <div class="info-value">{{ selectedAsset.metadata.bpm || '-' }}</div>
+                </div>
+                <div class="info-group">
+                  <div class="info-label">创建时间</div>
+                  <div class="info-value">{{ selectedAsset.createdAt }}</div>
+                </div>
+                
+                <!-- 标签编辑 -->
+                <div class="tags-section">
+                  <div class="section-header">
+                    <span>标签</span>
+                    <el-button size="small" type="primary" circle>
+                      <el-icon><Plus /></el-icon>
+                    </el-button>
+                  </div>
+                  <div class="tags-container">
+                    <el-tag
+                      v-for="tag in selectedAsset.tags"
+                      :key="tag"
+                      size="small"
+                      closable
+                      class="detail-tag"
+                    >
+                      {{ tag }}
+                    </el-tag>
+                  </div>
+                </div>
+                
+                <!-- 评分 -->
+                <div class="rating-section">
+                  <div class="section-header">
+                    <span>评分</span>
+                  </div>
+                  <div class="rating-stars">
+                    <el-rate v-model="selectedAsset.rating" :max="5" show-score disabled />
+                  </div>
+                </div>
+                
+                <!-- 操作按钮 -->
+                <div class="action-buttons">
+                  <el-button type="primary" size="small">
+                    <el-icon><Download /></el-icon>
+                    下载
+                  </el-button>
+                  <el-button size="small">
+                    <el-icon><Share /></el-icon>
+                    分享
+                  </el-button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
-        
-        <!-- 右侧详情面板 -->
-        <div class="detail-panel" v-if="selectedAsset">
-          <DetailPanel 
-            :asset="selectedAsset"
-            @close="selectedAsset = null"
-          />
-        </div>
-      </div>
     </div>
 
     <!-- 素材导入对话框 -->
@@ -275,36 +408,390 @@
 </template>
 
 <script setup lang="ts">
-// 最小化导入，确保语法正确
-import { ref, computed, onMounted } from 'vue';
-import { useLibraryStore } from '@/stores/library';
-import { useThemeStore } from '@/stores/theme';
-import type { Library, Asset, Folder } from '@/types';
+import { ref, computed } from 'vue';
+import {
+  Collection,
+  Document,
+  Folder,
+  Headset,
+  Menu,
+  Message,
+  Mute,
+  Promotion,
+  Search,
+  Settings,
+  Star,
+  Sunny,
+  User,
+  VideoPlay,
+  Edit,
+  Close,
+  Download,
+  Share,
+  Plus,
+  X
+} from '@element-plus/icons-vue';
 
-// 基本数据和方法
-const libraryStore = useLibraryStore();
-const themeStore = useThemeStore();
-const currentLibrary = ref<Library | null>(null);
-const recentLibraries = ref<Library[]>([]);
+// 基本数据
 const searchKeyword = ref('');
-const viewMode = ref<'grid' | 'list'>('grid');
-const selectedAssets = ref<string[]>([]);
-const showImportDialog = ref(false);
-const selectedAsset = ref<Asset | null>(null);
+const selectedAsset = ref(null);
+// 基本数据
+const sidebarOpen = ref(true); // 侧边栏默认打开
+const hasAssets = ref(true); // 默认显示模拟素材，实际项目中应根据是否有导入的素材库设置
 
-// 简化的计算属性
-const filteredAssets = computed(() => []);
+// 切换侧边栏
+function toggleSidebar() {
+  sidebarOpen.value = !sidebarOpen.value;
+}
 
-// 生命周期钩子
-onMounted(() => {
-  try {
-    const saved = localStorage.getItem('recentLibraries');
-    if (saved) {
-      recentLibraries.value = JSON.parse(saved);
-    }
-  } catch (e) {
-    console.error(e);
+// 选择文件夹函数
+function selectFolder() {
+  ElMessage.info('选择文件夹功能已触发');
+  // 实际项目中这里会调用文件系统API选择文件夹
+  // 选择成功后设置hasAssets.value = true
+}
+
+// 生成音频波形数据的函数 - 改进以更接近原型图的波形效果
+function generateWaveformBars(assetId) {
+  // 基于assetId生成伪随机但一致的波形数据
+  const seed = parseInt(assetId) || 1;
+  const bars = [];
+  for (let i = 0; i < 20; i++) {
+    // 调整算法以产生更自然的波形效果
+    const value = ((Math.sin(seed + i * 0.3) * 0.7 + Math.sin(seed + i * 0.12) * 0.3 + 1) / 2) * 70 + 15;
+    bars.push(Math.floor(value));
   }
+  return bars;
+}
+
+// 生成详细波形数据 - 改进以更接近原型图的波形效果
+function generateDetailedWaveform(assetId) {
+  const seed = parseInt(assetId) || 1;
+  const bars = [];
+  for (let i = 0; i < 30; i++) {
+    // 调整算法以产生更自然的波形效果
+    const value = ((Math.sin(seed + i * 0.2) * 0.6 + Math.sin(seed + i * 0.08) * 0.4 + 1) / 2) * 60 + 10;
+    bars.push(Math.floor(value));
+  }
+  return bars;
+}
+
+// 素材操作函数
+function selectAsset(asset) {
+  selectedAsset.value = asset;
+}
+
+function openAsset(asset) {
+  // 打开素材的逻辑
+  console.log('Open asset:', asset.name);
+}
+
+function previewAsset(asset) {
+  // 预览素材的逻辑
+  console.log('Preview asset:', asset.name);
+}
+
+function editAsset(asset) {
+  // 编辑素材的逻辑
+  console.log('Edit asset:', asset.name);
+}
+
+// 模拟音频素材数据，符合原型图要求
+const filteredAssets = computed(() => {
+  // 创建音频素材数据
+  const audioAssets = [
+    {
+      id: '1',
+      name: 'mp3/EP198_112.wav',
+      type: 'audio',
+      size: '8.5 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:22', bpm: 145, format: 'WAV' },
+      tags: ['流行', '品牌主题曲'],
+      rating: 5
+    },
+    {
+      id: '2',
+      name: 'mp3/EP198_113.wav',
+      type: 'audio',
+      size: '9.2 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:28', bpm: 148, format: 'WAV' },
+      tags: ['轻松', '钢琴'],
+      rating: 4
+    },
+    {
+      id: '3',
+      name: 'mp3/EP198_114.wav',
+      type: 'audio',
+      size: '7.8 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:15', bpm: 166, format: 'WAV' },
+      tags: ['电子', '舞曲'],
+      rating: 3
+    },
+    {
+      id: '4',
+      name: 'mp3/EP198_115.wav',
+      type: 'audio',
+      size: '10.1 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:35', bpm: 121, format: 'WAV' },
+      tags: ['冥想', '舒缓'],
+      rating: 5
+    },
+    {
+      id: '5',
+      name: 'mp3/EP198_116.wav',
+      type: 'audio',
+      size: '8.9 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:23', bpm: 164, format: 'WAV' },
+      tags: ['环境音', '氛围'],
+      rating: 4
+    },
+    {
+      id: '6',
+      name: 'mp3/EP198_117.wav',
+      type: 'audio',
+      size: '9.5 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:30', bpm: 193, format: 'WAV' },
+      tags: ['动感', '吉他'],
+      rating: 5
+    },
+    {
+      id: '7',
+      name: 'mp3/EP198_118.wav',
+      type: 'audio',
+      size: '8.3 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:20', bpm: 125, format: 'WAV' },
+      tags: ['环境音', '睡眠'],
+      rating: 4
+    },
+    {
+      id: '8',
+      name: 'mp3/EP198_119.wav',
+      type: 'audio',
+      size: '9.8 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:32', bpm: 151, format: 'WAV' },
+      tags: ['电子', '科技'],
+      rating: 5
+    },
+    {
+      id: '9',
+      name: 'mp3/EP198_120.wav',
+      type: 'audio',
+      size: '8.7 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:25', bpm: 164, format: 'WAV' },
+      tags: ['古典', '弦乐'],
+      rating: 3
+    },
+    {
+      id: '10',
+      name: 'mp3/EP198_121.wav',
+      type: 'audio',
+      size: '10.3 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:38', bpm: 169, format: 'WAV' },
+      tags: ['摇滚', '现场'],
+      rating: 4
+    },
+    {
+      id: '11',
+      name: 'mp3/EP198_122.wav',
+      type: 'audio',
+      size: '9.1 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:27', bpm: 107, format: 'WAV' },
+      tags: ['爵士', '钢琴'],
+      rating: 5
+    },
+    {
+      id: '12',
+      name: 'mp3/EP198_123.wav',
+      type: 'audio',
+      size: '8.6 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:24', bpm: 127, format: 'WAV' },
+      tags: ['流行', '人声'],
+      rating: 4
+    },
+    {
+      id: '13',
+      name: 'mp3/EP198_124.wav',
+      type: 'audio',
+      size: '9.4 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:29', bpm: 173, format: 'WAV' },
+      tags: ['电子', '舞曲'],
+      rating: 5
+    },
+    {
+      id: '14',
+      name: 'mp3/EP198_125.wav',
+      type: 'audio',
+      size: '9.7 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:31', bpm: 145, format: 'WAV' },
+      tags: ['电影', '配乐'],
+      rating: 4
+    },
+    {
+      id: '15',
+      name: '小岛上的星光.wav',
+      type: 'audio',
+      size: '12.5 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '04:11', bpm: 145, format: 'WAV' },
+      tags: ['流行', '品牌主题曲', '钢琴', '弦乐'],
+      rating: 5
+    },
+    {
+      id: '16',
+      name: '夏日海风.mp3',
+      type: 'audio',
+      size: '8.9 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '02:45', bpm: 148, format: 'MP3' },
+      tags: ['轻松', '钢琴', '吉他'],
+      rating: 4
+    },
+    {
+      id: '17',
+      name: 'mp3/EP198_126.wav',
+      type: 'audio',
+      size: '8.8 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:26', bpm: 151, format: 'WAV' },
+      tags: ['嘻哈', '说唱'],
+      rating: 3
+    },
+    {
+      id: '18',
+      name: 'mp3/EP198_127.wav',
+      type: 'audio',
+      size: '9.0 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:28', bpm: 142, format: 'WAV' },
+      tags: ['民谣', '吉他'],
+      rating: 4
+    },
+    {
+      id: '19',
+      name: 'mp3/EP198_128.wav',
+      type: 'audio',
+      size: '9.6 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:30', bpm: 129, format: 'WAV' },
+      tags: ['环境音', '自然'],
+      rating: 5
+    },
+    {
+      id: '20',
+      name: 'mp3/EP198_129.wav',
+      type: 'audio',
+      size: '9.2 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:29', bpm: 147, format: 'WAV' },
+      tags: ['电子', '氛围'],
+      rating: 4
+    },
+    {
+      id: '21',
+      name: 'mp3/EP198_130.wav',
+      type: 'audio',
+      size: '8.7 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:25', bpm: 164, format: 'WAV' },
+      tags: ['电子', '节奏'],
+      rating: 3
+    },
+    {
+      id: '22',
+      name: 'mp3/EP198_131.wav',
+      type: 'audio',
+      size: '9.4 MB',
+      createdAt: '2024/02/25 15:42:31',
+      metadata: { duration: '01:29', bpm: 145, format: 'WAV' },
+      tags: ['钢琴', '弦乐'],
+      rating: 5
+    }
+  ];
+
+  // 创建图片素材数据
+  const imageAssets = [
+    {
+      id: '23',
+      name: 'Stylized_Human_1',
+      type: 'image',
+      size: '2.5 MB',
+      createdAt: '2024/02/25 15:42:31',
+      thumbnail: 'https://picsum.photos/id/64/400/400',
+      metadata: { format: 'PNG', resolution: '1200×800' },
+      tags: ['人物', '插画', '风格化'],
+      rating: 5
+    },
+    {
+      id: '24',
+      name: 'Stylized_Human_2',
+      type: 'image',
+      size: '3.2 MB',
+      createdAt: '2024/02/25 15:42:31',
+      thumbnail: 'https://picsum.photos/id/65/400/400',
+      metadata: { format: 'PNG', resolution: '1500×1000' },
+      tags: ['人物', '插画', '风格化'],
+      rating: 4
+    },
+    {
+      id: '25',
+      name: 'Stylized_Human_3',
+      type: 'image',
+      size: '2.8 MB',
+      createdAt: '2024/02/25 15:42:31',
+      thumbnail: 'https://picsum.photos/id/66/400/400',
+      metadata: { format: 'PNG', resolution: '1400×900' },
+      tags: ['人物', '插画', '风格化'],
+      rating: 5
+    },
+    {
+      id: '26',
+      name: 'Stylized_Human_4',
+      type: 'image',
+      size: '1.9 MB',
+      createdAt: '2024/02/25 15:42:31',
+      thumbnail: 'https://picsum.photos/id/67/400/400',
+      metadata: { format: 'PNG', resolution: '1000×800' },
+      tags: ['静物', '插画', '风格化'],
+      rating: 4
+    },
+    {
+      id: '27',
+      name: 'Stylized_Human_5',
+      type: 'image',
+      size: '3.5 MB',
+      createdAt: '2024/02/25 15:42:31',
+      thumbnail: 'https://picsum.photos/id/68/400/400',
+      metadata: { format: 'PNG', resolution: '1600×1200' },
+      tags: ['人物', '插画', '风格化'],
+      rating: 5
+    }
+  ];
+
+  // 根据搜索关键词过滤
+  if (searchKeyword.value) {
+    const keyword = searchKeyword.value.toLowerCase();
+    return [...audioAssets, ...imageAssets].filter(asset => 
+      asset.name.toLowerCase().includes(keyword) ||
+      asset.tags.some(tag => tag.toLowerCase().includes(keyword))
+    );
+  }
+
+  // 默认显示音频素材（根据原型图）
+  return audioAssets;
 });
 </script>
 
@@ -653,20 +1140,39 @@ onMounted(() => {
 .assets-container {
   flex: 1;
   overflow-y: auto;
-  background: var(--el-bg-color-page);
+  background: #0a0b0f; /* 深色背景，与原型图匹配 */
 }
 
 .assets-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-  gap: 18px;
-  padding: var(--el-space-lg);
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 20px;
+  padding: 20px;
   transition: all 0.3s ease;
+}
+
+/* 响应式网格布局 */
+@media (min-width: 1600px) {
+  .assets-grid {
+    grid-template-columns: repeat(6, 1fr);
+  }
+}
+
+@media (min-width: 1200px) and (max-width: 1599px) {
+  .assets-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+}
+
+@media (min-width: 992px) and (max-width: 1199px) {
+  .assets-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
 }
 
 /* 网格视图 */
 .grid-view {
-  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
 }
 
 /* 列表视图 */
@@ -735,19 +1241,19 @@ onMounted(() => {
 
 /* 资产项样式 */
 .asset-item {
-  background: rgba(24, 25, 35, 0.6);
+  background: rgba(26, 28, 39, 1); /* 调整为不透明深色背景 */
   border: 1px solid rgba(255, 255, 255, 0.1);
-  border-radius: 10px;
+  border-radius: 8px;
   overflow: hidden;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   cursor: pointer;
   position: relative;
-  backdrop-filter: blur(10px);
   
   &:hover {
     transform: translateY(-2px);
     box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
     border-color: var(--el-color-primary);
+    background: rgba(30, 32, 44, 1);
   }
   
   &.selected {
@@ -760,9 +1266,9 @@ onMounted(() => {
 .asset-thumbnail-container {
   position: relative;
   width: 100%;
-  aspect-ratio: 1;
+  height: 100px; /* 与原型图一致的波形显示高度 */
   overflow: hidden;
-  background: rgba(12, 13, 18, 0.8);
+  background: rgba(12, 13, 18, 1); /* 不透明背景 */
   
   .asset-thumbnail {
     width: 100%;
@@ -845,7 +1351,7 @@ onMounted(() => {
   .asset-name {
     font-size: 14px;
     font-weight: 500;
-    color: var(--el-text-color-primary);
+    color: #ffffff; /* 白色文本 */
     margin-bottom: 6px;
     white-space: nowrap;
     overflow: hidden;
@@ -854,8 +1360,82 @@ onMounted(() => {
   
   .asset-meta {
     font-size: 12px;
-    color: rgba(255, 255, 255, 0.6);
+    color: rgba(255, 255, 255, 0.7);
     margin-bottom: 8px;
+    display: flex;
+    justify-content: space-between;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  }
+  
+  /* 音频可视化样式 */
+  .audio-visualizer {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+    background: rgba(12, 13, 18, 1);
+  }
+  
+  .wave-container {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 2px;
+  }
+  
+  .waveform-bar {
+    flex: 1;
+    background: linear-gradient(180deg, #4285f4 0%, #34a853 100%); /* 蓝色到绿色的渐变，与原型图匹配 */
+    animation: wave 1.2s infinite ease-in-out;
+    transform-origin: bottom;
+    border-radius: 1px;
+    box-shadow: 0 0 6px rgba(64, 158, 255, 0.4);
+  }
+  
+  /* 详细波形样式 */
+  .audio-waveform {
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: space-around;
+    gap: 1px;
+    margin-bottom: 8px;
+    position: relative;
+    background: rgba(12, 13, 18, 0.5);
+    padding: 2px 4px;
+    border-radius: 4px;
+  }
+  
+  .detailed-waveform-bar {
+    flex: 1;
+    background: linear-gradient(180deg, rgba(64, 158, 255, 0.9) 0%, rgba(64, 158, 255, 0.4) 100%);
+    animation: detailedWave 1.5s infinite ease-in-out;
+    transform-origin: bottom;
+    border-radius: 1px;
+    box-shadow: 0 0 3px rgba(64, 158, 255, 0.5);
+  }
+  
+  @keyframes wave {
+    0%, 100% { transform: scaleY(0.4); opacity: 0.8; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+  
+  @keyframes detailedWave {
+    0%, 100% { transform: scaleY(0.3); opacity: 0.7; }
+    50% { transform: scaleY(1); opacity: 1; }
+  }
+  
+  /* 音频文件特殊样式 */
+  .asset-item.audio-item {
+    border-color: rgba(64, 158, 255, 0.2);
+    
+    &:hover {
+      border-color: var(--el-color-primary);
+    }
   }
   
   .asset-tags {
@@ -952,6 +1532,13 @@ onMounted(() => {
   
   .sidebar.open {
     left: 0;
+  }
+  
+  /* 默认在桌面视图下显示侧边栏 */
+  @media (min-width: 769px) {
+    .sidebar {
+      left: 0 !important;
+    }
   }
   
   .sidebar-toggle {

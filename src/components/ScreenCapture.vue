@@ -909,7 +909,7 @@ onUnmounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .screen-capture {
   height: 100vh;

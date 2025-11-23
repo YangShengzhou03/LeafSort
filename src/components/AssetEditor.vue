@@ -914,7 +914,7 @@ const formatFileSize = (bytes: number) => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .asset-editor {
   height: 100vh;

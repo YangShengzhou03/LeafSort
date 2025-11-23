@@ -666,7 +666,7 @@ const handleKeyDown = (event: KeyboardEvent) => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .web-capture {
   height: 100vh;

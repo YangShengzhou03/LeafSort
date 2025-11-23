@@ -1,0 +1,69 @@
+// 主题颜色变量
+$primary-color: #1677ff;
+$success-color: #52c41a;
+$warning-color: #faad14;
+$error-color: #f5222d;
+$info-color: #1677ff;
+
+// 文本颜色
+$text-primary: #303133;
+$text-regular: #606266;
+$text-secondary: #909399;
+$text-placeholder: #c0c4cc;
+
+// 边框颜色
+$border-base: #dcdfe6;
+$border-light: #e4e7ed;
+$border-lighter: #ebeef5;
+$border-extra-light: #f2f6fc;
+
+// 背景颜色
+$background-color-base: #ffffff;
+$background-color-light: #f5f7fa;
+$background-color-lighter: #fafafa;
+
+// 尺寸变量
+$border-radius-base: 4px;
+$border-radius-small: 2px;
+$border-radius-medium: 6px;
+$border-radius-large: 8px;
+
+// 阴影
+$box-shadow-base: 0 2px 4px rgba(0, 0, 0, 0.12), 0 0 6px rgba(0, 0, 0, 0.04);
+$box-shadow-light: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+
+// 间距变量
+$spacing-xs: 4px;
+$spacing-sm: 8px;
+$spacing-md: 12px;
+$spacing-lg: 16px;
+$spacing-xl: 24px;
+$spacing-xxl: 32px;
+
+// 高度变量
+$height-base: 32px;
+$height-medium: 36px;
+$height-large: 40px;
+
+// 过渡动画
+$transition-base: all 0.3s ease;
+$transition-fast: all 0.2s ease;
+
+// Z-index 变量
+$z-index-dropdown: 1000;
+$z-index-sticky: 1020;
+$z-index-fixed: 1030;
+$z-index-modal-backdrop: 1040;
+$z-index-modal: 1050;
+$z-index-popover: 1060;
+$z-index-tooltip: 1070;
+
+// 暗黑主题变量
+$dark-primary-color: #409eff;
+$dark-background-color-base: #1a1a1a;
+$dark-background-color-light: #2d2d2d;
+$dark-text-primary: #ffffff;
+$dark-text-regular: #c0c4cc;
+$dark-text-secondary: #909399;
+$dark-border-base: #4e4e4e;
+$dark-border-light: #3a3a3a;

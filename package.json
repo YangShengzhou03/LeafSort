@@ -2,16 +2,19 @@
   "name": "leafview",
   "version": "1.0.0",
   "description": "基于 Electron + Vue3 + Element Plus 的现代数字资产管理工具，对标 Eagle 软件",
-  "main": "dist-electron/main.js",
+  "main": "electron/main.ts",
   "scripts": {
     "dev": "vite",
-    "build": "vite build && electron-builder",
-    "build:electron": "vite build && electron-builder",
+    "build-vue": "vite build",
+    "build-electron": "node build-electron.js",
+    "build": "npm run build-vue && npm run build-electron && electron-builder",
     "preview": "vite preview",
     "type-check": "vue-tsc --noEmit",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "pack": "electron-builder --dir"
+    "electron:build": "npm run build",
+    "pack": "electron-builder --dir",
+    "clean": "rimraf dist dist-electron release",
+    "lint": "eslint . --ext .vue,.js,.ts,.jsx,.tsx"
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.1.0",
@@ -23,42 +26,74 @@
     "file-type": "^18.0.0",
     "fs-extra": "^11.1.1",
     "image-size": "^1.0.2",
-    "path": "^0.12.7",
     "pinia": "^2.1.6",
     "vue": "^3.3.4",
     "vue-router": "^4.2.4"
   },
   "devDependencies": {
+    "@types/crypto-js": "^4.2.2",
+    "@types/fs-extra": "^11.0.2",
+    "@types/node": "^18.17.11",
     "@vitejs/plugin-vue": "^4.2.3",
     "@vue/tsconfig": "^0.4.0",
     "concurrently": "^8.0.1",
     "electron": "^23.0.0",
     "electron-builder": "^24.6.3",
+    "rimraf": "^5.0.1",
     "sass": "^1.94.2",
     "typescript": "^5.0.2",
     "vite": "^4.3.9",
+    "vite-plugin-electron": "^0.29.0",
     "vue-tsc": "^1.4.2",
     "wait-on": "^7.0.1"
   },
   "build": {
     "appId": "com.leafview.app",
     "productName": "LeafView",
+    "copyright": "Copyright © 2024 LeafView",
     "directories": {
-      "output": "release"
+      "output": "release",
+      "buildResources": "resources"
     },
     "files": [
       "dist/**/*",
-      "dist-electron/**/*"
+      "dist-electron/**/*",
+      "package.json"
+    ],
+    "extraResources": [
+      {
+        "from": "assets",
+        "to": "assets",
+        "filter": ["**/*"]
+      }
     ],
     "mac": {
-      "category": "public.app-category.graphics-design"
+      "category": "public.app-category.graphics-design",
+      "icon": "resources/icons/icon.icns"
     },
     "win": {
-      "target": "nsis"
+      "target": [
+        {
+          "target": "nsis",
+          "arch": ["x64", "ia32"]
+        }
+      ],
+      "icon": "resources/icons/icon.ico"
+    },
+    "linux": {
+      "target": ["AppImage", "deb", "rpm"],
+      "category": "Graphics",
+      "icon": "resources/icons"
     },
     "nsis": {
       "oneClick": false,
-      "allowToChangeInstallationDirectory": true
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "resources/icons/installer.ico",
+      "uninstallerIcon": "resources/icons/uninstaller.ico",
+      "installerHeaderIcon": "resources/icons/installer.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "LeafView"
     }
   }
 }

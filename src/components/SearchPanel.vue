@@ -920,7 +920,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .search-panel {
   height: 100vh;

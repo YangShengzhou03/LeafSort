@@ -602,7 +602,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .import-assets {
   padding: 20px;

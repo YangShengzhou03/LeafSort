@@ -1,3 +1,5 @@
+import { join } from 'path'
+
 export const isDev = process.env.NODE_ENV === 'development'
 
 export function getAssetPath(...paths: string[]): string {
@@ -7,8 +9,6 @@ export function getAssetPath(...paths: string[]): string {
 
   return join(RESOURCES_PATH, ...paths)
 }
-
-import { join } from 'path'
 
 export function getPreloadPath(): string {
   return isDev

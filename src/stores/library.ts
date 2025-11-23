@@ -943,8 +943,89 @@ export const useLibraryStore = defineStore('library', () => {
     }
   }
   
-  // 初始化时加载本地存储数据
+  // 生成模拟数据
+  const generateMockData = () => {
+    if (assets.value.length > 0) return // 如果已有数据，不再生成
+    
+    // 生成模拟文件夹
+    const mockFolders: Folder[] = [
+      { id: 'f1', name: '全部', parentId: null, createdAt: new Date(), assetCount: 12 },
+      { id: 'f2', name: '未标签', parentId: null, createdAt: new Date(), assetCount: 2 },
+      { id: 'f3', name: '音乐收藏', parentId: null, createdAt: new Date(), assetCount: 10 },
+      { id: 'f4', name: '游戏音效', parentId: 'f3', createdAt: new Date(), assetCount: 5 },
+      { id: 'f5', name: '背景音乐', parentId: 'f3', createdAt: new Date(), assetCount: 5 }
+    ]
+    folders.value = mockFolders
+    
+    // 生成模拟标签
+    const mockTags: Tag[] = [
+      { id: 't1', name: '流行', color: '#FF6B6B', assetCount: 4 },
+      { id: 't2', name: '摇滚', color: '#4ECDC4', assetCount: 3 },
+      { id: 't3', name: '舒缓', color: '#FFD166', assetCount: 3 },
+      { id: 't4', name: '电子', color: '#6A0572', assetCount: 2 },
+      { id: 't5', name: '欢快', color: '#1A535C', assetCount: 2 }
+    ]
+    tags.value = mockTags
+    
+    // 生成模拟音频素材
+    const audioTypes = ['mp3', 'wav']
+    const genres = ['流行', '摇滚', '舒缓', '电子', '欢快']
+    const mockAssets: Asset[] = []
+    
+    for (let i = 1; i <= 12; i++) {
+      const type = audioTypes[Math.floor(Math.random() * audioTypes.length)]
+      const assetTags = []
+      // 为每个资产随机添加1-2个标签
+      const tagCount = Math.floor(Math.random() * 2) + 1
+      for (let j = 0; j < tagCount; j++) {
+        const tagIndex = Math.floor(Math.random() * genres.length)
+        if (!assetTags.includes(genres[tagIndex])) {
+          assetTags.push(genres[tagIndex])
+        }
+      }
+      
+      // 生成随机时长 (格式: mm:ss)
+      const minutes = Math.floor(Math.random() * 5) + 1
+      const seconds = Math.floor(Math.random() * 60)
+      const duration = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`
+      
+      // 生成随机BPM
+      const bpm = Math.floor(Math.random() * 100) + 80
+      
+      mockAssets.push({
+        id: `a${i}`,
+        name: `音频文件 ${i}`,
+        path: `audio${i}.${type}`,
+        type: 'audio',
+        size: Math.floor(Math.random() * 10) + 5,
+        createdAt: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000),
+        updatedAt: new Date(),
+        tags: assetTags,
+        metadata: { 
+          duration,
+          bpm,
+          format: type,
+          rating: Math.floor(Math.random() * 5) + 1
+        },
+        folderId: i <= 5 ? 'f4' : 'f5',
+        thumbnail: null
+      })
+    }
+    
+    assets.value = mockAssets
+    currentLibrary.value = {
+      id: 'lib1',
+      name: '我的音乐库',
+      path: '/music/library',
+      createdAt: new Date(),
+      assetCount: mockAssets.length,
+      size: mockAssets.reduce((sum, asset) => sum + asset.size, 0)
+    }
+  }
+
+  // 初始化时加载本地存储数据和模拟数据
   loadFromLocalStorage()
+  generateMockData()
   
   return {
     // 状态

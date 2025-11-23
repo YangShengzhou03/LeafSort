@@ -656,7 +656,7 @@ onMounted(() => {
 </script>
 
 <style scoped lang="scss">
-@import '@/styles/index.scss';
+@use '@/styles/index.scss' as global;
 
 .sync-settings {
   height: 100vh;
