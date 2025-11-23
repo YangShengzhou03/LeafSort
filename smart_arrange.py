@@ -12,6 +12,7 @@ class SmartArrangeManager(QObject):
         self.folder_page = folder_page
         self.last_selected_button_index = -1
         self.destination_root = None
+        self.selected_folders = []
 
         self.tag_buttons = {
             '原名': self.parent.btnAddOriginalTag,
@@ -57,6 +58,19 @@ class SmartArrangeManager(QObject):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
     def connect_signals(self):
+        # 确保log_signal正确初始化和连接
+        if not hasattr(self, 'log_signal'):
+            from PyQt6.QtCore import pyqtSignal
+            self.log_signal = pyqtSignal(str, str)
+        
+        # 连接fileOperation下拉列表的信号
+        if hasattr(self.parent, 'fileOperation'):
+            try:
+                self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
+            except (TypeError, RuntimeError):
+                pass
+            self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
+        
         try:
             self.log_signal.disconnect(self.handle_log_signal)
         except (TypeError, RuntimeError) as e:
@@ -97,8 +111,8 @@ class SmartArrangeManager(QObject):
             self.parent.btnStartSmartArrange.setEnabled(True)
             self.log("DEBUG", "start")
             
-            folders = self.folder_page.get_all_folders() if self.folder_page else []
-            if not folders:
+            self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
+            if not self.selected_folders:
                 self.log("WARNING", "No folder selected")
                 try:
                     QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要整理的文件夹！")
@@ -106,14 +120,43 @@ class SmartArrangeManager(QObject):
                     self.log("ERROR", f"Failed to show warning message: {e}")
                 return
             
-            self.log("DEBUG", f"folders: {len(folders)}")
+            self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
             if not self.destination_root:
+                import os
+                from PyQt6.QtWidgets import QFileDialog
                 folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
                                                           options=QFileDialog.Option.ShowDirsOnly)
                 if not folder:
                     self.log("WARNING", "No destination")
                     return
+                
+                # 验证目标文件夹路径
+                destination = folder
+                if not os.path.exists(destination):
+                    # 询问是否创建目标文件夹
+                    from PyQt6.QtWidgets import QMessageBox
+                    reply = QMessageBox.question(
+                        self.parent,
+                        "确认", 
+                        f"目标文件夹不存在，是否创建？\n{destination}",
+                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                    )
+                    if reply == QMessageBox.StandardButton.Yes:
+                        try:
+                            os.makedirs(destination, exist_ok=True)
+                        except Exception as e:
+                            QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
+                            return
+                    else:
+                        return
+                
+                # 验证是否有写入权限
+                if not os.access(destination, os.W_OK):
+                    from PyQt6.QtWidgets import QMessageBox
+                    QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
+                    return
+                
                 self.destination_root = folder
                 display_path = folder + '/'
                 if len(display_path) > 20:
@@ -179,7 +222,7 @@ class SmartArrangeManager(QObject):
             try:
                 self.SmartArrange_thread = SmartArrangeThread(
                     parent=self,
-                    folders=folders,
+                    folders=self.selected_folders,
                     classification_structure=SmartArrange_structure,
                     file_name_structure=file_name_parts,
                     destination_root=self.destination_root,
@@ -237,7 +280,9 @@ class SmartArrangeManager(QObject):
             except Exception as e:
                 self.log("WARNING", f"{str(e)}")
         
-        self.SmartArrange_thread = None
+        # 清理线程引用
+        if self.SmartArrange_thread:
+            self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
         self.update_combobox_state(level)
@@ -290,7 +335,7 @@ class SmartArrangeManager(QObject):
         else:
             operation_type = "提取到顶层目录"
 
-        operation_mode = "移动" if self.parent.fileOperation.currentIndex() == 0 else "复制"
+        operation_mode = "复制" if self.parent.fileOperation.currentIndex() == 0 else "移动"
 
         if self.destination_root:
             display_path = str(self.destination_root)

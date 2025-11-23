@@ -592,11 +592,25 @@ class SmartArrangeThread(QtCore.QThread):
     def log(self, level, message):
         # 简化日志记录
         log_message = f"[{level}] {message}"
-        self.log_signal.emit(level, log_message)
+        # 确保log_signal存在且可以发射信号
+        if hasattr(self, 'log_signal') and self.log_signal and callable(getattr(self.log_signal, 'emit', None)):
+            try:
+                self.log_signal.emit(level, log_message)
+            except Exception as e:
+                logger.error(f"发送日志信号失败: {str(e)}")
+        else:
+            # 如果信号不可用，直接记录到logger
+            logger.error(f"日志信号不可用，消息: {log_message}")
         
-        # 仅记录关键错误
+        # 记录不同级别的日志
         if level == "ERROR":
             logger.error(message)
+        elif level == "WARNING":
+            logger.warning(message)
+        elif level == "INFO":
+            logger.info(message)
+        elif level == "DEBUG":
+            logger.debug(message)
     
     def get_exif_data(self, file_path):
         exif_data = {}
@@ -1219,13 +1233,7 @@ class SmartArrangeThread(QtCore.QThread):
             self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据时出错: {str(e)}")
             return None
             
-    def run(self):
-        """重写run方法，确保线程结束时关闭exiftool进程"""
-        try:
-            # 原有run方法的代码
-            super().run()
-        finally:
-            self._close_exiftool()
+    # 重复的run方法已删除
 
     def parse_exif_datetime(self, tags):
         """从EXIF标签中解析日期时间信息

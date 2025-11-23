@@ -21,9 +21,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._connect_signals()
         
     def _initialize_pages(self):
+        # 初始化各功能页面
         self.folder_page = FolderPage(self)
-        self.smart_arrange_page = SmartArrangeManager(self)
+        # 关键修复：传递folder_page参数给SmartArrangeManager
+        self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
         self.write_exif_page = WriteExifManager(self)
+        
+        # 确保SmartArrangeManager能获取用户选择的文件夹
+        print("INFO: 已初始化所有页面，SmartArrangeManager已连接到FolderPage")
 
     def _setup_ui(self):
         self.setWindowTitle("枫叶相册")

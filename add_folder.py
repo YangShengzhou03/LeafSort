@@ -138,14 +138,14 @@ class FolderPage(QtWidgets.QWidget):
                         QtWidgets.QMessageBox.StandardButton.Ok
                     )
             
-            # 更新文本浏览器显示文件夹信息
+            # 更新文本浏览器显示文件夹信息（仅源文件夹）
             text_browser = None
             if hasattr(self, 'textBrowser_import_info'):
                 text_browser = self.textBrowser_import_info
             elif has_parent and hasattr(self.parent, 'textBrowser_import_info'):
                 text_browser = self.parent.textBrowser_import_info
                 
-            if text_browser:
+            if text_browser and title == "选择源文件夹":
                 try:
                     text_browser.setText(self.get_folder_info(selected_path))
                 except Exception as e:
