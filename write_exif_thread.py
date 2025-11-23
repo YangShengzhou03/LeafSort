@@ -1074,7 +1074,8 @@ class WriteExifThread(QThread):
 
 
     def _create_gps_data(self, lat, lon):
-        def _decimal_to_piexif_dms(decimal):
+        """创建GPS数据字典"""
+        def decimal_to_piexif_dms(decimal):
             degrees = int(abs(decimal))
             minutes_decimal = (abs(decimal) - degrees) * 60
             minutes = int(minutes_decimal)
@@ -1083,10 +1084,10 @@ class WriteExifThread(QThread):
         
         gps_dict = {}
         
-        gps_dict[piexif.GPSIFD.GPSLatitude] = _decimal_to_piexif_dms(abs(lat))
+        gps_dict[piexif.GPSIFD.GPSLatitude] = decimal_to_piexif_dms(abs(lat))
         gps_dict[piexif.GPSIFD.GPSLatitudeRef] = b'N' if lat >= 0 else b'S'
         
-        gps_dict[piexif.GPSIFD.GPSLongitude] = _decimal_to_piexif_dms(abs(lon))
+        gps_dict[piexif.GPSIFD.GPSLongitude] = decimal_to_piexif_dms(abs(lon))
         gps_dict[piexif.GPSIFD.GPSLongitudeRef] = b'E' if lon >= 0 else b'W'
         
         current_time = datetime.now()
@@ -1102,30 +1103,10 @@ class WriteExifThread(QThread):
         return gps_dict
 
     def get_date_from_filename(self, image_path):
-        name_without_ext = self._get_filename_without_extension(image_path)
+        """从文件名中提取日期时间"""
+        name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        match = self._find_date_pattern_match(name_without_ext)
-        if not match:
-            return None
-        
-        groups = match.groupdict()
-        if not self._has_required_date_components(groups):
-            return None
-        
-        date_str_parts, has_time = self._build_date_str_parts(groups, name_without_ext, match)
-        
-        if not has_time:
-            date_str_parts, has_time = self._try_extract_missing_time(date_str_parts, name_without_ext, groups)
-        
-        date_str = ''.join(date_str_parts)
-        
-        return self._parse_date_string(date_str, has_time)
-    
-    def _get_filename_without_extension(self, image_path):
-        base_name = os.path.basename(image_path)
-        return os.path.splitext(base_name)[0]
-    
-    def _find_date_pattern_match(self, name_without_ext):
+        # 日期模式匹配
         date_pattern = r'(?P<year>\d{4})[年\-\.\/\s]?' \
                       r'(?P<month>1[0-2]|0?[1-9])[月\-\.\/\s]?' \
                       r'(?P<day>3[01]|[12]\d|0?[1-9])[日号\-\.\/\s]?' \
@@ -1136,15 +1117,15 @@ class WriteExifThread(QThread):
         
         match = re.search(date_pattern, name_without_ext)
         if not match:
-            time_pattern = r'(?P<year>\d{4})[^\d]*(?P<month>1[0-2]|0?[1-9])[^\d]*(?P<day>3[01]|[12]\d|0?[1-9])[^\d]*(?P<hour>[0-2]?\d)(?P<minute>[0-5]\d)(?P<second>[0-5]\d)'
-            match = re.search(time_pattern, name_without_ext)
+            return None
         
-        return match
-    
-    def _has_required_date_components(self, groups):
-        return all([groups.get('year'), groups.get('month'), groups.get('day')])
-    
-    def _build_date_str_parts(self, groups, name_without_ext, match):
+        groups = match.groupdict()
+        
+        # 检查必要的时间组件
+        if not all([groups.get('year'), groups.get('month'), groups.get('day')]):
+            return None
+        
+        # 构建日期字符串
         date_str_parts = [
             groups['year'],
             groups['month'].rjust(2, '0'),
@@ -1155,64 +1136,33 @@ class WriteExifThread(QThread):
         if groups.get('hour'):
             date_str_parts.append(groups['hour'].rjust(2, '0'))
             has_time = True
-            self._add_time_components(date_str_parts, groups, 
-                                     name_without_ext, match)
-
-        return date_str_parts, has_time
-    
-    def _add_time_components(self, date_str_parts, groups, name_without_ext, match):
-        if groups.get('minute'):
-            date_str_parts.append(groups['minute'].rjust(2, '0'))
             
-            if groups.get('second'):
-                date_str_parts.append(groups['second'].rjust(2, '0'))
-            elif (len(groups.get('minute', '')) == 2 and 
-                  len(groups.get('hour', '')) == 2):
-                self._try_extract_seconds(date_str_parts, groups, name_without_ext, match)
-    
-    def _try_extract_seconds(self, date_str_parts, groups, name_without_ext, match):
-        remaining_text = name_without_ext[match.end():]
-        if remaining_text and remaining_text[:2].isdigit():
-            seconds = remaining_text[:2]
-            if 0 <= int(seconds) <= 59:
-                date_str_parts.append(seconds)
-                groups['second'] = seconds
-
-    def _try_extract_missing_time(self, date_str_parts, name_without_ext, groups):
-        time_pattern = r'(?P<hour>[0-2]\d)(?P<minute>[0-5]\d)(?P<second>[0-5]\d)'
-        time_match = re.search(time_pattern, name_without_ext)
-        if time_match:
-            groups.update(time_match.groupdict())
-            date_str_parts.append(groups['hour'])
-            date_str_parts.append(groups['minute'])
-            date_str_parts.append(groups['second'])
-            return date_str_parts, True
-
-        return date_str_parts, False
-    
-    def _parse_date_string(self, date_str, has_time):
+            if groups.get('minute'):
+                date_str_parts.append(groups['minute'].rjust(2, '0'))
+                
+                if groups.get('second'):
+                    date_str_parts.append(groups['second'].rjust(2, '0'))
+        
+        date_str = ''.join(date_str_parts)
+        
+        # 解析日期字符串
         format_map = {
             8: "%Y%m%d",
             12: "%Y%m%d%H%M",
             14: "%Y%m%d%H%M%S"
         }
-
+        
         fmt = format_map.get(len(date_str))
         if not fmt:
             return None
         
         try:
             date_obj = datetime.strptime(date_str, fmt)
-            if self._is_valid_date(date_obj):
+            if 1900 <= date_obj.year <= 2100 and 1 <= date_obj.month <= 12 and 1 <= date_obj.day <= 31:
                 if not has_time:
                     date_obj = date_obj.replace(hour=0, minute=0, second=0)
                 return date_obj
         except ValueError:
             pass
-
-        return None
-    
-    def _is_valid_date(self, date_obj):
-        return (1900 <= date_obj.year <= 2100 and
-                1 <= date_obj.month <= 12 and
-                1 <= date_obj.day <= 31)
+        
+        return None

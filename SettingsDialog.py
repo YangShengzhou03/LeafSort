@@ -1,3 +1,10 @@
+"""
+设置对话框模块
+
+该模块定义了SettingsDialog类，用于管理应用程序的设置界面。
+包含通用设置、API设置和缓存设置等功能。
+"""
+
 from PyQt6.QtWidgets import QDialog, QVBoxLayout, QLabel, QPushButton, QLineEdit, QHBoxLayout, QGroupBox, QGridLayout, \
     QComboBox, QMessageBox
 from PyQt6 import QtGui
@@ -7,7 +14,14 @@ from config_manager import config_manager
 
 
 class SettingsDialog(QDialog):
+    """设置对话框类"""
+    
     def __init__(self, parent=None):
+        """初始化设置对话框
+        
+        Args:
+            parent: 父组件
+        """
         super().__init__(parent)
         self.setWindowTitle("设置")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
@@ -17,10 +31,18 @@ class SettingsDialog(QDialog):
         self.load_settings()
         
     def init_ui(self):
+        """初始化用户界面"""
         # 主布局
         main_layout = QVBoxLayout(self)
         
-        # 通用设置组
+        # 添加设置组
+        self._add_general_settings(main_layout)
+        self._add_api_settings(main_layout)
+        self._add_cache_settings(main_layout)
+        self._add_buttons(main_layout)
+    
+    def _add_general_settings(self, main_layout):
+        """添加通用设置组"""
         general_group = QGroupBox("通用设置")
         general_layout = QGridLayout()
         
@@ -37,8 +59,10 @@ class SettingsDialog(QDialog):
         general_layout.addWidget(self.memory_limit, 1, 1)
         
         general_group.setLayout(general_layout)
-        
-        # API设置组
+        main_layout.addWidget(general_group)
+    
+    def _add_api_settings(self, main_layout):
+        """添加API设置组"""
         api_group = QGroupBox("API设置")
         api_layout = QGridLayout()
         
@@ -48,8 +72,10 @@ class SettingsDialog(QDialog):
         api_layout.addWidget(self.amap_api_key, 0, 1)
         
         api_group.setLayout(api_layout)
-        
-        # 缓存设置组
+        main_layout.addWidget(api_group)
+    
+    def _add_cache_settings(self, main_layout):
+        """添加缓存设置组"""
         cache_group = QGroupBox("缓存设置")
         cache_layout = QVBoxLayout()
         
@@ -58,8 +84,10 @@ class SettingsDialog(QDialog):
         cache_layout.addWidget(self.clear_cache_button)
         
         cache_group.setLayout(cache_layout)
-        
-        # 按钮区域
+        main_layout.addWidget(cache_group)
+    
+    def _add_buttons(self, main_layout):
+        """添加按钮区域"""
         button_layout = QHBoxLayout()
         self.save_button = QPushButton("保存")
         self.save_button.clicked.connect(self.save_settings)
@@ -70,15 +98,11 @@ class SettingsDialog(QDialog):
         button_layout.addWidget(self.save_button)
         button_layout.addWidget(self.cancel_button)
         
-        # 添加到主布局
-        main_layout.addWidget(general_group)
-        main_layout.addWidget(api_group)
-        main_layout.addWidget(cache_group)
         main_layout.addStretch()
         main_layout.addLayout(button_layout)
     
     def load_settings(self):
-        # 加载现有设置
+        """加载现有设置"""
         try:
             settings = config_manager.get_settings()
             
@@ -98,6 +122,7 @@ class SettingsDialog(QDialog):
             print(f"加载设置失败: {str(e)}")
     
     def save_settings(self):
+        """保存设置"""
         try:
             # 获取设置值
             settings = {
@@ -118,6 +143,7 @@ class SettingsDialog(QDialog):
             QMessageBox.warning(self, "保存失败", f"保存设置时出错: {str(e)}")
     
     def clear_cache(self):
+        """清除缓存数据"""
         reply = QMessageBox.question(
             self, 
             "清除缓存", 
