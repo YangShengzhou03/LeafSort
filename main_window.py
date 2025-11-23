@@ -82,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def _get_folder_info(self, folder_path):
         """
-        获取文件夹的详细信息，包括大小、文件数、子文件夹数、文件类型统计等
+        获取文件夹的基本信息（优化版），只计算核心数据以提高性能
         
         Args:
             folder_path: 文件夹路径
@@ -91,56 +91,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             包含文件夹信息的字符串
         """
         import os
-        from datetime import datetime
         
         # 初始化计数器
         total_size = 0
         file_count = 0
         subfolder_count = 0
-        # 文件类型统计
-        file_types = {}
-        # 最近修改时间
-        latest_modified = None
-        earliest_modified = None
-        # 大型文件跟踪（超过100MB的文件）
-        large_files = []
         
         try:
-            # 获取文件夹基本信息
-            folder_stats = os.stat(folder_path)
-            folder_creation_time = datetime.fromtimestamp(folder_stats.st_ctime).strftime('%Y-%m-%d %H:%M:%S')
-            folder_modified_time = datetime.fromtimestamp(folder_stats.st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-            
             # 遍历文件夹及其子文件夹
             for root, dirs, files in os.walk(folder_path):
                 # 计算子文件夹数量
-                if root != folder_path:
-                    subfolder_count += len(dirs)
+                subfolder_count += len(dirs)
                 
-                # 计算文件数量和总大小，统计文件类型
+                # 计算文件数量和总大小（只保留基本统计）
+                file_count += len(files)
+                
+                # 计算文件大小
                 for file in files:
                     file_path = os.path.join(root, file)
                     try:
-                        # 获取文件大小
-                        file_size = os.path.getsize(file_path)
-                        total_size += file_size
-                        file_count += 1
-                        
-                        # 跟踪大型文件（>100MB）
-                        if file_size > 100 * 1024 * 1024:
-                            large_files.append((file, file_size))
-                        
-                        # 统计文件类型
-                        _, ext = os.path.splitext(file)
-                        ext = ext.lower() or '(无扩展名)'
-                        file_types[ext] = file_types.get(ext, 0) + 1
-                        
-                        # 更新修改时间统计
-                        file_mtime = os.path.getmtime(file_path)
-                        if latest_modified is None or file_mtime > latest_modified:
-                            latest_modified = file_mtime
-                        if earliest_modified is None or file_mtime < earliest_modified:
-                            earliest_modified = file_mtime
+                        total_size += os.path.getsize(file_path)
                     except (OSError, FileNotFoundError, PermissionError):
                         # 忽略无法访问的文件
                         continue
@@ -157,47 +127,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 else:
                     return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
             
-            # 构建信息字符串
-            info = f"=== 文件夹详细信息 ===\n"
+            # 构建简洁的信息字符串，使用多列布局
+            info = f"=== 待处理的源文件夹信息 ===\n"
             info += f"路径：{folder_path}\n"
-            info += f"创建时间：{folder_creation_time}\n"
-            info += f"修改时间：{folder_modified_time}\n"
-            info += f"\n--- 空间统计 ---\n"
-            info += f"总大小：{format_size(total_size)}\n"
-            info += f"平均文件大小：{format_size(total_size / file_count if file_count > 0 else 0)}\n"
-            info += f"\n--- 文件统计 ---\n"
-            info += f"文件总数：{file_count}\n"
-            info += f"子文件夹总数：{subfolder_count}\n"
             
-            # 添加文件时间范围信息
-            if latest_modified is not None:
-                latest_str = datetime.fromtimestamp(latest_modified).strftime('%Y-%m-%d %H:%M:%S')
-                earliest_str = datetime.fromtimestamp(earliest_modified).strftime('%Y-%m-%d %H:%M:%S')
-                info += f"\n--- 时间范围 ---\n"
-                info += f"最早修改：{earliest_str}\n"
-                info += f"最近修改：{latest_str}\n"
-            
-            # 添加文件类型统计，只显示数量最多的前10种类型
-            if file_types:
-                info += f"\n--- 文件类型统计 (前10种) ---\n"
-                sorted_types = sorted(file_types.items(), key=lambda x: x[1], reverse=True)[:10]
-                for ext, count in sorted_types:
-                    percentage = (count / file_count * 100) if file_count > 0 else 0
-                    info += f"{ext}: {count} 个 ({percentage:.1f}%)\n"
-                
-                # 如果有更多类型，显示总数
-                if len(file_types) > 10:
-                    info += f"... 还有 {len(file_types) - 10} 种其他文件类型\n"
-            
-            # 添加大型文件信息
-            if large_files:
-                info += f"\n--- 大型文件 (>100MB) ---\n"
-                # 最多显示5个最大的文件
-                large_files.sort(key=lambda x: x[1], reverse=True)
-                for file, size in large_files[:5]:
-                    info += f"{file}: {format_size(size)}\n"
-                if len(large_files) > 5:
-                    info += f"... 还有 {len(large_files) - 5} 个大型文件\n"
+            info += f"{'-' * 60}\n"
+            info += f"{'空间统计':<30} {'文件统计':<30}\n"
+            info += f"{'总大小：' + format_size(total_size):<30} {'文件总数：' + str(file_count):<30}\n"
+            info += f"{'平均文件大小：' + format_size(total_size / file_count if file_count > 0 else 0):<30} {'子文件夹总数：' + str(subfolder_count):<30}\n"
+            info += f"{'-' * 60}\n"
             
             return info
         except Exception as e:
