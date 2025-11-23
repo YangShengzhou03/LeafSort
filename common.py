@@ -118,64 +118,80 @@ class GeocodingService:
         self.url_template = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
     
     def get_address_from_coordinates(self, lat, lon):
+        """根据经纬度获取地址信息"""
         loc = f"{lon},{lat}"
         
+        # 尝试加载缓存的凭据
         cookies, key = self._load_cached_credentials()
         
+        # 如果没有缓存的凭据，尝试获取新的
         if not (cookies and key):
             cookies, key = self._fetch_credentials()
-            self._save_credentials(cookies, key)
+            if cookies and key:
+                self._save_credentials(cookies, key)
         
+        # 调用API获取地址
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
+        """加载缓存的凭据"""
         if os.path.exists("cookies.json"):
             try:
                 with open("cookies.json", "r", encoding="utf-8") as f:
                     saved = json.load(f)
                     return saved.get("cookies"), saved.get("key")
             except Exception:
+                # 静默处理错误，返回None
                 pass
         return None, None
     
     def _fetch_credentials(self):
-        target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
-                      'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
-                      'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
-        
+        """从高德地图开发者页面获取凭据"""
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_context().new_page()
                 page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
                 page.wait_for_timeout(3000)
+                
+                # 简化cookie获取逻辑
+                target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
+                              'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
+                              'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
                 cookies = {c['name']: c['value'] for c in page.context.cookies() 
                           if c['name'] in target_keys}
+                
                 key = page.get_attribute("#code_origin", "data-jskey")
                 browser.close()
                 return cookies, key
         except Exception:
+            # 静默处理错误，返回None
             return None, None
     
     def _save_credentials(self, cookies, key):
-        if cookies and key:
-            try:
-                with open("cookies.json", "w", encoding="utf-8") as f:
-                    json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
-            except Exception:
-                pass
+        """保存凭据到缓存文件"""
+        try:
+            with open("cookies.json", "w", encoding="utf-8") as f:
+                json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
+        except Exception:
+            # 静默处理错误
+            pass
     
     def _call_geocoding_api(self, loc, cookies, key):
+        """调用高德地图逆地理编码API"""
         if not (cookies and key):
             return "获取地址失败"
         
         try:
             url = self.url_template.format(key=key, loc=loc)
             resp = requests.get(url, headers=self.headers, cookies=cookies, timeout=10)
+            
             if resp.status_code == 200 and "formatted_address" in resp.text:
+                # 处理JSONP响应格式
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                 return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
         except Exception:
+            # 静默处理错误
             pass
         
         return "获取地址失败"

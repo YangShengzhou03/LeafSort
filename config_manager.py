@@ -385,7 +385,6 @@ class ConfigManager:
                 "remember_window_size": True,
                 "max_threads": 4,
                 "memory_limit_mb": 2048,
-                "amap_api_key": '0db079da53e08cbb62b52a42f657b994',
                 "last_opened_folder": '',
                 "window_position": {'x': 100, 'y': 100},
                 "window_size": {'width': 942, 'height': 580}

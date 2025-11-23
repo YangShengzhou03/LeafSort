@@ -37,7 +37,6 @@ class SettingsDialog(QDialog):
         
         # 添加设置组
         self._add_general_settings(main_layout)
-        self._add_api_settings(main_layout)
         self._add_cache_settings(main_layout)
         self._add_buttons(main_layout)
     
@@ -61,18 +60,7 @@ class SettingsDialog(QDialog):
         general_group.setLayout(general_layout)
         main_layout.addWidget(general_group)
     
-    def _add_api_settings(self, main_layout):
-        """添加API设置组"""
-        api_group = QGroupBox("API设置")
-        api_layout = QGridLayout()
-        
-        # 高德地图API Key
-        api_layout.addWidget(QLabel("高德地图API Key:"), 0, 0)
-        self.amap_api_key = QLineEdit()
-        api_layout.addWidget(self.amap_api_key, 0, 1)
-        
-        api_group.setLayout(api_layout)
-        main_layout.addWidget(api_group)
+
     
     def _add_cache_settings(self, main_layout):
         """添加缓存设置组"""
@@ -115,8 +103,7 @@ class SettingsDialog(QDialog):
             memory_limit = settings.get('memory_limit_mb', 2048)
             self.memory_limit.setText(str(memory_limit))
             
-            # API Key
-            self.amap_api_key.setText(settings.get('amap_api_key', '0db079da53e08cbb62b52a42f657b994'))
+
             
         except Exception as e:
             print(f"加载设置失败: {str(e)}")
@@ -127,8 +114,7 @@ class SettingsDialog(QDialog):
             # 获取设置值
             settings = {
                 'max_threads': int(self.thread_combo.currentText()),
-                'memory_limit_mb': int(self.memory_limit.text()) if self.memory_limit.text() else 2048,
-                'amap_api_key': self.amap_api_key.text()
+                'memory_limit_mb': int(self.memory_limit.text()) if self.memory_limit.text() else 2048
             }
             
             # 保存设置
