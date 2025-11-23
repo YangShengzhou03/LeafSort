@@ -81,7 +81,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.destination_root = destination_root
         self.separator = separator
         self.time_derive = time_derive
-        self.operation_type = operation_type  # 0: 移动, 1: 复制
+        self.operation_type = operation_type  # 0: 复制, 1: 移动
         self._is_running = True
         self._stop_flag = False
         self._stop_lock = threading.Lock()

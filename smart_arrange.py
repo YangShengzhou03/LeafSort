@@ -271,13 +271,12 @@ class SmartArrangeManager(QObject):
                     if isinstance(folder, str):
                         corrected_folders.append({'path': folder, 'include_sub': 1})
                     elif isinstance(folder, dict) and 'path' in folder:
-                        # 如果字典中没有include_sub键，则添加并设为1
-                        if 'include_sub' not in folder:
-                            folder['include_sub'] = 1
+                        # 始终包含子文件夹，设为1
+                        folder['include_sub'] = 1
                         corrected_folders.append(folder)
                 self.selected_folders = corrected_folders
             else:
-                # 确保所有文件夹字典都包含include_sub且值为1
+                # 确保所有文件夹字典都包含include_sub且值为1（始终包含子文件夹）
                 for folder in self.selected_folders:
                     if isinstance(folder, dict) and 'path' in folder:
                         folder['include_sub'] = 1
