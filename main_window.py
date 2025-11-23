@@ -1,8 +1,5 @@
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import Qt, QPoint
-from PyQt6.QtWidgets import QSystemTrayIcon, QMenu
-from PyQt6.QtGui import QAction
-
 from SettingsDialog import SettingsDialog
 from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
@@ -38,26 +35,26 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_system_tray()
         
     def _setup_system_tray(self):
-        self.tray_icon = QSystemTrayIcon(self)
+        self.tray_icon = QtWidgets.QSystemTrayIcon(self)
         self.tray_icon.setIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.tray_icon.setToolTip("枫叶相册")
         
-        tray_menu = QMenu()
-        action_show = QAction("显示窗口", self)
-        action_show.triggered.connect(lambda: (self.show(), self.raise_()))
-        action_exit = QAction("退出", self)
-        action_exit.triggered.connect(lambda: (self.tray_icon.hide(), QtWidgets.QApplication.quit()))
+        tray_menu = QtWidgets.QMenu()
+        action_show = QtGui.QAction("显示窗口", self)
+        action_show.triggered.connect(self._show_window)
+        action_exit = QtGui.QAction("退出", self)
+        action_exit.triggered.connect(self._exit_app)
         tray_menu.addAction(action_show)
         tray_menu.addSeparator()
         tray_menu.addAction(action_exit)
         
         self.tray_icon.setContextMenu(tray_menu)
-        self.tray_icon.activated.connect(lambda reason: (self.show(), self.raise_()) if reason == QSystemTrayIcon.ActivationReason.Trigger and self.isHidden() else self._hide_to_tray())
+        self.tray_icon.activated.connect(self._handle_tray_activation)
 
     def _connect_signals(self):
         self.btnSettings.clicked.connect(self._show_settings)
         self.btnMinimize.clicked.connect(self.showMinimized)
-        self.btnMaximize.clicked.connect(lambda: self.showNormal() if self.isMaximized() else self.showMaximized())
+        self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         
         self.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.inputSourceFolder))
@@ -79,26 +76,36 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
     def _hide_to_tray(self):
         self.hide()
-        if self.tray_icon:
-            self.tray_icon.show()
+        self.tray_icon and self.tray_icon.show()
             
     def _show_settings(self):
-        try:
-            dialog = SettingsDialog(self)
-            dialog.exec()
-        except Exception as e:
-            QtWidgets.QMessageBox.warning(self, "错误", f"打开设置对话框失败: {e}")
+        dialog = SettingsDialog(self)
+        dialog.exec()
     
     def _browse_directory(self, dialog_title, target_widget):
-        try:
-            folder_path = QtWidgets.QFileDialog.getExistingDirectory(
-                self, dialog_title, "", QtWidgets.QFileDialog.Option.ShowDirsOnly
-            )
-            
-            if folder_path:
-                target_widget.setText(folder_path)
-        except Exception as e:
-            QtWidgets.QMessageBox.warning(self, "错误", f"打开{dialog_title}对话框失败: {e}")
+        folder_path = QtWidgets.QFileDialog.getExistingDirectory(
+            self, dialog_title, "", QtWidgets.QFileDialog.Option.ShowDirsOnly
+        )
+        
+        if folder_path:
+            target_widget.setText(folder_path)
+    
+    def _show_window(self):
+        self.show()
+        self.raise_()
+    
+    def _exit_app(self):
+        self.tray_icon.hide()
+        QtWidgets.QApplication.quit()
+    
+    def _handle_tray_activation(self, reason):
+        if reason == QtWidgets.QSystemTrayIcon.ActivationReason.Trigger and self.isHidden():
+            self._show_window()
+        else:
+            self._hide_to_tray()
+    
+    def _toggle_maximize(self):
+        self.showNormal() if self.isMaximized() else self.showMaximized()
     
     def closeEvent(self, event):
         event.ignore()

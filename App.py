@@ -10,35 +10,31 @@ BRING_TO_FRONT_COMMAND = b'bringToFront'
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
-        sys.__excepthook__(exc_type, exc_value, exc_traceback)
-        return
+        return sys.__excepthook__(exc_type, exc_value, exc_traceback)
     
     error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
     
-    try:
-        app = QtWidgets.QApplication.instance()
-        if app:
-            msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-            msg.setWindowTitle("应用程序错误")
-            msg.setText("发生意外错误，应用程序可能需要关闭。")
-            msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
-            msg.setDetailedText(error_message)
-            msg.exec()
-    except Exception:
-        pass
+    app = QtWidgets.QApplication.instance()
+    if app:
+        msg = QtWidgets.QMessageBox()
+        msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
+        msg.setWindowTitle("应用程序错误")
+        msg.setText("发生意外错误，应用程序可能需要关闭。")
+        msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
+        msg.setDetailedText(error_message)
+        msg.exec()
 
 def main():
     sys.excepthook = handle_exception
     
-    try:
-        with closing(QLocalSocket()) as socket:
+    with closing(QLocalSocket()) as socket:
+        try:
             if socket.connectToServer(APP_SERVER_NAME) and socket.waitForConnected(500):
                 socket.write(BRING_TO_FRONT_COMMAND)
                 socket.waitForBytesWritten(1000)
                 return 0
-    except (QtCore.QObject.QObjectError, ConnectionError):
-        pass
+        except (QtCore.QObject.QObjectError, ConnectionError):
+            pass
     
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("LeafView")
@@ -48,10 +44,9 @@ def main():
     local_server = None
     try:
         local_server = QLocalServer()
-        if not local_server.listen(APP_SERVER_NAME):
-            local_server = None
+        local_server.listen(APP_SERVER_NAME)
     except Exception:
-        local_server = None
+        pass
     
     try:
         window = MainWindow()
@@ -60,17 +55,14 @@ def main():
         
         if local_server:
             def handle_socket_data(socket):
-                try:
-                    if socket.bytesAvailable() > 0 and socket.readAll().data() == BRING_TO_FRONT_COMMAND:
-                        window.activateWindow()
-                        window.raise_()
-                        window.showNormal()
-                finally:
-                    socket.deleteLater()
+                if socket.bytesAvailable() > 0 and socket.readAll().data() == BRING_TO_FRONT_COMMAND:
+                    window.activateWindow()
+                    window.raise_()
+                    window.showNormal()
+                socket.deleteLater()
             
             def handle_connection():
-                socket = local_server.nextPendingConnection()
-                if socket:
+                if socket := local_server.nextPendingConnection():
                     socket.readyRead.connect(lambda: handle_socket_data(socket))
             
             local_server.newConnection.connect(handle_connection)
