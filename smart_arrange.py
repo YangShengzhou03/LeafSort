@@ -83,73 +83,74 @@ class SmartArrangeManager(QObject):
         self.parent.progressBar_classification.setValue(value)
 
     def toggle_SmartArrange(self):
-        self.log("DEBUG", "toggle_SmartArrange方法被调用")
-        
-        thread_running = self.SmartArrange_thread and self.SmartArrange_thread.isRunning()
-        self.log("DEBUG", f"线程运行状态: {thread_running}")
-        
+        self.log("DEBUG", "toggle_SmartArrange")
+        thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
+        self.log("DEBUG", f"thread_running: {thread_running}")
         if thread_running:
-            self.log("INFO", "User requested to stop smart arrange operation")
+            self.log("INFO", "Stop operation")
             self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "Thread stop method called")
-                self.log("DEBUG", "Thread stop signal sent")
+                self.log("DEBUG", "stop")
+                self.log("DEBUG", "stopping")
             except Exception as e:
-                self.log("ERROR", f"Error stopping thread: {str(e)}")
+                self.log("ERROR", f"{str(e)}")
                 self.parent.btnStartSmartArrange.setText("Start Arrange")
         else:
             self.parent.btnStartSmartArrange.setEnabled(True)
-            self.log("DEBUG", "准备启动新的整理任务")
+            self.log("DEBUG", "start")
             
             folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not folders:
-                self.log("WARNING", "Please import a folder containing files first.")
+                self.log("WARNING", "No folder selected")
+                try:
+                    QtWidgets.QMessageBox.warning(self, "警告", "请先选择要整理的文件夹！")
+                except Exception as e:
+                    self.log("ERROR", f"Failed to show warning message: {e}")
                 return
             
-            self.log("DEBUG", f"Retrieved {len(folders)} folders")
+            self.log("DEBUG", f"folders: {len(folders)}")
             
             if not self.destination_root:
-                folder = QFileDialog.getExistingDirectory(self, "Please select destination folder",
+                folder = QFileDialog.getExistingDirectory(self, "Select folder",
                                                           options=QFileDialog.Option.ShowDirsOnly)
                 if not folder:
-                    self.log("WARNING", "Must select a destination folder to perform arrange operation.")
+                    self.log("WARNING", "No destination")
                     return
                 self.destination_root = folder
                 display_path = folder + '/'
                 if len(display_path) > 20:
                     display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                operation_text = "Destination folder: "
+                operation_text = "Destination: "
                 self.parent.copyRoute.setText(f"{operation_text}{display_path}")
             
             if self.SmartArrange_thread:
                 try:
                     if self.SmartArrange_thread.isRunning():
                         self.SmartArrange_thread.stop()
-                        self.log("DEBUG", "Old thread stopped")
                 except Exception as e:
-                    self.log("WARNING", f"Error handling old thread: {str(e)}")
+                    self.log("WARNING", f"{str(e)}")
                     self.SmartArrange_thread = None
 
-            self.log("DEBUG", "Showing confirmation dialog")
+            self.log("DEBUG", "confirm")
             
             reply = QMessageBox.question(
                 self,
-                "Ready to start arrangement, confirm?",
-                "Important reminder: File arrangement operations cannot be undone once started!\n\n"
-                "• Move operation: Files will be moved to new location, original files will be removed\n"
-                "• Copy operation: Files will be copied to new location, original files remain intact\n\n"
-                "Please make sure to backup important files before starting!\n\n"
-                "Are you sure you want to start arrangement?",
+                "Confirm?",
+                "Operation cannot be undone!\n\n"
+                "• Move: Files moved, originals removed\n"
+                "• Copy: Files copied, originals remain\n\n"
+                "Backup important files!\n\n"
+                "Are you sure?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "You cancelled the arrangement operation")
+                self.log("INFO", "Cancelled")
                 return
 
-            self.log("DEBUG", "User confirmed to start arrangement operation")
+            self.log("DEBUG", "confirmed")
             
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()
@@ -157,7 +158,6 @@ class SmartArrangeManager(QObject):
                 if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
                    getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
             ]
-            self.log("DEBUG", f"分类结构: {SmartArrange_structure}")
 
             file_name_parts = []
             try:
@@ -168,40 +168,18 @@ class SmartArrangeManager(QObject):
                         tag_name = button.text()
                         content = button.property('custom_content') if button.property('original_text') == '自定义' and button.property('custom_content') is not None else None
                         file_name_parts.append({'tag': tag_name, 'content': content})
-                self.log("DEBUG", f"文件名结构: {file_name_parts}")
             except Exception as e:
-                self.log("ERROR", f"获取文件名结构时出错: {str(e)}")
+                self.log("ERROR", f"{str(e)}")
                 file_name_parts = []
 
             separator_text = self.parent.fileNameSeparator.currentText()
             separator = self.separator_mapping.get(separator_text, "-")
-            self.log("DEBUG", f"使用分隔符: '{separator}'")
 
             operation_type = self.parent.fileOperation.currentIndex()
-            operation_text = "Move" if operation_type == 0 else "Copy"
-            self.log("DEBUG", f"Operation type: {operation_type} ({operation_text})")
-
-            operation_summary = f"Operation type: {operation_text}"
-            if SmartArrange_structure:
-                operation_summary += f", Classification structure: {' → '.join(SmartArrange_structure)}"
-            if file_name_parts:
-                filename_tags = []
-                for tag_info in file_name_parts:
-                    if tag_info['content'] is not None:
-                        filename_tags.append(tag_info['content'])
-                    else:
-                        filename_tags.append(tag_info['tag'])
-                operation_summary += f", Filename tags: {'+'.join(filename_tags)}"
-            if self.destination_root:
-                operation_summary += f", Destination path: {self.destination_root}"
-
-            self.log("INFO", f"Summary: {operation_summary}")
             
             self.parent.btnStartSmartArrange.setText("停止整理")
-            self.parent.btnStartSmartArrange.setEnabled(True)
             
             try:
-                self.log("DEBUG", "创建SmartArrangeThread实例")
                 self.SmartArrange_thread = SmartArrangeThread(
                     parent=self,
                     folders=folders,
@@ -213,7 +191,6 @@ class SmartArrangeManager(QObject):
                     operation_type=operation_type
                 )
                 
-                self.log("DEBUG", "连接线程信号")
                 try:
                     self.SmartArrange_thread.log_signal.disconnect()
                 except (TypeError, RuntimeError):
@@ -231,52 +208,38 @@ class SmartArrangeManager(QObject):
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
                 self.SmartArrange_thread.finished.connect(self.on_thread_finished)
                 
-                self.log("DEBUG", "启动智能整理线程")
                 self.SmartArrange_thread.start()
-                self.log("INFO", "智能整理线程已成功启动")
             except Exception as e:
-                self.log("ERROR", f"创建或启动线程时出错: {str(e)}")
+                self.log("ERROR", f"{str(e)}")
                 self.parent.btnStartSmartArrange.setText("开始整理")
                 self.parent.btnStartSmartArrange.setEnabled(True)
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
-        self.log("DEBUG", "on_thread_finished方法被调用")
-        
         try:
             self.parent.btnStartSmartArrange.setText("开始整理")
             self.parent.btnStartSmartArrange.setEnabled(True)
-            self.log("DEBUG", "已重置按钮状态为'开始整理'并启用")
         except Exception as e:
-            self.log("ERROR", f"更新按钮状态时出错: {str(e)}")
+            self.log("ERROR", f"{str(e)}")
         
         stopped_status = False
         try:
             if hasattr(self.SmartArrange_thread, 'is_stopped'):
                 stopped_status = self.SmartArrange_thread.is_stopped()
-                if stopped_status:
-                    self.log("INFO", "智能整理操作已停止")
-                else:
-                    self.log("INFO", "智能整理操作已完成")
-            else:
-                self.log("INFO", "智能整理操作已完成")
         except Exception as e:
-            self.log("WARNING", f"检查线程状态时出错: {str(e)}")
+            self.log("WARNING", f"{str(e)}")
         
         try:
             self.update_progress_bar(0)
-            self.log("DEBUG", "已重置进度条")
         except Exception as e:
-            self.log("WARNING", f"更新进度条时出错: {str(e)}")
+            self.log("WARNING", f"{str(e)}")
         
         if not stopped_status:
             try:
-                QMessageBox.information(self, "操作完成", "文件整理操作已完成！")
-                self.log("DEBUG", "已显示完成消息框")
+                QMessageBox.information(self, "完成", "操作已完成！")
             except Exception as e:
-                self.log("WARNING", f"显示完成消息时出错: {str(e)}")
+                self.log("WARNING", f"{str(e)}")
         
-        self.log("DEBUG", "清除线程引用")
         self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
@@ -319,7 +282,6 @@ class SmartArrangeManager(QObject):
 
     def update_operation_display(self):
         has_SmartArrange = len(self.SmartArrange_settings) > 0
-
         has_filename = self.selected_frame.layout().count() > 0
 
         if has_SmartArrange and has_filename:
@@ -333,30 +295,13 @@ class SmartArrangeManager(QObject):
 
         operation_mode = "移动" if self.parent.fileOperation.currentIndex() == 0 else "复制"
 
-        move_color = "#FF6B6B"
-        copy_color = "#4ECDC4"
-
         if self.destination_root:
             display_path = str(self.destination_root)
             if len(display_path) > 20:
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
-            if operation_mode == "移动":
-                self.parent.copyRoute.setText(
-                    f'<span style="color:{move_color}">{operation_mode}到: {display_path} ({operation_type})</span>'
-                )
-            else:
-                self.parent.copyRoute.setText(
-                    f'<span style="color:{copy_color}">{operation_mode}到: {display_path} ({operation_type})</span>'
-                )
+            self.parent.copyRoute.setText(f"{operation_mode}到: {display_path} ({operation_type})")
         else:
-            if operation_mode == "移动":
-                self.parent.copyRoute.setText(
-                    f'<span style="color:{move_color}">{operation_mode}文件 ({operation_type})</span>'
-                )
-            else:
-                self.parent.copyRoute.setText(
-                    f'<span style="color:{copy_color}">{operation_mode}文件 ({operation_type})</span>'
-                )
+            self.parent.copyRoute.setText(f"{operation_mode}文件 ({operation_type})")
 
     def set_combo_box_states(self):
         self.parent.comboClassificationLevel1.setEnabled(True)
@@ -474,27 +419,18 @@ class SmartArrangeManager(QObject):
 
     def handle_log_signal(self, level, message):
         if hasattr(self.parent, 'txtSmartArrangeLog'):
-            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
-            color = color_map.get(level, '#006400')
-            
-            # 添加时间戳到日志消息
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = f"[{timestamp}] {message}"
-            
             try:
-                self.parent.txtSmartArrangeLog.append(f'<span style="color:{color}">{formatted_message}</span>')
+                self.parent.txtSmartArrangeLog.append(message)
             except Exception as e:
-                print(f"无法写入日志: {e}")
+                print(f"{e}")
         else:
-            print(f"[{level}] {message}")
+            print(message)
 
     def log(self, level, message):
-        log_message = f"[{level}] {message}"
         try:
-            self.log_signal.emit(level, log_message)
+            self.log_signal.emit(level, message)
         except Exception:
-            print(log_message)
-            pass
+            print(message)
 
     def move_tag_back(self, button):
         self.selected_frame.layout().removeWidget(button)
@@ -511,7 +447,6 @@ class SmartArrangeManager(QObject):
         button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
         self.update_example_label()
-
         self.update_operation_display()
 
         for btn in self.tag_buttons.values():
