@@ -82,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def _get_folder_info(self, folder_path):
         """
-        获取文件夹的极速信息，完全避免任何递归操作，适用于超大文件夹
+        获取文件夹的极速信息，通过已初始化的folder_page实例来获取
         
         Args:
             folder_path: 文件夹路径
@@ -90,58 +90,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         Returns:
             包含文件夹信息的字符串
         """
-        import os
-        
-        # 格式化文件大小
-        def format_size(size_bytes):
-            """将字节大小格式化为人类可读的格式"""
-            if size_bytes < 1024:
-                return f"{size_bytes} B"
-            elif size_bytes < 1024 * 1024:
-                return f"{size_bytes / 1024:.2f} KB"
-            elif size_bytes < 1024 * 1024 * 1024:
-                return f"{size_bytes / (1024 * 1024):.2f} MB"
-            else:
-                return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
-        
-        # 构建信息字符串，使用两列布局
-        info = f"{'='*10} 待处理的源文件夹信息 {'='*10}\n"
-        info = "提示：程序将自动递归处理所有子文件夹中的文件。\n"
-        info += f"路径：{folder_path}\n"
-        
-        # 只获取顶层文件夹信息，完全避免任何递归操作
-        top_file_count = 0
-        top_folder_count = 0
-        try:
-            # 只列出顶层内容，不递归
-            items = os.listdir(folder_path)
-            for item in items:
-                item_path = os.path.join(folder_path, item)
-                if os.path.isfile(item_path):
-                    top_file_count += 1
-                elif os.path.isdir(item_path):
-                    top_folder_count += 1
-        except (OSError, FileNotFoundError, PermissionError) as e:
-            pass
-        
-        # 使用两列布局显示信息
-        info += f"{'-' * 60}\n"
-        info += f"{'顶层内容统计':<60}\n"
-        info += f"{'顶层文件数量：' + str(top_file_count):<30} {'顶层文件夹数量：' + str(top_folder_count):<30}\n"
-        info += f"{'-' * 60}\n"
-        return info
-    
-    def _browse_directory(self, dialog_title, target_widget):
-        folder_path = QtWidgets.QFileDialog.getExistingDirectory(
-            self, dialog_title, "", QtWidgets.QFileDialog.Option.ShowDirsOnly
-        )
-        
-        if folder_path:
-            target_widget.setText(folder_path)
-            # 如果是源文件夹，则显示文件夹信息
-            if target_widget == self.inputSourceFolder:
-                folder_info = self._get_folder_info(folder_path)
-                self.textBrowser_import_info.setText(folder_info)
+        # 使用在_initialize_pages中已初始化的folder_page实例
+        return self.folder_page.get_folder_info(folder_path)
     
     def _show_window(self):
         self.show()
