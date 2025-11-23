@@ -187,6 +187,7 @@ class ConfigManager:
     
     @_thread_safe_method
     def cache_location(self, latitude: float, longitude: float, address: str) -> bool:
+        """缓存地理位置信息，支持自动过期和大小管理"""
         cache_key = f"{latitude:.6f},{longitude:.6f}"
         self.location_cache[cache_key] = {
             "address": address,
@@ -194,14 +195,44 @@ class ConfigManager:
             "last_accessed": datetime.now().timestamp()
         }
         
+        # 定期检查过期缓存并清理
+        if len(self.location_cache) % 100 == 0:  # 每增加100个缓存项检查一次
+            self._cleanup_expired_cache()
+        
+        # 检查并限制缓存大小
         max_cache_size = self.config.get("cache_settings", {}).get("max_location_cache_size", 50000)
         if len(self.location_cache) > max_cache_size:
-            cache_items = list(self.location_cache.items())
-            cache_items.sort(key=lambda x: x[1].get("last_accessed", 0), reverse=True)
-            self.location_cache = dict(cache_items[:max(10000, max_cache_size // 2)])
-            logger.debug(f"位置缓存已清理，当前大小: {len(self.location_cache)}/{max_cache_size}")
+            self._reduce_cache_size(max_cache_size)
         
         return self.save_location_cache()
+        
+    def _cleanup_expired_cache(self):
+        """清理过期的缓存项"""
+        expiry_days = self.config.get("cache_settings", {}).get("cache_expiry_days", 30)
+        expiry_time = datetime.now().timestamp() - (expiry_days * 86400)  # 86400 = 24小时 * 60分钟 * 60秒
+        
+        # 过滤掉过期的缓存项
+        expired_keys = [
+            key for key, data in self.location_cache.items()
+            if data.get("timestamp", 0) < expiry_time
+        ]
+        
+        for key in expired_keys:
+            del self.location_cache[key]
+        
+        if expired_keys:
+            logger.debug(f"清理了 {len(expired_keys)} 个过期的位置缓存项")
+    
+    def _reduce_cache_size(self, max_size):
+        """智能缩减缓存大小，保留最近访问的项"""
+        # 按最后访问时间排序，保留最近访问的项
+        cache_items = list(self.location_cache.items())
+        cache_items.sort(key=lambda x: x[1].get("last_accessed", 0), reverse=True)
+        
+        # 保留最大大小的一半，确保不会频繁触发清理
+        new_size = max(10000, max_size // 2)
+        self.location_cache = dict(cache_items[:new_size])
+        logger.debug(f"位置缓存已清理，当前大小: {len(self.location_cache)}/{max_size}")
     
     def _get_cache_key(self, latitude: float, longitude: float) -> str:
         return f"{latitude:.6f},{longitude:.6f}"

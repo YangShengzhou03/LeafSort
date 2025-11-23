@@ -68,10 +68,15 @@ class WriteExifThread(QThread):
         self.finished_conversion.emit()
     
     def _process_all_images(self, image_paths):
-        """处理所有图像，简化的任务执行流程"""
+        """处理所有图像，优化的任务执行流程"""
         success_count = 0
         error_count = 0
-        max_workers = min(4, os.cpu_count() or 1)
+        
+        # 根据系统资源动态调整线程数
+        cpu_count = os.cpu_count() or 1
+        # 对于I/O密集型任务，可以使用更多线程
+        # 但避免过多线程导致系统资源耗尽
+        max_workers = min(max(2, cpu_count), 8)  # 最少2个线程，最多8个线程
         
         # 预先过滤文件，避免在executor内部进行过滤
         valid_paths = []
@@ -93,31 +98,46 @@ class WriteExifThread(QThread):
                 
             valid_paths.append(path)
         
-        # 使用线程池处理有效文件
-        with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            # 提交所有任务
-            future_to_path = {executor.submit(self.process_image, path): path for path in valid_paths}
-            
-            # 处理结果
-            for i, future in enumerate(as_completed(future_to_path), 1):
-                if self._stop_requested:
-                    self._cancel_all_tasks(future_to_path)
-                    break
+        total_valid = len(valid_paths)
+        if total_valid == 0:
+            return success_count, error_count
+        
+        self.log_signal.emit("INFO", f"使用 {max_workers} 个线程处理 {total_valid} 个有效文件")
+        
+        # 使用线程池处理有效文件 - 分批提交任务以减少内存占用
+        batch_size = max(100, max_workers * 10)  # 每批处理的文件数
+        processed_count = 0
+        
+        for i in range(0, total_valid, batch_size):
+            if self._stop_requested:
+                break
                 
-                path = future_to_path[future]
-                try:
-                    future.result(timeout=30)
-                    success_count += 1
-                except TimeoutError:
-                    self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时间太长，已超时")
-                    error_count += 1
-                except (IOError, ValueError, TypeError) as e:
-                    self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
-                    error_count += 1
+            batch = valid_paths[i:i+batch_size]
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
+                # 提交当前批次的任务
+                future_to_path = {executor.submit(self.process_image, path): path for path in batch}
                 
-                # 更新进度
-                progress = int((i / len(future_to_path)) * 100)
-                self.progress_updated.emit(progress)
+                # 处理结果
+                for future in as_completed(future_to_path):
+                    if self._stop_requested:
+                        self._cancel_all_tasks(future_to_path)
+                        break
+                    
+                    path = future_to_path[future]
+                    try:
+                        future.result(timeout=30)
+                        success_count += 1
+                    except TimeoutError:
+                        self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时间太长，已超时")
+                        error_count += 1
+                    except (IOError, ValueError, TypeError) as e:
+                        self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
+                        error_count += 1
+                    
+                    # 更新进度
+                    processed_count += 1
+                    progress = int((processed_count / total_valid) * 100)
+                    self.progress_updated.emit(progress)
         
         return success_count, error_count
     

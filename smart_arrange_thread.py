@@ -94,6 +94,10 @@ class SmartArrangeThread(QtCore.QThread):
         # 初始化地理数据属性
         self.city_data = {}
         self.province_data = {}
+        # 初始化exiftool守护进程
+        self.exiftool_process = None
+        self.exiftool_available = False
+        self._initialize_exiftool()
 
     def calculate_total_files(self):
         """简化文件计数逻辑，合并递归和直接计数"""
@@ -184,6 +188,9 @@ class SmartArrangeThread(QtCore.QThread):
                 
         except Exception as e:
             self.log("ERROR", f"整理文件时遇到了严重问题: {str(e)}")
+        finally:
+            # 确保线程结束时关闭exiftool进程
+            self._close_exiftool()
 
     def process_folder_with_classification(self, folder_info):
         folder_path = Path(folder_info['path'])
@@ -1080,6 +1087,64 @@ class SmartArrangeThread(QtCore.QThread):
             'Model': model or None
         })
 
+
+        
+    def _initialize_exiftool(self):
+        """初始化exiftool守护进程"""
+        try:
+            exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
+            if not os.path.exists(exiftool_path):
+                self.log("DEBUG", "exiftool.exe 未找到")
+                return
+                
+            # 启动exiftool作为守护进程 (-stay_open True)
+            self.exiftool_process = subprocess.Popen(
+                [exiftool_path, '-stay_open', 'True', '-@', '-'],
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                universal_newlines=True,
+                shell=False
+            )
+            
+            # 测试连接
+            test_cmd = "-ver\n-execute\n"
+            self.exiftool_process.stdin.write(test_cmd)
+            self.exiftool_process.stdin.flush()
+            
+            # 读取输出直到看到 '{ready}'
+            output = []
+            start_time = time.time()
+            timeout = 5
+            while time.time() - start_time < timeout:
+                line = self.exiftool_process.stdout.readline()
+                if not line:
+                    break
+                output.append(line)
+                if '{ready}' in line:
+                    self.exiftool_available = True
+                    break
+                    
+        except Exception as e:
+            self.log("DEBUG", f"初始化exiftool守护进程失败: {str(e)}")
+            self._close_exiftool()
+    
+    def _close_exiftool(self):
+        """关闭exiftool守护进程"""
+        if self.exiftool_process:
+            try:
+                self.exiftool_process.stdin.write("-stay_open\nFalse\n")
+                self.exiftool_process.stdin.flush()
+                self.exiftool_process.communicate(timeout=2)
+            except Exception:
+                try:
+                    self.exiftool_process.kill()
+                except:
+                    pass
+            finally:
+                self.exiftool_process = None
+                self.exiftool_available = False
+                
     def _get_video_metadata(self, file_path, timeout=15):
         try:
             # 文件大小检查
@@ -1091,7 +1156,43 @@ class SmartArrangeThread(QtCore.QThread):
             except (OSError, FileNotFoundError):
                 pass
                 
-            file_path_normalized = str(file_path).replace('\\', '/')
+            file_path_str = str(file_path)
+            
+            # 使用守护进程模式的exiftool
+            if self.exiftool_available:
+                # 构建命令
+                cmd = f"-fast -j \"{file_path_str}\"\n-execute\n"
+                
+                # 发送命令到exiftool进程
+                self.exiftool_process.stdin.write(cmd)
+                self.exiftool_process.stdin.flush()
+                
+                # 读取输出直到看到 '{ready}'
+                output_lines = []
+                start_time = time.time()
+                while time.time() - start_time < timeout:
+                    line = self.exiftool_process.stdout.readline()
+                    if not line:
+                        break
+                    if '{ready}' in line:
+                        break
+                    output_lines.append(line)
+                
+                # 解析JSON输出
+                if output_lines:
+                    import json
+                    try:
+                        metadata_list = json.loads(''.join(output_lines))
+                        if metadata_list and isinstance(metadata_list[0], dict):
+                            # 将嵌套的GPS信息扁平化
+                            metadata = metadata_list[0]
+                            return metadata
+                    except json.JSONDecodeError:
+                        # 如果JSON解析失败，尝试传统方式
+                        pass
+                
+            # 回退到原始方法
+            file_path_normalized = file_path_str.replace('\\', '/')
             cmd = f"{get_resource_path('resources/exiftool/exiftool.exe')} -fast \"{file_path_normalized}\""
 
             result = subprocess.run(
@@ -1117,6 +1218,14 @@ class SmartArrangeThread(QtCore.QThread):
         except (OSError, UnicodeDecodeError, ValueError) as e:
             self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据时出错: {str(e)}")
             return None
+            
+    def run(self):
+        """重写run方法，确保线程结束时关闭exiftool进程"""
+        try:
+            # 原有run方法的代码
+            super().run()
+        finally:
+            self._close_exiftool()
 
     def parse_exif_datetime(self, tags):
         """从EXIF标签中解析日期时间信息
@@ -1159,8 +1268,14 @@ class SmartArrangeThread(QtCore.QThread):
             
         return None
 
+    # 日期时间解析缓存 - 类级别的缓存，所有实例共享
+    _datetime_cache = {}
+    _datetime_cache_max_size = 50000  # 缓存最大项数
+    _datetime_cache_clean_interval = 1000  # 清理间隔
+    _datetime_cache_clean_count = 0  # 清理计数器
+    
     def parse_datetime(self, datetime_str):
-        """解析日期时间字符串
+        """解析日期时间字符串 - 优化版，使用缓存和更高效的解析策略
         
         Args:
             datetime_str: 日期时间字符串
@@ -1171,13 +1286,89 @@ class SmartArrangeThread(QtCore.QThread):
         if not datetime_str:
             return None
             
+        # 首先检查缓存
+        cache_key = str(datetime_str)
+        if cache_key in self._datetime_cache:
+            return self._datetime_cache[cache_key]
+        
+        # 增加计数器并检查是否需要清理缓存
+        SmartArrangeThread._datetime_cache_clean_count += 1
+        if SmartArrangeThread._datetime_cache_clean_count >= SmartArrangeThread._datetime_cache_clean_interval:
+            self._cleanup_datetime_cache()
+        
         try:
-            formats_with_timezone = [
-                '%Y:%m:%d %H:%M:%S%z',
-                '%Y-%m-%d %H:%M:%S%z',
-                '%Y/%m/%d %H:%M:%S%z',
-            ]
+            # 简单预处理，规范化常见分隔符
+            if isinstance(datetime_str, str):
+                # 替换常见的时间分隔符变体
+                datetime_str = datetime_str.strip()
+                # 尝试直接匹配最常见的格式
+                if 'T' in datetime_str:
+                    # ISO格式
+                    try:
+                        dt = datetime.datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
+                        result = dt.replace(tzinfo=None) if dt.tzinfo else dt
+                        self._datetime_cache[cache_key] = result
+                        return result
+                    except ValueError:
+                        pass
+                
+                # 常见格式预检查 - 减少尝试次数
+                if len(datetime_str) == 19 and datetime_str[4] in ':-/' and datetime_str[10] == ' ' and datetime_str[13] in ':.':
+                    # 标准格式: YYYY-MM-DD HH:MM:SS
+                    fmt = '%Y-%m-%d %H:%M:%S'
+                    if datetime_str[4] == ':':
+                        fmt = '%Y:%m:%d %H:%M:%S'
+                    elif datetime_str[4] == '/':
+                        fmt = '%Y/%m/%d %H:%M:%S'
+                    try:
+                        dt = datetime.datetime.strptime(datetime_str, fmt)
+                        # 视频文件通常使用UTC时间
+                        if any(ext in str(self.current_file).lower() for ext in ('.mov', '.mp4', '.m4v', '.avi')):
+                            utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                            dt = utc_dt.astimezone().replace(tzinfo=None)
+                        self._datetime_cache[cache_key] = dt
+                        return dt
+                    except ValueError:
+                        pass
+                
+                # 只有日期的情况
+                elif len(datetime_str) in (8, 10):
+                    if len(datetime_str) == 8 and datetime_str.isdigit():
+                        # YYYYMMDD
+                        try:
+                            dt = datetime.datetime.strptime(datetime_str, '%Y%m%d')
+                            self._datetime_cache[cache_key] = dt
+                            return dt
+                        except ValueError:
+                            pass
+                    elif len(datetime_str) == 10 and datetime_str[4] in ':-/' and datetime_str[7] in ':-/':
+                        # YYYY-MM-DD
+                        fmt = '%Y-%m-%d'
+                        if datetime_str[4] == ':':
+                            fmt = '%Y:%m:%d'
+                        elif datetime_str[4] == '/':
+                            fmt = '%Y/%m/%d'
+                        try:
+                            dt = datetime.datetime.strptime(datetime_str, fmt)
+                            self._datetime_cache[cache_key] = dt
+                            return dt
+                        except ValueError:
+                            pass
+                
+                # 带时区信息
+                if ('+' in datetime_str or '-' in datetime_str[-6:]) and len(datetime_str) >= 19:
+                    # 尝试几种可能的带时区格式
+                    tz_formats = ['%Y-%m-%d %H:%M:%S%z', '%Y:%m:%d %H:%M:%S%z', '%Y/%m/%d %H:%M:%S%z']
+                    for fmt in tz_formats:
+                        try:
+                            dt = datetime.datetime.strptime(datetime_str, fmt)
+                            result = dt.astimezone().replace(tzinfo=None)
+                            self._datetime_cache[cache_key] = result
+                            return result
+                        except ValueError:
+                            continue
             
+            # 备用全面尝试
             formats_without_timezone = [
                 '%Y:%m:%d %H:%M:%S',
                 '%Y-%m-%d %H:%M:%S', 
@@ -1188,31 +1379,47 @@ class SmartArrangeThread(QtCore.QThread):
                 '%Y%m%d'
             ]
             
-            for fmt in formats_with_timezone:
-                try:
-                    dt = datetime.datetime.strptime(datetime_str, fmt)
-                    if dt.tzinfo is not None:
-                        dt = dt.astimezone()
-                        return dt.replace(tzinfo=None)
-                    return dt
-                except ValueError:
-                    continue
-            
             for fmt in formats_without_timezone:
                 try:
                     dt = datetime.datetime.strptime(datetime_str, fmt)
-                    if 'mov' in fmt.lower() or fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
-                        utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
-                        local_dt = utc_dt.astimezone()
-                        return local_dt.replace(tzinfo=None)
-                    
+                    self._datetime_cache[cache_key] = dt
                     return dt
                 except ValueError:
                     continue
         except (ValueError, TypeError):
             pass
-            
+        
+        # 缓存失败结果
+        self._datetime_cache[cache_key] = None
         return None
+    
+    def _cleanup_datetime_cache(self):
+        """清理日期时间解析缓存，防止内存占用过大"""
+        # 重置清理计数器
+        SmartArrangeThread._datetime_cache_clean_count = 0
+        
+        # 检查缓存大小
+        if len(SmartArrangeThread._datetime_cache) <= SmartArrangeThread._datetime_cache_max_size:
+            return
+        
+        # 清理缓存，保留一半的项
+        # 注意：由于我们没有记录访问时间，这里采用简单的方式清理一半的缓存
+        # 在实际应用中，可以考虑使用OrderedDict并记录访问顺序
+        cache_items = list(SmartArrangeThread._datetime_cache.items())
+        # 只保留后面的一半，假设较新添加的项在列表后面
+        new_size = max(10000, SmartArrangeThread._datetime_cache_max_size // 2)
+        
+        # 重新构建缓存，保留最新添加的项
+        # 注意：Python 3.7+的字典保持插入顺序
+        new_cache = {}
+        for key, value in cache_items[-new_size:]:
+            new_cache[key] = value
+        
+        # 替换缓存
+        SmartArrangeThread._datetime_cache = new_cache
+        
+        # 记录清理日志（可以根据需要启用）
+        # self.log("DEBUG", f"日期时间缓存已清理，当前大小: {len(new_cache)}/{SmartArrangeThread._datetime_cache_max_size}")
 
     def parse_gps_coordinates(self, gps_info):
         """解析GPS坐标信息
