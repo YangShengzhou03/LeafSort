@@ -106,6 +106,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         # 构建信息字符串，使用两列布局
         info = f"{'='*10} 待处理的源文件夹信息 {'='*10}\n"
+        info = "提示：程序将自动递归处理所有子文件夹中的文件。\n"
         info += f"路径：{folder_path}\n"
         
         # 只获取顶层文件夹信息，完全避免任何递归操作
