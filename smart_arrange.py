@@ -123,46 +123,112 @@ class SmartArrangeManager(QObject):
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
             if not self.destination_root:
+                # 首先尝试从folder_page获取已选择的目标文件夹
+                self.log("INFO", "尝试从folder_page获取目标文件夹")
                 import os
-                from PyQt6.QtWidgets import QFileDialog
-                folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
-                                                          options=QFileDialog.Option.ShowDirsOnly)
-                if not folder:
-                    self.log("WARNING", "No destination")
-                    return
-                
-                # 验证目标文件夹路径
-                destination = folder
-                if not os.path.exists(destination):
-                    # 询问是否创建目标文件夹
-                    from PyQt6.QtWidgets import QMessageBox
-                    reply = QMessageBox.question(
-                        self.parent,
-                        "确认", 
-                        f"目标文件夹不存在，是否创建？\n{destination}",
-                        QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                    )
-                    if reply == QMessageBox.StandardButton.Yes:
-                        try:
-                            os.makedirs(destination, exist_ok=True)
-                        except Exception as e:
-                            QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
+                if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
+                    self.log("INFO", "folder_page存在且有get_target_folder方法")
+                    target_folder = self.folder_page.get_target_folder()
+                    self.log("INFO", f"从folder_page获取的目标文件夹: {target_folder}")
+                    if target_folder:
+                        # 验证目标文件夹路径
+                        destination = target_folder
+                        # 验证是否有写入权限
+                        if not os.access(destination, os.W_OK):
+                            from PyQt6.QtWidgets import QMessageBox
+                            QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
                             return
+                        
+                        self.destination_root = destination
+                        display_path = destination + '/'
+                        if len(display_path) > 20:
+                            display_path = f"{display_path[:8]}...{display_path[-6:]}"
+                        operation_text = "Destination: "
+                        self.parent.copyRoute.setText(f"{operation_text}{display_path}")
                     else:
+                        # 如果folder_page中没有选择目标文件夹，则弹出选择对话框
+                        import os
+                        from PyQt6.QtWidgets import QFileDialog
+                        folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
+                                                                  options=QFileDialog.Option.ShowDirsOnly)
+                        if not folder:
+                            self.log("WARNING", "No destination")
+                            return
+                        
+                        # 验证目标文件夹路径
+                        destination = folder
+                        if not os.path.exists(destination):
+                            # 询问是否创建目标文件夹
+                            from PyQt6.QtWidgets import QMessageBox
+                            reply = QMessageBox.question(
+                                self.parent,
+                                "确认", 
+                                f"目标文件夹不存在，是否创建？\n{destination}",
+                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                            )
+                            if reply == QMessageBox.StandardButton.Yes:
+                                try:
+                                    os.makedirs(destination, exist_ok=True)
+                                except Exception as e:
+                                    QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
+                                    return
+                            else:
+                                return
+                        
+                        # 验证是否有写入权限
+                        if not os.access(destination, os.W_OK):
+                            from PyQt6.QtWidgets import QMessageBox
+                            QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
+                            return
+                        
+                        self.destination_root = folder
+                        display_path = folder + '/'
+                        if len(display_path) > 20:
+                            display_path = f"{display_path[:8]}...{display_path[-6:]}"
+                        operation_text = "Destination: "
+                        self.parent.copyRoute.setText(f"{operation_text}{display_path}")
+                else:
+                    # 如果没有folder_page或缺少get_target_folder方法，则弹出选择对话框
+                    import os
+                    from PyQt6.QtWidgets import QFileDialog
+                    folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
+                                                              options=QFileDialog.Option.ShowDirsOnly)
+                    if not folder:
+                        self.log("WARNING", "No destination")
                         return
-                
-                # 验证是否有写入权限
-                if not os.access(destination, os.W_OK):
-                    from PyQt6.QtWidgets import QMessageBox
-                    QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
-                    return
-                
-                self.destination_root = folder
-                display_path = folder + '/'
-                if len(display_path) > 20:
-                    display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                operation_text = "Destination: "
-                self.parent.copyRoute.setText(f"{operation_text}{display_path}")
+                    
+                    # 验证目标文件夹路径
+                    destination = folder
+                    if not os.path.exists(destination):
+                        # 询问是否创建目标文件夹
+                        from PyQt6.QtWidgets import QMessageBox
+                        reply = QMessageBox.question(
+                            self.parent,
+                            "确认", 
+                            f"目标文件夹不存在，是否创建？\n{destination}",
+                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                        )
+                        if reply == QMessageBox.StandardButton.Yes:
+                            try:
+                                os.makedirs(destination, exist_ok=True)
+                            except Exception as e:
+                                QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
+                                return
+                        else:
+                            return
+                    
+                    # 验证是否有写入权限
+                    if not os.access(destination, os.W_OK):
+                        from PyQt6.QtWidgets import QMessageBox
+                        QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
+                        return
+                    
+                    self.destination_root = folder
+                    display_path = folder + '/'
+                    if len(display_path) > 20:
+                        display_path = f"{display_path[:8]}...{display_path[-6:]}"
+                    operation_text = "Destination: "
+                    self.parent.copyRoute.setText(f"{operation_text}{display_path}")
             
             if self.SmartArrange_thread:
                 try:

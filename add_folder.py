@@ -234,6 +234,46 @@ class FolderPage(QtWidgets.QWidget):
         # 所有验证通过，文件夹关系有效
         return True
     
+    def get_all_folders(self) -> list:
+        """
+        获取所有已选择的源文件夹路径列表。
+        
+        返回:
+            list: 包含源文件夹路径的列表，如果没有选择则返回空列表
+        """
+        try:
+            # 检查父窗口和源文件夹输入控件是否存在
+            if self.parent and hasattr(self.parent, 'inputSourceFolder'):
+                source_path = self.parent.inputSourceFolder.text().strip()
+                # 如果源文件夹路径非空，则返回包含该路径的列表
+                if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
+                    return [source_path]
+            # 未找到有效文件夹时返回空列表
+            return []
+        except Exception:
+            # 发生任何异常时返回空列表
+            return []
+            
+    def get_target_folder(self) -> Optional[str]:
+        """
+        获取已选择的目标文件夹路径。
+        
+        返回:
+            str: 目标文件夹路径，如果没有选择则返回None
+        """
+        try:
+            # 检查父窗口和目标文件夹输入控件是否存在
+            if self.parent and hasattr(self.parent, 'inputTargetFolder'):
+                target_path = self.parent.inputTargetFolder.text().strip()
+                # 如果目标文件夹路径非空且有效，则返回该路径
+                if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
+                    return target_path
+            # 未找到有效目标文件夹时返回None
+            return None
+        except Exception:
+            # 发生任何异常时返回None
+            return None
+    
     def get_folder_info(self, folder_path: str) -> str:
         """
         获取文件夹的详细信息，包括路径、文件数量和文件夹数量。
