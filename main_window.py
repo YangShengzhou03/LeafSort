@@ -82,7 +82,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     
     def _get_folder_info(self, folder_path):
         """
-        获取文件夹的基本信息（优化版），只计算核心数据以提高性能
+        获取文件夹的极速信息，完全避免任何递归操作，适用于超大文件夹
         
         Args:
             folder_path: 文件夹路径
@@ -92,54 +92,43 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """
         import os
         
-        # 初始化计数器
-        total_size = 0
-        file_count = 0
-        subfolder_count = 0
+        # 格式化文件大小
+        def format_size(size_bytes):
+            """将字节大小格式化为人类可读的格式"""
+            if size_bytes < 1024:
+                return f"{size_bytes} B"
+            elif size_bytes < 1024 * 1024:
+                return f"{size_bytes / 1024:.2f} KB"
+            elif size_bytes < 1024 * 1024 * 1024:
+                return f"{size_bytes / (1024 * 1024):.2f} MB"
+            else:
+                return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
         
+        # 构建信息字符串，使用两列布局
+        info = f"{'='*10} 待处理的源文件夹信息 {'='*10}\n"
+        info += f"路径：{folder_path}\n"
+        
+        # 只获取顶层文件夹信息，完全避免任何递归操作
+        top_file_count = 0
+        top_folder_count = 0
         try:
-            # 遍历文件夹及其子文件夹
-            for root, dirs, files in os.walk(folder_path):
-                # 计算子文件夹数量
-                subfolder_count += len(dirs)
-                
-                # 计算文件数量和总大小（只保留基本统计）
-                file_count += len(files)
-                
-                # 计算文件大小
-                for file in files:
-                    file_path = os.path.join(root, file)
-                    try:
-                        total_size += os.path.getsize(file_path)
-                    except (OSError, FileNotFoundError, PermissionError):
-                        # 忽略无法访问的文件
-                        continue
-            
-            # 格式化文件大小
-            def format_size(size_bytes):
-                """将字节大小格式化为人类可读的格式"""
-                if size_bytes < 1024:
-                    return f"{size_bytes} B"
-                elif size_bytes < 1024 * 1024:
-                    return f"{size_bytes / 1024:.2f} KB"
-                elif size_bytes < 1024 * 1024 * 1024:
-                    return f"{size_bytes / (1024 * 1024):.2f} MB"
-                else:
-                    return f"{size_bytes / (1024 * 1024 * 1024):.2f} GB"
-            
-            # 构建简洁的信息字符串，使用多列布局
-            info = f"=== 待处理的源文件夹信息 ===\n"
-            info += f"路径：{folder_path}\n"
-            
-            info += f"{'-' * 60}\n"
-            info += f"{'空间统计':<30} {'文件统计':<30}\n"
-            info += f"{'总大小：' + format_size(total_size):<30} {'文件总数：' + str(file_count):<30}\n"
-            info += f"{'平均文件大小：' + format_size(total_size / file_count if file_count > 0 else 0):<30} {'子文件夹总数：' + str(subfolder_count):<30}\n"
-            info += f"{'-' * 60}\n"
-            
-            return info
-        except Exception as e:
-            return f"获取文件夹信息失败：{str(e)}"
+            # 只列出顶层内容，不递归
+            items = os.listdir(folder_path)
+            for item in items:
+                item_path = os.path.join(folder_path, item)
+                if os.path.isfile(item_path):
+                    top_file_count += 1
+                elif os.path.isdir(item_path):
+                    top_folder_count += 1
+        except (OSError, FileNotFoundError, PermissionError) as e:
+            pass
+        
+        # 使用两列布局显示信息
+        info += f"{'-' * 60}\n"
+        info += f"{'顶层内容统计':<60}\n"
+        info += f"{'顶层文件数量：' + str(top_file_count):<30} {'顶层文件夹数量：' + str(top_folder_count):<30}\n"
+        info += f"{'-' * 60}\n"
+        return info
     
     def _browse_directory(self, dialog_title, target_widget):
         folder_path = QtWidgets.QFileDialog.getExistingDirectory(
