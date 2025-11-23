@@ -8,9 +8,7 @@ import traceback
 APP_SERVER_NAME = "LeafView_Server"
 BRING_TO_FRONT_COMMAND = b'bringToFront'
 
-# 全局异常处理
 def handle_exception(exc_type, exc_value, exc_traceback):
-    """处理应用程序异常"""
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
@@ -31,11 +29,8 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         pass
 
 def main():
-    """应用程序主入口点"""
-    # 设置异常处理器
     sys.excepthook = handle_exception
     
-    # 检查是否已有实例运行
     try:
         with closing(QLocalSocket()) as socket:
             if socket.connectToServer(APP_SERVER_NAME) and socket.waitForConnected(500):
@@ -45,12 +40,10 @@ def main():
     except (QtCore.QObject.QObjectError, ConnectionError):
         pass
     
-    # 创建应用程序实例
     app = QtWidgets.QApplication(sys.argv)
     app.setApplicationName("LeafView")
     app.setApplicationVersion("1.3")
     
-    # 设置本地服务器
     QLocalServer.removeServer(APP_SERVER_NAME)
     local_server = None
     try:
@@ -60,16 +53,13 @@ def main():
     except Exception:
         local_server = None
     
-    # 创建并显示主窗口
     try:
         window = MainWindow()
         window.move(300, 100)
         window.show()
         
-        # 设置Socket连接处理
         if local_server:
             def handle_socket_data(socket):
-                """处理来自其他实例的Socket数据"""
                 try:
                     if socket.bytesAvailable() > 0 and socket.readAll().data() == BRING_TO_FRONT_COMMAND:
                         window.activateWindow()
@@ -85,7 +75,6 @@ def main():
             
             local_server.newConnection.connect(handle_connection)
         
-        # 运行应用程序
         return app.exec()
         
     except Exception as e:
@@ -96,7 +85,6 @@ def main():
             pass
         return 1
     finally:
-        # 清理资源
         if local_server:
             local_server.close()
 

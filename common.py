@@ -9,31 +9,24 @@ from playwright.sync_api import sync_playwright
 
 
 class ResourceManager:
-    """资源路径管理器"""
-    
     def __init__(self):
         self._base_path = self._get_base_path()
     
     def _get_base_path(self):
-        """获取基础路径"""
         try:
             return Path(sys._MEIPASS)
         except Exception:
             return Path(__file__).parent if '__file__' in globals() else Path.cwd()
     
     def get_resource_path(self, relative_path):
-        """获取资源文件的绝对路径，支持打包后的应用"""
         return str((self._base_path / relative_path).resolve()).replace('\\', '/')
 
 
 class MediaTypeDetector:
-    """媒体类型检测器"""
-    
     def __init__(self):
         self.mime_to_ext = self._build_mime_mapping()
     
     def _build_mime_mapping(self):
-        """构建MIME类型到文件扩展名的映射"""
         return {
             # 常见图片格式
             **{f'image/{fmt}': (ext, 'image') for fmt, ext in {
@@ -69,7 +62,6 @@ class MediaTypeDetector:
         }
     
     def detect_media_type(self, file_path):
-        """检测媒体文件类型和格式"""
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"文件不存在: {file_path}")
 
@@ -97,7 +89,6 @@ class MediaTypeDetector:
         return result
     
     def _create_invalid_result(self):
-        """创建无效文件的结果"""
         return {
             'valid': False,
             'type': None,
@@ -107,7 +98,6 @@ class MediaTypeDetector:
         }
     
     def _create_base_result(self, mime):
-        """创建基础结果"""
         return {
             'valid': mime in self.mime_to_ext,
             'mime': mime,
@@ -118,8 +108,6 @@ class MediaTypeDetector:
 
 
 class GeocodingService:
-    """地理编码服务"""
-    
     def __init__(self):
         self.headers = {
             'accept': '*/*', 
@@ -130,7 +118,6 @@ class GeocodingService:
         self.url_template = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
     
     def get_address_from_coordinates(self, lat, lon):
-        """根据经纬度坐标获取地址信息"""
         loc = f"{lon},{lat}"
         
         cookies, key = self._load_cached_credentials()
@@ -142,7 +129,6 @@ class GeocodingService:
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
-        """加载缓存的凭据"""
         if os.path.exists("cookies.json"):
             try:
                 with open("cookies.json", "r", encoding="utf-8") as f:
@@ -153,7 +139,6 @@ class GeocodingService:
         return None, None
     
     def _fetch_credentials(self):
-        """获取新的凭据"""
         target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
                       'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
                       'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
@@ -173,7 +158,6 @@ class GeocodingService:
             return None, None
     
     def _save_credentials(self, cookies, key):
-        """保存凭据到缓存"""
         if cookies and key:
             try:
                 with open("cookies.json", "w", encoding="utf-8") as f:
@@ -182,7 +166,6 @@ class GeocodingService:
                 pass
     
     def _call_geocoding_api(self, loc, cookies, key):
-        """调用地理编码API"""
         if not (cookies and key):
             return "获取地址失败"
         
@@ -198,12 +181,10 @@ class GeocodingService:
         return "获取地址失败"
 
 
-# 创建全局实例以保持向后兼容性
 _resource_manager = ResourceManager()
 _media_detector = MediaTypeDetector()
 _geocoding_service = GeocodingService()
 
-# 保持原有函数接口
 def get_resource_path(relative_path):
     return _resource_manager.get_resource_path(relative_path)
 

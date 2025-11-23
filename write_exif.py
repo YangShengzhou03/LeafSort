@@ -1,10 +1,3 @@
-"""
-EXIF信息写入页面模块
-
-该模块实现了EXIF信息写入功能，包括相机信息管理、位置坐标处理、
-星级评分设置等核心功能。
-"""
-
 import os
 import json
 import re
@@ -18,23 +11,9 @@ from write_exif_thread import WriteExifThread
 
 
 class WriteExifPage(QWidget):
-    """EXIF信息写入页面类
-    
-    该类负责管理EXIF信息写入的用户界面和业务逻辑，包括：
-    - 相机品牌和型号选择
-    - 位置坐标输入和解析
-    - 星级评分设置
-    - EXIF信息写入操作
-    """
-    
     log_signal = pyqtSignal(str, str)
     
     def __init__(self, parent=None):
-        """初始化EXIF信息写入页面
-        
-        Args:
-            parent: 父组件对象
-        """
         super().__init__(parent)
         self.parent = parent
         self.folder_page = None
@@ -48,46 +27,23 @@ class WriteExifPage(QWidget):
         self._safe_log("INFO", "EXIF信息写入页面初始化完成")
 
     def init_ui(self):
-        """初始化用户界面
-        
-        设置页面布局和组件初始化，包括星级按钮、
-        相机选择下拉框等界面元素。
-        """
         self._init_star_buttons()
         self.init_camera_brand_model()
         self.load_exif_settings()
 
     def _safe_log(self, level, message):
-        """安全日志记录方法
-        
-        Args:
-            level: 日志级别 (INFO, WARNING, ERROR)
-            message: 日志消息内容
-        """
         try:
             self.log(level, message)
         except Exception as e:
             print(f"日志记录失败: {e}")
 
     def _get_parent_component(self, name):
-        """获取父组件中的指定组件
-        
-        Args:
-            name: 组件名称
-            
-        Returns:
-            找到的组件对象，如果未找到则返回None
-        """
         try:
             return getattr(self.parent, name, None)
         except Exception:
             return None
 
     def _init_star_buttons(self):
-        """初始化星级评分按钮
-        
-        创建并配置5个星级按钮，设置点击事件处理函数。
-        """
         self.star_buttons = []
         for i in range(1, 6):
             button = self._get_parent_component(f'star{i}Button')

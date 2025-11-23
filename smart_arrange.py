@@ -46,7 +46,6 @@ class SmartArrangePage(QtWidgets.QWidget):
 
         self.init_page()
         self.set_combo_box_states()
-        self.log("INFO", "Welcome to Smart Arrange, you can organize directories and rename media. Please note that operations cannot be undone once executed.")
 
     def init_page(self):
         self.connect_signals()

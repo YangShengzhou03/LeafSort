@@ -7,7 +7,6 @@ from SettingsDialog import SettingsDialog
 from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
 from smart_arrange import SmartArrangePage
-from remove_duplication import RemoveDuplicationPage
 from write_exif import WriteExifPage
 from common import get_resource_path
 
@@ -35,7 +34,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         # 简化页面初始化，只传递必要的parent参数
         self.folder_page = FolderPage(self)
         self.smart_arrange_page = SmartArrangePage(self)
-        self.remove_duplication_page = RemoveDuplicationPage(self)
         self.write_exif_page = WriteExifPage(self)
 
     def _setup_ui(self):
