@@ -1,5 +1,6 @@
 from datetime import datetime
 from PyQt6.QtCore import pyqtSignal, QObject
+from PyQt6 import QtWidgets
 from smart_arrange_thread import SmartArrangeThread
 
 class SmartArrangeManager(QObject):
