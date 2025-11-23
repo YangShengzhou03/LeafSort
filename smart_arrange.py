@@ -476,7 +476,7 @@ class SmartArrangePage(QtWidgets.QWidget):
     def handle_log_signal(self, level, message):
         if hasattr(self.parent, 'txtSmartArrangeLog'):
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
-            color = color_map.get(level, '#000000')
+            color = color_map.get(level, '#006400')
             
             # 添加时间戳到日志消息
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")

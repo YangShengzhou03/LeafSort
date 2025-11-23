@@ -450,7 +450,7 @@ class WriteExifPage(QWidget):
         
         if log_component:
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
-            color = color_map.get(level, '#000000')
+            color = color_map.get(level, '#006400')
             
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             formatted_message = f"[{timestamp}] {message}"
