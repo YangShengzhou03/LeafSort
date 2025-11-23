@@ -1,6 +1,7 @@
 from datetime import datetime
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6 import QtWidgets
+from PyQt6.QtWidgets import QMessageBox
 from smart_arrange_thread import SmartArrangeThread
 
 class SmartArrangeManager(QObject):
@@ -92,7 +93,7 @@ class SmartArrangeManager(QObject):
             self.log("ERROR", "btnStartSmartArrange button not found")
 
     def update_progress_bar(self, value):
-        self.parent.progressBar_classification.setValue(value)
+        self.parent.classificationProgressBar.setValue(value)
 
     def toggle_SmartArrange(self):
         self.log("DEBUG", "toggle_SmartArrange")
@@ -240,6 +241,8 @@ class SmartArrangeManager(QObject):
 
             self.log("DEBUG", "confirm")
             
+            # 添加局部导入以确保QMessageBox在这个作用域中可用
+            from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
                 "Confirm?",
@@ -257,6 +260,27 @@ class SmartArrangeManager(QObject):
                 return
 
             self.log("DEBUG", "confirmed")
+            
+            # 确保selected_folders是列表格式，修复string indices错误
+            if isinstance(self.selected_folders, str):
+                self.selected_folders = [{'path': self.selected_folders, 'include_sub': 1}]
+            elif not all(isinstance(f, dict) and 'path' in f for f in self.selected_folders):
+                # 如果不是正确格式的字典列表，则尝试转换
+                corrected_folders = []
+                for folder in self.selected_folders:
+                    if isinstance(folder, str):
+                        corrected_folders.append({'path': folder, 'include_sub': 1})
+                    elif isinstance(folder, dict) and 'path' in folder:
+                        # 如果字典中没有include_sub键，则添加并设为1
+                        if 'include_sub' not in folder:
+                            folder['include_sub'] = 1
+                        corrected_folders.append(folder)
+                self.selected_folders = corrected_folders
+            else:
+                # 确保所有文件夹字典都包含include_sub且值为1
+                for folder in self.selected_folders:
+                    if isinstance(folder, dict) and 'path' in folder:
+                        folder['include_sub'] = 1
             
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()

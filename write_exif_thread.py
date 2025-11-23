@@ -845,10 +845,12 @@ class WriteExifThread(QThread):
             cmd_parts.append(file_path_normalized)
             
             # 执行exiftool命令
-            result = subprocess.run(cmd_parts, capture_output=True, text=True, shell=False, check=False)
+            result = subprocess.run(cmd_parts, capture_output=True, text=False, shell=False, check=False)
             
             if result.returncode != 0:
-                self.log_signal.emit("ERROR", f"写入EXIF数据失败: {result.stderr}")
+                # 安全地解码错误信息
+                error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
+                self.log_signal.emit("ERROR", f"写入EXIF数据失败: {error_msg}")
                 return False
 
             if updated_fields:
@@ -856,7 +858,7 @@ class WriteExifThread(QThread):
             
             # 验证写入
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
-            subprocess.run(verify_cmd, capture_output=True, text=True, shell=False, check=False)
+            subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False)
             
             return True
             
@@ -1009,7 +1011,8 @@ class WriteExifThread(QThread):
                 else:
                     self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
             else:
-                error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
+                # 使用replace模式处理无法解码的字符
+                error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
                 self.log_signal.emit("ERROR", f"写入 {os.path.basename(image_path)} 失败: {error_msg}")
                 
         except subprocess.TimeoutExpired:

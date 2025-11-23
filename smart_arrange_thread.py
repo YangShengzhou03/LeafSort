@@ -330,8 +330,8 @@ class SmartArrangeThread(QtCore.QThread):
                 # 执行文件操作，增加更多错误处理
                 try:
                     import shutil
-                    # 使用operation_type参数决定操作类型，0:移动, 1:复制
-                    if hasattr(self, 'operation_type') and self.operation_type == 1:
+                    # 使用operation_type参数决定操作类型，0:复制, 1:移动
+                    if hasattr(self, 'operation_type') and self.operation_type == 0:
                         # 复制文件
                         shutil.copy2(old_path, unique_path)
                         self.log("INFO", f"复制文件成功: {old_path.name} -> {unique_path.name}")
@@ -779,7 +779,8 @@ class SmartArrangeThread(QtCore.QThread):
             if result.returncode != 0:
                 return None
             
-            exif_data_str = result.stdout.decode('utf-8', errors='ignore')
+            # 使用replace模式处理无法解码的字符
+            exif_data_str = result.stdout.decode('utf-8', errors='replace')
             
             # 解析拍摄时间
             date_taken = self._parse_raw_datetime(exif_data_str)
@@ -1212,14 +1213,16 @@ class SmartArrangeThread(QtCore.QThread):
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                text=True,
+                text=False,  # 使用字节模式以避免自动解码
                 timeout=timeout,
                 shell=True,
                 check=False
             )
 
             metadata = {}
-            for line in result.stdout.split('\n'):
+            # 手动解码并处理错误
+            stdout_text = result.stdout.decode('utf-8', errors='replace')
+            for line in stdout_text.split('\n'):
                 if ':' in line:
                     key, value = line.split(':', 1)
                     metadata[key.strip()] = value.strip()
@@ -1672,6 +1675,9 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             if self.is_stopped():
                 return
+                
+            # 设置当前文件属性，供其他方法使用
+            self.current_file = file_path
                 
             # 文件大小检查，避免处理过大的文件
             file_size = file_path.stat().st_size
