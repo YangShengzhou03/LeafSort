@@ -614,34 +614,36 @@ onMounted(() => {
 }
 
 .drop-zone {
-  border: 2px dashed var(--el-border-color);
-  border-radius: 8px;
+  border: 2px dashed rgba(255, 255, 255, 0.2);
+  border-radius: 10px;
   padding: 60px 20px;
   text-align: center;
   transition: all 0.3s ease;
-  background: var(--el-bg-color-page);
+  background: rgba(24, 25, 35, 0.6);
   margin-bottom: 30px;
+  backdrop-filter: blur(5px);
   
   &.active {
     border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
+    background: rgba(45, 140, 240, 0.15);
+    box-shadow: 0 0 0 1px var(--el-color-primary);
   }
   
   .drop-icon {
     font-size: 64px;
-    color: var(--el-text-color-placeholder);
+    color: rgba(255, 255, 255, 0.6);
     margin-bottom: 16px;
   }
   
   .drop-text {
     font-size: 18px;
-    color: var(--el-text-color-secondary);
+    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 8px;
   }
   
   .drop-hint {
     font-size: 14px;
-    color: var(--el-text-color-placeholder);
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -655,8 +657,9 @@ onMounted(() => {
   .folder-info {
     margin-top: 20px;
     padding: 16px;
-    background: var(--el-bg-color-page);
-    border-radius: 6px;
+    background: rgba(24, 25, 35, 0.6);
+    border-radius: 8px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
     
     .folder-path {
       display: flex;
@@ -671,12 +674,8 @@ onMounted(() => {
     
     .folder-stats {
       font-size: 14px;
-      color: var(--el-text-color-secondary);
+      color: rgba(255, 255, 255, 0.6);
     }
-  }
-  
-  .folder-files {
-    margin-top: 20px;
   }
 }
 
@@ -696,26 +695,28 @@ onMounted(() => {
   max-height: 300px;
   overflow-y: auto;
   padding: 8px;
-  background: var(--el-bg-color-page);
-  border-radius: 6px;
+  background: rgba(24, 25, 35, 0.6);
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .file-item {
   border: 2px solid transparent;
   border-radius: 6px;
   padding: 8px;
-  background: var(--el-bg-color);
+  background: rgba(12, 13, 18, 0.8);
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
   
   &:hover {
-    border-color: var(--el-border-color);
+    border-color: rgba(255, 255, 255, 0.3);
+    background: rgba(24, 25, 35, 0.8);
   }
   
   &.selected {
     border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
+    background: rgba(45, 140, 240, 0.15);
   }
 }
 
@@ -726,7 +727,7 @@ onMounted(() => {
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--el-bg-color-page);
+  background: rgba(12, 13, 18, 0.8);
   border-radius: 4px;
   overflow: hidden;
   
@@ -738,7 +739,7 @@ onMounted(() => {
   
   .file-icon {
     font-size: 24px;
-    color: var(--el-text-color-placeholder);
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -746,6 +747,7 @@ onMounted(() => {
   .file-name {
     font-size: 12px;
     font-weight: 500;
+    color: rgba(255, 255, 255, 0.8);
     margin-bottom: 4px;
     white-space: nowrap;
     overflow: hidden;
@@ -754,7 +756,7 @@ onMounted(() => {
   
   .file-size {
     font-size: 11px;
-    color: var(--el-text-color-secondary);
+    color: rgba(255, 255, 255, 0.5);
   }
 }
 
@@ -768,9 +770,10 @@ onMounted(() => {
   }
   
   .screenshot-preview {
-    border: 1px solid var(--el-border-color-light);
-    border-radius: 6px;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
     overflow: hidden;
+    background: rgba(12, 13, 18, 0.8);
   }
   
   .preview-header {
@@ -778,14 +781,8 @@ onMounted(() => {
     justify-content: space-between;
     align-items: center;
     padding: 12px;
-    background: var(--el-bg-color-page);
-    border-bottom: 1px solid var(--el-border-color-light);
-  }
-  
-  .screenshot-image {
-    width: 100%;
-    max-height: 300px;
-    object-fit: contain;
+    background: rgba(24, 25, 35, 0.6);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
   }
 }
 
@@ -843,6 +840,91 @@ onMounted(() => {
   
   .screenshot-options {
     flex-direction: column;
+  }
+  
+  .import-config {
+    .el-form {
+      .el-form-item {
+        label-width: 100px;
+      }
+    }
+  }
+  
+  .import-actions {
+    flex-direction: column-reverse;
+  }
+  
+  .folder-info {
+    padding: 12px;
+    
+    .folder-path {
+      font-size: 14px;
+      word-break: break-all;
+    }
+  }
+}
+
+@media (max-width: 480px) {
+  .import-assets {
+    padding: 12px;
+  }
+  
+  .import-methods {
+    .el-radio-group {
+      display: block;
+      
+      .el-radio-button {
+        display: block;
+        margin-bottom: 8px;
+      }
+    }
+  }
+  
+  .drop-zone {
+    padding: 30px 12px;
+    
+    .drop-icon {
+      font-size: 40px;
+    }
+    
+    .drop-text {
+      font-size: 16px;
+    }
+  }
+  
+  .files-grid {
+    grid-template-columns: repeat(auto-fill, minmax(80px, 1fr));
+    gap: 6px;
+    max-height: 250px;
+  }
+  
+  .file-item {
+    padding: 6px;
+  }
+  
+  .file-thumbnail {
+    width: 50px;
+    height: 50px;
+    
+    .file-icon {
+      font-size: 20px;
+    }
+  }
+  
+  .file-name {
+    font-size: 11px;
+  }
+  
+  .file-size {
+    font-size: 10px;
+  }
+  
+  .import-config {
+    .el-form {
+      .el-form-item {
+        label-width: 90px;
+      }
+    }
   }
 }
 </style>

@@ -9,12 +9,35 @@
           clearable
           @input="handleSearch"
           @clear="handleClear"
+          @keyup.enter="performSearchWithHistory"
           class="search-input"
+          ref="searchInputRef"
         >
           <template #prefix>
             <el-icon><Search /></el-icon>
           </template>
         </el-input>
+        
+        <!-- 搜索历史 -->
+        <div v-if="showSearchHistory && libraryStore.searchHistory.length > 0" class="search-history">
+          <div class="history-header">
+            <span>搜索历史</span>
+            <el-button type="text" size="small" @click="clearSearchHistory">
+              清除
+            </el-button>
+          </div>
+          <div class="history-list">
+            <div
+              v-for="(history, index) in libraryStore.searchHistory"
+              :key="index"
+              class="history-item"
+              @click="searchHistoryItem(history)"
+            >
+              <el-icon size="14"><History /></el-icon>
+              <span>{{ history }}</span>
+            </div>
+          </div>
+        </div>
         
         <el-button
           type="primary"
@@ -398,7 +421,8 @@ import {
   DocumentCopy,
   PriceTag,
   Download,
-  Share
+  Share,
+  History
 } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
@@ -411,6 +435,8 @@ const sortBy = ref('date-desc') // date-desc, date-asc, name-asc, name-desc, siz
 const currentPage = ref(1)
 const pageSize = ref(24)
 const searching = ref(false)
+const showSearchHistory = ref(false)
+const searchInputRef = ref<InstanceType<typeof ElInput> | null>(null)
 
 // 高级搜索
 const showAdvancedSearch = ref(false)
@@ -522,6 +548,30 @@ const handleClear = () => {
   searchResults.value = []
   activeFilters.value = []
   currentPage.value = 1
+  showSearchHistory.value = false
+}
+
+const performSearchWithHistory = () => {
+  if (searchQuery.value.trim()) {
+    // 添加到搜索历史
+    libraryStore.addSearchHistory(searchQuery.value.trim())
+    handleSearch()
+    showSearchHistory.value = false
+  }
+}
+
+const searchHistoryItem = (history: string) => {
+  searchQuery.value = history
+  handleSearch()
+  showSearchHistory.value = false
+  if (searchInputRef.value) {
+    searchInputRef.value.focus()
+  }
+}
+
+const clearSearchHistory = () => {
+  libraryStore.clearSearchHistory()
+  showSearchHistory.value = false
 }
 
 const setSearchMode = (mode: string) => {
@@ -844,7 +894,29 @@ const formatDate = (dateString: string) => {
 onMounted(() => {
   // 添加一个默认的搜索条件
   addFilter()
-})
+  
+  // 监听搜索框焦点事件
+  setTimeout(() => {
+    if (searchInputRef.value) {
+      const inputElement = searchInputRef.value.$el.querySelector('input')
+      if (inputElement) {
+        inputElement.addEventListener('focus', () => {
+          if (!searchQuery.value.trim()) {
+            showSearchHistory.value = true
+          }
+        })
+      }
+    }
+  }, 0)
+  
+  // 点击其他地方隐藏搜索历史
+  document.addEventListener('click', (e) => {
+    const target = e.target as HTMLElement
+    if (!target.closest('.search-input') && !target.closest('.search-history')) {
+      showSearchHistory.value = false
+    }
+  })
+}
 </script>
 
 <style scoped lang="scss">
@@ -866,8 +938,9 @@ onMounted(() => {
   .search-input-container {
     display: flex;
     gap: 12px;
-    align-items: center;
+    align-items: flex-start;
     margin-bottom: 16px;
+    position: relative;
     
     .search-input {
       flex: 1;
@@ -876,6 +949,56 @@ onMounted(() => {
     
     .advanced-search-btn {
       flex-shrink: 0;
+      margin-top: 2px;
+    }
+    
+    .search-history {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: var(--el-bg-color);
+      border: 1px solid var(--el-border-color-light);
+      border-radius: var(--el-border-radius-base);
+      box-shadow: var(--el-box-shadow-light);
+      margin-top: 4px;
+      z-index: 1000;
+      
+      .history-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 16px 8px;
+        border-bottom: 1px solid var(--el-border-color-light);
+        
+        span {
+          color: var(--el-text-color-secondary);
+          font-size: 12px;
+        }
+      }
+      
+      .history-list {
+        max-height: 200px;
+        overflow-y: auto;
+        
+        .history-item {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          padding: 8px 16px;
+          cursor: pointer;
+          transition: background-color 0.2s;
+          font-size: 14px;
+          
+          &:hover {
+            background-color: var(--el-bg-color-hover);
+          }
+          
+          el-icon {
+            color: var(--el-text-color-placeholder);
+          }
+        }
+      }
     }
   }
   

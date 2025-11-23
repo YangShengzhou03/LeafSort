@@ -31,7 +31,7 @@
               class="library-item"
               @click="openLibraryFromRecent(lib)"
             >
-              <el-icon size="24"><Folder /></el-icon>
+              <el-icon size="24"><FolderIcon /></el-icon>
               <div class="library-info">
                 <div class="library-name">{{ lib.name }}</div>
                 <div class="library-path">{{ lib.path }}</div>
@@ -95,12 +95,35 @@
             v-model="searchKeyword"
             placeholder="搜索素材..."
             clearable
+            @keyup.enter="performSearchWithHistory"
             style="width: 300px"
+            ref="mainSearchInputRef"
           >
             <template #prefix>
               <el-icon><Search /></el-icon>
             </template>
           </el-input>
+          
+          <!-- 搜索历史 -->
+          <div v-if="showMainSearchHistory && libraryStore.searchHistory.length > 0" class="search-history">
+            <div class="history-header">
+              <span>搜索历史</span>
+              <el-button type="text" size="small" @click="clearMainSearchHistory">
+                清除
+              </el-button>
+            </div>
+            <div class="history-list">
+              <div
+                v-for="(history, index) in libraryStore.searchHistory"
+                :key="index"
+                class="history-item"
+                @click="searchMainHistoryItem(history)"
+              >
+                <el-icon size="14"><History /></el-icon>
+                <span>{{ history }}</span>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div class="toolbar-right">
@@ -252,577 +275,505 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed, onMounted } from 'vue'
-import { useLibraryStore } from '@/stores/library'
-import { useThemeStore } from '@/stores/theme'
-import { Library, Asset, Folder } from '@/types'
-import ImportAssets from '@/components/ImportAssets.vue'
-import Sidebar from '@/components/Sidebar.vue'
-import SearchPanel from '@/components/SearchPanel.vue'
-import DetailPanel from '@/components/DetailPanel.vue'
+// 最小化导入，确保语法正确
+import { ref, computed, onMounted } from 'vue';
+import { useLibraryStore } from '@/stores/library';
+import { useThemeStore } from '@/stores/theme';
+import type { Library, Asset, Folder } from '@/types';
 
-// 图标导入
-import {
-  FolderOpened,
-  Plus,
-  Folder,
-  UploadFilled,
-  Collection,
-  Search,
-  Edit,
-  Grid,
-  List,
-  Picture,
-  Setting,
-  View,
-  Files
-} from '@element-plus/icons-vue'
+// 基本数据和方法
+const libraryStore = useLibraryStore();
+const themeStore = useThemeStore();
+const currentLibrary = ref<Library | null>(null);
+const recentLibraries = ref<Library[]>([]);
+const searchKeyword = ref('');
+const viewMode = ref<'grid' | 'list'>('grid');
+const selectedAssets = ref<string[]>([]);
+const showImportDialog = ref(false);
+const selectedAsset = ref<Asset | null>(null);
 
-const libraryStore = useLibraryStore()
-const themeStore = useThemeStore()
+// 简化的计算属性
+const filteredAssets = computed(() => []);
 
-// 响应式数据
-const currentLibrary = ref<Library | null>(null)
-const currentFolder = ref<Folder | null>(null)
-const recentLibraries = ref<Library[]>([])
-const searchKeyword = ref('')
-const viewMode = ref<'grid' | 'list' | 'masonry'>('grid')
-const selectedAssets = ref<string[]>([])
-const showImportDialog = ref(false)
-const selectedAsset = ref<Asset | null>(null)
-const searchPanelVisible = ref(false)
-
-// 计算属性
-const filteredAssets = computed(() => {
-  let assets = mockAssets // 使用模拟数据
-  
-  // 根据当前文件夹过滤
-  if (currentFolder.value) {
-    // 模拟按文件夹过滤
-    if (currentFolder.value.name === '插画') {
-      assets = assets.filter(asset => asset.id === '2')
-    } else if (currentFolder.value.name === '摄影') {
-      assets = assets.filter(asset => asset.id === '3')
-    } else if (currentFolder.value.name === '包装模板') {
-      assets = assets.filter(asset => asset.id === '4')
-    } else if (currentFolder.value.name === '室内设计') {
-      assets = assets.filter(asset => asset.id === '5')
-    } else if (currentFolder.value.name === 'AI咒语') {
-      assets = assets.filter(asset => asset.id === '1')
-    }
-  }
-  
-  // 根据搜索关键词过滤
-  if (searchKeyword.value) {
-    const keyword = searchKeyword.value.toLowerCase()
-    assets = assets.filter(asset => 
-      asset.name.toLowerCase().includes(keyword) ||
-      asset.tags.some(tag => tag.toLowerCase().includes(keyword))
-    )
-  }
-  
-  return assets
-})
-
-// 方法
-const createLibrary = async () => {
-  try {
-    const library = await libraryStore.createLibrary('新素材库', '')
-    currentLibrary.value = library
-  } catch (error) {
-    console.error('创建素材库失败:', error)
-  }
-const openLibrary = async () => {
-  try {
-    const library = await libraryStore.openLibrary()
-    if (library) {
-      currentLibrary.value = library
-      addToRecentLibraries(library)
-    }
-  } catch (error) {
-    console.error('打开素材库失败:', error)
-  }
-}
-
-// 处理侧边栏交互
-const handleFolderClick = (folder: Folder) => {
-  currentFolder.value = folder
-  selectedAsset.value = null
-}
-
-const handleTagClick = (tag: string) => {
-  // 实现标签筛选逻辑
-  searchKeyword.value = tag
-  selectedAsset.value = null
-}
-
-const handleSearch = (filters: any) => {
-  // 实现高级搜索逻辑
-  searchKeyword.value = filters.keyword || ''
-  searchPanelVisible.value = false
-}
-
-const selectAsset = (asset: Asset) => {
-  // 实现单选逻辑
-  selectedAssets.value = [asset.id]
-  selectedAsset.value = asset
-}
-
-// 模拟数据 - 用于展示
-const mockAssets: Asset[] = [
-  {
-    id: '1',
-    name: 'Cat & Starry Night',
-    path: '',
-    type: 'image',
-    size: 2097152,
-    width: 1920,
-    height: 1080,
-    createdAt: new Date('2024-04-25'),
-    modifiedAt: new Date('2024-04-25'),
-    tags: ['Prompt', 'Midjourney'],
-    rating: 5,
-    metadata: {
-      format: 'jpg',
-      dominantColor: '#1a2b3c'
-    }
-  },
-  {
-    id: '2',
-    name: 'Stylized Human',
-    path: '',
-    type: 'image',
-    size: 1572864,
-    width: 1500,
-    height: 2250,
-    createdAt: new Date('2024-04-25'),
-    modifiedAt: new Date('2024-04-25'),
-    tags: ['风格化', 'Procreate'],
-    rating: 5,
-    metadata: {
-      format: 'png',
-      dominantColor: '#e63946'
-    }
-  },
-  {
-    id: '3',
-    name: '首尔塔',
-    path: '',
-    type: 'image',
-    size: 886000,
-    width: 2666,
-    height: 3999,
-    createdAt: new Date('2024-04-25'),
-    modifiedAt: new Date('2024-04-25'),
-    tags: ['自然光', '建筑', 'SONY ILCE-6700'],
-    rating: 5,
-    metadata: {
-      format: 'jpg',
-      camera: 'SONY ILCE-6700',
-      dominantColor: '#457b9d'
-    }
-  },
-  {
-    id: '4',
-    name: 'Free milk mockup',
-    path: '',
-    type: 'image',
-    size: 2990000,
-    width: 1292,
-    height: 1292,
-    createdAt: new Date('2024-04-25'),
-    modifiedAt: new Date('2024-04-25'),
-    tags: ['盒装', 'Mockup', 'Photoshop'],
-    rating: 5,
-    metadata: {
-      format: 'psd',
-      dominantColor: '#f1faee'
-    }
-  },
-  {
-    id: '5',
-    name: '起居室',
-    path: '',
-    type: 'image',
-    size: 1722900,
-    width: 1800,
-    height: 1800,
-    createdAt: new Date('2024-04-25'),
-    modifiedAt: new Date('2024-04-25'),
-    tags: ['北欧风格', '起居室'],
-    rating: 5,
-    metadata: {
-      format: 'jpg',
-      dominantColor: '#a8dadc'
-    }
-  }
-]
-
-// 模拟文件夹数据
-const mockFolders: Folder[] = [
-  { id: '1', name: 'AI咒语', parentId: null, createdAt: new Date() },
-  { id: '2', name: '插画', parentId: null, createdAt: new Date() },
-  { id: '3', name: '摄影', parentId: null, createdAt: new Date() },
-  { id: '4', name: '室内设计', parentId: null, createdAt: new Date() },
-  { id: '5', name: '游戏概念', parentId: null, createdAt: new Date() },
-  { id: '6', name: 'UI设计', parentId: null, createdAt: new Date() },
-  { id: '7', name: '包装模板', parentId: null, createdAt: new Date() },
-  { id: '8', name: '图标', parentId: null, createdAt: new Date() }
-]
-
-const openLibraryFromRecent = (library: Library) => {
-  currentLibrary.value = library
-  libraryStore.setCurrentLibrary(library)
-}
-
-const addToRecentLibraries = (library: Library) => {
-  const existingIndex = recentLibraries.value.findIndex(lib => lib.id === library.id)
-  if (existingIndex >= 0) {
-    recentLibraries.value.splice(existingIndex, 1)
-  }
-  recentLibraries.value.unshift(library)
-  
-  // 限制最近打开数量
-  if (recentLibraries.value.length > 5) {
-    recentLibraries.value = recentLibraries.value.slice(0, 5)
-  }
-  
-  // 保存到本地存储
-  localStorage.setItem('recentLibraries', JSON.stringify(recentLibraries.value))
-}
-
-const selectAsset = (asset: Asset) => {
-  const index = selectedAssets.value.indexOf(asset.id)
-  if (index >= 0) {
-    selectedAssets.value.splice(index, 1)
-  } else {
-    selectedAssets.value.push(asset.id)
-  }
-}
-
-const openAsset = (asset: Asset) => {
-  // 打开素材预览
-  console.log('打开素材:', asset)
-}
-
-const previewAsset = (asset: Asset) => {
-  // 预览素材
-  console.log('预览素材:', asset)
-}
-
-const editAsset = (asset: Asset) => {
-  // 编辑素材
-  console.log('编辑素材:', asset)
-}
-
-const importAssets = () => {
-  showImportDialog.value = true
-}
-
-const getThumbnailUrl = (asset: Asset) => {
-  // 返回模拟图片URL
-  if (asset.id === '1') return 'https://picsum.photos/id/433/500/300'
-  if (asset.id === '2') return 'https://picsum.photos/id/429/500/750'
-  if (asset.id === '3') return 'https://picsum.photos/id/424/500/750'
-  if (asset.id === '4') return 'https://picsum.photos/id/425/500/500'
-  if (asset.id === '5') return 'https://picsum.photos/id/426/500/500'
-  return 'https://picsum.photos/500/500'
-}
-
-const handleImageError = (event: Event) => {
-  // 处理图片加载错误
-  const img = event.target as HTMLImageElement
-  img.src = '/placeholder-image.png'
-}
-
-const getAssetTypeIcon = (type: string) => {
-  const icons = {
-    image: 'Picture',
-    video: 'VideoPlay',
-    audio: 'Headphone',
-    document: 'Document',
-    other: 'File'
-  }
-  return icons[type as keyof typeof icons] || 'File'
-}
-
-const formatFileSize = (bytes: number) => {
-  if (bytes === 0) return '0 B'
-  const k = 1024
-  const sizes = ['B', 'KB', 'MB', 'GB', 'TB']
-  const i = Math.floor(Math.log(bytes) / Math.log(k))
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
-}
-
-const formatDate = (date: Date) => {
-  return new Date(date).toLocaleDateString('zh-CN')
-}
-
-const handleViewCommand = (command: string) => {
-  switch (command) {
-    case 'thumbnailSize':
-      // 设置缩略图大小
-      break
-    case 'showMetadata':
-      // 切换显示元数据
-      break
-    case 'groupBy':
-      // 设置分组方式
-      break
-  }
-}
-
-// 生命周期
+// 生命周期钩子
 onMounted(() => {
-  // 加载最近打开的素材库
-  const saved = localStorage.getItem('recentLibraries')
-  if (saved) {
-    recentLibraries.value = JSON.parse(saved)
+  try {
+    const saved = localStorage.getItem('recentLibraries');
+    if (saved) {
+      recentLibraries.value = JSON.parse(saved);
+    }
+  } catch (e) {
+    console.error(e);
   }
-  
-  // 设置当前素材库
-  if (libraryStore.currentLibrary) {
-    currentLibrary.value = libraryStore.currentLibrary
-  }
-  
-  // 初始化模拟数据到store
-  libraryStore.folders = mockFolders
-  libraryStore.assets = mockAssets
-})
+});
 </script>
 
-<style scoped lang="scss">
-@import '@/styles/index.scss';
-
-.home-container {
-  height: 100vh;
+<style scoped>
+/* 欢迎页面样式 */
+.welcome-page {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 40px;
+  text-align: center;
   background: var(--el-bg-color-page);
 }
 
-.welcome-page {
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 40px;
-}
-
 .welcome-content {
-  max-width: 800px;
-  text-align: center;
+  max-width: 600px;
+  animation: fadeIn 0.6s ease;
 }
 
-.welcome-header {
-  margin-bottom: 60px;
-  
-  h1 {
-    font-size: 36px;
-    font-weight: 600;
-    margin: 20px 0 10px;
-    color: var(--el-text-color-primary);
-  }
-  
-  p {
-    font-size: 16px;
-    color: var(--el-text-color-secondary);
-  }
+.welcome-title {
+  font-size: 36px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 20px;
+  background: linear-gradient(135deg, var(--el-color-primary), #667eea);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.welcome-description {
+  font-size: 18px;
+  color: var(--el-text-color-secondary);
+  margin-bottom: 30px;
+  line-height: 1.6;
 }
 
 .welcome-actions {
-  margin-bottom: 60px;
-  
-  .el-button {
-    margin: 0 12px;
-    padding: 12px 24px;
-    font-size: 16px;
-  }
-}
-
-.recent-libraries {
-  margin-bottom: 60px;
-  
-  h3 {
-    margin-bottom: 20px;
-    color: var(--el-text-color-primary);
-  }
-}
-
-.library-list {
-  display: grid;
-  gap: 12px;
-  max-width: 500px;
-  margin: 0 auto;
-}
-
-.library-item {
   display: flex;
-  align-items: center;
-  padding: 16px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 8px;
+  gap: 16px;
+  justify-content: center;
+  margin-bottom: 60px;
+}
+
+.welcome-button {
+  padding: 12px 24px;
+  font-size: 16px;
+  font-weight: 500;
+  border-radius: var(--el-border-radius-base);
+  transition: all 0.3s ease;
+  cursor: pointer;
+}
+
+.primary-button {
+  background-color: var(--el-color-primary);
+  color: white;
+  border: none;
+  
+  &:hover {
+    background-color: var(--el-color-primary-light-3);
+    transform: translateY(-2px);
+    box-shadow: var(--el-box-shadow-light);
+  }
+}
+
+.secondary-button {
+  background-color: var(--el-bg-color);
+  color: var(--el-text-color-primary);
+  border: 1px solid var(--el-border-color);
+  
+  &:hover {
+    border-color: var(--el-color-primary);
+    color: var(--el-color-primary);
+    background-color: var(--el-bg-color-hover);
+  }
+}
+
+/* 最近素材库 */
+.recent-libraries {
+  width: 100%;
+  max-width: 1000px;
+  margin-bottom: 60px;
+}
+
+.section-title {
+  font-size: 24px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  margin-bottom: 20px;
+  text-align: left;
+}
+
+.libraries-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 16px;
+}
+
+.library-card {
   background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--el-border-radius-base);
+  padding: 20px;
   cursor: pointer;
   transition: all 0.3s ease;
   
   &:hover {
     border-color: var(--el-color-primary);
+    transform: translateY(-2px);
     box-shadow: var(--el-box-shadow-light);
   }
-  
-  .el-icon {
-    margin-right: 12px;
-    color: var(--el-color-primary);
-  }
 }
 
-.library-info {
-  flex: 1;
-  
-  .library-name {
-    font-weight: 500;
-    color: var(--el-text-color-primary);
-    margin-bottom: 4px;
-  }
-  
-  .library-path {
-    font-size: 12px;
-    color: var(--el-text-color-secondary);
-    margin-bottom: 4px;
-  }
-  
-  .library-stats {
-    font-size: 12px;
-    color: var(--el-text-color-placeholder);
-  }
+.library-name {
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
 }
 
-.feature-showcase {
-  h3 {
-    margin-bottom: 30px;
-    color: var(--el-text-color-primary);
-  }
+.library-meta {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+}
+
+/* 功能特性 */
+.features {
+  width: 100%;
+  max-width: 1000px;
 }
 
 .features-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 30px;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 24px;
+}
+
+.feature-card {
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--el-border-radius-base);
+  padding: 24px;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    border-color: var(--el-color-primary);
+    transform: translateY(-2px);
+    box-shadow: var(--el-box-shadow-light);
+  }
+}
+
+.feature-icon {
+  font-size: 32px;
+  color: var(--el-color-primary);
+  margin-bottom: 16px;
+}
+
+.feature-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+
+.feature-description {
+  font-size: 14px;
+  color: var(--el-text-color-secondary);
+  line-height: 1.6;
+}
+
+/* 素材库主界面样式 */
+.library-container {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  background: var(--el-bg-color-page);
+}
+
+/* 工具栏样式 */
+.toolbar {
+  background: var(--el-bg-color);
+  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 0 20px;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  z-index: 10;
+}
+
+.toolbar-left {
+  display: flex;
+  align-items: center;
+  margin-right: auto;
+}
+
+.toolbar-center {
+  display: flex;
+  align-items: center;
+  flex: 1;
   max-width: 600px;
   margin: 0 auto;
 }
 
-.feature-item {
-  text-align: center;
-  padding: 20px;
-  
-  h4 {
-    margin: 12px 0 8px;
-    font-size: 16px;
-    color: var(--el-text-color-primary);
-  }
-  
-  p {
-    font-size: 14px;
-    color: var(--el-text-color-secondary);
-    line-height: 1.4;
-  }
-}
-
-.library-interface {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-.toolbar {
-  height: 60px;
-  padding: 0 20px;
-  background: var(--el-bg-color);
-  border-bottom: 1px solid var(--el-border-color-light);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  flex-shrink: 0;
-}
-
-.toolbar-left,
-.toolbar-center,
 .toolbar-right {
   display: flex;
   align-items: center;
   gap: 12px;
 }
 
-.content-area {
-  flex: 1;
+/* 面包屑导航样式 */
+.breadcrumb {
   display: flex;
-  overflow: hidden;
+  align-items: center;
+  color: var(--el-text-color-secondary);
+  font-size: 14px;
+  
+  .breadcrumb-item {
+    cursor: pointer;
+    transition: color 0.2s ease;
+    
+    &:hover {
+      color: var(--el-color-primary);
+    }
+    
+    &.active {
+      color: var(--el-text-color-primary);
+      font-weight: 500;
+    }
+  }
+  
+  .breadcrumb-separator {
+    margin: 0 8px;
+    color: var(--el-text-color-placeholder);
+  }
 }
 
-.assets-container {
-  flex: 1;
+/* 搜索框样式 */
+.search-container {
+  position: relative;
+  width: 100%;
+  
+  .search-input {
+    width: 100%;
+    height: 36px;
+    background: var(--el-bg-color-overlay);
+    border: 1px solid var(--el-border-color);
+    border-radius: 18px;
+    padding: 0 16px 0 40px;
+    color: var(--el-text-color-primary);
+    font-size: 14px;
+    transition: all 0.3s ease;
+    
+    &:focus {
+      outline: none;
+      border-color: var(--el-color-primary);
+      box-shadow: 0 0 0 2px rgba(64, 158, 255, 0.2);
+    }
+    
+    &::placeholder {
+      color: var(--el-text-color-placeholder);
+    }
+  }
+  
+  .search-icon {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--el-text-color-placeholder);
+    font-size: 16px;
+  }
+}
+
+/* 搜索历史样式 */
+.search-history {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  margin-top: 4px;
+  box-shadow: var(--el-box-shadow-base);
+  z-index: 1000;
+  max-height: 300px;
   overflow-y: auto;
 }
 
-.assets-grid {
-  padding: 20px;
+.history-item {
+  padding: 12px 16px;
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+  color: var(--el-text-color-primary);
+  font-size: 14px;
   
-  &.grid-view {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    gap: 16px;
-  }
-  
-  &.list-view {
-    display: flex;
-    flex-direction: column;
-    gap: 8px;
-  }
-  
-  &.masonry-view {
-    column-count: 4;
-    column-gap: 16px;
-    
-    .asset-item {
-      break-inside: avoid;
-      margin-bottom: 16px;
-    }
+  &:hover {
+    background-color: var(--el-bg-color-hover);
   }
 }
 
-.asset-item {
-  border-radius: 8px;
-  overflow: hidden;
-  background: var(--el-bg-color);
-  border: 1px solid var(--el-border-color-light);
-  transition: all 0.3s ease;
+/* 按钮组样式 */
+.button-group {
+  display: flex;
+  gap: 4px;
+}
+
+.view-button {
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-small);
+  color: var(--el-text-color-secondary);
   cursor: pointer;
+  transition: all 0.2s ease;
   
   &:hover {
     border-color: var(--el-color-primary);
-    box-shadow: var(--el-box-shadow-light);
+    color: var(--el-color-primary);
+    background-color: var(--el-bg-color-hover);
+  }
+  
+  &.active {
+    background-color: var(--el-color-primary);
+    border-color: var(--el-color-primary);
+    color: white;
+  }
+}
+
+/* 内容区域样式 */
+.content-area {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+/* 资产网格样式 */
+.assets-container {
+  flex: 1;
+  overflow-y: auto;
+  background: var(--el-bg-color-page);
+}
+
+.assets-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 18px;
+  padding: var(--el-space-lg);
+  transition: all 0.3s ease;
+}
+
+/* 网格视图 */
+.grid-view {
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+}
+
+/* 列表视图 */
+.list-view {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: var(--el-space-lg);
+}
+
+.list-item {
+  display: flex;
+  align-items: center;
+  padding: 12px;
+  background: var(--el-bg-color);
+  border: 1px solid var(--el-border-color-light);
+  border-radius: var(--el-border-radius-base);
+  transition: all 0.2s ease;
+  
+  &:hover {
+    border-color: var(--el-color-primary);
+    background-color: var(--el-bg-color-hover);
+  }
+  
+  .list-thumbnail {
+    width: 60px;
+    height: 60px;
+    object-fit: cover;
+    border-radius: var(--el-border-radius-small);
+    margin-right: 16px;
+  }
+  
+  .list-info {
+    flex: 1;
     
-    .asset-overlay {
-      opacity: 1;
+    .list-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--el-text-color-primary);
+      margin-bottom: 4px;
     }
+    
+    .list-meta {
+      font-size: 12px;
+      color: var(--el-text-color-secondary);
+    }
+  }
+  
+  .list-actions {
+    display: flex;
+    gap: 8px;
+  }
+}
+
+/* 瀑布流视图 */
+.masonry-view {
+  column-count: 5;
+  column-gap: 18px;
+  padding: var(--el-space-lg);
+  
+  .asset-item {
+    break-inside: avoid;
+    margin-bottom: 18px;
+  }
+}
+
+/* 资产项样式 */
+.asset-item {
+  background: rgba(24, 25, 35, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  position: relative;
+  backdrop-filter: blur(10px);
+  
+  &:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3);
+    border-color: var(--el-color-primary);
   }
   
   &.selected {
     border-color: var(--el-color-primary);
-    box-shadow: 0 0 0 2px var(--el-color-primary-light-5);
+    box-shadow: 0 0 0 2px rgba(45, 140, 240, 0.3);
+    background: rgba(45, 140, 240, 0.1);
   }
 }
 
 .asset-thumbnail-container {
   position: relative;
-  overflow: hidden;
-}
-
-.asset-thumbnail {
   width: 100%;
-  height: 150px;
-  object-fit: cover;
-  background: var(--el-bg-color-page);
+  aspect-ratio: 1;
+  overflow: hidden;
+  background: rgba(12, 13, 18, 0.8);
+  
+  .asset-thumbnail {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform 0.4s ease;
+  }
+  
+  .asset-item:hover .asset-thumbnail {
+    transform: scale(1.05);
+  }
 }
 
 .asset-overlay {
@@ -831,24 +782,60 @@ onMounted(() => {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.7);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  background: linear-gradient(180deg, transparent 40%, rgba(0, 0, 0, 0.8));
   opacity: 0;
   transition: opacity 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: 12px;
+  
+  .asset-item:hover & {
+    opacity: 1;
+  }
   
   .asset-type-icon {
     position: absolute;
     top: 8px;
-    left: 8px;
+    right: 8px;
+    width: 32px;
+    height: 32px;
+    background: rgba(0, 0, 0, 0.7);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
     color: white;
     font-size: 16px;
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
   }
   
   .asset-actions {
     display: flex;
     gap: 8px;
+    justify-content: flex-end;
+    
+    .el-button {
+      width: 36px;
+      height: 36px;
+      background: rgba(0, 0, 0, 0.7);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 50%;
+      color: white;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      backdrop-filter: blur(8px);
+      
+      &:hover {
+        background: var(--el-color-primary);
+        transform: scale(1.05);
+        border-color: var(--el-color-primary);
+      }
+    }
   }
 }
 
@@ -859,7 +846,7 @@ onMounted(() => {
     font-size: 14px;
     font-weight: 500;
     color: var(--el-text-color-primary);
-    margin-bottom: 4px;
+    margin-bottom: 6px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -867,7 +854,7 @@ onMounted(() => {
   
   .asset-meta {
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: rgba(255, 255, 255, 0.6);
     margin-bottom: 8px;
   }
   
@@ -877,61 +864,199 @@ onMounted(() => {
     gap: 4px;
   }
   
+  .tag {
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: rgba(255, 255, 255, 0.8);
+    
+    &:hover {
+      background: rgba(255, 255, 255, 0.2);
+      color: white;
+    }
+  }
+  
   .more-tags {
-    font-size: 11px;
-    color: var(--el-text-color-placeholder);
-    align-self: center;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 20px;
+    height: 20px;
+    border-radius: 10px;
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 10px;
   }
 }
 
+/* 空状态样式 */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  padding: 60px 20px;
   text-align: center;
-  padding: 80px 20px;
+}
+
+.empty-icon {
+  font-size: 64px;
+  color: var(--el-text-color-disabled);
+  margin-bottom: 20px;
+}
+
+.empty-title {
+  font-size: 18px;
+  font-weight: 500;
+  color: var(--el-text-color-primary);
+  margin-bottom: 8px;
+}
+
+.empty-description {
+  font-size: 14px;
   color: var(--el-text-color-secondary);
+  margin-bottom: 20px;
+  max-width: 400px;
+}
+
+/* 响应式设计 */
+@media (max-width: 1200px) {
+  .assets-grid.grid-view {
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  }
   
-  p {
-    margin: 16px 0 24px;
-    font-size: 16px;
+  .masonry-view {
+    column-count: 4;
   }
 }
 
 @media (max-width: 768px) {
-  .welcome-page {
-    padding: 20px;
-  }
-  
-  .welcome-header h1 {
-    font-size: 28px;
-  }
-  
-  .welcome-actions {
-    .el-button {
-      display: block;
-      width: 100%;
-      margin: 8px 0;
-    }
-  }
-  
-  .features-grid {
+  .main-content {
+    padding: 16px 12px;
     grid-template-columns: 1fr;
-    gap: 20px;
+    grid-template-areas:
+      "sidebar"
+      "content";
   }
   
-  .toolbar {
+  .sidebar {
+    position: fixed;
+    left: -300px;
+    top: 0;
+    height: 100vh;
+    width: 280px;
+    z-index: 100;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.3);
+  }
+  
+  .sidebar.open {
+    left: 0;
+  }
+  
+  .sidebar-toggle {
+    display: block;
+  }
+  
+  .assets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    gap: 12px;
+  }
+  
+  .asset-item {
+    min-height: 150px;
+  }
+  
+  .asset-overlay {
+    padding: 12px 8px;
+  }
+  
+  .asset-actions {
+    gap: 6px;
+  }
+  
+  .action-button {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+  }
+  
+  .asset-info {
+    margin-top: 8px;
+  }
+  
+  .asset-name {
+    font-size: 13px;
+    margin-bottom: 4px;
+  }
+  
+  .asset-meta {
+    font-size: 11px;
+  }
+  
+  .search-bar {
+    margin-bottom: 16px;
+  }
+  
+  .header {
+    padding: 12px 16px;
+  }
+  
+  .header-title {
+    font-size: 18px;
+  }
+  
+  .filter-container {
     flex-direction: column;
-    height: auto;
-    padding: 12px;
     gap: 12px;
+    align-items: stretch;
   }
   
-  .assets-grid.grid-view {
-    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
-    gap: 12px;
-    padding: 12px;
+  .filter-section {
+    width: 100%;
+  }
+}
+
+@media (max-width: 480px) {
+  .assets-grid {
+    grid-template-columns: repeat(auto-fill, minmax(100px, 1fr));
+    gap: 10px;
   }
   
-  .assets-grid.masonry-view {
-    column-count: 2;
+  .asset-item {
+    min-height: 120px;
   }
+  
+  .asset-thumbnail-container {
+    padding: 4px;
+  }
+  
+  .sidebar {
+    width: 250px;
+  }
+  
+  .header {
+    padding: 10px 12px;
+  }
+  
+  .main-content {
+    padding: 12px 8px;
+  }
+}
+
+/* 过渡效果 */
+.panel-enter-active,
+.panel-leave-active {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.panel-enter-from {
+  opacity: 0;
+  transform: translateX(20px);
+}
+
+.panel-leave-to {
+  opacity: 0;
+  transform: translateX(20px);
 }
 </style>

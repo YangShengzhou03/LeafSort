@@ -58,7 +58,18 @@ export interface Tag {
   name: string
   color: string
   assetCount: number
-  parentId?: string
+}
+
+export type ActivityType = 'import' | 'delete' | 'move' | 'rename' | 'tag' | 'rating' | 'favorite' | 'folder'
+
+export interface Activity {
+  id?: string
+  type: ActivityType
+  assetId?: string
+  folderId?: string
+  timestamp: Date
+  description: string
+  metadata?: Record<string, any>
 }
 
 // 智能文件夹规则

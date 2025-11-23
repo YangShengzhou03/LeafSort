@@ -96,15 +96,17 @@
       </div>
       
       <div class="tags-cloud">
-        <el-tag
+        <el-tag 
           v-for="tag in popularTags"
           :key="tag.id"
           :color="tag.color"
           size="small"
           class="tag-item"
+          :class="{ 'active-tag': libraryStore.activeTagId === tag.id }"
           closable
           @click="filterByTag(tag)"
           @close="deleteTag(tag)"
+          @contextmenu.prevent="renameTag(tag)"
         >
           {{ tag.name }} ({{ tag.assetCount }})
         </el-tag>
@@ -476,6 +478,27 @@ const deleteTag = async (tag: Tag) => {
   }
 }
 
+const renameTag = async (tag: Tag) => {
+  try {
+    const { value: newTagName } = await ElMessageBox.prompt(
+      '请输入新的标签名称',
+      '重命名标签',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        inputValue: tag.name
+      }
+    )
+    
+    if (newTagName && newTagName !== tag.name) {
+      await libraryStore.renameTag(tag.id, newTagName)
+      ElMessage.success('标签重命名成功')
+    }
+  } catch (error) {
+    // 用户取消操作
+  }
+}
+
 const showLibrarySettings = () => {
   // 显示素材库设置
   libraryStore.showLibrarySettings = true
@@ -550,17 +573,37 @@ onUnmounted(() => {
 .sidebar {
   width: 280px;
   height: 100%;
-  background: var(--el-bg-color);
-  border-right: 1px solid var(--el-border-color-light);
+  background: $sidebar-bg-color;
+  border-right: 1px solid $border-color;
   display: flex;
   flex-direction: column;
   overflow-y: auto;
+  transition: width 0.3s ease;
+}
+
+// 滚动条样式
+.sidebar::-webkit-scrollbar {
+  width: 6px;
+}
+
+.sidebar::-webkit-scrollbar-track {
+  background: $scrollbar-track-color;
+}
+
+.sidebar::-webkit-scrollbar-thumb {
+  background: $scrollbar-thumb-color;
+  border-radius: 3px;
+}
+
+.sidebar::-webkit-scrollbar-thumb:hover {
+  background: $scrollbar-thumb-hover-color;
 }
 
 .library-info {
   padding: 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
-  background: var(--el-bg-color-page);
+  border-bottom: 1px solid $border-color;
+  background: $sidebar-header-bg-color;
+  transition: all 0.3s ease;
 }
 
 .library-header {
@@ -570,7 +613,7 @@ onUnmounted(() => {
   
   .el-icon {
     margin-right: 12px;
-    color: var(--el-color-primary);
+    color: $primary-color;
   }
 }
 
@@ -580,13 +623,13 @@ onUnmounted(() => {
   .library-name {
     font-size: 16px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: $text-primary;
     margin-bottom: 4px;
   }
   
   .library-stats {
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: $text-secondary;
   }
 }
 
@@ -595,14 +638,38 @@ onUnmounted(() => {
   gap: 8px;
 }
 
+.library-actions .el-button {
+  background: $card-bg-color;
+  border-color: $border-color;
+  color: $text-primary;
+  
+  &:hover {
+    background: $hover-bg-color;
+    border-color: $primary-color;
+    color: $primary-color;
+  }
+}
+
 .quick-actions {
   padding: 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid $border-color;
+  background: $sidebar-section-bg-color;
 }
 
 .quick-action-btn {
   width: 100%;
   margin-bottom: 16px;
+  background: $primary-color;
+  border-color: $primary-color;
+  box-shadow: $button-shadow;
+  transition: all 0.3s ease;
+  
+  &:hover {
+    background: $primary-hover-color;
+    border-color: $primary-hover-color;
+    transform: translateY(-1px);
+    box-shadow: $button-hover-shadow;
+  }
   
   .el-icon {
     margin-right: 8px;
@@ -620,26 +687,29 @@ onUnmounted(() => {
   flex-direction: column;
   align-items: center;
   padding: 12px 8px;
-  border: 1px solid var(--el-border-color-light);
-  border-radius: 6px;
+  border: 1px solid $border-color;
+  border-radius: $border-radius;
   cursor: pointer;
   transition: all 0.2s ease;
   text-align: center;
+  background: $card-bg-color;
   
   &:hover {
-    border-color: var(--el-color-primary);
-    background: var(--el-color-primary-light-9);
+    border-color: $primary-color;
+    background: $hover-bg-color;
+    transform: translateY(-1px);
+    box-shadow: $card-shadow;
   }
   
   .el-icon {
     font-size: 20px;
     margin-bottom: 8px;
-    color: var(--el-color-primary);
+    color: $primary-color;
   }
   
   span {
     font-size: 12px;
-    color: var(--el-text-color-secondary);
+    color: $text-secondary;
   }
 }
 
@@ -647,7 +717,8 @@ onUnmounted(() => {
 .tags-section,
 .recent-section {
   padding: 20px;
-  border-bottom: 1px solid var(--el-border-color-light);
+  border-bottom: 1px solid $border-color;
+  background: $sidebar-section-bg-color;
 }
 
 .section-header {
@@ -659,7 +730,16 @@ onUnmounted(() => {
   span {
     font-size: 14px;
     font-weight: 600;
-    color: var(--el-text-color-primary);
+    color: $text-primary;
+  }
+}
+
+.section-header .el-button {
+  color: $text-secondary;
+  
+  &:hover {
+    color: $primary-color;
+    background: transparent;
   }
 }
 
@@ -668,19 +748,39 @@ onUnmounted(() => {
   
   .el-tree-node {
     .el-tree-node__content {
-      height: 32px;
+      height: 36px;
+      border-radius: $border-radius;
       
       &:hover {
-        background: var(--el-bg-color-page);
+        background: $hover-bg-color;
       }
     }
     
     &.is-current {
       > .el-tree-node__content {
-        background: var(--el-color-primary-light-9);
-        color: var(--el-color-primary);
+        background: $primary-light-bg;
+        color: $primary-color;
+        font-weight: 500;
       }
     }
+    
+    &.is-current.is-focused > .el-tree-node__content {
+      background: $primary-light-bg;
+      color: $primary-color;
+    }
+  }
+  
+  .el-tree-node__expand-icon {
+    color: $text-secondary;
+    
+    &:hover {
+      color: $primary-color;
+    }
+  }
+  
+  .el-tree-node__children {
+    overflow: hidden;
+    transition: all 0.3s ease;
   }
 }
 
@@ -691,30 +791,46 @@ onUnmounted(() => {
   
   .smart-folder-icon {
     margin-right: 6px;
-    color: var(--el-color-warning);
+    color: $warning-color;
   }
   
   .node-label {
     flex: 1;
     font-size: 14px;
+    color: $text-primary;
   }
   
   .node-count {
     font-size: 12px;
-    color: var(--el-text-color-placeholder);
+    color: $text-tertiary;
     margin-left: 8px;
+    background: $badge-bg-color;
+    padding: 2px 6px;
+    border-radius: 10px;
   }
 }
 
 .tags-cloud {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  
   .tag-item {
-    margin: 0 8px 8px 0;
+    margin: 0;
     cursor: pointer;
-    transition: all 0.2s ease;
+    transition: all 0.3s ease;
+    border: 1px solid transparent;
+    background: $card-bg-color;
     
     &:hover {
-      opacity: 0.8;
-      transform: scale(1.05);
+      transform: translateY(-2px);
+      box-shadow: $card-shadow;
+    }
+    
+    &.active-tag {
+      font-weight: bold;
+      box-shadow: 0 0 0 2px $sidebar-bg-color, 0 0 0 4px currentColor;
+      border-color: currentColor;
     }
   }
 }
@@ -723,18 +839,22 @@ onUnmounted(() => {
   .activity-item {
     display: flex;
     align-items: center;
-    padding: 8px 0;
+    padding: 10px;
     cursor: pointer;
-    transition: background 0.2s ease;
-    border-radius: 4px;
+    transition: all 0.2s ease;
+    border-radius: $border-radius;
+    margin-bottom: 8px;
+    background: $card-bg-color;
+    border: 1px solid $border-color;
     
     &:hover {
-      background: var(--el-bg-color-page);
+      background: $hover-bg-color;
+      border-color: $primary-color;
     }
     
     .activity-icon {
       margin-right: 12px;
-      color: var(--el-color-primary);
+      color: $primary-color;
       font-size: 16px;
     }
   }
@@ -745,19 +865,46 @@ onUnmounted(() => {
   
   .activity-title {
     font-size: 13px;
-    color: var(--el-text-color-primary);
+    color: $text-primary;
     margin-bottom: 2px;
   }
   
   .activity-time {
     font-size: 11px;
-    color: var(--el-text-color-placeholder);
+    color: $text-tertiary;
   }
 }
 
+// 右键菜单样式
+:deep(.el-dropdown-menu) {
+  background: $dropdown-bg-color;
+  border: 1px solid $border-color;
+  box-shadow: $dropdown-shadow;
+  border-radius: $border-radius;
+  
+  .el-dropdown-item {
+    color: $text-primary;
+    transition: all 0.2s ease;
+    
+    &:hover {
+      background: $hover-bg-color;
+      color: $primary-color;
+    }
+    
+    &.is-disabled {
+      color: $text-tertiary;
+    }
+    
+    .el-icon {
+      margin-right: 8px;
+    }
+  }
+}
+
+// 响应式设计
 @media (max-width: 1200px) {
   .sidebar {
-    width: 240px;
+    width: 260px;
   }
   
   .library-info,
@@ -771,7 +918,7 @@ onUnmounted(() => {
 
 @media (max-width: 768px) {
   .sidebar {
-    width: 200px;
+    width: 220px;
   }
   
   .action-grid {
@@ -784,6 +931,12 @@ onUnmounted(() => {
     span {
       font-size: 11px;
     }
+  }
+}
+
+@media (max-width: 480px) {
+  .sidebar {
+    width: 200px;
   }
 }
 </style>

@@ -1,0 +1,17 @@
+directories:
+  output: release
+  buildResources: build
+appId: com.leafview.app
+productName: LeafView
+files:
+  - filter:
+      - dist/**/*
+      - dist-electron/**/*
+mac:
+  category: public.app-category.graphics-design
+win:
+  target: nsis
+nsis:
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+electronVersion: 23.3.13

@@ -8,14 +8,24 @@
     <div class="detail-content">
       <!-- 预览区域 -->
       <div class="preview-section">
+        <!-- 根据资产类型显示不同的预览 -->
         <img 
           v-if="asset.type === 'image'" 
           :src="getPreviewUrl()" 
-          alt="Asset Preview" 
+          :alt="asset.name" 
           class="preview-image"
         >
-        <div v-else class="non-image-preview">
-          非图片类型预览
+        <div v-else-if="asset.type === 'video'" class="video-preview">
+          <img 
+            :src="getPreviewUrl()" 
+            :alt="asset.name" 
+            class="preview-image"
+          >
+          <div class="play-icon">▶</div>
+        </div>
+        <div v-else class="document-preview">
+          <i class="el-icon-document"></i>
+          <p>{{ asset.name }}</p>
         </div>
       </div>
       
@@ -58,10 +68,30 @@
               :key="tag" 
               size="small"
               @click="$emit('tag-click', tag)"
+              closable
+              @close="removeTag(tag)"
               class="tag-clickable"
             >
               {{ tag }}
             </el-tag>
+            <el-button 
+              size="small" 
+              plain 
+              icon="el-icon-plus" 
+              @click="showAddTagInput = !showAddTagInput"
+            >
+              添加标签
+            </el-button>
+            <div v-if="showAddTagInput" class="add-tag-input-container">
+              <el-input 
+                v-model="newTag" 
+                @keyup.enter="addTag" 
+                placeholder="输入标签名" 
+                size="small"
+                style="width: 150px; margin-right: 8px;"
+              ></el-input>
+              <el-button size="small" type="primary" @click="addTag">确定</el-button>
+            </div>
           </div>
         </div>
         
@@ -69,7 +99,14 @@
         <div class="rating-section">
           <h4>评分</h4>
           <div class="rating-stars">
-            <span v-for="n in 5" :key="n" class="star" :class="{ active: asset.rating >= n }">
+            <span 
+              v-for="n in 5" 
+              :key="n" 
+              class="star" 
+              :class="{ active: asset.rating >= n }"
+              @click="updateRating(n)"
+              title="点击评分: {{ n }}星"
+            >
               ★
             </span>
           </div>
@@ -103,15 +140,19 @@
         <el-button icon="el-icon-download">下载</el-button>
         <el-button icon="el-icon-share">分享</el-button>
         <el-button icon="el-icon-edit">编辑</el-button>
-        <el-button type="danger" icon="el-icon-delete">删除</el-button>
+        <el-button type="danger" icon="el-icon-delete" @click="deleteAsset">删除</el-button>
       </el-button-group>
     </div>
   </div>
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue'
+import { ref } from 'vue'
 import type { Asset } from '@/types'
+import { useLibraryStore } from '../stores/library'
+
+// Store
+const libraryStore = useLibraryStore()
 
 // 定义属性
 const props = defineProps<{
@@ -124,16 +165,24 @@ const emit = defineEmits<{
   'tag-click': [tag: string]
 }>()
 
+// 响应式数据
+const showAddTagInput = ref(false)
+const newTag = ref('')
+
 // 获取预览URL
 const getPreviewUrl = () => {
   if (!props.asset) return ''
-  // 根据资产ID返回对应的预览图片
-  if (props.asset.id === '1') return 'https://picsum.photos/id/433/800/600'
-  if (props.asset.id === '2') return 'https://picsum.photos/id/429/800/1200'
-  if (props.asset.id === '3') return 'https://picsum.photos/id/424/800/1200'
-  if (props.asset.id === '4') return 'https://picsum.photos/id/425/800/800'
-  if (props.asset.id === '5') return 'https://picsum.photos/id/426/800/800'
-  return 'https://picsum.photos/800/600'
+  
+  // 根据资产类型返回不同的预览URL
+  if (props.asset.type === 'image') {
+    return `https://picsum.photos/seed/${props.asset.id}/800/600`
+  } else if (props.asset.type === 'video') {
+    // 对于视频，返回缩略图
+    return `https://picsum.photos/seed/${props.asset.id}video/800/600`
+  } else {
+    // 对于文档，返回文档类型的缩略图
+    return `https://picsum.photos/seed/${props.asset.id}doc/800/600`
+  }
 }
 
 // 格式化文件大小
@@ -154,6 +203,58 @@ const formatDate = (date: Date): string => {
 const formatKey = (key: string): string => {
   // 简单的驼峰转空格
   return key.replace(/([A-Z])/g, ' $1').trim()
+}
+
+// 添加标签
+const addTag = () => {
+  if (!props.asset || !newTag.value.trim()) return
+  
+  const updatedAsset = {
+    ...props.asset,
+    tags: [...props.asset.tags, newTag.value.trim()]
+  }
+  
+  // 使用store更新资产
+  libraryStore.updateAsset(updatedAsset)
+  newTag.value = ''
+  showAddTagInput.value = false
+}
+
+// 移除标签
+const removeTag = (tagToRemove: string) => {
+  if (!props.asset) return
+  
+  const updatedAsset = {
+    ...props.asset,
+    tags: props.asset.tags.filter(tag => tag !== tagToRemove)
+  }
+  
+  // 使用store更新资产
+  libraryStore.updateAsset(updatedAsset)
+}
+
+// 更新评分
+const updateRating = (rating: number) => {
+  if (!props.asset) return
+  
+  const updatedAsset = {
+    ...props.asset,
+    rating
+  }
+  
+  // 使用store更新资产
+  libraryStore.updateAsset(updatedAsset)
+}
+
+// 删除资产
+const deleteAsset = () => {
+  if (!props.asset) return
+  
+  if (confirm(`确定要删除资产 "${props.asset.name}" 吗？`)) {
+    // 使用store删除资产
+    libraryStore.deleteAsset(props.asset.id)
+    emit('close')
+  }
 }
 </script>
 
@@ -216,25 +317,83 @@ const formatKey = (key: string): string => {
 }
 
 .preview-section {
-  margin-bottom: 24px;
-  border-radius: 8px;
-  overflow: hidden;
-  background-color: #f5f5f5;
-}
+    width: 100%;
+    height: 240px;
+    background-color: #f5f7fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 20px;
+    border-radius: 6px;
+    overflow: hidden;
+    position: relative;
+  }
 
-.preview-image {
-  width: 100%;
-  height: auto;
-  display: block;
-}
+  .preview-image {
+    max-width: 100%;
+    max-height: 100%;
+    object-fit: contain;
+    transition: transform 0.2s ease;
+  }
 
-.non-image-preview {
-  height: 200px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #666;
-}
+  .non-image-preview {
+    height: 200px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #666;
+  }
+  
+  .video-preview {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .play-icon {
+    position: absolute;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background-color: rgba(0, 0, 0, 0.6);
+    color: white;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+  }
+
+  .play-icon:hover {
+    background-color: rgba(0, 0, 0, 0.8);
+    transform: scale(1.1);
+  }
+
+  .document-preview {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: #909399;
+  }
+
+  .document-preview i {
+    font-size: 48px;
+    margin-bottom: 12px;
+  }
+
+  .document-preview p {
+    font-size: 14px;
+    text-align: center;
+    max-width: 200px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
 
 .info-section .info-group,
 .tags-section,
@@ -270,28 +429,47 @@ const formatKey = (key: string): string => {
 }
 
 .tags-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+  }
 
-.tag-clickable {
-  cursor: pointer;
-}
+  .tag-clickable {
+    cursor: pointer;
+  }
+
+  .add-tag-input-container {
+    display: flex;
+    align-items: center;
+    margin-top: 8px;
+  }
 
 .rating-stars {
-  display: flex;
-  gap: 2px;
-}
+    display: flex;
+    gap: 4px;
+    margin-top: 8px;
+  }
 
-.star {
-  font-size: 20px;
-  color: #e0e0e0;
-}
+  .star {
+    font-size: 18px;
+    color: #dcdfe6;
+    cursor: pointer;
+    transition: color 0.2s ease;
+  }
 
-.star.active {
-  color: #ffd700;
-}
+  .star:hover,
+  .star:hover ~ .star {
+    color: #f7ba2a;
+  }
+
+  .star.active {
+    color: #f7ba2a;
+  }
+
+  .star.active ~ .star {
+    color: #dcdfe6;
+  }
 
 .metadata-item {
   display: flex;
