@@ -14,6 +14,28 @@ class FolderPage(QtWidgets.QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
         self.parent = parent
+        
+        # 连接浏览文件夹按钮的信号
+        self.parent.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.parent.inputSourceFolder))
+        self.parent.btnBrowseTarget.clicked.connect(lambda: self._browse_directory("选择目标文件夹", self.parent.inputTargetFolder))
+        
+    def _browse_directory(self, title, line_edit):
+        """
+        浏览并选择文件夹
+        
+        Args:
+            title: 对话框标题
+            line_edit: 用于显示选择路径的QLineEdit
+        """
+        folder_path = QtWidgets.QFileDialog.getExistingDirectory(self, title, line_edit.text() or "")
+        if folder_path:
+            line_edit.setText(folder_path)
+            # 如果有textBrowser_import_info控件，显示文件夹信息
+            if hasattr(self, 'textBrowser_import_info'):
+                self.textBrowser_import_info.setText(self.get_folder_info(folder_path))
+            elif self.parent and hasattr(self.parent, 'textBrowser_import_info'):
+                self.parent.textBrowser_import_info.setText(self.get_folder_info(folder_path))
+    
     
     def get_folder_info(self, folder_path):
         """
@@ -48,13 +70,5 @@ class FolderPage(QtWidgets.QWidget):
         info += f"\n{'-' * 60}\n"
         info += f"{'顶层内容统计':<60}\n"
         info += f"{'顶层文件数量：' + str(top_file_count):<30} {'顶层文件夹数量：' + str(top_folder_count):<30}\n"
-        info += f"{'-' * 60}\n"
-        
-        # 添加提示信息
-        info += "\n极速模式已启用\n"
-        info += "✓ 不遍历文件夹内容\n"
-        info += "✓ 立即显示顶层信息\n"
-        info += "✓ 适合超大文件夹（4TB+，千万级文件）\n"
-        info += "\n注意：为避免系统卡顿，未计算总大小和递归统计\n"
-        
+        info += f"{'-' * 60}\n"        
         return info

@@ -51,14 +51,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.activated.connect(self._handle_tray_activation)
 
     def _connect_signals(self):
-        self.btnSettings.clicked.connect(self._show_settings)
+        # 移除对_show_settings的连接，因为该方法已被移除
         self.btnMinimize.clicked.connect(self.showMinimized)
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         
-        self.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.inputSourceFolder))
-        self.btnBrowseTarget.clicked.connect(lambda: self._browse_directory("选择目标文件夹", self.inputTargetFolder))
-    
     def mousePressEvent(self, event):
         if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.pos()) and event.pos().y() < 60:
             self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
@@ -76,22 +73,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _hide_to_tray(self):
         self.hide()
         self.tray_icon and self.tray_icon.show()
-            
-    def _show_settings(self):
-        pass
-    
-    def _get_folder_info(self, folder_path):
-        """
-        获取文件夹的极速信息，通过已初始化的folder_page实例来获取
-        
-        Args:
-            folder_path: 文件夹路径
-            
-        Returns:
-            包含文件夹信息的字符串
-        """
-        # 使用在_initialize_pages中已初始化的folder_page实例
-        return self.folder_page.get_folder_info(folder_path)
     
     def _show_window(self):
         self.show()
