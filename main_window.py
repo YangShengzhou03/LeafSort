@@ -105,7 +105,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         
         # 初始化管理器
         self.window_manager = WindowManager(self)
-        self.page_manager = PageManager(self)
         
         self._setup_ui()
         self._connect_signals()
@@ -114,7 +113,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         """设置UI"""
         self.window_manager.setup_window()
         self.window_manager.setup_system_tray()
-        self.page_manager.setup_pages()
 
     def _connect_signals(self):
         """连接信号和槽函数"""
@@ -150,9 +148,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             
             if folder_path:
                 target_widget.setText(folder_path)
-                self.page_manager.log("INFO", f"已选择{dialog_title.replace('选择', '')}: {folder_path}")
         except Exception as e:
-            self.page_manager.log("ERROR", f"打开{dialog_title}对话框失败: {e}")
+            QtWidgets.QMessageBox.warning(self, "错误", f"打开{dialog_title}对话框失败: {e}")
     
     def closeEvent(self, event):
         """处理窗口关闭事件"""
