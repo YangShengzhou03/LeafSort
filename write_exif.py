@@ -1,9 +1,11 @@
-import os
+import json
 import json
 import re
 from datetime import datetime
+
+from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtCore import pyqtSignal, QThread, QObject
+
 from common import get_resource_path
 from config_manager import config_manager
 from write_exif_thread import WriteExifThread
