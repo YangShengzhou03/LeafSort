@@ -65,9 +65,9 @@ class SmartArrangeManager(QObject):
         
         if hasattr(self.parent, 'btnStartSmartArrange'):
             try:
-                self.parent.btnStartSmartArrange.clicked.disconnect(self.toggle_SmartArrange)
+                self.parent.btnStartSmartArrange.clicked.disconnect()
             except (TypeError, RuntimeError) as e:
-                self.log("DEBUG", f"断开btnStartSmartArrange信号连接失败: {str(e)}")
+                pass
             
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
             
