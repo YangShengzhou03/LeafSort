@@ -74,7 +74,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             tray_menu.addSeparator()
             tray_menu.addAction(action_exit)
 
-            css_path = get_resource_path('resources/stylesheet/menu_stylesheet.css')
+            css_path = get_resource_path('resources/stylesheet/menu.setStyleSheet.css')
             if css_path and os.path.exists(css_path):
                 try:
                     with open(css_path, 'r', encoding='utf-8') as f:
