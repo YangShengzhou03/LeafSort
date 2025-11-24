@@ -1,19 +1,19 @@
 QMenu {
     background: rgba(255, 255, 255, 0.98);
-    padding: 2px;
+    padding: 1px;
     box-shadow: 0 12px 32px rgba(0, 0, 0, 0.15);
-    font-size: 14px;
+    font-size: 12px;
     font-family: 'Microsoft YaHei Light', 'Segoe UI', 'Microsoft YaHei', sans-serif;
     border-radius: 6px;
     border: 1px solid rgba(255, 255, 255, 0.2);
     backdrop-filter: blur(20px);
-    margin: 4px;
+    margin: 2px;
     animation: menuFadeIn 0.2s ease;
 }
 
 QMenu::item {
-    padding: 10px 20px;
-    margin: 2px 0;
+    padding: 8px 16px;
+    margin: 0px;
     color: #2c3e50;
     background: transparent;
     border-radius: 6px;
@@ -36,7 +36,7 @@ QMenu::item:selected {
 QMenu::separator {
     height: 1px;
     background: linear-gradient(to right, transparent, rgba(0, 0, 0, 0.1), transparent);
-    margin: 8px 12px;
+    margin: 6px 10px;
     border: none;
 }
 
