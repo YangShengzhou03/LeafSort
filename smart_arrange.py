@@ -177,9 +177,7 @@ class SmartArrangeManager(QObject):
         return True
             
     def toggle_SmartArrange(self):
-        self.log("DEBUG", "toggle_SmartArrange")
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
-        self.log("DEBUG", f"thread_running: {thread_running}")
         if thread_running:
             self.log("INFO", "Stopping operation")
             self.parent.btnStartSmartArrange.setText("Stopping...")
@@ -191,7 +189,6 @@ class SmartArrangeManager(QObject):
                 self.parent.btnStartSmartArrange.setText("Start Arrange")
         else:
             self.parent.btnStartSmartArrange.setEnabled(True)
-            self.log("DEBUG", "Starting operation")
             
             self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not self.selected_folders:
@@ -201,8 +198,6 @@ class SmartArrangeManager(QObject):
                 except Exception as e:
                     self.log("ERROR", f"Failed to show warning message: {str(e)}")
                 return
-            
-            self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
             if not self.destination_root and not self.select_destination_folder():
                 return
@@ -214,27 +209,23 @@ class SmartArrangeManager(QObject):
                 except Exception as e:
                     self.log("WARNING", f"{str(e)}")
                     self.SmartArrange_thread = None
-
-            self.log("DEBUG", "confirm")
             
             from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
-                "Confirm Operation?",
-                "Operation cannot be undone!\n\n"  
-                "• Move: Original files will be deleted\n"  
-                "• Copy: Original files will be preserved\n\n"  
-                "Please backup important files!\n\n"  
-                "Continue?",
+                "确认操作？",
+                "操作无法撤销！\n\n"  
+                "• 移动：原始文件将被删除\n"  
+                "• 复制：原始文件将被保留\n\n"  
+                "请备份重要文件！\n\n"  
+                "是否继续？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "Operation cancelled")
+                self.log("INFO", "操作已取消")
                 return
-
-            self.log("DEBUG", "confirmed")
             
             if isinstance(self.selected_folders, str):
                 self.selected_folders = [{'path': self.selected_folders, 'include_sub': 1}]
