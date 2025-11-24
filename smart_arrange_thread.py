@@ -227,11 +227,10 @@ class SmartArrangeThread(QtCore.QThread):
                         else:
                             self.process_single_file(full_file_path, base_folder=folder_path)
                         
-                        with self.processed_lock:
-                            self.processed_files += 1
-                        
+                        # 移除重复的计数，process_single_file方法中已经更新了计数器
                         if self.total_files > 0:
-                            percent_complete = int((self.processed_files / self.total_files) * 80)
+                            with self.processed_lock:
+                                percent_complete = int((self.processed_files / self.total_files) * 80)
                             self.progress_signal.emit(percent_complete)
                     
                     # 批次之间短暂休息，减少CPU占用
@@ -274,14 +273,19 @@ class SmartArrangeThread(QtCore.QThread):
 
     def process_renaming(self):
         # 初始化统计变量
-        total_rename_files = len(self.files_to_rename)
+        with self.files_lock:
+            total_rename_files = len(self.files_to_rename)
         renamed_files = 0
         failed_files = 0
         skipped_files = 0
         
         self.log("INFO", f"开始处理 {total_rename_files} 个文件")
         
-        for idx, file_info in enumerate(self.files_to_rename):
+        # 创建一个本地副本以避免在迭代过程中锁定整个列表
+        with self.files_lock:
+            files_to_process = self.files_to_rename.copy()
+            
+        for idx, file_info in enumerate(files_to_process):
             if self._stop_flag:
                 self.log("WARNING", "文件重命名操作被用户中断")
                 break
@@ -390,6 +394,10 @@ class SmartArrangeThread(QtCore.QThread):
         
         # 输出统计信息
         self.log("INFO", f"文件整理完成 - 成功: {renamed_files}, 失败: {failed_files}, 跳过: {skipped_files}")
+        
+        # 清空处理完的文件列表
+        with self.files_lock:
+            self.files_to_rename.clear()
 
     def organize_without_classification(self, folder_path):
         folder_path = Path(folder_path)
@@ -429,9 +437,10 @@ class SmartArrangeThread(QtCore.QThread):
                         
                         file_count += 1
                         
-                        self.processed_files += 1
+                        # 移除重复的计数，process_single_file方法中已经更新了计数器
                         if self.total_files > 0:
-                            percent_complete = int((self.processed_files / self.total_files) * 80)
+                            with self.processed_lock:
+                                percent_complete = int((self.processed_files / self.total_files) * 80)
                             self.progress_signal.emit(percent_complete)
                     except Exception as e:
                         self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")

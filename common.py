@@ -15,7 +15,8 @@ class ResourceManager:
     def _get_base_path(self):
         try:
             return Path(sys._MEIPASS)
-        except Exception:
+        except AttributeError:
+            # 非打包环境下sys._MEIPASS不存在
             return Path(__file__).parent if '__file__' in globals() else Path.cwd()
     
     def get_resource_path(self, relative_path):
@@ -64,7 +65,7 @@ class MediaTypeDetector:
         
         try:
             kind = guess(file_path)
-        except Exception as e:
+        except (IOError, PermissionError, OSError) as e:
             raise IOError(f"读取文件错误: {str(e)}")
 
         if not kind:
@@ -102,6 +103,8 @@ class MediaTypeDetector:
         }
 
 
+import threading
+
 class GeocodingService:
     def __init__(self):
         self.headers = {
@@ -111,27 +114,45 @@ class GeocodingService:
             'user-agent': 'Mozilla/5.0'
         }
         self.url_template = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
+        self._lock = threading.Lock()
+        self._cached_cookies = None
+        self._cached_key = None
+        self._credentials_last_checked = 0
     
     def get_address_from_coordinates(self, lat, lon):
         loc = f"{lon},{lat}"
         
-        cookies, key = self._load_cached_credentials()
-        
-        if not (cookies and key):
-            cookies, key = self._fetch_credentials()
-            if cookies and key:
-                self._save_credentials(cookies, key)
+        with self._lock:
+            cookies, key = self._load_cached_credentials()
+            
+            if not (cookies and key):
+                cookies, key = self._fetch_credentials()
+                if cookies and key:
+                    self._save_credentials(cookies, key)
         
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
+        # 优先使用内存缓存
+        import time
+        current_time = time.time()
+        if self._cached_cookies and self._cached_key and (current_time - self._credentials_last_checked < 300):
+            return self._cached_cookies, self._cached_key
+            
         if os.path.exists("cookies.json"):
             try:
                 with open("cookies.json", "r", encoding="utf-8") as f:
                     saved = json.load(f)
-                    return saved.get("cookies"), saved.get("key")
-            except Exception:
-                pass
+                    cookies = saved.get("cookies")
+                    key = saved.get("key")
+                    # 更新内存缓存
+                    self._cached_cookies = cookies
+                    self._cached_key = key
+                    self._credentials_last_checked = current_time
+                    return cookies, key
+            except (json.JSONDecodeError, IOError, PermissionError) as e:
+                # 处理JSON解析错误和文件IO错误
+                print(f"读取cookies.json失败: {str(e)}")
         return None, None
     
     def _fetch_credentials(self):
@@ -151,15 +172,21 @@ class GeocodingService:
                 key = page.get_attribute("#code_origin", "data-jskey")
                 browser.close()
                 return cookies, key
-        except Exception:
+        except (ImportError, TimeoutError, ConnectionError) as e:
+            print(f"获取地理编码凭证失败: {str(e)}")
             return None, None
     
     def _save_credentials(self, cookies, key):
+        # 更新内存缓存
+        self._cached_cookies = cookies
+        self._cached_key = key
+        self._credentials_last_checked = time.time()
+        
         try:
             with open("cookies.json", "w", encoding="utf-8") as f:
                 json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
-        except Exception:
-            pass
+        except (IOError, PermissionError) as e:
+            print(f"保存cookies.json失败: {str(e)}")
     
     def _call_geocoding_api(self, loc, cookies, key):
         if not (cookies and key):
@@ -168,12 +195,13 @@ class GeocodingService:
         try:
             url = self.url_template.format(key=key, loc=loc)
             resp = requests.get(url, headers=self.headers, cookies=cookies, timeout=10)
+            resp.raise_for_status()  # 检查HTTP错误
             
             if resp.status_code == 200 and "formatted_address" in resp.text:
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                 return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
-        except Exception:
-            pass
+        except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError) as e:
+            print(f"地理编码API调用失败: {str(e)}")
         
         return "获取地址失败"
 
