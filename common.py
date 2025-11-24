@@ -1,6 +1,8 @@
 import json
 import os
 import sys
+import time
+import threading
 from pathlib import Path
 
 import requests
@@ -218,3 +220,46 @@ def detect_media_type(file_path):
 
 def get_address_from_coordinates(lat, lon):
     return _geocoding_service.get_address_from_coordinates(lat, lon)
+
+# 兼容性函数，与smart_arrange_thread.py中的get_file_type功能保持一致
+def get_file_type(file_path):
+    """根据文件扩展名或MIME类型确定文件类型类别"""
+    # 如果是Path对象，转换为字符串
+    file_path_str = str(file_path)
+    file_ext = os.path.splitext(file_path_str)[1].lower()
+    
+    # 首先尝试使用扩展名快速匹配
+    file_type_mapping = {
+        '图像': ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
+                '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
+                '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'),
+        '视频': ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.webm'),
+        '音乐': ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a'),
+        '文档': ('.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx',
+                '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'),
+        '压缩包': ('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar')
+    }
+    
+    for file_type, extensions in file_type_mapping.items():
+        if file_ext in extensions:
+            return file_type
+    
+    # 如果扩展名匹配失败且文件存在，尝试使用MIME类型检测
+    if os.path.isfile(file_path_str):
+        try:
+            result = detect_media_type(file_path_str)
+            if result['valid']:
+                media_type = result['type']
+                # 映射MIME类型到类别名称
+                mime_to_category = {
+                    'image': '图像',
+                    'video': '视频',
+                    'audio': '音乐'
+                }
+                if media_type in mime_to_category:
+                    return mime_to_category[media_type]
+        except (FileNotFoundError, IOError):
+            # 如果检测失败，返回'其他'
+            pass
+    
+    return '其他'

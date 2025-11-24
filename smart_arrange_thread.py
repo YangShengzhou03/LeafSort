@@ -3,22 +3,19 @@ import json
 import os
 import subprocess
 import logging
-import sys
 from pathlib import Path
-import threading
-import time
 import io
-from common import get_address_from_coordinates
+from common import get_address_from_coordinates, get_resource_path, get_file_type
 import exifread
 import pillow_heif
 from PIL import Image
 from PyQt6 import QtCore
-
-from common import get_resource_path
 from config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
+# 常量定义 - 仅保留SUPPORTED_EXTENSIONS用于文件过滤
+# 注意：get_file_type函数现在从common.py导入
 IMAGE_EXTENSIONS = (
     '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
     '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
@@ -44,22 +41,6 @@ ARCHIVE_EXTENSIONS = (
 
 SUPPORTED_EXTENSIONS = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS + DOCUMENT_EXTENSIONS + ARCHIVE_EXTENSIONS
 
-FILE_TYPE_CATEGORIES = {
-    '图像': IMAGE_EXTENSIONS,
-    '视频': VIDEO_EXTENSIONS,
-    '音乐': AUDIO_EXTENSIONS,
-    '文档': DOCUMENT_EXTENSIONS,
-    '压缩包': ARCHIVE_EXTENSIONS,
-    '其他': ()
-}
-
-def get_file_type(file_path):
-    ext = file_path.suffix.lower()
-    for file_type, extensions in FILE_TYPE_CATEGORIES.items():
-        if ext in extensions:
-            return file_type
-    return '其他'
-
 class SmartArrangeThread(QtCore.QThread):
     log_signal = QtCore.pyqtSignal(str, str)
     progress_signal = QtCore.pyqtSignal(int)
@@ -67,20 +48,28 @@ class SmartArrangeThread(QtCore.QThread):
     def __init__(self, parent=None, folders=None, classification_structure=None, file_name_structure=None,
                  destination_root=None, separator="-", time_derive="文件创建时间", operation_type=0):
         super().__init__(parent)
+        # 初始化所有实例变量，提供默认值以避免潜在的None引用问题
         self.parent = parent
         self.folders = folders or []
-        self.classification_structure = classification_structure
-        self.file_name_structure = file_name_structure
+        self.classification_structure = classification_structure or []
+        self.file_name_structure = file_name_structure or []
         self.destination_root = destination_root
-        self.separator = separator
-        self.time_derive = time_derive
+        self.separator = separator if separator else "-"
+        self.time_derive = time_derive if time_derive else "文件创建时间"
         self.operation_type = operation_type  # 保存操作类型
         self._is_running = True
         self._stop_flag = False
         self.total_files = 0
         self.processed_files = 0
-        self.log_signal = parent.log_signal if parent else None
+        # 初始化地理数据属性
+        self.city_data = {'features': []}
+        self.province_data = {'features': []}
+        # 使用类定义的信号而不是从parent获取
+        self.log_signal = parent.log_signal if parent and hasattr(parent, 'log_signal') else self.log_signal
         self.files_to_rename = []
+        
+        # 加载地理数据
+        self.load_geographic_data()
 
     def calculate_total_files(self):
         self.total_files = 0
@@ -96,12 +85,27 @@ class SmartArrangeThread(QtCore.QThread):
 
     def load_geographic_data(self):
         try:
-            with open(get_resource_path('resources/json/City_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
-                self.city_data = json.load(f)
-            with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
-                self.province_data = json.load(f)
+            # 尝试加载城市地理数据
+            city_file_path = get_resource_path('resources/json/City_Reverse_Geocode.json')
+            if os.path.exists(city_file_path):
+                with open(city_file_path, 'r', encoding='utf-8') as f:
+                    self.city_data = json.load(f)
+            else:
+                self.log("WARNING", f"城市地理数据文件不存在: {city_file_path}")
+                
+            # 尝试加载省份地理数据
+            province_file_path = get_resource_path('resources/json/Province_Reverse_Geocode.json')
+            if os.path.exists(province_file_path):
+                with open(province_file_path, 'r', encoding='utf-8') as f:
+                    self.province_data = json.load(f)
+            else:
+                self.log("WARNING", f"省份地理数据文件不存在: {province_file_path}")
+                
+        except json.JSONDecodeError as e:
+            self.log("ERROR", f"解析地理数据JSON失败: {str(e)}")
         except Exception as e:
-            self.city_data, self.province_data = {'features': []}, {'features': []}
+            self.log("ERROR", f"加载地理数据时出错: {str(e)}")
+            # 已经在__init__中初始化了默认值，这里不再需要重新初始化
 
     def run(self):
         try:
@@ -694,16 +698,18 @@ class SmartArrangeThread(QtCore.QThread):
         return date_taken
 
     def _determine_best_datetime(self, date_taken, create_time, modify_time):
-        if self.time_derive == "拍摄日期":
-            return date_taken.strftime('%Y-%m-%d %H:%M:%S') if date_taken else None
+        if self.time_derive == "拍摄日期" and date_taken:
+            return date_taken.strftime('%Y-%m-%d %H:%M:%S')
         elif self.time_derive == "创建时间":
             return create_time.strftime('%Y-%m-%d %H:%M:%S')
         elif self.time_derive == "修改时间":
             return modify_time.strftime('%Y-%m-%d %H:%M:%S')
         else:
+            # 获取所有非None的时间并选择最早的
             times = [t for t in [date_taken, create_time, modify_time] if t is not None]
-            earliest_time = min(times) if times else modify_time
-            return earliest_time.strftime('%Y-%m-%d %H:%M:%S')
+            if times:
+                return min(times).strftime('%Y-%m-%d %H:%M:%S')
+            return modify_time.strftime('%Y-%m-%d %H:%M:%S')
 
     def _extract_gps_and_camera_info(self, tags, exif_data):
         lat_ref = str(tags.get('GPS GPSLatitudeRef', '')).strip()
@@ -761,16 +767,33 @@ class SmartArrangeThread(QtCore.QThread):
 
     def _get_video_metadata(self, file_path, timeout=30):
         try:
+            # 确保文件存在
+            if not os.path.exists(file_path):
+                self.log("DEBUG", f"文件不存在: {file_path}")
+                return None
+                
+            # 获取exiftool路径并确保它存在
+            exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
+            if not os.path.exists(exiftool_path):
+                self.log("DEBUG", "exiftool工具不存在，无法读取视频元数据")
+                return None
+                
             file_path_normalized = str(file_path).replace('\\', '/')
-            cmd = f"{get_resource_path('resources/exiftool/exiftool.exe')} -fast \"{file_path_normalized}\""
+            # 使用列表传递命令参数，避免shell=True的安全风险
+            cmd = [exiftool_path, "-fast", file_path_normalized]
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                shell=True
+                shell=False  # 不使用shell执行，提高安全性
             )
+
+            # 检查命令是否执行成功
+            if result.returncode != 0:
+                self.log("DEBUG", f"exiftool执行失败: {result.stderr}")
+                return None
 
             metadata = {}
             for line in result.stdout.split('\n'):
@@ -780,8 +803,11 @@ class SmartArrangeThread(QtCore.QThread):
 
             return metadata
 
+        except subprocess.TimeoutExpired:
+            self.log("DEBUG", f"读取文件元数据超时: {file_path}")
         except Exception as e:
-            return None
+            self.log("DEBUG", f"读取文件元数据出错: {str(e)}")
+        return None
 
     def parse_exif_datetime(self, tags):
         try:
@@ -820,47 +846,46 @@ class SmartArrangeThread(QtCore.QThread):
         if not datetime_str:
             return None
             
-        try:
-            formats_with_timezone = [
-                '%Y:%m:%d %H:%M:%S%z',
-                '%Y-%m-%d %H:%M:%S%z',
-                '%Y/%m/%d %H:%M:%S%z',
-            ]
-            
-            formats_without_timezone = [
-                '%Y:%m:%d %H:%M:%S',
-                '%Y-%m-%d %H:%M:%S', 
-                '%Y/%m/%d %H:%M:%S',
-                '%Y%m%d%H%M%S',
-                '%Y-%m-%d',
-                '%Y/%m/%d',
-                '%Y%m%d'
-            ]
-            
-            for fmt in formats_with_timezone:
-                try:
-                    dt = datetime.datetime.strptime(datetime_str, fmt)
-                    if dt.tzinfo is not None:
-                        dt = dt.astimezone()
-                        return dt.replace(tzinfo=None)
-                    return dt
-                except ValueError:
-                    continue
-            
-            for fmt in formats_without_timezone:
-                try:
-                    dt = datetime.datetime.strptime(datetime_str, fmt)
-                    if 'mov' in fmt.lower() or fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
-                        import time
-                        utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
-                        local_dt = utc_dt.astimezone()
-                        return local_dt.replace(tzinfo=None)
-                    
-                    return dt
-                except ValueError:
-                    continue
-        except (ValueError, TypeError) as e:
-            pass
+        formats_with_timezone = [
+            '%Y:%m:%d %H:%M:%S%z',
+            '%Y-%m-%d %H:%M:%S%z',
+            '%Y/%m/%d %H:%M:%S%z',
+        ]
+        
+        formats_without_timezone = [
+            '%Y:%m:%d %H:%M:%S',
+            '%Y-%m-%d %H:%M:%S', 
+            '%Y/%m/%d %H:%M:%S',
+            '%Y%m%d%H%M%S',
+            '%Y-%m-%d',
+            '%Y/%m/%d',
+            '%Y%m%d'
+        ]
+        
+        # 尝试解析带时区的格式
+        for fmt in formats_with_timezone:
+            try:
+                dt = datetime.datetime.strptime(datetime_str, fmt)
+                if dt.tzinfo is not None:
+                    dt = dt.astimezone()
+                    return dt.replace(tzinfo=None)
+                return dt
+            except ValueError:
+                continue
+        
+        # 尝试解析不带时区的格式
+        for fmt in formats_without_timezone:
+            try:
+                dt = datetime.datetime.strptime(datetime_str, fmt)
+                # 对于特定格式，假定UTC并转换为本地时间
+                if fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
+                    utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    local_dt = utc_dt.astimezone()
+                    return local_dt.replace(tzinfo=None)
+                
+                return dt
+            except ValueError:
+                continue
             
         return None
 
@@ -1034,7 +1059,12 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             exif_data = self.get_exif_data(file_path)
             
-            file_time = datetime.datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S') if exif_data.get('DateTime') else None
+            file_time = None
+            if exif_data.get('DateTime'):
+                try:
+                    file_time = datetime.datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S')
+                except ValueError:
+                    self.log("WARNING", f"无法解析文件时间: {file_path}")
 
             if self.destination_root:
                 base_folder = self.destination_root
@@ -1048,18 +1078,8 @@ class SmartArrangeThread(QtCore.QThread):
             
             full_target_path = target_path / new_file_name_with_ext
             
-            needs_operation = False
-            operation_type = "重命名"
-            
-            if file_path.name != new_file_name_with_ext:
-                needs_operation = True
-                operation_type = "重命名"
-            
-            if file_path.parent != target_path:
-                needs_operation = True
-                operation_type = "移动"
-            
-            if needs_operation:
+            # 检查是否需要重命名或移动
+            if file_path.name != new_file_name_with_ext or file_path.parent != target_path:
                 self.files_to_rename.append({
                     'old_path': str(file_path),
                     'new_path': str(full_target_path)
@@ -1110,8 +1130,6 @@ class SmartArrangeThread(QtCore.QThread):
                 lat = float(exif_data['GPS GPSLatitude'])
                 lon = float(exif_data['GPS GPSLongitude'])
                 
-                # 尝试从缓存获取（使用config_manager的带容差缓存功能，5公里≈0.045度）
-                from config_manager import config_manager
                 cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
                 if cached_address and cached_address != "未知位置":
                     return cached_address

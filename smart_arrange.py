@@ -320,19 +320,21 @@ class SmartArrangeManager(QObject):
                     operation_type=operation_type
                 )
                 
-                try:
-                    self.SmartArrange_thread.log_signal.disconnect()
-                except (TypeError, RuntimeError) as e:
-                    self.log("DEBUG", f"断开log_signal连接失败: {str(e)}")
-                try:
-                    self.SmartArrange_thread.progress_signal.disconnect()
-                except (TypeError, RuntimeError) as e:
-                    self.log("DEBUG", f"断开progress_signal连接失败: {str(e)}")
-                try:
-                    self.SmartArrange_thread.finished.disconnect()
-                except (TypeError, RuntimeError) as e:
-                    self.log("DEBUG", f"断开finished信号连接失败: {str(e)}")
+                # 统一处理信号断开连接
+                signals_to_disconnect = [
+                    ('log_signal', self.handle_log_signal),
+                    ('progress_signal', self.update_progress_bar),
+                    ('finished', self.on_thread_finished)
+                ]
                 
+                for signal_name, slot in signals_to_disconnect:
+                    try:
+                        signal = getattr(self.SmartArrange_thread, signal_name)
+                        signal.disconnect(slot)
+                    except (TypeError, RuntimeError) as e:
+                        self.log("DEBUG", f"断开{signal_name}连接失败: {str(e)}")
+                
+                # 连接信号到对应的槽函数
                 self.SmartArrange_thread.log_signal.connect(self.handle_log_signal)
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
                 self.SmartArrange_thread.finished.connect(self.on_thread_finished)
@@ -345,70 +347,82 @@ class SmartArrangeManager(QObject):
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
-        try:
-            self.parent.btnStartSmartArrange.setText("开始整理")
-            self.parent.btnStartSmartArrange.setEnabled(True)
-        except Exception as e:
-            self.log("ERROR", f"{str(e)}")
-        
-        stopped_status = False
-        try:
-            if hasattr(self.SmartArrange_thread, 'is_stopped'):
-                stopped_status = self.SmartArrange_thread.is_stopped()
-        except Exception as e:
-            self.log("WARNING", f"{str(e)}")
-        
-        try:
-            self.update_progress_bar(0)
-        except Exception as e:
-            self.log("WARNING", f"{str(e)}")
-        
-        if not stopped_status:
+        # 封装异常处理的辅助方法
+        def safe_operation(operation, error_level="ERROR", message_prefix=""):
             try:
-                QMessageBox.information(self.parent, "完成", "操作已完成！")
+                return operation()
             except Exception as e:
-                self.log("WARNING", f"{str(e)}")
+                self.log(error_level, f"{message_prefix}{str(e)}")
+                return None
+        
+        # 恢复按钮状态
+        safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setText", "开始整理")(), 
+                      error_level="ERROR")
+        safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setEnabled", True)(), 
+                      error_level="ERROR")
+        
+        # 检查是否被停止
+        stopped_status = False
+        if hasattr(self.SmartArrange_thread, 'is_stopped'):
+            stopped_status = safe_operation(lambda: self.SmartArrange_thread.is_stopped(), 
+                                           error_level="WARNING", 
+                                           message_prefix="获取线程停止状态失败: ") or False
+        
+        # 重置进度条
+        safe_operation(lambda: self.update_progress_bar(0), 
+                      error_level="WARNING", 
+                      message_prefix="重置进度条失败: ")
+        
+        # 如果不是被停止，则显示完成消息
+        if not stopped_status:
+            safe_operation(lambda: QMessageBox.information(self.parent, "完成", "操作已完成！"), 
+                          error_level="WARNING", 
+                          message_prefix="显示完成消息失败: ")
         
         # 清理线程引用
-        if self.SmartArrange_thread:
-            self.SmartArrange_thread = None
+        self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
         self.update_combobox_state(level)
 
     def update_combobox_state(self, level):
-        current_text = getattr(self.parent, f'comboClassificationLevel{level}').currentText()
+        # 获取当前级别的combo box
+        current_combo = getattr(self.parent, f'comboClassificationLevel{level}')
+        current_text = current_combo.currentText()
 
+        # 处理不分类的情况
         if current_text == "不分类":
             for i in range(level + 1, 6):
-                getattr(self.parent, f'comboClassificationLevel{i}').setEnabled(False)
-                getattr(self.parent, f'comboClassificationLevel{i}').setCurrentIndex(0)
+                combo = getattr(self.parent, f'comboClassificationLevel{i}')
+                combo.setEnabled(False)
+                combo.setCurrentIndex(0)
         else:
+            # 启用下一级并递归更新
             if level < 5:
-                getattr(self.parent, f'comboClassificationLevel{level + 1}').setEnabled(True)
+                next_combo = getattr(self.parent, f'comboClassificationLevel{level + 1}')
+                next_combo.setEnabled(True)
                 self.update_combobox_state(level + 1)
 
-        SmartArrange_paths = [
-            self.get_specific_value(getattr(self.parent, f'comboClassificationLevel{i}').currentText())
-            for i in range(1, 6)
-            if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
-                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
-        ]
+        # 收集有效的分类路径和设置
+        SmartArrange_paths = []
+        self.SmartArrange_settings = []
+        
+        for i in range(1, 6):
+            combo = getattr(self.parent, f'comboClassificationLevel{i}')
+            # 只处理启用且非"不分类"的选项
+            if combo.isEnabled() and combo.currentText() != "不分类":
+                text = combo.currentText()
+                SmartArrange_paths.append(self.get_specific_value(text))
+                self.SmartArrange_settings.append(text)
 
+        # 更新预览路径
         if SmartArrange_paths:
             preview_text = "/".join(SmartArrange_paths)
         else:
             preview_text = "顶层目录（不分类）"
-
+        
         self.parent.previewRoute.setText(preview_text)
-
-        self.SmartArrange_settings = [
-            getattr(self.parent, f'comboClassificationLevel{i}').currentText()
-            for i in range(1, 6)
-            if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
-                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
-        ]
-
+        # 更新操作显示
         self.update_operation_display()
 
     def update_operation_display(self):
@@ -466,50 +480,60 @@ class SmartArrangeManager(QObject):
                 len(filename) <= 255)
 
     def move_tag(self, button):
+        # 检查已选标签数量限制
         if self.selected_frame.layout().count() >= 5:
             return
 
-        original_style = button.styleSheet()
-        button.setProperty('original_style', original_style)
+        # 保存原始属性
+        button.setProperty('original_style', button.styleSheet())
+        button.setProperty('original_text', button.text())
 
-        original_text = button.text()
-        button.setProperty('original_text', original_text)
-
-        if original_text == '自定义':
+        # 处理自定义标签
+        if button.text() == '自定义':
+            # 创建并配置输入对话框
             input_dialog = QInputDialog(self.parent)
             input_dialog.setWindowTitle("自定义标签")
             input_dialog.setLabelText("请输入自定义部分的文件名内容:")
             input_dialog.setTextEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
             input_dialog.setTextValue("")
-            input_dialog.findChild(QtWidgets.QLineEdit).setMaxLength(255)
+            
+            # 设置最大长度限制
+            line_edit = input_dialog.findChild(QtWidgets.QLineEdit)
+            if line_edit:
+                line_edit.setMaxLength(255)
 
-            ok = input_dialog.exec()
-            custom_text = input_dialog.textValue()
-
-            if ok and custom_text:
+            # 显示对话框并处理结果
+            if input_dialog.exec() and input_dialog.textValue():
+                custom_text = input_dialog.textValue()
+                
+                # 验证文件名
                 if not self.is_valid_windows_filename(custom_text):
-                    QMessageBox.warning(self.parent, "文件名无效", f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
+                    QMessageBox.warning(self.parent, "文件名无效", 
+                                      f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
                     return
 
+                # 设置显示文本和自定义内容
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
                 button.setText(display_text)
                 button.setProperty('custom_content', custom_text)
             else:
-                return
+                return  # 用户取消操作
 
+        # 移动按钮从可用区域到已选区域
         self.available_frame.layout().removeWidget(button)
-        button.hide()
-
         self.selected_frame.layout().addWidget(button)
+        button.hide()
         button.show()
 
+        # 更新按钮连接的槽函数
         button.clicked.disconnect()
         button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
 
+        # 更新UI显示
         self.update_example_label()
-
         self.update_operation_display()
 
+        # 当已选满5个标签时，禁用剩余可用标签
         if self.selected_frame.layout().count() >= 5:
             for btn in self.tag_buttons.values():
                 if btn.parent() == self.available_frame:
@@ -550,42 +574,44 @@ class SmartArrangeManager(QObject):
 
     def handle_log_signal(self, level, message):
         """处理日志信号"""
-        # 移除DEBUG级别日志过滤，让不同级别的日志都能显示
         # 过滤英文日志，只保留包含中文的日志
-        # 增强过滤逻辑：确保只有包含中文字符的日志才会被处理
-        if not any('\u4e00' <= char <= '\u9fff' for char in str(message)):
+        message_str = str(message)
+        if not any('\u4e00' <= char <= '\u9fff' for char in message_str):
             return
             
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
-        # 检查message是否已经包含时间戳，如果包含则不重复添加
-        if "[" in message and "]" in message and len(message) > 20:
-            # 假设已经是格式化的日志消息
-            final_message = message
+        # 格式化消息 - 检查是否已包含时间戳
+        if "[" in message_str and "]" in message_str and len(message_str) > 20:
+            final_message = message_str
         else:
-            # 生成时间戳并格式化消息
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            final_message = f"[{timestamp}] {level}: {message}"
+            final_message = f"[{timestamp}] {level}: {message_str}"
         
-        if log_component:
-            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
-            color = color_map.get(level, '#006400')
+        # 定义日志颜色映射
+        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
+        color = color_map.get(level, '#006400')
             
+        # 显示日志
+        if log_component:
             try:
-                # 添加HTML样式以增强可读性和复制体验
-                log_component.append(f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
-                                   f'<span style="color:{color};">{final_message}</span>'  \
-                                   f'</div>')
+                # 添加HTML样式以增强可读性
+                log_component.append(
+                    f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
+                    f'<span style="color:{color};">{final_message}</span>'  \
+                    f'</div>'
+                )
             except Exception as e:
                 print(f"无法写入整理日志: {e}")
         else:
-            # 控制台输出时也使用清晰的格式
-            print(f"{final_message}")
-            try:
-                if hasattr(self.parent, 'log'):
-                    self.parent.log(level, message)
-            except Exception as e:
-                print(f"调用父组件log方法失败: {str(e)}")
+            # 控制台输出
+            print(final_message)
+            # 尝试调用父组件的log方法
+            if hasattr(self.parent, 'log'):
+                try:
+                    self.parent.log(level, message_str)
+                except Exception as e:
+                    print(f"调用父组件log方法失败: {str(e)}")
 
     def log(self, level, message):
         try:
