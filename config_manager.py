@@ -8,13 +8,11 @@ import shutil
 
 logger = logging.getLogger(__name__)
 
-
 def _thread_safe_method(func):
     def wrapper(self, *args, **kwargs):
         with self._lock:
             return func(self, *args, **kwargs)
     return wrapper
-
 
 class ConfigManager:
     CONFIG_VERSION = "1.1"
@@ -82,13 +80,11 @@ class ConfigManager:
                 if key not in self.config["settings"]:
                     self.config["settings"][key] = value
             
-            # 确保api_limits配置正确
             if "api_limits" not in self.config:
                 self.config["api_limits"] = default_config["api_limits"]
             elif "gaode" not in self.config["api_limits"]:
                 self.config["api_limits"]["gaode"] = default_config["api_limits"]["gaode"]
             else:
-                # 更新最大每日调用次数为300
                 self.config["api_limits"]["gaode"]["max_daily_calls"] = 300
             
             self.config["version"] = self.CONFIG_VERSION
@@ -217,7 +213,6 @@ class ConfigManager:
                 distance_squared = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2)
                 if distance_squared <= tolerance_squared:
                     self._update_cache_access_time(cached_data)
-                    # 在找到容差范围内的缓存时，异步保存更新
                     threading.Thread(target=self._save_location_cache_no_lock, daemon=True).start()
                     return cached_data["address"]
             except (ValueError, IndexError):
@@ -314,12 +309,12 @@ class ConfigManager:
                 "last_opened_folder": '',
                 "window_position": {'x': 100, 'y': 100},
                 "window_size": {'width': 942, 'height': 580},
-                "location_cache_tolerance": 0.0135  # 位置缓存容差，默认直径3公里(约0.0135度)
+                "location_cache_tolerance": 0.0135
             },
             "api_limits": {
                 "gaode": {
                     "daily_calls": 0,
-                    "max_daily_calls": 300,  # 每日最多300次请求
+                    "max_daily_calls": 300,
                     "last_reset_date": current_time.strftime("%Y-%m-%d"),
                     "last_call_time": None
                 }
@@ -332,7 +327,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def _check_and_reset_daily_limit(self) -> None:
-        """检查并在必要时重置每日请求限制"""
         current_date = datetime.now().strftime("%Y-%m-%d")
         if self.config["api_limits"]["gaode"]["last_reset_date"] != current_date:
             self.config["api_limits"]["gaode"]["daily_calls"] = 0
@@ -341,7 +335,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def can_make_api_call(self) -> bool:
-        """检查是否可以进行新的API调用"""
         self._check_and_reset_daily_limit()
         current_calls = self.config["api_limits"]["gaode"]["daily_calls"]
         max_calls = self.config["api_limits"]["gaode"]["max_daily_calls"]
@@ -349,7 +342,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def increment_api_call(self) -> None:
-        """增加API调用计数"""
         self._check_and_reset_daily_limit()
         self.config["api_limits"]["gaode"]["daily_calls"] += 1
         self.config["api_limits"]["gaode"]["last_call_time"] = datetime.now().isoformat()
@@ -357,7 +349,6 @@ class ConfigManager:
     
     @_thread_safe_method
     def get_remaining_daily_calls(self) -> int:
-        """获取剩余的每日API调用次数"""
         self._check_and_reset_daily_limit()
         current_calls = self.config["api_limits"]["gaode"]["daily_calls"]
         max_calls = self.config["api_limits"]["gaode"]["max_daily_calls"]
@@ -368,7 +359,6 @@ class ConfigManager:
         self.location_cache.clear()
         save_result = self.save_location_cache()
         
-        # 清理_internal目录下的缓存文件
         if os.path.exists(self.cache_file):
             try:
                 os.remove(self.cache_file)
@@ -377,6 +367,5 @@ class ConfigManager:
                 return False
                 
         return save_result
-
 
 config_manager = ConfigManager()
