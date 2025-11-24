@@ -550,11 +550,8 @@ class SmartArrangeManager(QObject):
             
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
-        if "[" in message_str and "]" in message_str and len(message_str) > 20:
-            final_message = message_str
-        else:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            final_message = f"[{timestamp}] {level}: {message_str}"
+        # 直接使用传入的message，因为log方法中已经包含完整的时间戳和格式
+        final_message = message_str
         
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')

@@ -47,6 +47,8 @@ class SmartArrangeThread(QtCore.QThread):
 
     def __init__(self, parent=None, folders=None, classification_structure=None, file_name_structure=None,
                  destination_root=None, separator="-", time_derive="文件创建时间", operation_type=0):
+        # 添加日志计数器，用于限制日志频率
+        self.log_counter = 0
         super().__init__(parent)
         # 初始化所有实例变量，提供默认值以避免潜在的None引用问题
         self.parent = parent
@@ -375,8 +377,9 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level, message):
-        current_time = datetime.datetime.now().strftime('%H:%M:%S')
-        log_message = f"[{current_time}] [{level}] {message}"
+        # 统一日志格式，与smart_arrange.py保持一致
+        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+        log_message = f"[{current_time}] {level}: {message}"
         self.log_signal.emit(level, log_message)
     
     def get_exif_data(self, file_path):
@@ -1174,6 +1177,9 @@ class SmartArrangeThread(QtCore.QThread):
         else:
             target_path = file_path.parent
         
+        # 记录构建路径的开始
+        original_path = target_path
+        
         for level in self.classification_structure:
             folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
             if folder_name:
@@ -1182,6 +1188,10 @@ class SmartArrangeThread(QtCore.QThread):
         file_type = get_file_type(file_path)
         target_path = target_path / file_type
         
+        # 每处理10个文件记录一次路径构建信息，平衡日志详细度和简洁性
+        self.log_counter += 1
+        if self.log_counter % 10 == 0:
+            self.log("INFO", f"构建目标路径示例: {original_path} -> {target_path} (文件类型: {file_type})")
         return target_path
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
@@ -1236,8 +1246,8 @@ class SmartArrangeThread(QtCore.QThread):
         elif level == "按扩展名":
             # 获取文件扩展名并转为大写
             file_ext = os.path.splitext(str(file_path))[1].strip('.').upper()
-            # 记录扩展名信息
-            self.log("DEBUG", f"文件 {file_path} 的扩展名为: {file_ext}")
+            # 仅在必要时记录日志，避免每个文件都记录扩展名信息
+            # 可以考虑在构建路径完成后统一记录
             return file_ext
         
         else:
