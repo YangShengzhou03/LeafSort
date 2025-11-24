@@ -136,12 +136,9 @@ class SmartArrangeManager(QObject):
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
             if not self.destination_root:
-                self.log("INFO", "尝试从folder_page获取目标文件夹")
                 import os
                 if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
-                    self.log("INFO", "folder_page存在且有get_target_folder方法")
                     target_folder = self.folder_page.get_target_folder()
-                    self.log("INFO", f"从folder_page获取的目标文件夹: {target_folder}")
                     if target_folder:
                         destination = target_folder
                         if not os.access(destination, os.W_OK):

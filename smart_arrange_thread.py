@@ -83,7 +83,7 @@ class SmartArrangeThread(QtCore.QThread):
             else:
                 self.total_files += len([f for f in os.listdir(folder_path) if (folder_path / f).is_file()])
         
-        self.log("DEBUG", f"总文件数: {self.total_files}")
+        self.log("DEBUG", f"待处理总文件数: {self.total_files}")
 
     def load_geographic_data(self):
         try:
@@ -152,7 +152,7 @@ class SmartArrangeThread(QtCore.QThread):
                         self.log("WARNING", f"删除空文件夹时出错了: {str(e)}")
 
                 self.log("DEBUG", "="*40)
-                self.log("DEBUG", f"文件整理完成了，成功处理了 {success_count} 个文件，失败了 {fail_count} 个文件")
+                self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
                 self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
                 self.progress_signal.emit(100)
             else:
@@ -1188,10 +1188,10 @@ class SmartArrangeThread(QtCore.QThread):
         file_type = get_file_type(file_path)
         target_path = target_path / file_type
         
-        # 每处理10个文件记录一次路径构建信息，平衡日志详细度和简洁性
+        # 记录构建目标路径示例，限制日志频率
         self.log_counter += 1
         if self.log_counter % 10 == 0:
-            self.log("INFO", f"构建目标路径示例: {original_path} -> {target_path} (文件类型: {file_type})")
+            self.log("WARNING", f"构建文件夹示例: {original_path} -> {target_path} (文件类型: {file_type})")
         return target_path
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
