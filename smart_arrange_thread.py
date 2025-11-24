@@ -1777,7 +1777,7 @@ class SmartArrangeThread(QtCore.QThread):
         """
         # 处理标签字典情况
         if isinstance(tag_info, dict):
-            return self._process_tag_dict(tag_info)
+            return self._process_tag_dict(tag_info, file_context)
         
         # 确保exif_data可用
         if 'exif_data' not in file_context or file_context['exif_data'] is None:
@@ -1855,12 +1855,11 @@ class SmartArrangeThread(QtCore.QThread):
         processor = tag_processors.get(tag_info)
         return processor(file_context) if processor else ""
     
-    def _process_tag_dict(self, tag_dict):
+    def _process_tag_dict(self, tag_dict, file_context):
         """处理标签字典格式"""
         # 特殊处理复合标签：年份-月份-日
         if tag_dict.get('tag') == "年份-月份-日":
             # 获取文件时间
-            file_context = self._file_context
             if file_context and 'file_time' in file_context:
                 year = self._get_year(file_context)
                 month = self._get_month(file_context)
@@ -1871,7 +1870,11 @@ class SmartArrangeThread(QtCore.QThread):
         if tag_dict.get('tag') == "自定义" or tag_dict.get('content') is not None:
             return tag_dict.get('content', "")
         # 处理标签字典中的标准标签
-        return tag_dict.get('tag', "")
+        tag = tag_dict.get('tag', "")
+        if tag:
+            # 对于标准标签，使用_process_tag方法处理
+            return self._process_tag(tag, file_context)
+        return ""
     
     def _get_weekday_name(self, file_time):
         """获取星期名称"""
@@ -2140,4 +2143,70 @@ class SmartArrangeThread(QtCore.QThread):
             if isinstance(model, str):
                 model = model.strip().strip('"\'')
             return model
-        return "未知设备"
+        return "未知型号"
+    
+    def _get_geographic_location(self, exif_data, location_type):
+        """获取地理位置信息
+        
+        Args:
+            exif_data: EXIF数据字典
+            location_type: 位置类型，可以是'province'（省份）或'city'（城市）
+            
+        Returns:
+            str: 地理位置信息，如果无法获取则返回"未知省份"或"未知城市"
+        """
+        try:
+            # 尝试从EXIF数据中获取GPS信息
+            gps_lat = None
+            gps_lon = None
+            
+            # 检查不同可能的GPS字段
+            if 'GPS GPSLatitude' in exif_data and 'GPS GPSLongitude' in exif_data:
+                try:
+                    # 处理exifread格式的GPS数据
+                    lat_data = exif_data['GPS GPSLatitude'].values
+                    lon_data = exif_data['GPS GPSLongitude'].values
+                    lat_ref = str(exif_data.get('GPS GPSLatitudeRef', 'N'))
+                    lon_ref = str(exif_data.get('GPS GPSLongitudeRef', 'E'))
+                    
+                    # 转换度分秒格式到十进制度
+                    def dms_to_decimal(dms, ref):
+                        degrees = float(dms[0].num) / float(dms[0].den)
+                        minutes = float(dms[1].num) / float(dms[1].den)
+                        seconds = float(dms[2].num) / float(dms[2].den)
+                        decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
+                        if ref in ['S', 'W']:
+                            decimal = -decimal
+                        return decimal
+                    
+                    gps_lat = dms_to_decimal(lat_data, lat_ref)
+                    gps_lon = dms_to_decimal(lon_data, lon_ref)
+                except (ValueError, TypeError, AttributeError):
+                    pass
+            
+            # 如果没有找到标准GPS字段，尝试其他格式
+            if gps_lat is None or gps_lon is None:
+                # 尝试直接从exif_data中获取已解析的GPS坐标
+                if 'GPSLatitude' in exif_data and 'GPSLongitude' in exif_data:
+                    gps_lat = exif_data['GPSLatitude']
+                    gps_lon = exif_data['GPSLongitude']
+                
+                # 尝试从GPS信息字典中解析
+                elif 'GPSInfo' in exif_data:
+                    lat, lon = self.parse_gps_coordinates(exif_data['GPSInfo'])
+                    if lat is not None and lon is not None:
+                        gps_lat = lat
+                        gps_lon = lon
+            
+            # 如果获取到了GPS坐标，尝试获取地理位置
+            if gps_lat is not None and gps_lon is not None:
+                province, city = self.get_city_and_province(gps_lat, gps_lon)
+                if location_type == 'province':
+                    return province
+                elif location_type == 'city':
+                    return city
+        except Exception as e:
+            self.log("DEBUG", f"获取地理位置失败: {str(e)}")
+        
+        # 默认返回值
+        return "未知省份" if location_type == 'province' else "未知城市"
