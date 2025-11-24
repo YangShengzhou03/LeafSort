@@ -1268,10 +1268,14 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
                 if cached_address and cached_address != "未知位置":
+                    logger.info(f"缓存命中! 坐标({lat},{lon})使用缓存地址: {cached_address}")
                     return cached_address
+                else:
+                    logger.info(f"缓存未命中，需要发送网络请求获取坐标({lat},{lon})的地址")
                 
                 address = get_address_from_coordinates(lat, lon)
                 if address and address != "未知位置":
+                    logger.info(f"网络请求成功，正在缓存坐标({lat},{lon})的地址: {address}")
                     config_manager.cache_location(lat, lon, address)
                     return address
                 

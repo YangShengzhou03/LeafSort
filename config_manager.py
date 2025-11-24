@@ -34,10 +34,10 @@ class ConfigManager:
         return os.path.join(app_dir, 'config.json')
     
     def _get_cache_file_path(self) -> os.PathLike:
-        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        cache_dir = os.path.join(app_dir, 'cache')
-        os.makedirs(cache_dir, exist_ok=True)
-        return os.path.join(cache_dir, 'location_cache.json')
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        internal_dir = os.path.join(app_dir, '_internal')
+        os.makedirs(internal_dir, exist_ok=True)
+        return os.path.join(internal_dir, 'cache_location.json')
     
     def _ensure_config_exists(self) -> None:
         if not os.path.exists(self.config_file):
@@ -323,13 +323,12 @@ class ConfigManager:
         self.location_cache.clear()
         save_result = self.save_location_cache()
         
-        cache_dir = os.path.join(self.config_file.parent, 'cache')
-        if os.path.exists(cache_dir):
+        # 清理_internal目录下的缓存文件
+        if os.path.exists(self.cache_file):
             try:
-                shutil.rmtree(cache_dir)
-                os.makedirs(cache_dir, exist_ok=True)
+                os.remove(self.cache_file)
             except Exception as e:
-                logger.error(f"清理缓存目录时出错: {str(e)}")
+                logger.error(f"清理缓存文件时出错: {str(e)}")
                 return False
                 
         return save_result

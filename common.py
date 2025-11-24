@@ -124,16 +124,20 @@ class GeocodingService:
     
     def get_address_from_coordinates(self, lat, lon):
         loc = f"{lon},{lat}"
+        logger.info(f"开始转换坐标到地址: 纬度={lat}, 经度={lon}")
         
         with self._lock:
             cookies, key = self._load_cached_credentials()
             
             if not (cookies and key):
+                logger.info("没有找到缓存的凭证，需要获取新凭证")
                 cookies, key = self._fetch_credentials()
                 if cookies and key:
                     self._save_credentials(cookies, key)
         
-        return self._call_geocoding_api(loc, cookies, key)
+        address = self._call_geocoding_api(loc, cookies, key)
+        logger.info(f"坐标转换完成: 纬度={lat}, 经度={lon}, 地址={address}")
+        return address
     
     def _load_cached_credentials(self):
         current_time = time.time()
@@ -196,6 +200,7 @@ class GeocodingService:
         
         try:
             url = self.url_template.format(key=key, loc=loc)
+            logger.info(f"向高德地图API发送网络请求, 位置坐标: {loc}")
             with requests.get(url, headers=self.headers, cookies=cookies, timeout=10) as resp:
                 resp.raise_for_status()
                 
