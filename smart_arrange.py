@@ -35,7 +35,6 @@ class SmartArrangeManager(QObject):
             "_": "_",
             ".": ".",
             ",": ",",
-            "|": "|",
             "~": "~"
         }
 

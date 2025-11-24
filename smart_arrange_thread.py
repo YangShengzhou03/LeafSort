@@ -1063,7 +1063,14 @@ class SmartArrangeThread(QtCore.QThread):
         for tag in self.file_name_structure:
             parts.append(self.get_file_name_part(tag, file_path, file_time, original_name, exif_data))
         
-        return self.separator.join(parts)
+        # 生成文件名
+        file_name = self.separator.join(parts)
+        
+        invalid_chars = '<>:"/\\|?*'
+        for char in invalid_chars:
+            file_name = file_name.replace(char, '_')
+            
+        return file_name
         
     def process_single_file(self, file_path, base_folder=None):
         try:
@@ -1229,4 +1236,4 @@ class SmartArrangeThread(QtCore.QThread):
         
         else:
             return "未知"
-
+
