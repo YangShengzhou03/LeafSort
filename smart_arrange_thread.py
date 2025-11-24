@@ -128,6 +128,28 @@ class SmartArrangeThread(QtCore.QThread):
             self.load_geographic_data()
             self.calculate_total_files()
             
+            # 显示文件夹目录构成信息
+            if self.classification_structure:
+                # 格式化分类结构为更易读的形式
+                classification_str = " > ".join(self.classification_structure)
+                self.log("INFO", f"文件夹目录构成: {classification_str}")
+            else:
+                self.log("INFO", "文件夹目录构成: 未设置分类结构")
+            
+            # 显示文件名构成信息
+            if self.file_name_structure:
+                # 格式化文件名结构为更易读的形式
+                file_name_parts = []
+                for part in self.file_name_structure:
+                    if isinstance(part, dict) and 'tag' in part:
+                        file_name_parts.append(part['tag'])
+                    else:
+                        file_name_parts.append(str(part))
+                file_name_str = f"{self.separator}".join(file_name_parts)
+                self.log("INFO", f"文件名构成: {file_name_str}")
+            else:
+                self.log("INFO", "文件名构成: 未设置文件名结构")
+            
             success_count = 0
             fail_count = 0
             self.processed_files = 0
@@ -324,13 +346,13 @@ class SmartArrangeThread(QtCore.QThread):
                     if hasattr(self, 'operation_type') and self.operation_type == 0:
                         # 复制文件
                         shutil.copy2(old_path, unique_path)
-                        self.log("INFO", f"复制文件成功: {old_path.name} -> {unique_path.name}")
+                        self.log("INFO", f"复制文件成功: {old_path} -> {unique_path}")
                     else:
                         # 移动文件
                         if old_path.parent == unique_path.parent:
                             # 同一目录下重命名
                             old_path.rename(unique_path)
-                            self.log("DEBUG", f"重命名文件成功: {old_path.name} -> {unique_path.name}")
+                            self.log("DEBUG", f"重命名文件成功: {old_path} -> {unique_path}")
                         else:
                             # 跨目录移动
                             # 先尝试直接移动
@@ -341,7 +363,7 @@ class SmartArrangeThread(QtCore.QThread):
                                 self.log("WARNING", f"直接移动失败，尝试复制后删除: {old_path}")
                                 shutil.copy2(old_path, unique_path)
                                 old_path.unlink()
-                            self.log("INFO", f"移动文件成功: {old_path.name} -> {unique_path}")
+                            self.log("INFO", f"移动文件成功: {old_path} -> {unique_path}")
                     
                     renamed_files += 1
                     
@@ -580,27 +602,27 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level, message):
-        # 简化日志记录
-        log_message = f"[{level}] {message}"
+        # 直接发送原始消息，避免重复格式化
         # 确保log_signal存在且可以发射信号
         if hasattr(self, 'log_signal') and self.log_signal and callable(getattr(self.log_signal, 'emit', None)):
             try:
-                self.log_signal.emit(level, log_message)
+                # 直接发送level和原始message，由handle_log_signal统一格式化
+                self.log_signal.emit(level, message)
             except Exception as e:
                 logger.error(f"发送日志信号失败: {str(e)}")
         else:
-            # 如果信号不可用，直接记录到logger
-            logger.error(f"日志信号不可用，消息: {log_message}")
-        
-        # 记录不同级别的日志
-        if level == "ERROR":
-            logger.error(message)
-        elif level == "WARNING":
-            logger.warning(message)
-        elif level == "INFO":
-            logger.info(message)
-        elif level == "DEBUG":
-            logger.debug(message)
+            # 如果信号不可用，记录到logger
+            if level == "ERROR":
+                logger.error(message)
+            elif level == "WARNING":
+                logger.warning(message)
+            elif level == "INFO":
+                logger.info(message)
+            elif level == "DEBUG":
+                logger.debug(message)
+            # 同时输出到控制台，使用格式化样式
+            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            print(f"[{timestamp}] {level}: {message}")
     
     def get_exif_data(self, file_path):
         exif_data = {}
@@ -1806,6 +1828,15 @@ class SmartArrangeThread(QtCore.QThread):
         
     def _process_tag(self, tag_info, file_context):
         """处理单个标签"""
+        # 特殊处理复合标签 "年份-月份-日"
+        if tag_info == "年份-月份-日" and file_context.get('file_time'):
+            year = self._get_year(file_context)
+            month = self._get_month(file_context)
+            day = self._get_day(file_context)
+            if year and month and day:
+                return f"{year}-{month}-{day}"
+            return ""
+        
         # 使用字典映射代替多个if语句和lambda表达式
         tag_processors = {
             "原文件名": self._get_original_name,
@@ -1826,8 +1857,20 @@ class SmartArrangeThread(QtCore.QThread):
     
     def _process_tag_dict(self, tag_dict):
         """处理标签字典格式"""
+        # 特殊处理复合标签：年份-月份-日
+        if tag_dict.get('tag') == "年份-月份-日":
+            # 获取文件时间
+            file_context = self._file_context
+            if file_context and 'file_time' in file_context:
+                year = self._get_year(file_context)
+                month = self._get_month(file_context)
+                day = self._get_day(file_context)
+                return f"{year}-{month}-{day}"
+            return ""
+        
         if tag_dict.get('tag') == "自定义" or tag_dict.get('content') is not None:
             return tag_dict.get('content', "")
+        # 处理标签字典中的标准标签
         return tag_dict.get('tag', "")
     
     def _get_weekday_name(self, file_time):

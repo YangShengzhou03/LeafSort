@@ -1,7 +1,7 @@
 from datetime import datetime
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtWidgets import QMessageBox, QInputDialog
 from smart_arrange_thread import SmartArrangeThread
 
 class SmartArrangeManager(QObject):
@@ -100,7 +100,7 @@ class SmartArrangeManager(QObject):
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
         self.log("DEBUG", f"thread_running: {thread_running}")
         if thread_running:
-            self.log("INFO", "Stop operation")
+            self.log("INFO", "停止操作")
             self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
@@ -114,11 +114,11 @@ class SmartArrangeManager(QObject):
             
             self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not self.selected_folders:
-                self.log("WARNING", "No folder selected")
+                self.log("WARNING", "未选择文件夹")
                 try:
                     QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要整理的文件夹！")
                 except Exception as e:
-                    self.log("ERROR", f"Failed to show warning message: {e}")
+                    self.log("ERROR", f"显示警告消息失败: {e}")
                 return
             
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
@@ -144,7 +144,7 @@ class SmartArrangeManager(QObject):
                         display_path = destination + '/'
                         if len(display_path) > 20:
                             display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                        operation_text = "Destination: "
+                        operation_text = "目标路径: "
                         self.parent.copyRoute.setText(f"{operation_text}{display_path}")
                     else:
                         # 如果folder_page中没有选择目标文件夹，则弹出选择对话框
@@ -245,18 +245,18 @@ class SmartArrangeManager(QObject):
             from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
-                "Confirm?",
-                "Operation cannot be undone!\n\n"
-                "• Move: Files moved, originals removed\n"
-                "• Copy: Files copied, originals remain\n\n"
-                "Backup important files!\n\n"
-                "Are you sure?",
+                "确认操作?",
+                "操作无法撤销!\n\n"
+                "• 移动: 文件移动后，原始文件将被删除\n"
+                "• 复制: 文件复制后，原始文件保留\n\n"
+                "请备份重要文件!\n\n"
+                "确定继续?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "Cancelled")
+                self.log("INFO", "已取消")
                 return
 
             self.log("DEBUG", "confirmed")
@@ -550,21 +550,37 @@ class SmartArrangeManager(QObject):
 
     def handle_log_signal(self, level, message):
         """处理日志信号"""
+        # 移除DEBUG级别日志过滤，让不同级别的日志都能显示
+        # 过滤英文日志，只保留包含中文的日志
+        # 增强过滤逻辑：确保只有包含中文字符的日志才会被处理
+        if not any('\u4e00' <= char <= '\u9fff' for char in str(message)):
+            return
+            
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
+        
+        # 检查message是否已经包含时间戳，如果包含则不重复添加
+        if "[" in message and "]" in message and len(message) > 20:
+            # 假设已经是格式化的日志消息
+            final_message = message
+        else:
+            # 生成时间戳并格式化消息
+            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            final_message = f"[{timestamp}] {level}: {message}"
         
         if log_component:
             color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
             color = color_map.get(level, '#006400')
             
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = f"[{timestamp}] {message}"
-            
             try:
-                log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
+                # 添加HTML样式以增强可读性和复制体验
+                log_component.append(f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
+                                   f'<span style="color:{color};">{final_message}</span>'  \
+                                   f'</div>')
             except Exception as e:
                 print(f"无法写入整理日志: {e}")
         else:
-            print(f"[{level}] {message}")
+            # 控制台输出时也使用清晰的格式
+            print(f"{final_message}")
             try:
                 if hasattr(self.parent, 'log'):
                     self.parent.log(level, message)
