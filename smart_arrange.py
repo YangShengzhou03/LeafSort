@@ -185,11 +185,11 @@ class SmartArrangeManager(QObject):
             
             self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not self.selected_folders:
-                self.log("WARNING", "No folders selected")
+                self.log("WARNING", "没有选择文件夹")
                 try:
-                    QtWidgets.QMessageBox.warning(self.parent, "Warning", "Please select folders to organize first!")
+                    QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要整理的文件夹！")
                 except Exception as e:
-                    self.log("ERROR", f"Failed to show warning message: {str(e)}")
+                    self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return
             
             if not self.destination_root and not self.select_destination_folder():
@@ -299,32 +299,17 @@ class SmartArrangeManager(QObject):
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
-        def safe_operation(operation, error_level="ERROR", message_prefix=""):
-            try:
-                return operation()
-            except Exception as e:
-                self.log(error_level, f"{message_prefix}{str(e)}")
-                return None
-        
-        safe_operation(lambda: self.parent.btnStartSmartArrange.setText("开始整理"), 
-                      error_level="ERROR")
-        safe_operation(lambda: self.parent.btnStartSmartArrange.setEnabled(True), 
-                      error_level="ERROR")
+        self.parent.btnStartSmartArrange.setText("开始整理")
+        self.parent.btnStartSmartArrange.setEnabled(True)
         
         stopped_status = False
         if hasattr(self.SmartArrange_thread, 'is_stopped'):
-            stopped_status = safe_operation(lambda: self.SmartArrange_thread.is_stopped(), 
-                                           error_level="WARNING", 
-                                           message_prefix="获取线程停止状态失败: ") or False
+            stopped_status = self.SmartArrange_thread.is_stopped() or False
         
-        safe_operation(lambda: self.update_progress_bar(0), 
-                      error_level="WARNING", 
-                      message_prefix="重置进度条失败: ")
+        self.update_progress_bar(0)
         
         if not stopped_status:
-                safe_operation(lambda: QMessageBox.information(self.parent, "Completed", "Operation completed!"), 
-                              error_level="WARNING", 
-                              message_prefix="Failed to show completion message: ")
+            QMessageBox.information(self.parent, "Completed", "Operation completed!")
         
         self.SmartArrange_thread = None
 
@@ -504,27 +489,20 @@ class SmartArrangeManager(QObject):
     def handle_log_signal(self, level, message):
         message_str = str(message)
         
-        log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
-        
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
             
-        if log_component:
-            try:
-                log_component.append(
-                    f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
-                    f'<span style="color:{color};">{message_str}</span>'  \
-                    f'</div>'
-                )
-            except Exception as e:
-                logger.error(f"Failed to append log to UI: {str(e)}")
-        else:
-            logger.warning(f"Log component not found, cannot display: {message_str}")
-            if hasattr(self.parent, 'log'):
-                try:
-                    self.parent.log(level, message_str)
-                except Exception as e:
-                    logger.error(f"Failed to call parent log method: {str(e)}")
+        try:
+            self.parent.txtSmartArrangeLog.append(
+                f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
+                f'<span style="color:{color};">{message_str}</span>'  \
+                f'</div>'
+            )
+        except AttributeError:
+            pass
+        
+        if hasattr(self.parent, 'log'):
+            self.parent.log(level, message_str)
 
     def log(self, level: str, message: str) -> None:
         try:

@@ -45,7 +45,7 @@
   },
   "last_modified": "2025-11-23T00:38:07.844724",
   "cache_settings": {
-    "max_location_cache_size": 50000,
+    "max_location_cache_size": 200000,
     "cache_expiry_days": 30
   }
 }
