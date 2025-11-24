@@ -208,6 +208,8 @@ class ConfigManager:
                 distance_squared = ((latitude - cached_lat) ** 2 + (longitude - cached_lon) ** 2)
                 if distance_squared <= tolerance_squared:
                     self._update_cache_access_time(cached_data)
+                    # 在找到容差范围内的缓存时，异步保存更新
+                    threading.Thread(target=self._save_location_cache_no_lock, daemon=True).start()
                     return cached_data["address"]
             except (ValueError, IndexError):
                 continue

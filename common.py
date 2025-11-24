@@ -196,7 +196,7 @@ class GeocodingService:
     def _call_geocoding_api(self, loc, cookies, key):
         if not (cookies and key):
             logger.warning("缺少地理编码凭证")
-            return "获取地址失败"
+            return "未知位置"
         
         try:
             url = self.url_template.format(key=key, loc=loc)
@@ -207,13 +207,14 @@ class GeocodingService:
                 if resp.status_code == 200 and "formatted_address" in resp.text:
                     try:
                         json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
-                        return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
+                        result = json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
+                        return result if result else "未知位置"
                     except (ValueError, json.JSONDecodeError) as parse_error:
                         logger.error(f"解析地理编码响应失败: {str(parse_error)}")
         except requests.exceptions.RequestException as e:
             logger.error(f"地理编码API调用失败: {str(e)}")
         
-        return "获取地址失败"
+        return "未知位置"
 
 
 _resource_manager = ResourceManager()

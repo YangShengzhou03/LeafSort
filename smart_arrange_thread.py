@@ -1273,16 +1273,29 @@ class SmartArrangeThread(QtCore.QThread):
                     logger.info(f"缓存命中! 坐标({lat},{lon})使用缓存地址: {cached_address}")
                     return cached_address
                 else:
-                    logger.info(f"缓存未命中，需要发送网络请求获取坐标({lat},{lon})的地址")
+                    logger.info(f"缓存未命中，尝试获取坐标({lat},{lon})的地址")
                 
-                address = get_address_from_coordinates(lat, lon)
-                if address and address != "未知位置":
-                    logger.info(f"网络请求成功，正在缓存坐标({lat},{lon})的地址: {address}")
-                    config_manager.cache_location(lat, lon, address)
-                    return address
+                # 先尝试获取省份和城市信息作为备选
+                province, city = self.get_city_and_province(lat, lon)
+                local_location = f"{province}{city}" if city != "未知城市" else province
                 
-                province, city = self.get_city_and_province(exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude'])
-                return f"{province}{city}" if city != "未知城市" else province
+                # 再尝试网络请求获取更详细的地址
+                try:
+                    address = get_address_from_coordinates(lat, lon)
+                    if address and address != "未知位置":
+                        logger.info(f"网络请求成功，正在缓存坐标({lat},{lon})的地址: {address}")
+                        config_manager.cache_location(lat, lon, address)
+                        return address
+                    else:
+                        logger.info(f"网络请求失败或未获取到有效地址，使用本地地理数据: {local_location}")
+                except Exception as e:
+                    logger.error(f"获取地址时发生异常: {str(e)}，使用本地地理数据: {local_location}")
+                
+                # 如果有本地地理数据且不是"未知位置"，则缓存它
+                if local_location != "未知省份" and local_location != "未知省份未知城市":
+                    config_manager.cache_location(lat, lon, local_location)
+                
+                return local_location
             return "未知位置"
         elif tag == "自定义":
             return "自定义"
