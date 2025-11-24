@@ -20,7 +20,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.folder_page = FolderPage(self)
         self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
         self.write_exif_page = WriteExifManager(self)
-        print("INFO: 已初始化所有页面，SmartArrangeManager已连接到FolderPage")
 
     def _setup_ui(self):
         self.setWindowTitle("枫叶相册")
@@ -43,18 +42,16 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tray_menu.addSeparator()
         tray_menu.addAction(action_exit)
         
-        # 加载并应用指定的CSS样式文件
         css_path = get_resource_path('resources/stylesheet/menu.setStyleSheet.css')
         try:
             with open(css_path, 'r', encoding='utf-8') as f:
-                menu_style = f.read()
-                tray_menu.setStyleSheet(menu_style)
-        except Exception as e:
-            print(f"加载菜单样式文件失败: {e}")
+                tray_menu.setStyleSheet(f.read())
+        except Exception:
+            pass
         
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._handle_tray_activation)
-        self.tray_icon.show()  # 确保托盘图标始终显示
+        self.tray_icon.show()
 
     def _connect_signals(self):
         self.btnMinimize.clicked.connect(self.showMinimized)

@@ -28,12 +28,10 @@ class MediaTypeDetector:
     
     def _build_mime_mapping(self):
         return {
-            # 常见图片格式
             **{f'image/{fmt}': (ext, 'image') for fmt, ext in {
                 'jpeg': 'jpg', 'png': 'png', 'gif': 'gif', 'tiff': 'tiff',
                 'webp': 'webp', 'heic': 'heic', 'avif': 'avif', 'heif': 'heif'
             }.items()},
-            # RAW相机格式
             **{f'image/{fmt}': (ext, 'image') for fmt, ext in {
                 'x-canon-cr2': 'cr2', 'x-canon-cr3': 'cr3', 'x-nikon-nef': 'nef',
                 'x-sony-arw': 'arw', 'x-olympus-orf': 'orf', 'x-panasonic-raw': 'raw',
@@ -41,7 +39,6 @@ class MediaTypeDetector:
                 'x-pentax-pef': 'pef', 'x-kodak-dcr': 'dcr', 'x-kodak-k25': 'k25',
                 'x-kodak-kdc': 'kdc', 'x-minolta-mrw': 'mrw', 'x-sigma-x3f': 'x3f'
             }.items()},
-            # 视频格式
             **{f'video/{fmt}': (ext, 'video') for fmt, ext in {
                 'mp4': 'mp4', 'x-msvideo': 'avi', 'x-matroska': 'mkv',
                 'quicktime': 'mov', 'x-ms-wmv': 'wmv', 'mpeg': 'mpeg',
@@ -49,10 +46,8 @@ class MediaTypeDetector:
                 'x-m4v': 'm4v', 'x-ms-asf': 'asf', 'x-mng': 'mng',
                 'x-sgi-movie': 'movie', 'mp2t': 'ts', 'MP2T': 'ts'
             }.items()},
-            # 特殊格式
             'application/vnd.apple.mpegurl': ('m3u8', 'video'),
             'application/x-mpegurl': ('m3u8', 'video'),
-            # 音频格式
             **{f'audio/{fmt}': (ext, 'audio') for fmt, ext in {
                 'mpeg': 'mp3', 'wav': 'wav', 'x-wav': 'wav', 'flac': 'flac',
                 'aac': 'aac', 'x-m4a': 'm4a', 'ogg': 'ogg', 'webm': 'webm',
@@ -118,23 +113,18 @@ class GeocodingService:
         self.url_template = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
     
     def get_address_from_coordinates(self, lat, lon):
-        """根据经纬度获取地址信息"""
         loc = f"{lon},{lat}"
         
-        # 尝试加载缓存的凭据
         cookies, key = self._load_cached_credentials()
         
-        # 如果没有缓存的凭据，尝试获取新的
         if not (cookies and key):
             cookies, key = self._fetch_credentials()
             if cookies and key:
                 self._save_credentials(cookies, key)
         
-        # 调用API获取地址
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
-        """加载缓存的凭据"""
         if os.path.exists("cookies.json"):
             try:
                 with open("cookies.json", "r", encoding="utf-8") as f:
@@ -145,7 +135,6 @@ class GeocodingService:
         return None, None
     
     def _fetch_credentials(self):
-        """从高德地图开发者页面获取凭据"""
         try:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
@@ -153,7 +142,6 @@ class GeocodingService:
                 page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
                 page.wait_for_timeout(3000)
                 
-                # 简化cookie获取逻辑
                 target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
                               'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
                               'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
@@ -167,7 +155,6 @@ class GeocodingService:
             return None, None
     
     def _save_credentials(self, cookies, key):
-        """保存凭据到缓存文件"""
         try:
             with open("cookies.json", "w", encoding="utf-8") as f:
                 json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
@@ -175,7 +162,6 @@ class GeocodingService:
             pass
     
     def _call_geocoding_api(self, loc, cookies, key):
-        """调用高德地图逆地理编码API"""
         if not (cookies and key):
             return "获取地址失败"
         
@@ -184,7 +170,6 @@ class GeocodingService:
             resp = requests.get(url, headers=self.headers, cookies=cookies, timeout=10)
             
             if resp.status_code == 200 and "formatted_address" in resp.text:
-                # 处理JSONP响应格式
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                 return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
         except Exception:
