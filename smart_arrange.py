@@ -7,7 +7,6 @@ from PyQt6 import QtWidgets
 from PyQt6.QtWidgets import QMessageBox, QInputDialog, QFileDialog
 from smart_arrange_thread import SmartArrangeThread
 
-# 配置日志
 logger = logging.getLogger('SmartArrangeManager')
 logger.setLevel(logging.DEBUG)
 
@@ -22,7 +21,6 @@ class SmartArrangeManager(QObject):
         self.destination_root = None
         self.selected_folders = []
 
-        # Use English for dictionary keys for consistency
         self.tag_buttons = {
             'Original': self.parent.btnAddOriginalTag,
             'Year': self.parent.btnAddYearTag,
@@ -66,15 +64,12 @@ class SmartArrangeManager(QObject):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
     def connect_signals(self):
-        # 确保log_signal属性存在
         if not hasattr(self, 'log_signal'):
             from PyQt6.QtCore import pyqtSignal
             self.log_signal = pyqtSignal(str, str)
         
-        # 连接文件操作下拉框信号
         if hasattr(self.parent, 'fileOperation'):
             try:
-                # 安全地断开连接
                 try:
                     self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
                 except (TypeError, RuntimeError):
@@ -83,7 +78,6 @@ class SmartArrangeManager(QObject):
             except Exception as e:
                 self.log("ERROR", f"连接fileOperation信号失败: {str(e)}")
         
-        # 连接日志信号
         try:
             try:
                 self.log_signal.disconnect(self.handle_log_signal)
@@ -93,17 +87,14 @@ class SmartArrangeManager(QObject):
         except Exception as e:
             self.log("DEBUG", f"连接log_signal信号失败: {str(e)}")
         
-        # 连接开始整理按钮信号
         if hasattr(self.parent, 'btnStartSmartArrange'):
             try:
-                # 安全地断开连接
                 try:
                     self.parent.btnStartSmartArrange.clicked.disconnect()
                 except (TypeError, RuntimeError):
                     pass
                 self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
                 
-                # 启用按钮
                 if not self.parent.btnStartSmartArrange.isEnabled():
                     self.parent.btnStartSmartArrange.setEnabled(True)
                     self.log("INFO", "开始整理按钮已启用")
@@ -115,11 +106,8 @@ class SmartArrangeManager(QObject):
     def update_progress_bar(self, value):
         self.parent.classificationProgressBar.setValue(value)
 
-
     def select_destination_folder(self) -> bool:
-        """Select destination folder using a unified method"""
         try:
-            # First try to get target folder from folder_page
             if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
                 try:
                     target_folder = self.folder_page.get_target_folder()
@@ -129,7 +117,6 @@ class SmartArrangeManager(QObject):
                 except Exception as e:
                     self.log("WARNING", f"Failed to get target folder from folder_page: {str(e)}")
             
-            # If no preset target or validation failed, let user select
             folder = QFileDialog.getExistingDirectory(
                 self.parent, 
                 "Select destination folder",
@@ -150,9 +137,7 @@ class SmartArrangeManager(QObject):
             return False
     
     def validate_destination(self, destination: str) -> bool:
-        """Validate if the destination folder is valid"""
         try:
-            # Check if folder exists
             if not os.path.exists(destination):
                 reply = QMessageBox.question(
                     self.parent,
@@ -171,13 +156,11 @@ class SmartArrangeManager(QObject):
                 else:
                     return False
             
-            # Check write permission
             if not os.access(destination, os.W_OK):
                 self.log("ERROR", f"No write permission for destination folder: {destination}")
                 QMessageBox.critical(self.parent, "Error", "No write permission for destination folder!")
                 return False
             
-            # Update UI display
             display_path = destination + '/'
             if len(display_path) > 20:
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
@@ -221,7 +204,6 @@ class SmartArrangeManager(QObject):
             
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
-            # 使用统一的方法选择目标文件夹
             if not self.destination_root and not self.select_destination_folder():
                 return
             
@@ -239,10 +221,10 @@ class SmartArrangeManager(QObject):
             reply = QMessageBox.question(
                 self.parent,
                 "Confirm Operation?",
-                "Operation cannot be undone!\n\n"
-                "• Move: Original files will be deleted\n"
-                "• Copy: Original files will be preserved\n\n"
-                "Please backup important files!\n\n"
+                "Operation cannot be undone!\n\n"  
+                "• Move: Original files will be deleted\n"  
+                "• Copy: Original files will be preserved\n\n"  
+                "Please backup important files!\n\n"  
                 "Continue?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
@@ -270,7 +252,6 @@ class SmartArrangeManager(QObject):
                     if isinstance(folder, dict) and 'path' in folder:
                         folder['include_sub'] = 1
             
-            # Collect classification structure, using English consistently
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()
                 for i in range(1, 6)
@@ -386,7 +367,6 @@ class SmartArrangeManager(QObject):
         
         for i in range(1, 6):
             combo = getattr(self.parent, f'comboClassificationLevel{i}')
-            # 只处理启用且非"不分类"的选项
             if combo.isEnabled() and combo.currentText() != "不分类":
                 text = combo.currentText()
                 path_value = self.get_specific_value(text)
@@ -434,16 +414,15 @@ class SmartArrangeManager(QObject):
         self.update_combobox_state(1)
 
     def get_specific_value(self, text):
-        """Get specific value for preview based on text type"""
         now = datetime.now()
         return {
-            "Year": str(now.year),
-            "Month": str(now.month),
-            "Device": "Apple",
-            "Camera": "iPhone17",
-            "Province": "Jiangxi",
-            "City": "Nanchang",
-            "By Extension": "JPG"
+            "年份": str(now.year),
+            "月份": str(now.month),
+            "拍摄设备": "Apple",
+            "相机型号": "iPhone17",
+            "拍摄省份": "江西",
+            "拍摄城市": "南昌",
+            "按扩展名": "JPG"
         }.get(text, text)
 
     def is_valid_windows_filename(self, filename):
@@ -519,15 +498,15 @@ class SmartArrangeManager(QObject):
                 example_parts.append(custom_content[:3] if len(custom_content) > 3 else custom_content)
             else:
                 parts = {
-                    "Original": "IMG",
-                    "Year": f"{now.year}",
-                    "Month": f"{now.month:02d}",
-                    "Day": f"{now.day:02d}",
-                    "Weekday": f"{self._get_weekday(now)}",
-                    "Time": f"{now.strftime('%H%M%S')}",
-                    "Brand": "Apple",
-                    "Model": "iPhone17",
-                    "Location": "Jiangxi Nanchang"
+                    "原名": "IMG",
+                    "年份": f"{now.year}",
+                    "月份": f"{now.month:02d}",
+                    "日": f"{now.day:02d}",
+                    "星期": f"{self._get_weekday(now)}",
+                    "时间": f"{now.strftime('%H%M%S')}",
+                    "品牌": "Apple",
+                    "型号": "iPhone17",
+                    "位置": "江西南昌"
                 }
                 example_parts.append(parts.get(button_text, button_text))
 
@@ -539,10 +518,8 @@ class SmartArrangeManager(QObject):
         return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        """处理日志信号并显示到UI组件"""
         message_str = str(message)
         
-        # 不再过滤非中文字符
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
@@ -566,33 +543,26 @@ class SmartArrangeManager(QObject):
                     logger.error(f"Failed to call parent log method: {str(e)}")
 
     def log(self, level: str, message: str) -> None:
-        """Unified logging method to ensure consistency with smart_arrange_thread.py"""
         try:
-            # Parameter validation
             if not isinstance(level, str) or not isinstance(message, str):
                 raise TypeError("Log level and message must be strings")
             
-            # Validate log level
             valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
             if level not in valid_levels:
-                level = 'INFO'  # Default to INFO level
+                level = 'INFO'
             
-            # Unified log format
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
             
-            # Send signal to UI thread
             self.log_signal.emit(level, log_message)
             
-            # Also use Python standard logging
             getattr(logger, level.lower(), logger.info)(message)
         except Exception as e:
-            # Prevent logging system failures from affecting program execution
             try:
                 error_msg = f"Failed to log message: {str(e)}"
                 logger.error(error_msg)
             except:
-                pass  # Silent failure in extreme cases
+                pass
 
     def move_tag_back(self, button):
         self.selected_frame.layout().removeWidget(button)

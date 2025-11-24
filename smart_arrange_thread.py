@@ -692,7 +692,7 @@ class SmartArrangeThread(QtCore.QThread):
                     date_taken = self.parse_datetime(date_str)
                 else:
                     try:
-                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
                         utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
                         date_taken = utc_dt.astimezone().replace(tzinfo=None)
                     except ValueError:
@@ -769,7 +769,7 @@ class SmartArrangeThread(QtCore.QThread):
                     date_taken = self.parse_datetime(date_str)
                 else:
                     try:
-                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
                         utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
                         date_taken = utc_dt.astimezone().replace(tzinfo=None)
                     except ValueError:
@@ -1205,7 +1205,6 @@ class SmartArrangeThread(QtCore.QThread):
                 except ValueError:
                     self.log("WARNING", f"无法解析文件时间: {file_path}")
 
-            # 总是使用目标根路径或确保base_folder不是源文件夹
             target_base = self.destination_root
             
             target_path = self.build_target_path(file_path, exif_data, file_time, target_base)
@@ -1217,7 +1216,6 @@ class SmartArrangeThread(QtCore.QThread):
             
             full_target_path = target_path / new_file_name_with_ext
             
-            # 总是添加到待处理列表，确保文件操作在目标位置进行
             self.files_to_rename.append({
                 'old_path': str(file_path),
                 'new_path': str(full_target_path)
@@ -1286,22 +1284,17 @@ class SmartArrangeThread(QtCore.QThread):
             return ""
 
     def build_target_path(self, file_path, exif_data, file_time, target_base):
-        # 确保目标路径总是基于目标根目录，而不是源文件夹
         if not self.classification_structure:
-            # 即使没有分类结构，也应该使用目标根目录
             if target_base:
                 return Path(target_base)
             else:
-                # 如果没有指定目标根目录，至少创建一个安全的默认目标目录
                 return file_path.parent / "整理结果"
         
         if target_base:
             target_path = Path(target_base)
         else:
-            # 为了安全，即使没有指定目标根目录，也不应该直接在源文件夹操作
             target_path = file_path.parent / "整理结果"
         
-        # 记录构建路径的开始
         original_path = target_path
         
         for level in self.classification_structure:
@@ -1312,7 +1305,6 @@ class SmartArrangeThread(QtCore.QThread):
         file_type = get_file_type(file_path)
         target_path = target_path / file_type
         
-        # 记录构建目标路径示例，限制日志频率
         self.log_counter += 1
         if self.log_counter % 10 == 0:
             self.log("WARNING", f"构建文件夹示例: {original_path} -> {target_path} (文件类型: {file_type})")
@@ -1368,12 +1360,13 @@ class SmartArrangeThread(QtCore.QThread):
         elif level == "文件类型":
             return get_file_type(file_path)
         elif level == "按扩展名":
-            # 获取文件扩展名并转为大写
             file_ext = os.path.splitext(str(file_path))[1].strip('.').upper()
-            # 仅在必要时记录日志，避免每个文件都记录扩展名信息
-            # 可以考虑在构建路径完成后统一记录
             return file_ext
         
         else:
             return "未知"
 
+    def _truncate_filename(self, filename, max_length=50):
+        if len(filename) <= max_length:
+            return filename
+        return filename[:max_length - 3] + "..."

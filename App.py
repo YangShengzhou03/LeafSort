@@ -2,9 +2,8 @@ import sys
 import logging
 import traceback
 import socket
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QCoreApplication
-from pyqt6_plugins.examplebutton import QtWidgets
 
 from main_window import MainWindow
 
@@ -19,16 +18,18 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
-    logging.critical("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
+    logging.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
     
-    app = QtWidgets.QApplication.instance()
+    app = QApplication.instance()
     if app:
         try:
             error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-            msg = QtWidgets.QMessageBox()
-            msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
-            msg.setWindowTitle("应用程序错误")
-            msg.setText("发生意外错误，应用程序可能需要关闭。")
+            print(f"Error: {exc_type.__name__}: {exc_value}")
+            print(error_message)
+            msg = QMessageBox()
+            msg.setIcon(QMessageBox.Icon.Critical)
+            msg.setWindowTitle("Application Error")
+            msg.setText("An unexpected error occurred. The application may need to close.")
             msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
             msg.setDetailedText(error_message)
             msg.exec()
@@ -45,7 +46,7 @@ def main():
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
             sock.bind(('127.0.0.1', 12345))
         except socket.error:
-            logging.info("应用程序已在运行")
+            logging.info("Application already running")
             return
         
         app = QApplication(sys.argv)
@@ -53,9 +54,11 @@ def main():
         window.show()
         sys.exit(app.exec())
     except Exception as e:
-        logging.error(f"应用启动失败: {str(e)}")
+        logging.error(f"Failed to start application: {str(e)}")
+        print(f"Start error: {str(e)}")
+        traceback.print_exc()
         try:
-            QtWidgets.QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
+            QMessageBox.critical(None, "Fatal Error", f"Application failed to start: {str(e)}")
         except Exception:
             pass
         sys.exit(1)

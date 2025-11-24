@@ -618,10 +618,10 @@ class WriteExifThread(QThread):
             ('camera_model', "0th", piexif.ImageIFD.Model, "相机型号: {}", 'utf-8'),
         ]
         
-        for attr_name, section, tag, format_str, encoding in field_mappings:
+        for attr_name, exif_key, format_str in field_mappings:
             attr_value = getattr(self, attr_name, None)
             if attr_value:
-                exif_dict[section][tag] = attr_value.encode(encoding)
+                exif_dict[exif_key] = attr_value
                 updated_fields.append(format_str.format(attr_value))
     
     def _update_heic_rating(self, exif_dict, updated_fields):
@@ -1076,9 +1076,9 @@ class WriteExifThread(QThread):
     def get_date_from_filename(self, image_path):
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        date_pattern = r'(?P<year>\d{4})[年\-\.\/\s]?' \
-                      r'(?P<month>1[0-2]|0?[1-9])[月\-\.\/\s]?' \
-                      r'(?P<day>3[01]|[12]\d|0?[1-9])[日号\-\.\/\s]?' \
+        date_pattern = r'(?P<year>\d{4})[年\\-\.\/\s]?' \
+                      r'(?P<month>1[0-2]|0?[1-9])[月\\-\.\/\s]?' \
+                      r'(?P<day>3[01]|[12]\d|0?[1-9])[日号\\-\.\/\s]?' \
                       r'(?:[^0-9]*?)?' \
                       r'(?P<hour>[0-2]?\d)?' \
                       r'(?P<minute>[0-5]?\d)?' \

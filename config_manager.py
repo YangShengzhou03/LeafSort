@@ -1,300 +1,188 @@
 import os
 import json
 import threading
-import logging
-from pathlib import Path
 from typing import Dict, List, Any, Optional
-from datetime import datetime, timedelta
-from common import get_resource_path
+import logging
+from datetime import datetime
+import shutil
 
 logger = logging.getLogger(__name__)
 
 
-class ConfigManager:
-    CONFIG_VERSION = "1.0.0"
-    MAX_CACHE_ITEMS = 1000
-    CACHE_EXPIRATION_DAYS = 30
-    
-    def __init__(self, config_file: str = "_internal/leafview_config.json", 
-                 cache_file: str = "_internal/cache_location.json"):
-        self.config_file = Path(get_resource_path(config_file))
-        self.cache_file = Path(get_resource_path(cache_file))
-        self._lock = threading.RLock()
-        self.config = self._load_config()
-        self.location_cache = self._load_location_cache()
-        self._validate_and_migrate_config()
+def _thread_safe_method(func):
+    def wrapper(self, *args, **kwargs):
         with self._lock:
-            self._cleanup_expired_cache()
-            self._reduce_cache_size(self.MAX_CACHE_ITEMS)
+            return func(self, *args, **kwargs)
+    return wrapper
+
+
+class ConfigManager:
+    CONFIG_VERSION = "1.0"
     
-    @staticmethod
-    def _thread_safe_method(func):
-        def wrapper(self, *args, **kwargs):
-            with self._lock:
-                return func(self, *args, **kwargs)
-        return wrapper
+    def __init__(self):
+        self._lock = threading.RLock()
+        self.config_file = self._get_config_file_path()
+        self._ensure_config_exists()
+        self.config = self._load_file()
+        self.location_cache = {}
+        self.cache_file = self._get_cache_file_path()
+        self._load_location_cache()
+        self._validate_and_migrate_config()
     
-    def _load_file(self, file_path: Path, default_value: Any) -> Any:
+    def _get_config_file_path(self) -> os.PathLike:
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        return os.path.join(app_dir, 'config.json')
+    
+    def _get_cache_file_path(self) -> os.PathLike:
+        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+        cache_dir = os.path.join(app_dir, 'cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        return os.path.join(cache_dir, 'location_cache.json')
+    
+    def _ensure_config_exists(self) -> None:
+        if not os.path.exists(self.config_file):
+            default_config = self._get_default_config()
+            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+            try:
+                with open(self.config_file, 'w', encoding='utf-8') as f:
+                    json.dump(default_config, f, indent=4, ensure_ascii=False)
+            except Exception as e:
+                logger.error(f"创建默认配置文件失败: {str(e)}")
+    
+    def _load_file(self) -> Dict[str, Any]:
+        if not os.path.exists(self.config_file):
+            return self._get_default_config()
+        
         try:
-            if file_path.exists():
-                with open(file_path, 'r', encoding='utf-8') as f:
-                    return json.load(f)
-        except json.JSONDecodeError as e:
-            logger.error(f"JSON解析错误 in {file_path}: {str(e)}")
-        except IOError as e:
-            logger.error(f"文件读取错误 in {file_path}: {str(e)}")
-        except PermissionError as e:
-            logger.error(f"没有权限访问 {file_path}: {str(e)}")
-        except Exception as e:
-            logger.error(f"加载文件时发生未知错误 {file_path}: {str(e)}")
-        return default_value
+            with open(self.config_file, 'r', encoding='utf-8') as f:
+                return json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"加载配置文件失败: {str(e)}")
+            return self._get_default_config()
     
-    def _load_config(self) -> Dict[str, Any]:
-        default_config = self._get_default_config()
-        config = self._load_file(self.config_file, default_config)
-        
-        if config is not default_config:
-            self._update_config_with_defaults(config, default_config)
-        
-        return config
-    
-    def _update_config_with_defaults(self, config: Dict[str, Any], default_config: Dict[str, Any]):
-        for key, default_value in default_config.items():
-            if key not in config:
-                config[key] = default_value
-            elif isinstance(default_value, dict) and isinstance(config[key], dict):
-                self._update_config_with_defaults(config[key], default_config[key])
-    
-    @_thread_safe_method
-    def _validate_and_migrate_config(self):
-        self.config["version"] = self.CONFIG_VERSION
+    def _save_file_no_lock(self) -> bool:
         self.config["last_modified"] = datetime.now().isoformat()
-        
-        seen_paths = set()
-        unique_folders = []
-        for folder in self.config["folders"]:
-            path = folder.get("path")
-            if path and path not in seen_paths:
-                seen_paths.add(path)
-                unique_folders.append(folder)
-        
-        if len(unique_folders) != len(self.config["folders"]):
-            self.config["folders"] = unique_folders
-            self._save_config_no_lock()
-    
-    def _load_location_cache(self) -> Dict[str, Any]:
-        return self._load_file(self.cache_file, {})
-    
-    def _save_file_no_lock(self, file_path: Path, data: Any) -> bool:
         try:
-            self._ensure_directory(file_path.parent)
-            
-            with open(file_path, 'w', encoding='utf-8') as f:
-                json.dump(data, f, ensure_ascii=False, indent=2)
+            with open(self.config_file, 'w', encoding='utf-8') as f:
+                json.dump(self.config, f, indent=4, ensure_ascii=False)
             return True
-        except PermissionError as e:
-            logger.error(f"没有权限写入 {file_path}: {str(e)}")
-        except IOError as e:
-            logger.error(f"文件写入错误 {file_path}: {str(e)}")
-        except TypeError as e:
-            logger.error(f"JSON序列化错误: {str(e)}")
         except Exception as e:
-            logger.error(f"保存文件时发生未知错误 {file_path}: {str(e)}")
-        return False
-    
-    def _save_config_no_lock(self) -> bool:
-        self.config["last_modified"] = datetime.now().isoformat()
-        return self._save_file_no_lock(self.config_file, self.config)
-    
-    def _save_location_cache_no_lock(self) -> bool:
-        return self._save_file_no_lock(self.cache_file, self.location_cache)
-    
-    @_thread_safe_method
-    def save_config(self) -> bool:
-        return self._save_config_no_lock()
-    
-    @_thread_safe_method
-    def save_location_cache(self) -> bool:
-        return self._save_file_no_lock(self.cache_file, self.location_cache)
-    
-    def _ensure_directory(self, directory: Path):
-        try:
-            directory.mkdir(parents=True, exist_ok=True)
-        except PermissionError as e:
-            logger.error(f"没有权限创建目录 {directory}: {str(e)}")
-        except OSError as e:
-            logger.error(f"创建目录失败 {directory}: {str(e)}")
-    
-    @_thread_safe_method
-    def add_folder(self, folder_path: str, include_sub: bool = True) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+            logger.error(f"保存配置文件失败: {str(e)}")
             return False
-        
-        if any(folder["path"] == folder_path for folder in self.config["folders"]):
-            return False
-        
-        self.config["folders"].append({
-            "path": folder_path,
-            "include_sub": include_sub,
-            "added_time": datetime.now().isoformat()
-        })
-        
-        return self._save_config_no_lock()
     
-    @_thread_safe_method
-    def add_folders(self, folders: List[Dict[str, Any]]) -> int:
-        added_count = 0
-        for folder in folders:
-            folder_path = os.path.normpath(folder.get("path", ""))
-            include_sub = folder.get("include_sub", True)
+    def _validate_and_migrate_config(self) -> None:
+        default_config = self._get_default_config()
+        
+        if "version" not in self.config or self.config["version"] != self.CONFIG_VERSION:
+            for key, value in default_config.items():
+                if key not in self.config:
+                    self.config[key] = value.copy() if isinstance(value, dict) else value
             
-            if folder_path and os.path.exists(folder_path) and os.path.isdir(folder_path):
-                if not any(f["path"] == folder_path for f in self.config["folders"]):
-                    self.config["folders"].append({
-                        "path": folder_path,
-                        "include_sub": include_sub,
-                        "added_time": datetime.now().isoformat()
-                    })
-                    added_count += 1
-        
-        if added_count > 0:
-            self._save_config_no_lock()
-        return added_count
+            for key, value in default_config["settings"].items():
+                if key not in self.config["settings"]:
+                    self.config["settings"][key] = value
+            
+            self.config["version"] = self.CONFIG_VERSION
+            self._save_file_no_lock()
+    
+    @_thread_safe_method
+    def add_folder(self, folder_path: str) -> bool:
+        if folder_path not in self.config["folders"]:
+            self.config["folders"].append(folder_path)
+            return self._save_config_no_lock()
+        return True
     
     @_thread_safe_method
     def remove_folder(self, folder_path: str) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        for i, folder in enumerate(self.config["folders"]):
-            if folder["path"] == folder_path:
-                self.config["folders"].pop(i)
-                return self._save_config_no_lock()
-        
-        return False
+        if folder_path in self.config["folders"]:
+            self.config["folders"].remove(folder_path)
+            return self._save_config_no_lock()
+        return True
     
     @_thread_safe_method
-    def update_folder_include_sub(self, folder_path: str, include_sub: bool) -> bool:
-        folder_path = os.path.normpath(folder_path)
-        
-        for folder in self.config["folders"]:
-            if folder["path"] == folder_path:
-                folder["include_sub"] = include_sub
-                folder["updated_time"] = datetime.now().isoformat()
-                return self._save_config_no_lock()
-        
-        return False
+    def get_folders(self) -> List[str]:
+        return self.config["folders"].copy()
     
     @_thread_safe_method
-    def get_folders(self) -> List[Dict[str, Any]]:
-        return [folder.copy() for folder in self.config["folders"]]
+    def has_folder(self, folder_path: str) -> bool:
+        return folder_path in self.config["folders"]
+    
+    def _save_config_no_lock(self) -> bool:
+        return self._save_file_no_lock()
+    
+    def _load_location_cache(self) -> None:
+        if not os.path.exists(self.cache_file):
+            return
+        
+        try:
+            with open(self.cache_file, 'r', encoding='utf-8') as f:
+                self.location_cache = json.load(f)
+        except (json.JSONDecodeError, IOError) as e:
+            logger.error(f"加载位置缓存失败: {str(e)}")
+            self.location_cache = {}
+    
+    def _save_location_cache_no_lock(self) -> bool:
+        self._cleanup_expired_cache()
+        try:
+            with open(self.cache_file, 'w', encoding='utf-8') as f:
+                json.dump(self.location_cache, f, indent=4, ensure_ascii=False)
+            return True
+        except Exception as e:
+            logger.error(f"保存位置缓存失败: {str(e)}")
+            return False
     
     @_thread_safe_method
-    def get_valid_folders(self) -> List[Dict[str, Any]]:
-        return [folder.copy() for folder in self.config["folders"] 
-                if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
-    
-    @_thread_safe_method
-    def clear_invalid_folders(self) -> int:
-        original_count = len(self.config["folders"])
-        self.config["folders"] = [folder for folder in self.config["folders"] 
-                                  if os.path.exists(folder["path"]) and os.path.isdir(folder["path"])]
-        removed_count = original_count - len(self.config["folders"])
-        
-        if removed_count > 0:
-            self._save_config_no_lock()
-        
-        return removed_count
+    def save_location_cache(self) -> bool:
+        return self._save_location_cache_no_lock()
     
     @_thread_safe_method
     def cache_location(self, latitude: float, longitude: float, address: str) -> bool:
-        try:
-            key = self._get_cache_key(latitude, longitude)
-            self.location_cache[key] = {
-                'address': address,
-                'timestamp': datetime.now().isoformat(),
-                'last_accessed': datetime.now().isoformat()
-            }
-            
-            self._reduce_cache_size(self.MAX_CACHE_ITEMS)
-            return self._save_location_cache_no_lock()
-        except TypeError as e:
-            logger.error(f"缓存位置数据类型错误: {str(e)}")
-        except Exception as e:
-            logger.error(f"缓存位置时发生未知错误: {str(e)}")
-        return False
+        cache_key = f"{latitude},{longitude}"
+        current_time = datetime.now().isoformat()
         
-    def _cleanup_expired_cache(self):
-        try:
-            expiration_date = datetime.now() - timedelta(days=self.CACHE_EXPIRATION_DAYS)
-            expired_keys = []
+        if len(self.location_cache) >= self.config["cache_settings"]["max_location_cache_size"]:
+            self._cleanup_expired_cache()
             
-            for key, data in self.location_cache.items():
-                if isinstance(data, dict) and 'timestamp' in data:
-                    try:
-                        cache_time = datetime.fromisoformat(data['timestamp'])
-                        if cache_time < expiration_date:
-                            expired_keys.append(key)
-                    except (ValueError, TypeError):
-                        expired_keys.append(key)
-                else:
-                    expired_keys.append(key)
-            
-            for key in expired_keys:
-                del self.location_cache[key]
-            
-            if expired_keys:
-                self._save_location_cache_no_lock()
-        except Exception as e:
-            logger.error(f"清理过期缓存时出错: {str(e)}")
+            if len(self.location_cache) >= self.config["cache_settings"]["max_location_cache_size"]:
+                oldest_key = min(self.location_cache.keys(), key=lambda k: self.location_cache[k]["last_access"])
+                del self.location_cache[oldest_key]
+        
+        self.location_cache[cache_key] = {
+            "address": address,
+            "last_access": current_time
+        }
+        
+        return self._save_location_cache_no_lock()
     
-    def _reduce_cache_size(self, max_size):
-        try:
-            if len(self.location_cache) <= max_size:
-                return
-            
-            cache_items = []
-            
-            for key, data in self.location_cache.items():
-                if isinstance(data, dict):
-                    timestamp = data.get('last_accessed', data.get('timestamp', None))
-                    if timestamp:
-                        try:
-                            cache_time = datetime.fromisoformat(timestamp)
-                            cache_items.append((key, cache_time))
-                        except (ValueError, TypeError):
-                            cache_items.append((key, datetime.now()))
-                    else:
-                        cache_items.append((key, datetime.now()))
-            
-            cache_items.sort(key=lambda x: x[1])
-            items_to_remove = len(self.location_cache) - max_size
-            
-            for i in range(items_to_remove):
-                if i < len(cache_items):
-                    del self.location_cache[cache_items[i][0]]
-            
-            if items_to_remove > 0:
-                self._save_location_cache_no_lock()
-        except Exception as e:
-            logger.error(f"限制缓存大小时出错: {str(e)}")
+    def _cleanup_expired_cache(self) -> None:
+        expiry_days = self.config["cache_settings"]["cache_expiry_days"]
+        current_time = datetime.now()
+        
+        expired_keys = []
+        for key, data in self.location_cache.items():
+            try:
+                last_access = datetime.fromisoformat(data["last_access"])
+                days_since_access = (current_time - last_access).days
+                
+                if days_since_access > expiry_days:
+                    expired_keys.append(key)
+            except Exception:
+                expired_keys.append(key)
+        
+        for key in expired_keys:
+            if key in self.location_cache:
+                del self.location_cache[key]
+    
+    def _update_cache_access_time(self, cache_data: Dict[str, str]) -> None:
+        cache_data["last_access"] = datetime.now().isoformat()
     
     def _get_cache_key(self, latitude: float, longitude: float) -> str:
-        return f"{latitude:.6f},{longitude:.6f}"
-    
-    def _update_cache_access_time(self, cached_data: Dict[str, Any]):
-        if isinstance(cached_data, dict):
-            cached_data['last_accessed'] = datetime.now().isoformat()
+        return f"{latitude},{longitude}"
     
     def _get_cached_location_no_lock(self, latitude: float, longitude: float) -> Optional[str]:
         cache_key = self._get_cache_key(latitude, longitude)
-        cached_data = self.location_cache.get(cache_key)
-        
-        if cached_data:
-            self._update_cache_access_time(cached_data)
-            return cached_data["address"]
-        
+        if cache_key in self.location_cache:
+            return self.location_cache[cache_key]["address"]
         return None
     
     @_thread_safe_method
@@ -437,7 +325,6 @@ class ConfigManager:
         
         cache_dir = os.path.join(self.config_file.parent, 'cache')
         if os.path.exists(cache_dir):
-            import shutil
             try:
                 shutil.rmtree(cache_dir)
                 os.makedirs(cache_dir, exist_ok=True)

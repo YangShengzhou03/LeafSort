@@ -97,7 +97,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.btnMaximize.clicked.connect(self._toggle_maximize)
             if hasattr(self, 'btnClose'):
                 self.btnClose.clicked.connect(self._hide_to_tray)
-            # 完善GitHub按钮功能
             if hasattr(self, 'btnGitHub'):
                 self.btnGitHub.clicked.connect(self._open_github)
             
@@ -170,14 +169,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             if self.isMaximized():
                 self.showNormal()
-                # 添加图标更新逻辑
                 if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
                     self.btnMaximize.setIcon(self.style().standardIcon(
                         QtWidgets.QStyle.StandardPixmap.SP_TitleBarMaxButton))
                 logger.info("窗口已还原")
             else:
                 self.showMaximized()
-                # 添加图标更新逻辑
                 if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
                     self.btnMaximize.setIcon(self.style().standardIcon(
                         QtWidgets.QStyle.StandardPixmap.SP_TitleBarNormalButton))
@@ -192,10 +189,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             logger.info("窗口已隐藏到托盘")
         except Exception as e:
             logger.error(f"处理关闭事件时出错: {str(e)}")
-            event.accept()  # 如果出错则接受关闭事件
+            event.accept()
     
     def _open_github(self):
-        """打开GitHub页面"""
         try:
             url = QtCore.QUrl("https://github.com/yourusername/LeafView")
             if not QtGui.QDesktopServices.openUrl(url):
