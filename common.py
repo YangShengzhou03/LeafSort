@@ -4,10 +4,15 @@ import sys
 import time
 import threading
 from pathlib import Path
+import logging
 
 import requests
 from filetype import guess
 from playwright.sync_api import sync_playwright
+
+# 配置logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 
 class ResourceManager:
@@ -132,7 +137,6 @@ class GeocodingService:
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
-        import time
         current_time = time.time()
         if self._cached_cookies and self._cached_key and (current_time - self._credentials_last_checked < 300):
             return self._cached_cookies, self._cached_key
@@ -148,7 +152,7 @@ class GeocodingService:
                     self._credentials_last_checked = current_time
                     return cookies, key
             except (json.JSONDecodeError, IOError, PermissionError) as e:
-                print(f"读取cookies.json失败: {str(e)}")
+                logger.error(f"读取cookies.json失败: {str(e)}")
         return None, None
     
     def _fetch_credentials(self):
@@ -156,20 +160,24 @@ class GeocodingService:
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_context().new_page()
-                page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
-                page.wait_for_timeout(3000)
-                
-                target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
-                              'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
-                              'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
-                cookies = {c['name']: c['value'] for c in page.context.cookies() 
-                          if c['name'] in target_keys}
-                
-                key = page.get_attribute("#code_origin", "data-jskey")
-                browser.close()
-                return cookies, key
+                try:
+                    page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
+                    page.wait_for_timeout(3000)
+                    
+                    target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
+                                  'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
+                                  'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
+                    cookies = {c['name']: c['value'] for c in page.context.cookies() 
+                              if c['name'] in target_keys}
+                    
+                    key = page.get_attribute("#code_origin", "data-jskey")
+                    return cookies, key
+                finally:
+                    # 确保资源释放
+                    if browser.is_connected():
+                        browser.close()
         except (ImportError, TimeoutError, ConnectionError) as e:
-            print(f"获取地理编码凭证失败: {str(e)}")
+            logger.error(f"获取地理编码凭证失败: {str(e)}")
             return None, None
     
     def _save_credentials(self, cookies, key):
@@ -181,22 +189,26 @@ class GeocodingService:
             with open("cookies.json", "w", encoding="utf-8") as f:
                 json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
         except (IOError, PermissionError) as e:
-            print(f"保存cookies.json失败: {str(e)}")
+            logger.error(f"保存cookies.json失败: {str(e)}")
     
     def _call_geocoding_api(self, loc, cookies, key):
         if not (cookies and key):
+            logger.warning("缺少地理编码凭证")
             return "获取地址失败"
         
         try:
             url = self.url_template.format(key=key, loc=loc)
-            resp = requests.get(url, headers=self.headers, cookies=cookies, timeout=10)
-            resp.raise_for_status()
-            
-            if resp.status_code == 200 and "formatted_address" in resp.text:
-                json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
-                return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
-        except (requests.exceptions.RequestException, json.JSONDecodeError, ValueError) as e:
-            print(f"地理编码API调用失败: {str(e)}")
+            with requests.get(url, headers=self.headers, cookies=cookies, timeout=10) as resp:
+                resp.raise_for_status()
+                
+                if resp.status_code == 200 and "formatted_address" in resp.text:
+                    try:
+                        json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
+                        return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
+                    except (ValueError, json.JSONDecodeError) as parse_error:
+                        logger.error(f"解析地理编码响应失败: {str(parse_error)}")
+        except requests.exceptions.RequestException as e:
+            logger.error(f"地理编码API调用失败: {str(e)}")
         
         return "获取地址失败"
 

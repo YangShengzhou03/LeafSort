@@ -3,8 +3,10 @@ import json
 import os
 import subprocess
 import logging
+import threading
 from pathlib import Path
 import io
+from typing import List, Dict, Any, Optional, Union, Set
 from common import get_address_from_coordinates, get_resource_path, get_file_type
 import exifread
 import pillow_heif
@@ -45,8 +47,18 @@ class SmartArrangeThread(QtCore.QThread):
     log_signal = QtCore.pyqtSignal(str, str)
     progress_signal = QtCore.pyqtSignal(int)
 
-    def __init__(self, parent=None, folders=None, classification_structure=None, file_name_structure=None,
-                 destination_root=None, separator="-", time_derive="文件创建时间", operation_type=0):
+    def __init__(self, parent=None, folders: Optional[List[Dict[str, Any]]] = None, 
+                 classification_structure: Optional[Dict[str, Any]] = None, 
+                 file_name_structure: Optional[List[str]] = None,
+                 destination_root: Optional[str] = None, separator: str = "-", 
+                 time_derive: str = "文件创建时间", operation_type: int = 0):
+        # 参数类型检查
+        if folders is not None and not isinstance(folders, list):
+            raise TypeError("folders参数必须是列表类型")
+        
+        super().__init__(parent)
+        # 添加线程锁以确保线程安全
+        self._lock = threading.RLock()
         # 添加日志计数器，用于限制日志频率
         self.log_counter = 0
         super().__init__(parent)
@@ -73,17 +85,74 @@ class SmartArrangeThread(QtCore.QThread):
         # 加载地理数据
         self.load_geographic_data()
 
-    def calculate_total_files(self):
-        self.total_files = 0
-        for folder_info in self.folders:
-            folder_path = Path(folder_info['path'])
-            if folder_info.get('include_sub', 0):
-                for root, _, files in os.walk(folder_path):
-                    self.total_files += len(files)
-            else:
-                self.total_files += len([f for f in os.listdir(folder_path) if (folder_path / f).is_file()])
-        
-        self.log("DEBUG", f"待处理总文件数: {self.total_files}")
+    def calculate_total_files(self) -> int:
+        """计算所有文件夹中的文件总数，增强错误处理和线程安全"""
+        try:
+            # 使用线程锁保护共享资源
+            with self._lock:
+                self.total_files = 0
+            
+            if not self.folders:
+                self.log("INFO", "没有指定要处理的文件夹")
+                return 0
+            
+            for folder_info in self.folders:
+                # 检查是否需要停止
+                if self._stop_flag:
+                    self.log("INFO", "文件计数操作被用户取消")
+                    break
+                
+                try:
+                    # 参数验证
+                    if not isinstance(folder_info, dict):
+                        self.log("WARNING", "文件夹信息格式不正确，跳过")
+                        continue
+                    
+                    # 安全地获取路径
+                    if 'path' not in folder_info:
+                        self.log("WARNING", "文件夹信息中缺少path字段")
+                        continue
+                    
+                    folder_path = Path(folder_info['path'])
+                    
+                    # 验证路径是否存在且是目录
+                    if not folder_path.exists() or not folder_path.is_dir():
+                        self.log("WARNING", f"路径不存在或不是目录: {folder_path}")
+                        continue
+                    
+                    include_sub = bool(folder_info.get('include_sub', 0))
+                    
+                    if include_sub:
+                        for root, _, files in os.walk(folder_path):
+                            if self._stop_flag:
+                                break
+                            
+                            # 线程安全地更新计数
+                            with self._lock:
+                                self.total_files += len(files)
+                    else:
+                        # 使用更安全的方式获取文件列表
+                        try:
+                            items = list(folder_path.iterdir())
+                            file_count = sum(1 for item in items if item.is_file())
+                            
+                            # 线程安全地更新计数
+                            with self._lock:
+                                self.total_files += file_count
+                        except PermissionError:
+                            self.log("ERROR", f"权限不足，无法读取文件夹: {folder_path}")
+                        except Exception as e:
+                            self.log("ERROR", f"读取文件夹内容时出错: {str(e)}")
+                except KeyError as e:
+                    self.log("ERROR", f"文件夹信息中缺少必要字段: {str(e)}")
+                except Exception as e:
+                    self.log("ERROR", f"处理文件夹时出错: {str(e)}")
+            
+            self.log("DEBUG", f"待处理总文件数: {self.total_files}")
+            return self.total_files
+        except Exception as e:
+            self.log("ERROR", f"总文件计数过程中发生严重错误: {str(e)}")
+            return 0
 
     def load_geographic_data(self):
         try:
@@ -401,11 +470,36 @@ class SmartArrangeThread(QtCore.QThread):
                 
         return False
 
-    def log(self, level, message):
-        # 统一日志格式，与smart_arrange.py保持一致
-        current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_message = f"[{current_time}] {level}: {message}"
-        self.log_signal.emit(level, log_message)
+    def log(self, level: str, message: str) -> None:
+        """线程安全的日志记录方法"""
+        try:
+            # 参数验证
+            if not isinstance(level, str) or not isinstance(message, str):
+                raise TypeError("日志级别和消息必须是字符串类型")
+            
+            # 验证日志级别
+            valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+            if level not in valid_levels:
+                level = 'INFO'  # 默认为INFO级别
+            
+            # 统一日志格式，与smart_arrange.py保持一致
+            current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_message = f"[{current_time}] {level}: {message}"
+            
+            # 使用线程锁确保线程安全
+            with self._lock:
+                # 发送信号到UI线程
+                self.log_signal.emit(level, log_message)
+                
+                # 同时使用Python标准logging
+                getattr(logger, level.lower(), logger.info)(message)
+        except Exception as e:
+            # 防止日志系统本身出错而影响程序运行
+            try:
+                error_msg = f"日志记录失败: {str(e)}"
+                logger.error(error_msg)
+            except:
+                pass  # 极端情况下静默失败
     
     def get_exif_data(self, file_path):
         exif_data = {}

@@ -1,10 +1,13 @@
 import os
 import json
 import threading
+import logging
 from pathlib import Path
 from typing import Dict, List, Any, Optional
-from datetime import datetime
+from datetime import datetime, timedelta
 from common import get_resource_path
+
+logger = logging.getLogger(__name__)
 
 
 class ConfigManager:
@@ -37,13 +40,13 @@ class ConfigManager:
                 with open(file_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except json.JSONDecodeError as e:
-            print(f"JSON解析错误 in {file_path}: {str(e)}")
+            logger.error(f"JSON解析错误 in {file_path}: {str(e)}")
         except IOError as e:
-            print(f"文件读取错误 in {file_path}: {str(e)}")
+            logger.error(f"文件读取错误 in {file_path}: {str(e)}")
         except PermissionError as e:
-            print(f"没有权限访问 {file_path}: {str(e)}")
+            logger.error(f"没有权限访问 {file_path}: {str(e)}")
         except Exception as e:
-            print(f"加载文件时发生未知错误 {file_path}: {str(e)}")
+            logger.error(f"加载文件时发生未知错误 {file_path}: {str(e)}")
         return default_value
     
     def _load_config(self) -> Dict[str, Any]:
@@ -90,13 +93,13 @@ class ConfigManager:
                 json.dump(data, f, ensure_ascii=False, indent=2)
             return True
         except PermissionError as e:
-            print(f"没有权限写入 {file_path}: {str(e)}")
+            logger.error(f"没有权限写入 {file_path}: {str(e)}")
         except IOError as e:
-            print(f"文件写入错误 {file_path}: {str(e)}")
-        except json.JSONDecodeError as e:
-            print(f"JSON序列化错误: {str(e)}")
+            logger.error(f"文件写入错误 {file_path}: {str(e)}")
+        except TypeError as e:
+            logger.error(f"JSON序列化错误: {str(e)}")
         except Exception as e:
-            print(f"保存文件时发生未知错误 {file_path}: {str(e)}")
+            logger.error(f"保存文件时发生未知错误 {file_path}: {str(e)}")
         return False
     
     def _save_config_no_lock(self) -> bool:
@@ -118,9 +121,9 @@ class ConfigManager:
         try:
             directory.mkdir(parents=True, exist_ok=True)
         except PermissionError as e:
-            print(f"没有权限创建目录 {directory}: {str(e)}")
+            logger.error(f"没有权限创建目录 {directory}: {str(e)}")
         except OSError as e:
-            print(f"创建目录失败 {directory}: {str(e)}")
+            logger.error(f"创建目录失败 {directory}: {str(e)}")
     
     @_thread_safe_method
     def add_folder(self, folder_path: str, include_sub: bool = True) -> bool:
@@ -217,14 +220,13 @@ class ConfigManager:
             self._reduce_cache_size(self.MAX_CACHE_ITEMS)
             return self._save_location_cache_no_lock()
         except TypeError as e:
-            print(f"缓存位置数据类型错误: {str(e)}")
+            logger.error(f"缓存位置数据类型错误: {str(e)}")
         except Exception as e:
-            print(f"缓存位置时发生未知错误: {str(e)}")
+            logger.error(f"缓存位置时发生未知错误: {str(e)}")
         return False
         
     def _cleanup_expired_cache(self):
         try:
-            from datetime import datetime, timedelta
             expiration_date = datetime.now() - timedelta(days=self.CACHE_EXPIRATION_DAYS)
             expired_keys = []
             
@@ -245,14 +247,13 @@ class ConfigManager:
             if expired_keys:
                 self._save_location_cache_no_lock()
         except Exception as e:
-            print(f"清理过期缓存时出错: {str(e)}")
+            logger.error(f"清理过期缓存时出错: {str(e)}")
     
     def _reduce_cache_size(self, max_size):
         try:
             if len(self.location_cache) <= max_size:
                 return
             
-            from datetime import datetime
             cache_items = []
             
             for key, data in self.location_cache.items():
@@ -277,7 +278,7 @@ class ConfigManager:
             if items_to_remove > 0:
                 self._save_location_cache_no_lock()
         except Exception as e:
-            print(f"限制缓存大小时出错: {str(e)}")
+            logger.error(f"限制缓存大小时出错: {str(e)}")
     
     def _get_cache_key(self, latitude: float, longitude: float) -> str:
         return f"{latitude:.6f},{longitude:.6f}"
@@ -440,7 +441,8 @@ class ConfigManager:
             try:
                 shutil.rmtree(cache_dir)
                 os.makedirs(cache_dir, exist_ok=True)
-            except Exception:
+            except Exception as e:
+                logger.error(f"清理缓存目录时出错: {str(e)}")
                 return False
                 
         return save_result

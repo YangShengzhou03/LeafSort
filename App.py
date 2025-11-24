@@ -1,32 +1,29 @@
-from PyQt6 import QtWidgets, QtCore
-from PyQt6.QtNetwork import QLocalSocket, QLocalServer
-from contextlib import closing
-from main_window import MainWindow
 import sys
-import traceback
 import logging
+import traceback
+import socket
+from PyQt6.QtWidgets import QApplication
+from PyQt6.QtCore import QCoreApplication
+from main_window import MainWindow
 
+# 配置logging
 logging.basicConfig(
     level=logging.INFO,
-    format='[%(asctime)s] [%(levelname)s] %(message)s',
-    datefmt='%H:%M:%S'
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()]
 )
 logger = logging.getLogger(__name__)
 
-APP_SERVER_NAME = "LeafView_Server"
-BRING_TO_FRONT_COMMAND = b'bringToFront'
-
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
-        return sys.__excepthook__(exc_type, exc_value, exc_traceback)
-    
-    error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-    logger.error(f"未捕获的异常: {exc_type.__name__}: {exc_value}")
-    logger.debug(f"详细错误信息:\n{error_message}")
+        sys.__excepthook__(exc_type, exc_value, exc_traceback)
+        return
+    logging.critical("未处理的异常", exc_info=(exc_type, exc_value, exc_traceback))
     
     app = QtWidgets.QApplication.instance()
     if app:
         try:
+            error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
             msg = QtWidgets.QMessageBox()
             msg.setIcon(QtWidgets.QMessageBox.Icon.Critical)
             msg.setWindowTitle("应用程序错误")
@@ -38,64 +35,31 @@ def handle_exception(exc_type, exc_value, exc_traceback):
             pass
 
 def main():
-    sys.excepthook = handle_exception
-    
-    with closing(QLocalSocket()) as socket:
+    try:
+        QCoreApplication.setApplicationName("LeafView")
+        QCoreApplication.setApplicationVersion("1.0.0")
+        
+        # 改进的单实例检测
         try:
-            if socket.connectToServer(APP_SERVER_NAME) and socket.waitForConnected(500):
-                socket.write(BRING_TO_FRONT_COMMAND)
-                socket.waitForBytesWritten(1000)
-                logger.info("发现已有实例运行，将其置于前台")
-                return 0
-        except (QtCore.QObject.QObjectError, ConnectionError):
-            pass
-    
-    app = QtWidgets.QApplication(sys.argv)
-    app.setApplicationName("LeafView")
-    app.setApplicationVersion("1.3")
-    
-    QLocalServer.removeServer(APP_SERVER_NAME)
-    local_server = None
-    try:
-        local_server = QLocalServer()
-        local_server.listen(APP_SERVER_NAME)
-        logger.info("本地服务器启动成功")
-    except Exception as e:
-        logger.error(f"创建本地服务器失败: {e}")
-    
-    try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            sock.bind(('127.0.0.1', 12345))
+        except socket.error:
+            logging.info("应用程序已在运行")
+            return
+        
+        app = QApplication(sys.argv)
         window = MainWindow()
-        window.move(300, 100)
         window.show()
-        
-        if local_server:
-            def handle_socket_data(socket):
-                if socket.bytesAvailable() > 0 and socket.readAll().data() == BRING_TO_FRONT_COMMAND:
-                    logger.debug("收到前台显示请求")
-                    window.activateWindow()
-                    window.raise_()
-                    window.showNormal()
-                socket.deleteLater()
-            
-            def handle_connection():
-                socket = local_server.nextPendingConnection()
-                if socket:
-                    socket.readyRead.connect(lambda: handle_socket_data(socket))
-            
-            local_server.newConnection.connect(handle_connection)
-        
-        return app.exec()
-        
+        sys.exit(app.exec())
     except Exception as e:
-        logger.error(f"应用程序启动失败: {e}")
-    try:
-        QtWidgets.QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
-    except Exception:
-        pass
-        return 1
-    finally:
-        if local_server:
-            local_server.close()
+        logging.error(f"应用启动失败: {str(e)}")
+        try:
+            QtWidgets.QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
+        except Exception:
+            pass
+        sys.exit(1)
 
-if __name__ == '__main__':
-    sys.exit(main())
+if __name__ == "__main__":
+    sys.excepthook = handle_exception
+    main()

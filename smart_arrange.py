@@ -1,8 +1,15 @@
+import os
+import logging
 from datetime import datetime
+from typing import Optional, List, Dict, Any, Tuple, Union
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6 import QtWidgets
-from PyQt6.QtWidgets import QMessageBox, QInputDialog
+from PyQt6.QtWidgets import QMessageBox, QInputDialog, QFileDialog
 from smart_arrange_thread import SmartArrangeThread
+
+# 配置日志
+logger = logging.getLogger('SmartArrangeManager')
+logger.setLevel(logging.DEBUG)
 
 class SmartArrangeManager(QObject):
     log_signal = pyqtSignal(str, str)
@@ -15,17 +22,18 @@ class SmartArrangeManager(QObject):
         self.destination_root = None
         self.selected_folders = []
 
+        # Use English for dictionary keys for consistency
         self.tag_buttons = {
-            '原名': self.parent.btnAddOriginalTag,
-            '年份': self.parent.btnAddYearTag,
-            '月份': self.parent.btnAddMonthTag,
-            '日': self.parent.btnAddDateTag,
-            '星期': self.parent.btnDayTag,
-            '时间': self.parent.btnAddTimeTag,
-            '品牌': self.parent.btnAddMakeTag,
-            '型号': self.parent.btnModelTag,
-            '位置': self.parent.btnAddressTag,
-            '自定义': self.parent.btnCustomizeTag
+            'Original': self.parent.btnAddOriginalTag,
+            'Year': self.parent.btnAddYearTag,
+            'Month': self.parent.btnAddMonthTag,
+            'Day': self.parent.btnAddDateTag,
+            'Week': self.parent.btnDayTag,
+            'Time': self.parent.btnAddTimeTag,
+            'Make': self.parent.btnAddMakeTag,
+            'Model': self.parent.btnModelTag,
+            'Location': self.parent.btnAddressTag,
+            'Custom': self.parent.btnCustomizeTag
         }
 
         self.separator_mapping = {
@@ -107,127 +115,115 @@ class SmartArrangeManager(QObject):
     def update_progress_bar(self, value):
         self.parent.classificationProgressBar.setValue(value)
 
+
+    def select_destination_folder(self) -> bool:
+        """Select destination folder using a unified method"""
+        try:
+            # First try to get target folder from folder_page
+            if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
+                try:
+                    target_folder = self.folder_page.get_target_folder()
+                    if target_folder and self.validate_destination(target_folder):
+                        self.destination_root = target_folder
+                        return True
+                except Exception as e:
+                    self.log("WARNING", f"Failed to get target folder from folder_page: {str(e)}")
+            
+            # If no preset target or validation failed, let user select
+            folder = QFileDialog.getExistingDirectory(
+                self.parent, 
+                "Select destination folder",
+                options=QFileDialog.Option.ShowDirsOnly
+            )
+            
+            if not folder:
+                self.log("WARNING", "No destination folder selected")
+                return False
+            
+            if self.validate_destination(folder):
+                self.destination_root = folder
+                return True
+            
+            return False
+        except Exception as e:
+            self.log("ERROR", f"Error in select_destination_folder: {str(e)}")
+            return False
+    
+    def validate_destination(self, destination: str) -> bool:
+        """Validate if the destination folder is valid"""
+        try:
+            # Check if folder exists
+            if not os.path.exists(destination):
+                reply = QMessageBox.question(
+                    self.parent,
+                    "Confirm", 
+                    f"Destination folder does not exist. Create it?\n{destination}",
+                    QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+                )
+                if reply == QMessageBox.StandardButton.Yes:
+                    try:
+                        os.makedirs(destination, exist_ok=True)
+                        self.log("INFO", f"Created destination folder: {destination}")
+                    except Exception as e:
+                        self.log("ERROR", f"Failed to create destination folder: {str(e)}")
+                        QMessageBox.critical(self.parent, "Error", f"Failed to create destination folder: {str(e)}")
+                        return False
+                else:
+                    return False
+            
+            # Check write permission
+            if not os.access(destination, os.W_OK):
+                self.log("ERROR", f"No write permission for destination folder: {destination}")
+                QMessageBox.critical(self.parent, "Error", "No write permission for destination folder!")
+                return False
+            
+            # Update UI display
+            display_path = destination + '/'
+            if len(display_path) > 20:
+                display_path = f"{display_path[:8]}...{display_path[-6:]}"
+            return True
+        except Exception as e:
+            self.log("ERROR", f"Error in validate_destination: {str(e)}")
+            return False
+        operation_text = "Destination: "
+        try:
+            self.parent.copyRoute.setText(f"{operation_text}{display_path}")
+        except Exception as e:
+            self.log("ERROR", f"Failed to update destination display: {str(e)}")
+        
+        return True
+            
     def toggle_SmartArrange(self):
         self.log("DEBUG", "toggle_SmartArrange")
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
         self.log("DEBUG", f"thread_running: {thread_running}")
         if thread_running:
-            self.log("INFO", "停止操作")
+            self.log("INFO", "Stopping operation")
             self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "停止操作")
+                self.log("DEBUG", "Stop operation called")
             except Exception as e:
-                self.log("ERROR", f"{str(e)}")
+                self.log("ERROR", f"Error stopping thread: {str(e)}")
                 self.parent.btnStartSmartArrange.setText("Start Arrange")
         else:
             self.parent.btnStartSmartArrange.setEnabled(True)
-            self.log("DEBUG", "start")
+            self.log("DEBUG", "Starting operation")
             
             self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not self.selected_folders:
-                self.log("WARNING", "未选择文件夹")
+                self.log("WARNING", "No folders selected")
                 try:
-                    QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要整理的文件夹！")
+                    QtWidgets.QMessageBox.warning(self.parent, "Warning", "Please select folders to organize first!")
                 except Exception as e:
-                    self.log("ERROR", f"显示警告消息失败: {e}")
+                    self.log("ERROR", f"Failed to show warning message: {str(e)}")
                 return
             
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
-            if not self.destination_root:
-                import os
-                if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
-                    target_folder = self.folder_page.get_target_folder()
-                    if target_folder:
-                        destination = target_folder
-                        if not os.access(destination, os.W_OK):
-                            from PyQt6.QtWidgets import QMessageBox
-                            QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
-                            return
-                        
-                        self.destination_root = destination
-                        display_path = destination + '/'
-                        if len(display_path) > 20:
-                            display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                        operation_text = "目标路径: "
-                        self.parent.copyRoute.setText(f"{operation_text}{display_path}")
-                    else:
-                        import os
-                        from PyQt6.QtWidgets import QFileDialog
-                        folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
-                                                                  options=QFileDialog.Option.ShowDirsOnly)
-                        if not folder:
-                            self.log("WARNING", "No destination")
-                            return
-                        
-                        destination = folder
-                        if not os.path.exists(destination):
-                            from PyQt6.QtWidgets import QMessageBox
-                            reply = QMessageBox.question(
-                                self.parent,
-                                "确认", 
-                                f"目标文件夹不存在，是否创建？\n{destination}",
-                                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                            )
-                            if reply == QMessageBox.StandardButton.Yes:
-                                try:
-                                    os.makedirs(destination, exist_ok=True)
-                                except Exception as e:
-                                    QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
-                                    return
-                            else:
-                                return
-                        
-                        if not os.access(destination, os.W_OK):
-                            from PyQt6.QtWidgets import QMessageBox
-                            QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
-                            return
-                        
-                        self.destination_root = folder
-                        display_path = folder + '/'
-                        if len(display_path) > 20:
-                            display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                        operation_text = "Destination: "
-                        self.parent.copyRoute.setText(f"{operation_text}{display_path}")
-                else:
-                    import os
-                    from PyQt6.QtWidgets import QFileDialog
-                    folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
-                                                              options=QFileDialog.Option.ShowDirsOnly)
-                    if not folder:
-                        self.log("WARNING", "No destination")
-                        return
-                    
-                    destination = folder
-                    if not os.path.exists(destination):
-                        from PyQt6.QtWidgets import QMessageBox
-                        reply = QMessageBox.question(
-                            self.parent,
-                            "确认", 
-                            f"目标文件夹不存在，是否创建？\n{destination}",
-                            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
-                        )
-                        if reply == QMessageBox.StandardButton.Yes:
-                            try:
-                                os.makedirs(destination, exist_ok=True)
-                            except Exception as e:
-                                QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败：{str(e)}")
-                                return
-                        else:
-                            return
-                    
-                    if not os.access(destination, os.W_OK):
-                        from PyQt6.QtWidgets import QMessageBox
-                        QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
-                        return
-                    
-                    self.destination_root = folder
-                    display_path = folder + '/'
-                    if len(display_path) > 20:
-                        display_path = f"{display_path[:8]}...{display_path[-6:]}"
-                    operation_text = "Destination: "
-                    self.parent.copyRoute.setText(f"{operation_text}{display_path}")
+            # 使用统一的方法选择目标文件夹
+            if not self.destination_root and not self.select_destination_folder():
+                return
             
             if self.SmartArrange_thread:
                 try:
@@ -242,18 +238,18 @@ class SmartArrangeManager(QObject):
             from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
-                "确认操作?",
-                "操作无法撤销!\n\n"
-                "• 移动: 文件移动后，原始文件将被删除\n"
-                "• 复制: 文件复制后，原始文件保留\n\n"
-                "请备份重要文件!\n\n"
-                "确定继续?",
+                "Confirm Operation?",
+                "Operation cannot be undone!\n\n"
+                "• Move: Original files will be deleted\n"
+                "• Copy: Original files will be preserved\n\n"
+                "Please backup important files!\n\n"
+                "Continue?",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "已取消")
+                self.log("INFO", "Operation cancelled")
                 return
 
             self.log("DEBUG", "confirmed")
@@ -274,13 +270,13 @@ class SmartArrangeManager(QObject):
                     if isinstance(folder, dict) and 'path' in folder:
                         folder['include_sub'] = 1
             
+            # Collect classification structure, using English consistently
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()
                 for i in range(1, 6)
                 if getattr(self.parent, f'comboClassificationLevel{i}').isEnabled() and
-                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "不分类"
+                   getattr(self.parent, f'comboClassificationLevel{i}').currentText() != "None"
             ]
-
             file_name_parts = []
             try:
                 for i in range(self.selected_frame.layout().count()):
@@ -361,9 +357,9 @@ class SmartArrangeManager(QObject):
                       message_prefix="重置进度条失败: ")
         
         if not stopped_status:
-            safe_operation(lambda: QMessageBox.information(self.parent, "完成", "操作已完成！"), 
-                          error_level="WARNING", 
-                          message_prefix="显示完成消息失败: ")
+                safe_operation(lambda: QMessageBox.information(self.parent, "Completed", "Operation completed!"), 
+                              error_level="WARNING", 
+                              message_prefix="Failed to show completion message: ")
         
         self.SmartArrange_thread = None
 
@@ -393,13 +389,14 @@ class SmartArrangeManager(QObject):
             # 只处理启用且非"不分类"的选项
             if combo.isEnabled() and combo.currentText() != "不分类":
                 text = combo.currentText()
-                SmartArrange_paths.append(self.get_specific_value(text))
+                path_value = self.get_specific_value(text)
+                SmartArrange_paths.append(path_value)
                 self.SmartArrange_settings.append(text)
 
         if SmartArrange_paths:
             preview_text = "/".join(SmartArrange_paths)
         else:
-            preview_text = "顶层目录（不分类）"
+            preview_text = "不分类"
         
         self.parent.previewRoute.setText(preview_text)
         self.update_operation_display()
@@ -415,7 +412,7 @@ class SmartArrangeManager(QObject):
         elif not has_SmartArrange and has_filename:
             operation_type = "仅重命名"
         else:
-            operation_type = "提取到顶层目录"
+            operation_type = "提取到顶层"
 
         operation_mode = "复制" if self.parent.fileOperation.currentIndex() == 0 else "移动"
 
@@ -437,15 +434,16 @@ class SmartArrangeManager(QObject):
         self.update_combobox_state(1)
 
     def get_specific_value(self, text):
+        """Get specific value for preview based on text type"""
         now = datetime.now()
         return {
-            "年份": str(now.year),
-            "月份": str(now.month),
-            "拍摄设备": "Apple",
-            "相机型号": "iPhone17",
-            "拍摄省份": "江西",
-            "拍摄城市": "南昌",
-            "按扩展名": "JPG"
+            "Year": str(now.year),
+            "Month": str(now.month),
+            "Device": "Apple",
+            "Camera": "iPhone17",
+            "Province": "Jiangxi",
+            "City": "Nanchang",
+            "By Extension": "JPG"
         }.get(text, text)
 
     def is_valid_windows_filename(self, filename):
@@ -521,15 +519,15 @@ class SmartArrangeManager(QObject):
                 example_parts.append(custom_content[:3] if len(custom_content) > 3 else custom_content)
             else:
                 parts = {
-                    "原名": "IMG",
-                    "年份": f"{now.year}",
-                    "月份": f"{now.month:02d}",
-                    "日": f"{now.day:02d}",
-                    "星期": f"{self._get_weekday(now)}",
-                    "时间": f"{now.strftime('%H%M%S')}",
-                    "品牌": "Apple",
-                    "型号": "iPhone17",
-                    "位置": "江西南昌"
+                    "Original": "IMG",
+                    "Year": f"{now.year}",
+                    "Month": f"{now.month:02d}",
+                    "Day": f"{now.day:02d}",
+                    "Weekday": f"{self._get_weekday(now)}",
+                    "Time": f"{now.strftime('%H%M%S')}",
+                    "Brand": "Apple",
+                    "Model": "iPhone17",
+                    "Location": "Jiangxi Nanchang"
                 }
                 example_parts.append(parts.get(button_text, button_text))
 
@@ -538,17 +536,14 @@ class SmartArrangeManager(QObject):
 
     @staticmethod
     def _get_weekday(date):
-        return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
+        return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][date.weekday()]
 
     def handle_log_signal(self, level, message):
+        """处理日志信号并显示到UI组件"""
         message_str = str(message)
-        if not any('\u4e00' <= char <= '\u9fff' for char in message_str):
-            return
-            
-        log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
-        # 直接使用传入的message，因为log方法中已经包含完整的时间戳和格式
-        final_message = message_str
+        # 不再过滤非中文字符
+        log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
@@ -557,24 +552,47 @@ class SmartArrangeManager(QObject):
             try:
                 log_component.append(
                     f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
-                    f'<span style="color:{color};">{final_message}</span>'  \
+                    f'<span style="color:{color};">{message_str}</span>'  \
                     f'</div>'
                 )
-            except Exception:
-                pass
+            except Exception as e:
+                logger.error(f"Failed to append log to UI: {str(e)}")
         else:
-            print(final_message)
+            logger.warning(f"Log component not found, cannot display: {message_str}")
             if hasattr(self.parent, 'log'):
                 try:
                     self.parent.log(level, message_str)
                 except Exception as e:
-                    print(f"调用父组件log方法失败: {str(e)}")
+                    logger.error(f"Failed to call parent log method: {str(e)}")
 
-    def log(self, level, message):
+    def log(self, level: str, message: str) -> None:
+        """Unified logging method to ensure consistency with smart_arrange_thread.py"""
         try:
-            self.log_signal.emit(level, message)
-        except Exception:
-            print(message)
+            # Parameter validation
+            if not isinstance(level, str) or not isinstance(message, str):
+                raise TypeError("Log level and message must be strings")
+            
+            # Validate log level
+            valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+            if level not in valid_levels:
+                level = 'INFO'  # Default to INFO level
+            
+            # Unified log format
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_message = f"[{current_time}] {level}: {message}"
+            
+            # Send signal to UI thread
+            self.log_signal.emit(level, log_message)
+            
+            # Also use Python standard logging
+            getattr(logger, level.lower(), logger.info)(message)
+        except Exception as e:
+            # Prevent logging system failures from affecting program execution
+            try:
+                error_msg = f"Failed to log message: {str(e)}"
+                logger.error(error_msg)
+            except:
+                pass  # Silent failure in extreme cases
 
     def move_tag_back(self, button):
         self.selected_frame.layout().removeWidget(button)

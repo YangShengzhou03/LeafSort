@@ -97,6 +97,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.btnMaximize.clicked.connect(self._toggle_maximize)
             if hasattr(self, 'btnClose'):
                 self.btnClose.clicked.connect(self._hide_to_tray)
+            # 完善GitHub按钮功能
+            if hasattr(self, 'btnGitHub'):
+                self.btnGitHub.clicked.connect(self._open_github)
             
             logger.info("UI信号连接完成")
         except Exception as e:
@@ -167,14 +170,41 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             if self.isMaximized():
                 self.showNormal()
+                # 添加图标更新逻辑
+                if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
+                    self.btnMaximize.setIcon(self.style().standardIcon(
+                        QtWidgets.QStyle.StandardPixmap.SP_TitleBarMaxButton))
                 logger.info("窗口已还原")
             else:
                 self.showMaximized()
+                # 添加图标更新逻辑
+                if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
+                    self.btnMaximize.setIcon(self.style().standardIcon(
+                        QtWidgets.QStyle.StandardPixmap.SP_TitleBarNormalButton))
                 logger.info("窗口已最大化")
         except Exception as e:
             logger.error(f"切换窗口最大化状态时出错: {str(e)}")
     
     def closeEvent(self, event):
-        event.ignore()
-        self._hide_to_tray()
-        logger.info("窗口已隐藏到托盘")
+        try:
+            event.ignore()
+            self._hide_to_tray()
+            logger.info("窗口已隐藏到托盘")
+        except Exception as e:
+            logger.error(f"处理关闭事件时出错: {str(e)}")
+            event.accept()  # 如果出错则接受关闭事件
+    
+    def _open_github(self):
+        """打开GitHub页面"""
+        try:
+            url = QtCore.QUrl("https://github.com/yourusername/LeafView")
+            if not QtGui.QDesktopServices.openUrl(url):
+                logger.warning("无法打开GitHub页面")
+                QtWidgets.QMessageBox.information(self, "信息", 
+                                                 "无法打开GitHub页面，请手动访问")
+            else:
+                logger.info("已打开GitHub页面")
+        except Exception as e:
+            logger.error(f"打开GitHub页面时出错: {str(e)}")
+            QtWidgets.QMessageBox.warning(self, "警告", 
+                                         f"打开GitHub页面失败: {str(e)}")
