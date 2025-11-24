@@ -17,7 +17,7 @@ def _thread_safe_method(func):
 
 
 class ConfigManager:
-    CONFIG_VERSION = "1.0"
+    CONFIG_VERSION = "1.1"
     
     def __init__(self):
         self._lock = threading.RLock()
@@ -302,7 +302,8 @@ class ConfigManager:
                 "memory_limit_mb": 2048,
                 "last_opened_folder": '',
                 "window_position": {'x': 100, 'y': 100},
-                "window_size": {'width': 942, 'height': 580}
+                "window_size": {'width': 942, 'height': 580},
+                "location_cache_tolerance": 0.0135  # 位置缓存容差，默认直径3公里(约0.0135度)
             },
             "api_limits": {
                 "gaode": {
