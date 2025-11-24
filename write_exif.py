@@ -36,7 +36,7 @@ class WriteExifManager(QObject):
         try:
             self.log(level, message)
         except Exception as e:
-            print(f"日志记录失败: {e}")
+            pass  # 静默忽略日志记录失败
 
     def _get_parent_component(self, name):
         try:
@@ -418,13 +418,13 @@ class WriteExifManager(QObject):
             try:
                 log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
             except Exception as e:
-                print(f"无法写入EXIF日志: {e}")
+                pass  # 静默忽略日志写入失败
         else:
             print(f"[{level}] {message}")
             try:
                 self.parent.log(level, message)
             except Exception as e:
-                print(f"无法将日志传递给父组件: {e}")
+                pass  # 静默忽略日志传递失败
 
     def log(self, level, message):
         """记录日志消息
@@ -441,8 +441,8 @@ class WriteExifManager(QObject):
         try:
             self.log_signal.emit(level, log_message)
         except Exception as e:
-            print(f"无法发出日志信号: {e}")
-            print(log_message)
+            pass  # 静默忽略日志信号发送失败
+            pass  # 静默忽略控制台输出失败
 
     def on_finished(self):
         """处理EXIF写入完成事件"""

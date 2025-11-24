@@ -601,8 +601,8 @@ class SmartArrangeManager(QObject):
                     f'<span style="color:{color};">{final_message}</span>'  \
                     f'</div>'
                 )
-            except Exception as e:
-                print(f"无法写入整理日志: {e}")
+            except Exception:
+                pass  # 静默忽略日志写入失败
         else:
             # 控制台输出
             print(final_message)

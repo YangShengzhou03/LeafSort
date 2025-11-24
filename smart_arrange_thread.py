@@ -230,7 +230,10 @@ class SmartArrangeThread(QtCore.QThread):
                     else:
                         import shutil
                         shutil.move(old_path, unique_path)
-                        self.log("INFO", f"移动文件: {old_path} -> {unique_path}")
+                        # 不再暴露完整文件路径，只显示文件名信息
+                        old_filename = os.path.basename(old_path)
+                        new_filename = os.path.basename(unique_path)
+                        self.log("INFO", f"移动文件: {old_filename} -> {new_filename}")
                 
                 renamed_files += 1
                 if total_rename_files > 0:
@@ -239,7 +242,9 @@ class SmartArrangeThread(QtCore.QThread):
                     self.progress_signal.emit(min(total_progress, 99))
                 
             except Exception as e:
-                self.log("ERROR", f"处理文件 {old_path} 时出错: {str(e)}")
+                # 只记录文件名而非完整路径
+                filename = os.path.basename(old_path)
+                self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
 
     def organize_without_classification(self, folder_path):
         folder_path = Path(folder_path)
@@ -281,7 +286,9 @@ class SmartArrangeThread(QtCore.QThread):
                             percent_complete = int((self.processed_files / self.total_files) * 80)
                             self.progress_signal.emit(percent_complete)
                     except Exception as e:
-                        self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
+                        # 只记录文件名而非完整路径
+                        filename = os.path.basename(file_path)
+                        self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
         
         operation_type = "复制" if self.destination_root else "移动"
         self.log("INFO", f"处理完成，共{operation_type} {file_count} 个文件")
@@ -449,10 +456,12 @@ class SmartArrangeThread(QtCore.QThread):
             return date_taken
                 
         except subprocess.TimeoutExpired:
-            self.log("DEBUG", f"读取 {file_path} 的EXIF数据超时")
+            # 不暴露文件路径，只记录操作结果
+            self.log("DEBUG", "读取EXIF数据超时")
             return None
         except Exception as e:
-            self.log("DEBUG", f"读取 {file_path} 的EXIF数据时出错: {str(e)}")
+            # 不暴露文件路径，只记录错误信息
+            self.log("DEBUG", f"读取EXIF数据时出错: {str(e)}")
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
@@ -532,7 +541,8 @@ class SmartArrangeThread(QtCore.QThread):
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
         else:
-            self.log("DEBUG", "HEIC文件没有EXIF数据")
+            # 简化日志信息
+            self.log("DEBUG", "文件没有EXIF数据")
             return None
 
     def _process_png_exif(self, file_path):

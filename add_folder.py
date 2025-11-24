@@ -178,10 +178,10 @@ class FolderPage(QtWidgets.QWidget):
                 source_path = self.parent.inputSourceFolder.text().strip()
                 # 验证路径是否存在且为文件夹
                 if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
-                    logger.info(f"获取源文件夹: {source_path}")
+                    logger.info("获取源文件夹成功")
                     return [source_path]
                 elif source_path:
-                    logger.warning(f"源文件夹不存在或不是有效目录: {source_path}")
+                    logger.warning("源文件夹不存在或不是有效目录")
         except Exception as e:
             logger.error(f"获取源文件夹时出错: {str(e)}")
         return []
@@ -193,10 +193,10 @@ class FolderPage(QtWidgets.QWidget):
                 target_path = self.parent.inputTargetFolder.text().strip()
                 # 验证路径是否存在且为文件夹
                 if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
-                    logger.info(f"获取目标文件夹: {target_path}")
+                    logger.info("获取目标文件夹成功")
                     return target_path
                 elif target_path:
-                    logger.warning(f"目标文件夹不存在或不是有效目录: {target_path}")
+                    logger.warning("目标文件夹不存在或不是有效目录")
         except Exception as e:
             logger.error(f"获取目标文件夹时出错: {str(e)}")
         return None

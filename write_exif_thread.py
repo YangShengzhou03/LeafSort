@@ -180,9 +180,9 @@ class WriteExifThread(QThread):
                                 and os.path.splitext(f)[1].lower() in all_extensions]
                         image_paths.extend([os.path.join(folder_path, f) for f in files])
                     except (IOError, OSError) as e:
-                        self.log_signal.emit("ERROR", f"读取文件夹 {folder_path} 失败: {str(e)}")
+                        self.log_signal.emit("ERROR", f"读取文件夹失败: {str(e)}")
         
-        logger.info("共收集到 %d 个图像文件", len(image_paths))
+        logger.info("共收集到图像文件")
         return image_paths
     
     def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
@@ -191,8 +191,8 @@ class WriteExifThread(QThread):
             for root, _, files in os.walk(folder_path):
                 self._process_folder_content(root, files, image_extensions, image_paths)
         except (OSError, IOError) as e:
-            logger.error("遍历文件夹 %s 时出错: %s", folder_path, str(e))
-            self.log_signal.emit("ERROR", "遍历文件夹 %s 时出错: %s", folder_path, str(e))
+            logger.error("遍历文件夹时出错: %s", str(e))
+            self.log_signal.emit("ERROR", "遍历文件夹时出错: %s", str(e))
     
     def _process_folder_without_subfolders(self, folder_path, image_extensions, image_paths):
         """处理不包含子文件夹的情况"""
