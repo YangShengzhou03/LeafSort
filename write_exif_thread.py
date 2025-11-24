@@ -151,7 +151,7 @@ class WriteExifThread(QThread):
     def _log_completion_summary(self, success_count, error_count, total_files):
         self.log_signal.emit("DEBUG", "=" * 40)
         self.log_signal.emit("INFO", f"属性写入完成了，成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
-        self.log_signal.emit("DEBUG", "=" * 3 + "LeafView © 2025 Yangshengzhou.All Rights Reserved" + "=" * 3)
+        self.log_signal.emit("DEBUG", "=" * 3 + "LeafView © 2025 杨生洲 版权所有" + "=" * 3)
 
     def _collect_image_paths(self):
         """收集所有图像路径"""

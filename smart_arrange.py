@@ -108,7 +108,7 @@ class SmartArrangeManager(QObject):
                         self.destination_root = target_folder
                         return True
                 except Exception as e:
-                    self.log("WARNING", f"Failed to get target folder from folder_page: {str(e)}")
+                    self.log("WARNING", f"从folder_page获取目标文件夹失败: {str(e)}")
             
             folder = QFileDialog.getExistingDirectory(
                 self.parent, 
@@ -117,7 +117,7 @@ class SmartArrangeManager(QObject):
             )
             
             if not folder:
-                self.log("WARNING", "No destination folder selected")
+                self.log("WARNING", "未选择目标文件夹")
                 return False
             
             if self.validate_destination(folder):
@@ -126,7 +126,7 @@ class SmartArrangeManager(QObject):
             
             return False
         except Exception as e:
-            self.log("ERROR", f"Error in select_destination_folder: {str(e)}")
+            self.log("ERROR", f"选择目标文件夹时出错: {str(e)}")
             return False
     
     def validate_destination(self, destination: str) -> bool:
@@ -141,17 +141,17 @@ class SmartArrangeManager(QObject):
                 if reply == QMessageBox.StandardButton.Yes:
                     try:
                         os.makedirs(destination, exist_ok=True)
-                        self.log("INFO", f"Created destination folder: {destination}")
+                        self.log("INFO", f"已创建目标文件夹: {destination}")
                     except Exception as e:
-                        self.log("ERROR", f"Failed to create destination folder: {str(e)}")
-                        QMessageBox.critical(self.parent, "Error", f"Failed to create destination folder: {str(e)}")
+                        self.log("ERROR", f"创建目标文件夹失败: {str(e)}")
+                        QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败: {str(e)}")
                         return False
                 else:
                     return False
             
             if not os.access(destination, os.W_OK):
-                self.log("ERROR", f"No write permission for destination folder: {destination}")
-                QMessageBox.critical(self.parent, "Error", "No write permission for destination folder!")
+                self.log("ERROR", f"目标文件夹没有写入权限: {destination}")
+                QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
                 return False
             
             display_path = destination + '/'
@@ -159,24 +159,24 @@ class SmartArrangeManager(QObject):
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
             return True
         except Exception as e:
-            self.log("ERROR", f"Error in validate_destination: {str(e)}")
+            self.log("ERROR", f"验证目标文件夹时出错: {str(e)}")
             return False
-        operation_text = "Destination: "
+        operation_text = "目标: "
         try:
             self.parent.copyRoute.setText(f"{operation_text}{display_path}")
         except Exception as e:
-            self.log("ERROR", f"Failed to update destination display: {str(e)}")
+            self.log("ERROR", f"更新目标文件夹显示失败: {str(e)}")
         
         return True
             
     def toggle_SmartArrange(self):
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
         if thread_running:
-            self.log("INFO", "Stopping operation")
+            self.log("INFO", "正在停止操作")
             self.parent.btnStartSmartArrange.setText("Stopping...")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "Stop operation called")
+                self.log("DEBUG", "停止操作被调用")
             except Exception as e:
                 self.log("ERROR", f"Error stopping thread: {str(e)}")
                 self.parent.btnStartSmartArrange.setText("Start Arrange")
@@ -309,7 +309,7 @@ class SmartArrangeManager(QObject):
         self.update_progress_bar(0)
         
         if not stopped_status:
-            QMessageBox.information(self.parent, "Completed", "Operation completed!")
+            QMessageBox.information(self.parent, "完成", "操作已完成！")
         
         self.SmartArrange_thread = None
 
@@ -484,7 +484,7 @@ class SmartArrangeManager(QObject):
 
     @staticmethod
     def _get_weekday(date):
-        return ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"][date.weekday()]
+        return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
         message_str = str(message)

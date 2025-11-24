@@ -58,7 +58,7 @@ def main():
         print(f"Start error: {str(e)}")
         traceback.print_exc()
         try:
-            QMessageBox.critical(None, "Fatal Error", f"Application failed to start: {str(e)}")
+            QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
         except Exception:
             pass
         sys.exit(1)
