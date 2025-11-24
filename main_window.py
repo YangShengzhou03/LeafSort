@@ -92,14 +92,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _connect_signals(self):
         try:
-            if hasattr(self, 'btnMinimize'):
-                self.btnMinimize.clicked.connect(self.showMinimized)
-            if hasattr(self, 'btnMaximize'):
-                self.btnMaximize.clicked.connect(self._toggle_maximize)
-            if hasattr(self, 'btnClose'):
-                self.btnClose.clicked.connect(self._hide_to_tray)
-            if hasattr(self, 'btnGitHub'):
-                self.btnGitHub.clicked.connect(self._open_github)
+            self.btnMinimize.clicked.connect(self.showMinimized)
+            self.btnMaximize.clicked.connect(self._toggle_maximize)
+            self.btnClose.clicked.connect(self._hide_to_tray)
+            self.btnGitHub.clicked.connect(self._open_github)
 
             logger.info("UI信号连接完成")
         except Exception as e:
@@ -134,9 +130,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _hide_to_tray(self):
         try:
             self.hide()
-            if self.tray_icon:
-                self.tray_icon.show()
-                logger.info("窗口已隐藏到托盘")
+            self.tray_icon.show()
+            logger.info("窗口已隐藏到托盘")
         except Exception as e:
             logger.error(f"隐藏窗口到托盘时出错: {str(e)}")
 
@@ -150,8 +145,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _exit_app(self):
         try:
-            if self.tray_icon:
-                self.tray_icon.hide()
+            self.tray_icon.hide()
 
             logger.info("应用程序正在退出")
             QtWidgets.QApplication.quit()
@@ -170,15 +164,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             if self.isMaximized():
                 self.showNormal()
-                if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
-                    self.btnMaximize.setIcon(self.style().standardIcon(
-                        QtWidgets.QStyle.StandardPixmap.SP_TitleBarMaxButton))
+                self.btnMaximize.setIcon(get_resource_path('resources/img/窗口控制/还原.svg'))
                 logger.info("窗口已还原")
             else:
                 self.showMaximized()
-                if hasattr(self, 'btnMaximize') and self.btnMaximize is not None:
-                    self.btnMaximize.setIcon(self.style().standardIcon(
-                        QtWidgets.QStyle.StandardPixmap.SP_TitleBarNormalButton))
+                self.btnMaximize.setIcon(get_resource_path('resources/img/窗口控制/还原.svg'))
                 logger.info("窗口已最大化")
         except Exception as e:
             logger.error(f"切换窗口最大化状态时出错: {str(e)}")

@@ -13,11 +13,8 @@ class FolderPage(QtWidgets.QWidget):
         super().__init__(parent)
         self.parent = parent
         
-        if hasattr(self.parent, 'btnBrowseSource') and hasattr(self.parent, 'inputSourceFolder'):
-            self.parent.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.parent.inputSourceFolder))
-                
-        if hasattr(self.parent, 'btnBrowseTarget') and hasattr(self.parent, 'inputTargetFolder'):
-            self.parent.btnBrowseTarget.clicked.connect(lambda: self._browse_directory("选择目标文件夹", self.parent.inputTargetFolder))
+        self.parent.btnBrowseSource.clicked.connect(lambda: self._browse_directory("选择源文件夹", self.parent.inputSourceFolder))
+        self.parent.btnBrowseTarget.clicked.connect(lambda: self._browse_directory("选择目标文件夹", self.parent.inputTargetFolder))
 
     def _browse_directory(self, title, line_edit):
         original_path = line_edit.text()
@@ -44,25 +41,24 @@ class FolderPage(QtWidgets.QWidget):
                 line_edit.setText(original_path)
 
     def _validate_folder_selection(self, selected_path, title, original_path, line_edit):
-        if (hasattr(self.parent, 'inputSourceFolder') and hasattr(self.parent, 'inputTargetFolder')):
-            source_path = self.parent.inputSourceFolder.text().strip()
-            target_path = self.parent.inputTargetFolder.text().strip()
-            
-            if title == "选择源文件夹":
-                source_path = selected_path
-            else:
-                target_path = selected_path
-            
-            if source_path and target_path:
-                try:
-                    if not self._check_folder_relationship(source_path, target_path):
-                        QtWidgets.QMessageBox.warning(self,"文件夹选择错误","源文件夹和目标文件夹不能相同，也不能存在隶属关系。",QtWidgets.QMessageBox.StandardButton.Ok)
-                        line_edit.setText(original_path)
-                        return False
-                except Exception as e:
-                    logger.error(f"检查文件夹关系时出错: {str(e)}")
+        source_path = self.parent.inputSourceFolder.text().strip()
+        target_path = self.parent.inputTargetFolder.text().strip()
+        
+        if title == "选择源文件夹":
+            source_path = selected_path
+        else:
+            target_path = selected_path
+        
+        if source_path and target_path:
+            try:
+                if not self._check_folder_relationship(source_path, target_path):
+                    QtWidgets.QMessageBox.warning(self,"文件夹选择错误","源文件夹和目标文件夹不能相同，也不能存在隶属关系。",QtWidgets.QMessageBox.StandardButton.Ok)
                     line_edit.setText(original_path)
                     return False
+            except Exception as e:
+                logger.error(f"检查文件夹关系时出错: {str(e)}")
+                line_edit.setText(original_path)
+                return False
         
         if title == "选择目标文件夹":
             try:
@@ -75,33 +71,24 @@ class FolderPage(QtWidgets.QWidget):
         return True
 
     def _update_folder_info_display(self, folder_path):
-        text_browser = None
-        if hasattr(self, 'textBrowser_import_info'):
-            text_browser = self.textBrowser_import_info
-        elif self.parent and hasattr(self.parent, 'textBrowser_import_info'):
-            text_browser = self.parent.textBrowser_import_info
-            
-        if text_browser:
-            try:
-                text_browser.setText(self.get_folder_info(folder_path))
-            except Exception as e:
-                logger.error(f"更新文件夹信息显示时出错: {str(e)}")
+        try:
+            self.parent.textBrowser_import_info.setText(self.get_folder_info(folder_path))
+        except Exception as e:
+            logger.error(f"更新文件夹信息显示时出错: {str(e)}")
 
     def _update_import_status(self, title):
-        if self.parent and hasattr(self.parent, 'importStatus'):
-            try:
-                if title == "选择源文件夹":
-                    self.parent.importStatus.setText("源文件夹已选择")
-                elif title == "选择目标文件夹":
-                    self.parent.importStatus.setText("目标文件夹已选择")
-                
-                if (hasattr(self.parent, 'inputSourceFolder') and hasattr(self.parent, 'inputTargetFolder')):
-                    source_path = self.parent.inputSourceFolder.text().strip()
-                    target_path = self.parent.inputTargetFolder.text().strip()
-                    if source_path and target_path:
-                        self.parent.importStatus.setText("文件夹导入完成")
-            except Exception as e:
-                logger.error(f"更新导入状态时出错: {str(e)}")
+        try:
+            if title == "选择源文件夹":
+                self.parent.importStatus.setText("源文件夹已选择")
+            elif title == "选择目标文件夹":
+                self.parent.importStatus.setText("目标文件夹已选择")
+            
+            source_path = self.parent.inputSourceFolder.text().strip()
+            target_path = self.parent.inputTargetFolder.text().strip()
+            if source_path and target_path:
+                self.parent.importStatus.setText("文件夹导入完成")
+        except Exception as e:
+            logger.error(f"更新导入状态时出错: {str(e)}")
 
     def _check_folder_relationship(self, folder1, folder2):
         if not folder1 or not folder2:
@@ -134,26 +121,24 @@ class FolderPage(QtWidgets.QWidget):
 
     def get_all_folders(self):
         try:
-            if self.parent and hasattr(self.parent, 'inputSourceFolder'):
-                source_path = self.parent.inputSourceFolder.text().strip()
-                if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
-                    logger.info("获取源文件夹成功")
-                    return [source_path]
-                elif source_path:
-                    logger.warning("源文件夹不存在或不是有效目录")
+            source_path = self.parent.inputSourceFolder.text().strip()
+            if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
+                logger.info("获取源文件夹成功")
+                return [source_path]
+            elif source_path:
+                logger.warning("源文件夹不存在或不是有效目录")
         except Exception as e:
             logger.error(f"获取源文件夹时出错: {str(e)}")
         return []
 
     def get_target_folder(self):
         try:
-            if self.parent and hasattr(self.parent, 'inputTargetFolder'):
-                target_path = self.parent.inputTargetFolder.text().strip()
-                if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
-                    logger.info("获取目标文件夹成功")
-                    return target_path
-                elif target_path:
-                    logger.warning("目标文件夹不存在或不是有效目录")
+            target_path = self.parent.inputTargetFolder.text().strip()
+            if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
+                logger.info("获取目标文件夹成功")
+                return target_path
+            elif target_path:
+                logger.warning("目标文件夹不存在或不是有效目录")
         except Exception as e:
             logger.error(f"获取目标文件夹时出错: {str(e)}")
         return None
@@ -202,10 +187,6 @@ class FolderPage(QtWidgets.QWidget):
         try:
             imported_count = 0
             conflict_count = 0
-            
-            if not hasattr(self.parent, 'lst_folders'):
-                logger.error("父组件没有lst_folders属性")
-                return
                 
             for folder in folders:
                 logger.info(f"尝试导入文件夹: {folder}")
@@ -244,17 +225,11 @@ class FolderPage(QtWidgets.QWidget):
             logger.error(f"导入文件夹时出错: {str(e)}")
             self._update_status_label(False, "导入文件夹时出错")
         finally:
-            if hasattr(self.parent, 'btn_browse_folder'):
-                self.parent.btn_browse_folder.setEnabled(True)
-            if hasattr(self.parent, 'btn_import'):
-                self.parent.btn_import.setEnabled(True)
+            self.parent.btn_browse_folder.setEnabled(True)
+            self.parent.btn_import.setEnabled(True)
             logger.info("文件夹导入操作完成")
 
     def _update_status_label(self, success, message=None):
-        if not hasattr(self.parent, 'status_label'):
-            logger.error("父组件没有status_label属性")
-            return
-            
         if success:
             status_text = message if message else "导入成功！"
             self.parent.status_label.setText(status_text)
@@ -267,10 +242,6 @@ class FolderPage(QtWidgets.QWidget):
             logger.warning(f"状态更新: {status_text}")
 
     def _is_folder_duplicate(self, folder):
-        if not hasattr(self.parent, 'lst_folders'):
-            logger.error("父组件没有lst_folders属性")
-            return False
-            
         try:
             normalized_folder = os.path.normpath(os.path.abspath(folder)).lower()
             

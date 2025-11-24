@@ -64,20 +64,17 @@ class SmartArrangeManager(QObject):
         for button in self.tag_buttons.values():
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
+        self.log("INFO", "页面初始化完成")
+
     def connect_signals(self):
-        if not hasattr(self, 'log_signal'):
-            from PyQt6.QtCore import pyqtSignal
-            self.log_signal = pyqtSignal(str, str)
-        
-        if hasattr(self.parent, 'fileOperation'):
+        try:
             try:
-                try:
-                    self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
-                except (TypeError, RuntimeError):
-                    pass
-                self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
-            except Exception as e:
-                self.log("ERROR", f"连接fileOperation信号失败: {str(e)}")
+                self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
+            except (TypeError, RuntimeError):
+                pass
+            self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
+        except Exception as e:
+            self.log("ERROR", f"连接fileOperation信号失败: {str(e)}")
         
         try:
             try:
@@ -88,21 +85,16 @@ class SmartArrangeManager(QObject):
         except Exception as e:
             self.log("DEBUG", f"连接log_signal信号失败: {str(e)}")
         
-        if hasattr(self.parent, 'btnStartSmartArrange'):
+        try:
             try:
-                try:
-                    self.parent.btnStartSmartArrange.clicked.disconnect()
-                except (TypeError, RuntimeError):
-                    pass
-                self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
-                
-                if not self.parent.btnStartSmartArrange.isEnabled():
-                    self.parent.btnStartSmartArrange.setEnabled(True)
-                    self.log("INFO", "开始整理按钮已启用")
-            except Exception as e:
-                self.log("ERROR", f"连接btnStartSmartArrange信号失败: {str(e)}")
-        else:
-            self.log("ERROR", "btnStartSmartArrange按钮未找到")
+                self.parent.btnStartSmartArrange.clicked.disconnect()
+            except (TypeError, RuntimeError):
+                pass
+            self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
+            
+            self.parent.btnStartSmartArrange.setEnabled(True)
+        except Exception as e:
+            self.log("ERROR", f"连接btnStartSmartArrange信号失败: {str(e)}")
 
     def update_progress_bar(self, value):
         self.parent.classificationProgressBar.setValue(value)
