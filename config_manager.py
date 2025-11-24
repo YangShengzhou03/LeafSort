@@ -82,6 +82,15 @@ class ConfigManager:
                 if key not in self.config["settings"]:
                     self.config["settings"][key] = value
             
+            # 确保api_limits配置正确
+            if "api_limits" not in self.config:
+                self.config["api_limits"] = default_config["api_limits"]
+            elif "gaode" not in self.config["api_limits"]:
+                self.config["api_limits"]["gaode"] = default_config["api_limits"]["gaode"]
+            else:
+                # 更新最大每日调用次数为300
+                self.config["api_limits"]["gaode"]["max_daily_calls"] = 300
+            
             self.config["version"] = self.CONFIG_VERSION
             self._save_file_no_lock()
     
@@ -310,16 +319,49 @@ class ConfigManager:
             "api_limits": {
                 "gaode": {
                     "daily_calls": 0,
-                    "max_daily_calls": 500,
+                    "max_daily_calls": 300,  # 每日最多300次请求
                     "last_reset_date": current_time.strftime("%Y-%m-%d"),
                     "last_call_time": None
                 }
             },
             "cache_settings": {
-                "max_location_cache_size": 50000,
+                "max_location_cache_size": 200000,
                 "cache_expiry_days": 30
             }
         }
+    
+    @_thread_safe_method
+    def _check_and_reset_daily_limit(self) -> None:
+        """检查并在必要时重置每日请求限制"""
+        current_date = datetime.now().strftime("%Y-%m-%d")
+        if self.config["api_limits"]["gaode"]["last_reset_date"] != current_date:
+            self.config["api_limits"]["gaode"]["daily_calls"] = 0
+            self.config["api_limits"]["gaode"]["last_reset_date"] = current_date
+            self._save_config_no_lock()
+    
+    @_thread_safe_method
+    def can_make_api_call(self) -> bool:
+        """检查是否可以进行新的API调用"""
+        self._check_and_reset_daily_limit()
+        current_calls = self.config["api_limits"]["gaode"]["daily_calls"]
+        max_calls = self.config["api_limits"]["gaode"]["max_daily_calls"]
+        return current_calls < max_calls
+    
+    @_thread_safe_method
+    def increment_api_call(self) -> None:
+        """增加API调用计数"""
+        self._check_and_reset_daily_limit()
+        self.config["api_limits"]["gaode"]["daily_calls"] += 1
+        self.config["api_limits"]["gaode"]["last_call_time"] = datetime.now().isoformat()
+        self._save_config_no_lock()
+    
+    @_thread_safe_method
+    def get_remaining_daily_calls(self) -> int:
+        """获取剩余的每日API调用次数"""
+        self._check_and_reset_daily_limit()
+        current_calls = self.config["api_limits"]["gaode"]["daily_calls"]
+        max_calls = self.config["api_limits"]["gaode"]["max_daily_calls"]
+        return max_calls - current_calls
     
     @_thread_safe_method
     def clear_cache(self):

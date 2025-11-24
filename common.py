@@ -10,6 +10,9 @@ import requests
 from filetype import guess
 from playwright.sync_api import sync_playwright
 
+# 导入配置管理器
+from config_manager import config_manager
+
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -126,6 +129,12 @@ class GeocodingService:
         loc = f"{lon},{lat}"
         logger.info(f"开始转换坐标到地址: 纬度={lat}, 经度={lon}")
         
+        # 检查是否达到每日API调用限制
+        if not config_manager.can_make_api_call():
+            limit_msg = "地理编码次数已用尽，明天再来或开通会员尊享无限次数。"
+            logger.warning(limit_msg)
+            return "未知位置"
+        
         with self._lock:
             cookies, key = self._load_cached_credentials()
             
@@ -198,9 +207,19 @@ class GeocodingService:
             logger.warning("缺少地理编码凭证")
             return "未知位置"
         
+        # 再次检查是否可以进行API调用（避免并发情况下的限制问题）
+        if not config_manager.can_make_api_call():
+            limit_msg = "地理编码次数已用尽，明天再来或开通会员尊享无限次数。"
+            logger.warning(limit_msg)
+            return "未知位置"
+        
         try:
             url = self.url_template.format(key=key, loc=loc)
             logger.info(f"向高德地图API发送网络请求, 位置坐标: {loc}")
+            
+            # 增加API调用计数
+            config_manager.increment_api_call()
+            
             with requests.get(url, headers=self.headers, cookies=cookies, timeout=10) as resp:
                 resp.raise_for_status()
                 
