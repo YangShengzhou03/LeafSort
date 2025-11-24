@@ -1233,6 +1233,12 @@ class SmartArrangeThread(QtCore.QThread):
         
         elif level == "文件类型":
             return get_file_type(file_path)
+        elif level == "按扩展名":
+            # 获取文件扩展名并转为大写
+            file_ext = os.path.splitext(str(file_path))[1].strip('.').upper()
+            # 记录扩展名信息
+            self.log("DEBUG", f"文件 {file_path} 的扩展名为: {file_ext}")
+            return file_ext
         
         else:
             return "未知"
