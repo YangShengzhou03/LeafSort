@@ -58,36 +58,51 @@ class SmartArrangeManager(QObject):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
     def connect_signals(self):
+        # 确保log_signal属性存在
         if not hasattr(self, 'log_signal'):
             from PyQt6.QtCore import pyqtSignal
             self.log_signal = pyqtSignal(str, str)
         
+        # 连接文件操作下拉框信号
         if hasattr(self.parent, 'fileOperation'):
             try:
-                self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
+                # 安全地断开连接
+                try:
+                    self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
+                except (TypeError, RuntimeError):
+                    pass
+                self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
+            except Exception as e:
+                self.log("ERROR", f"连接fileOperation信号失败: {str(e)}")
+        
+        # 连接日志信号
+        try:
+            try:
+                self.log_signal.disconnect(self.handle_log_signal)
             except (TypeError, RuntimeError):
                 pass
-            self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
+            self.log_signal.connect(self.handle_log_signal)
+        except Exception as e:
+            self.log("DEBUG", f"连接log_signal信号失败: {str(e)}")
         
-        try:
-            self.log_signal.disconnect(self.handle_log_signal)
-        except (TypeError, RuntimeError) as e:
-            self.log("DEBUG", f"断开log_signal信号连接失败: {str(e)}")
-        self.log_signal.connect(self.handle_log_signal)
-        
+        # 连接开始整理按钮信号
         if hasattr(self.parent, 'btnStartSmartArrange'):
             try:
-                self.parent.btnStartSmartArrange.clicked.disconnect()
-            except (TypeError, RuntimeError) as e:
-                pass
-            
-            self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
-            
-            if not self.parent.btnStartSmartArrange.isEnabled():
-                self.parent.btnStartSmartArrange.setEnabled(True)
-                self.log("INFO", "开始整理按钮已启用")
+                # 安全地断开连接
+                try:
+                    self.parent.btnStartSmartArrange.clicked.disconnect()
+                except (TypeError, RuntimeError):
+                    pass
+                self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
+                
+                # 启用按钮
+                if not self.parent.btnStartSmartArrange.isEnabled():
+                    self.parent.btnStartSmartArrange.setEnabled(True)
+                    self.log("INFO", "开始整理按钮已启用")
+            except Exception as e:
+                self.log("ERROR", f"连接btnStartSmartArrange信号失败: {str(e)}")
         else:
-            self.log("ERROR", "btnStartSmartArrange button not found")
+            self.log("ERROR", "btnStartSmartArrange按钮未找到")
 
     def update_progress_bar(self, value):
         self.parent.classificationProgressBar.setValue(value)
@@ -333,9 +348,9 @@ class SmartArrangeManager(QObject):
                 self.log(error_level, f"{message_prefix}{str(e)}")
                 return None
         
-        safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setText", "开始整理")(), 
+        safe_operation(lambda: self.parent.btnStartSmartArrange.setText("开始整理"), 
                       error_level="ERROR")
-        safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setEnabled", True)(), 
+        safe_operation(lambda: self.parent.btnStartSmartArrange.setEnabled(True), 
                       error_level="ERROR")
         
         stopped_status = False
@@ -432,7 +447,8 @@ class SmartArrangeManager(QObject):
             "拍摄设备": "Apple",
             "相机型号": "iPhone17",
             "拍摄省份": "江西",
-            "拍摄城市": "南昌"
+            "拍摄城市": "南昌",
+            "按扩展名": "JPG"
         }.get(text, text)
 
     def is_valid_windows_filename(self, filename):
