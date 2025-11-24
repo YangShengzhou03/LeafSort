@@ -10,12 +10,10 @@ import requests
 from filetype import guess
 from playwright.sync_api import sync_playwright
 
-# 导入配置管理器
 from config_manager import config_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
-
 
 class ResourceManager:
     def __init__(self):
@@ -29,7 +27,6 @@ class ResourceManager:
     
     def get_resource_path(self, relative_path):
         return str((self._base_path / relative_path).resolve()).replace('\\', '/')
-
 
 class MediaTypeDetector:
     def __init__(self):
@@ -110,7 +107,6 @@ class MediaTypeDetector:
             'extension_match': False
         }
 
-
 class GeocodingService:
     def __init__(self):
         self.headers = {
@@ -127,25 +123,18 @@ class GeocodingService:
     
     def get_address_from_coordinates(self, lat, lon):
         loc = f"{lon},{lat}"
-        logger.info(f"开始转换坐标到地址: 纬度={lat}, 经度={lon}")
-        
-        # 检查是否达到每日API调用限制
         if not config_manager.can_make_api_call():
-            limit_msg = "地理编码次数已用尽，明天再来或开通会员尊享无限次数。"
-            logger.warning(limit_msg)
             return "未知位置"
         
         with self._lock:
             cookies, key = self._load_cached_credentials()
             
             if not (cookies and key):
-                logger.info("没有找到缓存的凭证，需要获取新凭证")
                 cookies, key = self._fetch_credentials()
                 if cookies and key:
                     self._save_credentials(cookies, key)
         
         address = self._call_geocoding_api(loc, cookies, key)
-        logger.info(f"坐标转换完成: 纬度={lat}, 经度={lon}, 地址={address}")
         return address
     
     def _load_cached_credentials(self):
@@ -204,20 +193,13 @@ class GeocodingService:
     
     def _call_geocoding_api(self, loc, cookies, key):
         if not (cookies and key):
-            logger.warning("缺少地理编码凭证")
             return "未知位置"
         
-        # 再次检查是否可以进行API调用（避免并发情况下的限制问题）
         if not config_manager.can_make_api_call():
-            limit_msg = "地理编码次数已用尽，明天再来或开通会员尊享无限次数。"
-            logger.warning(limit_msg)
             return "未知位置"
         
         try:
             url = self.url_template.format(key=key, loc=loc)
-            logger.info(f"向高德地图API发送网络请求, 位置坐标: {loc}")
-            
-            # 增加API调用计数
             config_manager.increment_api_call()
             
             with requests.get(url, headers=self.headers, cookies=cookies, timeout=10) as resp:
@@ -234,7 +216,6 @@ class GeocodingService:
             logger.error(f"地理编码API调用失败: {str(e)}")
         
         return "未知位置"
-
 
 _resource_manager = ResourceManager()
 _media_detector = MediaTypeDetector()

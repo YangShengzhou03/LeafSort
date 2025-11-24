@@ -4,14 +4,9 @@ import traceback
 import socket
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QCoreApplication
-
 from main_window import MainWindow
 
-logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
-    handlers=[logging.FileHandler("app.log"), logging.StreamHandler()]
-)
+logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
@@ -19,7 +14,6 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         sys.__excepthook__(exc_type, exc_value, exc_traceback)
         return
     logging.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
-    
     app = QApplication.instance()
     if app:
         try:
@@ -40,7 +34,6 @@ def main():
     try:
         QCoreApplication.setApplicationName("LeafView")
         QCoreApplication.setApplicationVersion("1.0.0")
-        
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -48,7 +41,6 @@ def main():
         except socket.error:
             logging.info("Application already running")
             return
-        
         app = QApplication(sys.argv)
         window = MainWindow()
         window.show()

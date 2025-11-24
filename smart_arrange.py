@@ -192,8 +192,25 @@ class SmartArrangeManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return
             
-            if not self.destination_root and not self.select_destination_folder():
-                return
+            if not self.destination_root:
+                # 先尝试从folder_page获取目标文件夹
+                if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
+                    try:
+                        target_folder = self.folder_page.get_target_folder()
+                        if target_folder and self.validate_destination(target_folder):
+                            self.destination_root = target_folder
+                        else:
+                            # 如果没有获取到有效的目标文件夹，显示提示信息
+                            QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                            return
+                    except Exception as e:
+                        self.log("WARNING", f"从folder_page获取目标文件夹失败: {str(e)}")
+                        QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                        return
+                else:
+                    # 如果没有folder_page或无法访问get_target_folder方法，显示提示信息
+                    QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                    return
             
             if self.SmartArrange_thread:
                 try:
