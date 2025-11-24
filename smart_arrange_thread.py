@@ -3,6 +3,7 @@ import json
 import os
 import subprocess
 import logging
+import sys
 from pathlib import Path
 import threading
 import time
@@ -73,45 +74,25 @@ class SmartArrangeThread(QtCore.QThread):
         self.destination_root = destination_root
         self.separator = separator
         self.time_derive = time_derive
-        self.operation_type = operation_type
+        self.operation_type = operation_type  # 保存操作类型
         self._is_running = True
         self._stop_flag = False
-        self._stop_lock = threading.Lock()
         self.total_files = 0
         self.processed_files = 0
-        self.processed_lock = threading.Lock()
         self.log_signal = parent.log_signal if parent else None
         self.files_to_rename = []
-        self.files_lock = threading.Lock()
-        self.city_data = {}
-        self.province_data = {}
-        self.exiftool_process = None
-        self.exiftool_available = False
-        self._initialize_exiftool()
 
     def calculate_total_files(self):
-        """简化文件计数逻辑，合并递归和直接计数"""
-        try:
-            self.total_files = 0
-            for folder_info in self.folders:
-                folder_path = Path(folder_info['path'])
-                if not self._validate_folder_path(folder_path):
-                    continue
-                    
-                try:
-                    if folder_info.get('include_sub', 0):
-                        # 使用生成器表达式一次性计算所有子文件夹中的文件数量
-                        self.total_files += sum(len(files) for _, _, files in os.walk(folder_path))
-                    else:
-                        # 仅计算当前文件夹中的文件数量
-                        self.total_files += len([f for f in os.listdir(folder_path) 
-                                               if (folder_path / f).is_file()])
-                except (OSError, IOError) as e:
-                    self.log("ERROR", f"读取文件夹 {folder_path} 失败: {str(e)}")
-                    
-        except Exception as e:
-            self.log("ERROR", f"计算文件数量失败: {str(e)}")
-            self.total_files = 0
+        self.total_files = 0
+        for folder_info in self.folders:
+            folder_path = Path(folder_info['path'])
+            if folder_info.get('include_sub', 0):
+                for root, _, files in os.walk(folder_path):
+                    self.total_files += len(files)
+            else:
+                self.total_files += len([f for f in os.listdir(folder_path) if (folder_path / f).is_file()])
+        
+        self.log("DEBUG", f"总文件数: {self.total_files}")
 
     def load_geographic_data(self):
         try:
@@ -120,7 +101,6 @@ class SmartArrangeThread(QtCore.QThread):
             with open(get_resource_path('resources/json/Province_Reverse_Geocode.json'), 'r', encoding='utf-8') as f:
                 self.province_data = json.load(f)
         except Exception as e:
-            self.log("WARNING", f"加载地理数据失败: {str(e)}")
             self.city_data, self.province_data = {'features': []}, {'features': []}
 
     def run(self):
@@ -128,164 +108,94 @@ class SmartArrangeThread(QtCore.QThread):
             self.load_geographic_data()
             self.calculate_total_files()
             
-            # 显示文件夹目录构成信息
-            if self.classification_structure:
-                # 格式化分类结构为更易读的形式
-                classification_str = " > ".join(self.classification_structure)
-                self.log("INFO", f"文件夹目录构成: {classification_str}")
-            else:
-                self.log("INFO", "文件夹目录构成: 未设置分类结构")
-            
-            # 显示文件名构成信息
-            if self.file_name_structure:
-                # 格式化文件名结构为更易读的形式
-                file_name_parts = []
-                for part in self.file_name_structure:
-                    if isinstance(part, dict) and 'tag' in part:
-                        file_name_parts.append(part['tag'])
-                    else:
-                        file_name_parts.append(str(part))
-                file_name_str = f"{self.separator}".join(file_name_parts)
-                self.log("INFO", f"文件名构成: {file_name_str}")
-            else:
-                self.log("INFO", "文件名构成: 未设置文件名结构")
-            
             success_count = 0
             fail_count = 0
             self.processed_files = 0
 
             for folder_info in self.folders:
                 if self._stop_flag:
-                    self.log("WARNING", "已取消文件整理操作")
+                    self.log("WARNING", "您已经取消了整理文件的操作")
                     break
-                    
-                # 增强的目标文件夹验证
-                if not self._validate_destination_folder(folder_info):
-                    continue
-                    
+                if self.destination_root:
+                    destination_path = Path(self.destination_root).resolve()
+                    folder_path = Path(folder_info['path']).resolve()
+                    if len(destination_path.parts) > len(folder_path.parts) and destination_path.parts[:len(folder_path.parts)] == folder_path.parts:
+                        self.log("ERROR", "目标文件夹不能是要整理的文件夹的子文件夹，这样会导致重复处理！")
+                        break
                 try:
                     if not self.classification_structure and not self.file_name_structure:
                         self.organize_without_classification(folder_info['path'])
                     else:
                         self.process_folder_with_classification(folder_info)
-                    success_count += 1
-                except (OSError, IOError) as e:
-                    self.log("ERROR", f"文件操作失败: {str(e)}")
-                    fail_count += 1
                 except Exception as e:
-                    self.log("ERROR", f"文件夹处理失败: {str(e)}")
+                    self.log("ERROR", f"处理文件夹 {folder_info['path']} 时出错了: {str(e)}")
                     fail_count += 1
             
             if not self._stop_flag:
                 try:
                     self.process_renaming()
                     success_count = len(self.files_to_rename) - fail_count
-                except (OSError, IOError) as e:
-                    self.log("ERROR", f"重命名文件失败: {str(e)}")
-                    fail_count += 1
                 except Exception as e:
-                    self.log("ERROR", f"重命名过程出错: {str(e)}")
+                    self.log("ERROR", f"给文件重命名时出错了: {str(e)}")
                     fail_count += 1
                 
                 if not self.destination_root:
                     try:
                         self.delete_empty_folders()
                     except Exception as e:
-                        self.log("WARNING", f"删除空文件夹出错: {str(e)}")
+                        self.log("WARNING", f"删除空文件夹时出错了: {str(e)}")
 
-                self.log("INFO", f"整理完成，成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
+                self.log("DEBUG", "="*40)
+                self.log("DEBUG", f"文件整理完成了，成功处理了 {success_count} 个文件，失败了 {fail_count} 个文件")
+                self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
                 self.progress_signal.emit(100)
             else:
-                self.log("WARNING", "已取消文件整理操作")
+                self.log("WARNING", "您已经取消了整理文件的操作")
                 
         except Exception as e:
             self.log("ERROR", f"整理文件时遇到了严重问题: {str(e)}")
-        finally:
-            # 确保线程结束时关闭exiftool进程
-            self._close_exiftool()
 
     def process_folder_with_classification(self, folder_info):
         folder_path = Path(folder_info['path'])
         
         if folder_info.get('include_sub', 0):
             for root, _, files in os.walk(folder_path):
-                # 批量处理，每批处理100个文件
-                batch_size = 100
-                for i in range(0, len(files), batch_size):
-                    if self.is_stopped():
+                for file in files:
+                    if self._stop_flag:
                         self.log("WARNING", "您已经取消了当前文件夹的处理")
                         return
-                    
-                    batch_files = files[i:i + batch_size]
-                    for file in batch_files:
-                        if self.is_stopped():
-                            self.log("WARNING", "您已经取消了当前文件夹的处理")
-                            return
-                        full_file_path = Path(root) / file
-                        if self.destination_root:
-                            self.process_single_file(full_file_path)
-                        else:
-                            self.process_single_file(full_file_path, base_folder=folder_path)
-                        
-                        # 移除重复的计数，process_single_file方法中已经更新了计数器
-                        if self.total_files > 0:
-                            with self.processed_lock:
-                                percent_complete = int((self.processed_files / self.total_files) * 80)
-                            self.progress_signal.emit(percent_complete)
-                    
-                    # 批次之间短暂休息，减少CPU占用
-                    time.sleep(0.01)
+                    full_file_path = Path(root) / file
+                    if self.destination_root:
+                        self.process_single_file(full_file_path)
+                    else:
+                        self.process_single_file(full_file_path, base_folder=folder_path)
+                    self.processed_files += 1
+                    if self.total_files > 0:
+                        percent_complete = int((self.processed_files / self.total_files) * 80)
+                        self.progress_signal.emit(percent_complete)
         else:
-            # 获取文件列表，分批处理
-            try:
-                all_files = [f for f in os.listdir(folder_path) if (folder_path / f).is_file()]
-                batch_size = 100
-                
-                for i in range(0, len(all_files), batch_size):
-                    if self.is_stopped():
-                        self.log("WARNING", "文件夹处理被用户中断")
-                        return
-                    
-                    batch_files = all_files[i:i + batch_size]
-                    for file in batch_files:
-                        if self.is_stopped():
-                            self.log("WARNING", "文件夹处理被用户中断")
-                            return
-                        full_file_path = folder_path / file
-                        # 如果有目标根路径（复制操作），则不传递base_folder参数
-                        if self.destination_root:
-                            self.process_single_file(full_file_path)
-                        else:
-                            self.process_single_file(full_file_path)
-                        
-                        with self.processed_lock:
-                            self.processed_files += 1
-                        
-                        if self.total_files > 0:
-                            percent_complete = int((self.processed_files / self.total_files) * 80)
-                            self.progress_signal.emit(percent_complete)
-                    
-                    # 批次之间短暂休息，减少CPU占用
-                    time.sleep(0.01)
-                    
-            except Exception as e:
-                self.log("ERROR", f"处理文件夹时出错: {str(e)}")
+            for file in os.listdir(folder_path):
+                if self._stop_flag:
+                    self.log("WARNING", "文件夹处理被用户中断")
+                    return
+                full_file_path = folder_path / file
+                if full_file_path.is_file():
+                    # 如果有目标根路径（复制操作），则不传递base_folder参数
+                    if self.destination_root:
+                        self.process_single_file(full_file_path)
+                    else:
+                        self.process_single_file(full_file_path)
+                    self.processed_files += 1
+                    if self.total_files > 0:
+                        percent_complete = int((self.processed_files / self.total_files) * 80)
+                        self.progress_signal.emit(percent_complete)
 
     def process_renaming(self):
-        # 初始化统计变量
-        with self.files_lock:
-            total_rename_files = len(self.files_to_rename)
+        file_count = {}
+        total_rename_files = len(self.files_to_rename)
         renamed_files = 0
-        failed_files = 0
-        skipped_files = 0
         
-        self.log("INFO", f"开始处理 {total_rename_files} 个文件")
-        
-        # 创建一个本地副本以避免在迭代过程中锁定整个列表
-        with self.files_lock:
-            files_to_process = self.files_to_rename.copy()
-            
-        for idx, file_info in enumerate(files_to_process):
+        for file_info in self.files_to_rename:
             if self._stop_flag:
                 self.log("WARNING", "文件重命名操作被用户中断")
                 break
@@ -293,111 +203,39 @@ class SmartArrangeThread(QtCore.QThread):
             old_path = Path(file_info['old_path'])
             new_path = Path(file_info['new_path'])
             
-            # 验证源文件是否存在
-            if not old_path.exists():
-                self.log("WARNING", f"源文件不存在，跳过: {old_path}")
-                skipped_files += 1
-                continue
+            new_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            base_name = new_path.stem
+            ext = new_path.suffix
+            counter = 1
+            unique_path = new_path
+            
+            while unique_path.exists():
+                unique_path = new_path.parent / f"{base_name}_{counter}{ext}"
+                counter += 1
             
             try:
-                # 增强的目录创建，增加错误处理
-                try:
-                    new_path.parent.mkdir(parents=True, exist_ok=True)
-                    # 验证目录是否真的创建成功
-                    if not new_path.parent.exists():
-                        raise OSError(f"无法创建目标目录: {new_path.parent}")
-                    # 验证目录是否可写
-                    if not os.access(new_path.parent, os.W_OK):
-                        raise PermissionError(f"没有写入权限: {new_path.parent}")
-                except (OSError, PermissionError) as e:
-                    self.log("ERROR", f"创建目录失败 {new_path.parent}: {str(e)}")
-                    failed_files += 1
-                    continue
-                
-                # 改进的文件冲突检测
-                base_name = new_path.stem
-                ext = new_path.suffix
-                counter = 1
-                unique_path = new_path
-                
-                # 使用更智能的文件名冲突解决
-                while unique_path.exists():
-                    # 检查是否是同一个文件（硬链接或相同内容）
-                    if old_path.resolve() == unique_path.resolve():
-                        self.log("INFO", f"源文件和目标文件相同，跳过: {old_path}")
-                        skipped_files += 1
-                        unique_path = None
-                        break
-                    
-                    # 生成新的唯一文件名
-                    unique_path = new_path.parent / f"{base_name}_{counter}{ext}"
-                    counter += 1
-                    
-                    # 防止无限循环
-                    if counter > 1000:
-                        self.log("ERROR", f"无法找到唯一文件名，跳过: {old_path}")
-                        unique_path = None
-                        failed_files += 1
-                        break
-                
-                if unique_path is None:
-                    continue
-                
-                # 执行文件操作，增加更多错误处理
-                try:
+                if self.destination_root:
                     import shutil
-                    # 使用operation_type参数决定操作类型，0:复制, 1:移动
-                    if hasattr(self, 'operation_type') and self.operation_type == 0:
-                        # 复制文件
-                        shutil.copy2(old_path, unique_path)
-                        self.log("INFO", f"复制文件成功: {old_path} -> {unique_path}")
+                    shutil.copy2(old_path, unique_path)
+                    self.log("INFO", f"复制文件: {old_path} -> {unique_path}")
+                else:
+                    if old_path.parent == unique_path.parent:
+                        old_path.rename(unique_path)
+                        self.log("DEBUG", f"重命名文件: {old_path.name} -> {unique_path.name}")
                     else:
-                        # 移动文件
-                        if old_path.parent == unique_path.parent:
-                            # 同一目录下重命名
-                            old_path.rename(unique_path)
-                            self.log("DEBUG", f"重命名文件成功: {old_path} -> {unique_path}")
-                        else:
-                            # 跨目录移动
-                            # 先尝试直接移动
-                            try:
-                                shutil.move(old_path, unique_path)
-                            except (OSError, PermissionError):
-                                # 如果移动失败，尝试复制后删除
-                                self.log("WARNING", f"直接移动失败，尝试复制后删除: {old_path}")
-                                shutil.copy2(old_path, unique_path)
-                                old_path.unlink()
-                            self.log("INFO", f"移动文件成功: {old_path} -> {unique_path}")
-                    
-                    renamed_files += 1
-                    
-                    # 更新进度条，提供更平滑的进度更新
-                    if total_rename_files > 0:
-                        rename_progress = int((renamed_files / total_rename_files) * 20)
-                        total_progress = 80 + rename_progress
-                        self.progress_signal.emit(min(total_progress, 99))
-                    
-                except (OSError, PermissionError, IOError) as e:
-                    self.log("ERROR", f"文件操作失败 {old_path} -> {unique_path}: {str(e)}")
-                    failed_files += 1
-            
+                        import shutil
+                        shutil.move(old_path, unique_path)
+                        self.log("INFO", f"移动文件: {old_path} -> {unique_path}")
+                
+                renamed_files += 1
+                if total_rename_files > 0:
+                    rename_progress = int((renamed_files / total_rename_files) * 20)
+                    total_progress = 80 + rename_progress
+                    self.progress_signal.emit(min(total_progress, 99))
+                
             except Exception as e:
-                self.log("ERROR", f"处理文件时发生未预期错误 {old_path}: {str(e)}")
-                failed_files += 1
-            
-            # 定期更新进度，即使文件处理失败
-            if idx % 10 == 0 or idx == total_rename_files - 1:
-                self.progress_signal.emit(min(80 + int((idx + 1) / total_rename_files * 20), 99))
-        
-        # 最终进度更新
-        self.progress_signal.emit(99)
-        
-        # 输出统计信息
-        self.log("INFO", f"文件整理完成 - 成功: {renamed_files}, 失败: {failed_files}, 跳过: {skipped_files}")
-        
-        # 清空处理完的文件列表
-        with self.files_lock:
-            self.files_to_rename.clear()
+                self.log("ERROR", f"处理文件 {old_path} 时出错: {str(e)}")
 
     def organize_without_classification(self, folder_path):
         folder_path = Path(folder_path)
@@ -405,7 +243,7 @@ class SmartArrangeThread(QtCore.QThread):
         self.log("DEBUG", f"开始处理文件夹: {folder_path}")
         
         file_count = 0
-        for root, _, files in os.walk(folder_path):
+        for root, dirs, files in os.walk(folder_path):
             if self._stop_flag:
                 self.log("WARNING", "文件提取操作被用户中断")
                 break
@@ -425,28 +263,23 @@ class SmartArrangeThread(QtCore.QThread):
                 if file_path != target_path:
                     try:
                         import shutil
-                        # 使用operation_type参数决定操作类型，0:移动, 1:复制
-                        if hasattr(self, 'operation_type') and self.operation_type == 1:
-                            # 复制文件
+                        if self.destination_root:
                             shutil.copy2(file_path, target_path)
                             self.log("INFO", f"复制文件: {file_path} -> {target_path}")
                         else:
-                            # 移动文件
                             shutil.move(file_path, target_path)
                             self.log("INFO", f"移动文件: {file_path} -> {target_path}")
                         
                         file_count += 1
                         
-                        # 移除重复的计数，process_single_file方法中已经更新了计数器
+                        self.processed_files += 1
                         if self.total_files > 0:
-                            with self.processed_lock:
-                                percent_complete = int((self.processed_files / self.total_files) * 80)
+                            percent_complete = int((self.processed_files / self.total_files) * 80)
                             self.progress_signal.emit(percent_complete)
                     except Exception as e:
                         self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
         
-        # 使用operation_type参数决定操作类型描述
-        operation_type = "复制" if (hasattr(self, 'operation_type') and self.operation_type == 1) else "移动"
+        operation_type = "复制" if self.destination_root else "移动"
         self.log("INFO", f"处理完成，共{operation_type} {file_count} 个文件")
 
     def delete_empty_folders(self):
@@ -460,7 +293,7 @@ class SmartArrangeThread(QtCore.QThread):
             processed_folders.add(folder_path.resolve())
             
             if folder_info.get('include_sub', 0):
-                for root, _, _ in os.walk(folder_path):
+                for root, dirs, files in os.walk(folder_path):
                     processed_folders.add(Path(root).resolve())
         
         for folder in processed_folders:
@@ -478,88 +311,8 @@ class SmartArrangeThread(QtCore.QThread):
         self.log("WARNING", f"已为您删除了 {deleted_count} 个空文件夹")
     
     def stop(self):
-        """停止线程操作"""
-        with self._stop_lock:
-            self._stop_flag = True
+        self._stop_flag = True
         self.log("INFO", "正在停止智能整理操作...")
-    
-    def is_stopped(self):
-        """线程安全的停止状态检查"""
-        with self._stop_lock:
-            return self._stop_flag
-
-    def _validate_folder_path(self, folder_path):
-        """验证文件夹路径的有效性"""
-        if not folder_path.exists():
-            self.log("WARNING", f"文件夹不存在: {folder_path}")
-            return False
-            
-        if not folder_path.is_dir():
-            self.log("WARNING", f"路径不是文件夹: {folder_path}")
-            return False
-            
-        # 检查读取权限
-        try:
-            folder_path.iterdir()
-            return True
-        except PermissionError:
-            self.log("ERROR", f"没有权限访问文件夹: {folder_path}")
-            return False
-        except Exception as e:
-            self.log("ERROR", f"文件夹验证失败: {str(e)}")
-            return False
-
-    def _validate_destination_folder(self, folder_info):
-        """验证目标文件夹配置"""
-        if not self.destination_root:
-            return True
-            
-        try:
-            destination_path = Path(self.destination_root).resolve()
-            folder_path = Path(folder_info['path']).resolve()
-            
-            # 检查目标文件夹是否是源文件夹的子文件夹
-            if len(destination_path.parts) > len(folder_path.parts) and destination_path.parts[:len(folder_path.parts)] == folder_path.parts:
-                self.log("ERROR", "目标文件夹不能是要整理的文件夹的子文件夹，这样会导致重复处理！")
-                return False
-                
-            # 检查目标文件夹是否存在，不存在则创建
-            if not destination_path.exists():
-                destination_path.mkdir(parents=True, exist_ok=True)
-                self.log("INFO", f"创建目标文件夹: {destination_path}")
-                
-            return True
-            
-        except Exception as e:
-            self.log("ERROR", f"目标文件夹验证失败: {str(e)}")
-            return False
-
-    def _count_files_recursive(self, folder_path):
-        """递归统计文件数量"""
-        try:
-            for root, _, files in os.walk(folder_path):
-                if self._stop_flag:
-                    break
-                try:
-                    self.total_files += len(files)
-                except Exception as e:
-                    logger.error(f"统计文件数量失败 {root}: {str(e)}")
-                    self.log("WARNING", f"部分文件统计失败: {str(e)}")
-        except Exception as e:
-            logger.error(f"递归遍历文件夹失败 {folder_path}: {str(e)}")
-            self.log("ERROR", f"文件夹遍历失败: {str(e)}")
-
-    def _count_files_direct(self, folder_path):
-        """直接统计文件夹内文件数量"""
-        try:
-            files = os.listdir(folder_path)
-            self.total_files += len([f for f in files if (folder_path / f).is_file()])
-        except PermissionError:
-            logger.error(f"没有权限访问文件夹: {folder_path}")
-            self.log("ERROR", f"没有权限访问文件夹: {folder_path}")
-        except Exception as e:
-            logger.error(f"列出文件夹内容失败 {folder_path}: {str(e)}")
-            self.log("ERROR", f"读取文件夹失败: {str(e)}")
 
     def _recursive_delete_empty_folders(self, folder_path, source_folders):
         deleted_count = 0
@@ -611,197 +364,77 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level, message):
-        # 直接发送原始消息，避免重复格式化
-        # 确保log_signal存在且可以发射信号
-        if hasattr(self, 'log_signal') and self.log_signal and callable(getattr(self.log_signal, 'emit', None)):
-            try:
-                # 直接发送level和原始message，由handle_log_signal统一格式化
-                self.log_signal.emit(level, message)
-            except Exception as e:
-                logger.error(f"发送日志信号失败: {str(e)}")
-        else:
-            # 如果信号不可用，记录到logger
-            if level == "ERROR":
-                logger.error(message)
-            elif level == "WARNING":
-                logger.warning(message)
-            elif level == "INFO":
-                logger.info(message)
-            elif level == "DEBUG":
-                logger.debug(message)
-            # 同时输出到控制台，使用格式化样式
-            timestamp = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            print(f"[{timestamp}] {level}: {message}")
+        current_time = datetime.datetime.now().strftime('%H:%M:%S')
+        log_message = f"[{current_time}] [{level}] {message}"
+        self.log_signal.emit(level, log_message)
     
     def get_exif_data(self, file_path):
         exif_data = {}
         file_path_obj = Path(file_path)
         suffix = file_path_obj.suffix.lower()
-        
-        # 文件大小检查，避免处理过大的文件
-        try:
-            file_size = file_path_obj.stat().st_size
-            if file_size > 500 * 1024 * 1024:  # 500MB限制
-                exif_data['DateTime'] = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime).strftime('%Y-%m-%d %H:%M:%S')
-                return exif_data
-        except Exception:
-            pass
-        
-        # 获取文件系统时间
-        try:
-            create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
-            modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
-        except Exception:
-            current_time = datetime.datetime.now()
-            create_time = modify_time = current_time
+        create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
+        modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
         
         date_taken = None
         
         try:
             if suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
-                if not date_taken:
-                    date_taken = self._try_alternative_exif_extraction(file_path_obj, exif_data)
             elif suffix == '.heic':
                 date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix == '.png':
                 date_taken = self._process_png_exif(file_path_obj)
-            elif suffix in ('.mov', '.qt'):
+            elif suffix == '.mov':
                 date_taken = self._process_mov_exif(file_path_obj, exif_data)
-            elif suffix in ('.mp4', '.m4v'):
+            elif suffix == '.mp4':
                 date_taken = self._process_mp4_exif(file_path_obj, exif_data)
-            elif suffix.lower() in ('.arw', '.cr2', '.cr3', '.nef', '.orf', '.sr2', '.raf', '.dng', '.rw2', 
-                                  '.pef', '.nrw', '.kdc', '.mos', '.iiq', '.fff', '.x3f', '.3fr', '.mef', 
-                                  '.mrw', '.erf', '.raw', '.rwz', '.ari'):
-                # 处理RAW格式
-                try:
-                    metadata = self._get_video_metadata(file_path, timeout=20)
-                    if metadata and 'DateTime' in metadata:
-                        try:
-                            date_str = metadata['DateTime']
-                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            for key, value in metadata.items():
-                                if key not in exif_data:
-                                    exif_data[key] = value
-                        except (ValueError, TypeError):
-                            pass
-                    
-                    if not date_taken:
-                        date_taken = self._process_raw_exif(file_path_obj, exif_data)
-                except Exception:
-                    pass
-            elif suffix in VIDEO_EXTENSIONS:
-                # 处理其他视频格式
-                try:
-                    metadata = self._get_video_metadata(file_path, timeout=15)
-                    if metadata and 'DateTime' in metadata:
-                        try:
-                            date_str = metadata['DateTime']
-                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            for key, value in metadata.items():
-                                if key not in exif_data:
-                                    exif_data[key] = value
-                        except (ValueError, TypeError):
-                            pass
-                except Exception:
-                    pass
-            elif suffix in AUDIO_EXTENSIONS:
-                # 处理音频文件
-                try:
-                    metadata = self._get_video_metadata(file_path, timeout=10)
-                    if metadata and 'DateTime' in metadata:
-                        try:
-                            date_str = metadata['DateTime']
-                            date_taken = datetime.datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
-                            for key, value in metadata.items():
-                                if key not in exif_data:
-                                    exif_data[key] = value
-                        except (ValueError, TypeError):
-                            pass
-                except Exception:
-                    pass
+            elif suffix in ('.arw', '.cr2', '.dng', '.nef', '.orf', '.raf', '.sr2', '.tif', '.tiff'):
+                date_taken = self._process_raw_exif(file_path_obj, exif_data)
+            else:
+                self.log("DEBUG", f"不支持的文件类型或无EXIF数据: {suffix}")
 
-            # 确定最终的日期时间
-            final_datetime = self._determine_best_datetime(date_taken, create_time, modify_time)
-            exif_data['DateTime'] = final_datetime
+            exif_data['DateTime'] = self._determine_best_datetime(
+                date_taken, create_time, modify_time
+            )
                 
-        except Exception:
-            # 出错时使用修改时间
-            exif_data['DateTime'] = modify_time.strftime('%Y-%m-%d %H:%M:%S')
-        
-        # 添加基本文件信息
-        exif_data['file_extension'] = suffix
-        try:
-            exif_data['file_size'] = file_path_obj.stat().st_size
-        except:
-            pass
-            
+        except Exception as e:
+            self.log("DEBUG", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
+            exif_data['DateTime'] = create_time.strftime('%Y-%m-%d %H:%M:%S')
         return exif_data
-        
-    def _try_alternative_exif_extraction(self, file_path_obj, exif_data):
-        try:
-            from PIL import Image, ExifTags
-            with Image.open(file_path_obj) as img:
-                try:
-                    exif = img._getexif()
-                    if exif:
-                        exif_translated = {}
-                        for tag, value in exif.items():
-                            tag_name = ExifTags.TAGS.get(tag, tag)
-                            exif_translated[tag_name] = value
-                        
-                        if 'DateTime' in exif_translated:
-                            try:
-                                date_taken = datetime.datetime.strptime(exif_translated['DateTime'], '%Y:%m:%d %H:%M:%S')
-                                if 'Make' in exif_translated:
-                                    exif_data['camera'] = exif_translated['Make']
-                                if 'Model' in exif_translated:
-                                    exif_data['model'] = exif_translated['Model']
-                                return date_taken
-                            except ValueError:
-                                pass
-                except (ValueError, TypeError, KeyError):
-                    pass
-        except (OSError, ValueError, TypeError):
-            pass
-        
-        return None
 
     def _process_image_exif(self, file_path, exif_data):
-        try:
-            with open(file_path, 'rb') as f:
-                tags = exifread.process_file(f, details=False)
-            date_taken = self.parse_exif_datetime(tags)
-            self._extract_gps_and_camera_info(tags, exif_data)
-            return date_taken
-        except (IOError, OSError):
-            return None
+        with open(file_path, 'rb') as f:
+            tags = exifread.process_file(f, details=False)
+        date_taken = self.parse_exif_datetime(tags)
+        self._extract_gps_and_camera_info(tags, exif_data)
+        return date_taken
 
     def _process_raw_exif(self, file_path, exif_data):
-        # 文件大小检查
-        try:
-            file_size = os.path.getsize(file_path)
-            if file_size > 200 * 1024 * 1024:  # 200MB限制
-                return None
-        except (OSError, FileNotFoundError):
-            pass
+        """处理RAW格式文件（ARW、CR2、CR3、NEF等）的EXIF信息读取"""
+        
+        # 检查文件是否存在
+        if not os.path.exists(file_path):
+            self.log("DEBUG", f"文件不存在: {file_path}")
+            return None
         
         # 构建exiftool路径
         exiftool_path = os.path.join(os.path.dirname(__file__), "resources", "exiftool", "exiftool.exe")
         
         if not os.path.exists(exiftool_path):
+            self.log("DEBUG", "exiftool工具不存在，无法读取RAW格式文件EXIF信息")
             return None
         
         try:
             # 使用exiftool读取EXIF信息
             cmd = [exiftool_path, file_path]
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=15, check=False)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
             
             if result.returncode != 0:
+                error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
+                self.log("DEBUG", f"读取 {file_path} 的EXIF数据失败: {error_msg}")
                 return None
             
-            # 使用replace模式处理无法解码的字符
-            exif_data_str = result.stdout.decode('utf-8', errors='replace')
+            exif_data_str = result.stdout.decode('utf-8', errors='ignore')
             
             # 解析拍摄时间
             date_taken = self._parse_raw_datetime(exif_data_str)
@@ -811,7 +444,11 @@ class SmartArrangeThread(QtCore.QThread):
             
             return date_taken
                 
-        except (subprocess.TimeoutExpired, OSError, UnicodeDecodeError):
+        except subprocess.TimeoutExpired:
+            self.log("DEBUG", f"读取 {file_path} 的EXIF数据超时")
+            return None
+        except Exception as e:
+            self.log("DEBUG", f"读取 {file_path} 的EXIF数据时出错: {str(e)}")
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
@@ -867,14 +504,14 @@ class SmartArrangeThread(QtCore.QThread):
                 try:
                     lat_str = line.split(':', 1)[1].strip()
                     gps_lat = self._parse_dms_coordinate(lat_str)
-                except (ValueError, IndexError) as e:
-                    logger.debug(f"解析GPS纬度失败: {str(e)}")
+                except (ValueError, IndexError):
+                    pass
             elif 'GPS Longitude' in line and ':' in line:
                 try:
                     lon_str = line.split(':', 1)[1].strip()
                     gps_lon = self._parse_dms_coordinate(lon_str)
-                except (ValueError, IndexError) as e:
-                    logger.debug(f"解析GPS经度失败: {str(e)}")
+                except (ValueError, IndexError):
+                    pass
         
         if gps_lat is not None and gps_lon is not None:
             exif_data['GPS GPSLatitude'] = gps_lat
@@ -890,16 +527,15 @@ class SmartArrangeThread(QtCore.QThread):
             date_taken = self.parse_exif_datetime(tags)
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
-        return None
+        else:
+            self.log("DEBUG", "HEIC文件没有EXIF数据")
+            return None
 
     def _process_png_exif(self, file_path):
-        try:
-            with Image.open(file_path) as img:
-                creation_time = img.info.get('Creation Time')
-                if creation_time:
-                    return self.parse_datetime(creation_time)
-        except (IOError, OSError):
-            pass
+        with Image.open(file_path) as img:
+            creation_time = img.info.get('Creation Time')
+            if creation_time:
+                return self.parse_datetime(creation_time)
         return None
 
     def _process_mp4_exif(self, file_path, exif_data):
@@ -1060,13 +696,14 @@ class SmartArrangeThread(QtCore.QThread):
     def _determine_best_datetime(self, date_taken, create_time, modify_time):
         if self.time_derive == "拍摄日期":
             return date_taken.strftime('%Y-%m-%d %H:%M:%S') if date_taken else None
-        if self.time_derive == "创建时间":
+        elif self.time_derive == "创建时间":
             return create_time.strftime('%Y-%m-%d %H:%M:%S')
-        if self.time_derive == "修改时间":
+        elif self.time_derive == "修改时间":
             return modify_time.strftime('%Y-%m-%d %H:%M:%S')
-        times = [t for t in [date_taken, create_time, modify_time] if t is not None]
-        earliest_time = min(times) if times else modify_time
-        return earliest_time.strftime('%Y-%m-%d %H:%M:%S')
+        else:
+            times = [t for t in [date_taken, create_time, modify_time] if t is not None]
+            earliest_time = min(times) if times else modify_time
+            return earliest_time.strftime('%Y-%m-%d %H:%M:%S')
 
     def _extract_gps_and_camera_info(self, tags, exif_data):
         lat_ref = str(tags.get('GPS GPSLatitudeRef', '')).strip()
@@ -1081,19 +718,18 @@ class SmartArrangeThread(QtCore.QThread):
                 # 如果是浮点数格式，直接使用
                 lat = gps_lat
                 lon = gps_lon
+            elif hasattr(gps_lat, 'values') and hasattr(gps_lon, 'values'):
+                # 如果是EXIF格式的度分秒数据，使用convert_to_degrees方法转换
+                lat = self.convert_to_degrees(gps_lat)
+                lon = self.convert_to_degrees(gps_lon)
             else:
+                # 其他情况，尝试转换为浮点数
                 try:
-                    # 尝试作为度分秒数据转换
-                    lat = self.convert_to_degrees(gps_lat)
-                    lon = self.convert_to_degrees(gps_lon)
-                except (AttributeError, TypeError, ValueError):
-                    # 如果转换失败，尝试转换为浮点数
-                    try:
-                        lat = float(gps_lat)
-                        lon = float(gps_lon)
-                    except (ValueError, TypeError):
-                        lat = None
-                        lon = None
+                    lat = float(gps_lat)
+                    lon = float(gps_lon)
+                except (ValueError, TypeError):
+                    lat = None
+                    lon = None
             
             if lat is not None and lon is not None:
                 # 应用方向参考
@@ -1123,151 +759,31 @@ class SmartArrangeThread(QtCore.QThread):
             'Model': model or None
         })
 
-
-        
-    def _initialize_exiftool(self):
-        """初始化exiftool守护进程"""
+    def _get_video_metadata(self, file_path, timeout=30):
         try:
-            exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
-            if not os.path.exists(exiftool_path):
-                self.log("DEBUG", "exiftool.exe 未找到")
-                return
-                
-            # 启动exiftool作为守护进程 (-stay_open True)
-            self.exiftool_process = subprocess.Popen(
-                [exiftool_path, '-stay_open', 'True', '-@', '-'],
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE,
-                universal_newlines=True,
-                shell=False
-            )
-            
-            # 测试连接
-            test_cmd = "-ver\n-execute\n"
-            self.exiftool_process.stdin.write(test_cmd)
-            self.exiftool_process.stdin.flush()
-            
-            # 读取输出直到看到 '{ready}'
-            output = []
-            start_time = time.time()
-            timeout = 5
-            while time.time() - start_time < timeout:
-                line = self.exiftool_process.stdout.readline()
-                if not line:
-                    break
-                output.append(line)
-                if '{ready}' in line:
-                    self.exiftool_available = True
-                    break
-                    
-        except Exception as e:
-            self.log("DEBUG", f"初始化exiftool守护进程失败: {str(e)}")
-            self._close_exiftool()
-    
-    def _close_exiftool(self):
-        """关闭exiftool守护进程"""
-        if self.exiftool_process:
-            try:
-                self.exiftool_process.stdin.write("-stay_open\nFalse\n")
-                self.exiftool_process.stdin.flush()
-                self.exiftool_process.communicate(timeout=2)
-            except Exception:
-                try:
-                    self.exiftool_process.kill()
-                except:
-                    pass
-            finally:
-                self.exiftool_process = None
-                self.exiftool_available = False
-                
-    def _get_video_metadata(self, file_path, timeout=15):
-        try:
-            # 文件大小检查
-            try:
-                file_size = os.path.getsize(file_path)
-                if file_size > 500 * 1024 * 1024:  # 500MB限制
-                    self.log("DEBUG", f"视频文件过大，跳过: {file_path} ({file_size / 1024 / 1024:.1f}MB)")
-                    return None
-            except (OSError, FileNotFoundError):
-                pass
-                
-            file_path_str = str(file_path)
-            
-            # 使用守护进程模式的exiftool
-            if self.exiftool_available:
-                # 构建命令
-                cmd = f"-fast -j \"{file_path_str}\"\n-execute\n"
-                
-                # 发送命令到exiftool进程
-                self.exiftool_process.stdin.write(cmd)
-                self.exiftool_process.stdin.flush()
-                
-                # 读取输出直到看到 '{ready}'
-                output_lines = []
-                start_time = time.time()
-                while time.time() - start_time < timeout:
-                    line = self.exiftool_process.stdout.readline()
-                    if not line:
-                        break
-                    if '{ready}' in line:
-                        break
-                    output_lines.append(line)
-                
-                # 解析JSON输出
-                if output_lines:
-                    import json
-                    try:
-                        metadata_list = json.loads(''.join(output_lines))
-                        if metadata_list and isinstance(metadata_list[0], dict):
-                            # 将嵌套的GPS信息扁平化
-                            metadata = metadata_list[0]
-                            return metadata
-                    except json.JSONDecodeError:
-                        # 如果JSON解析失败，尝试传统方式
-                        pass
-                
-            # 回退到原始方法
-            file_path_normalized = file_path_str.replace('\\', '/')
+            file_path_normalized = str(file_path).replace('\\', '/')
             cmd = f"{get_resource_path('resources/exiftool/exiftool.exe')} -fast \"{file_path_normalized}\""
 
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                text=False,  # 使用字节模式以避免自动解码
+                text=True,
                 timeout=timeout,
-                shell=True,
-                check=False
+                shell=True
             )
 
             metadata = {}
-            # 手动解码并处理错误
-            stdout_text = result.stdout.decode('utf-8', errors='replace')
-            for line in stdout_text.split('\n'):
+            for line in result.stdout.split('\n'):
                 if ':' in line:
                     key, value = line.split(':', 1)
                     metadata[key.strip()] = value.strip()
 
             return metadata
 
-        except subprocess.TimeoutExpired:
-            self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据超时")
+        except Exception as e:
             return None
-        except (OSError, UnicodeDecodeError, ValueError) as e:
-            self.log("DEBUG", f"读取视频文件 {file_path} 的EXIF数据时出错: {str(e)}")
-            return None
-            
-    # 重复的run方法已删除
 
     def parse_exif_datetime(self, tags):
-        """从EXIF标签中解析日期时间信息
-        
-        Args:
-            tags: 包含EXIF信息的标签字典
-            
-        Returns:
-            datetime.datetime: 解析后的日期时间对象，如果解析失败则返回None
-        """
         try:
             datetime_str = str(tags.get('EXIF DateTimeOriginal', ''))
             if datetime_str and datetime_str != 'None':
@@ -1295,112 +811,22 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 return datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
                 
-        except (ValueError, TypeError) as e:
-            logger.debug(f"解析EXIF日期时间失败: {str(e)}")
+        except (ValueError, TypeError):
+            pass
             
         return None
 
-    # 日期时间解析缓存 - 类级别的缓存，所有实例共享
-    _datetime_cache = {}
-    _datetime_cache_max_size = 50000  # 缓存最大项数
-    _datetime_cache_clean_interval = 1000  # 清理间隔
-    _datetime_cache_clean_count = 0  # 清理计数器
-    
     def parse_datetime(self, datetime_str):
-        """解析日期时间字符串 - 优化版，使用缓存和更高效的解析策略
-        
-        Args:
-            datetime_str: 日期时间字符串
-            
-        Returns:
-            datetime.datetime: 解析后的日期时间对象，如果解析失败则返回None
-        """
         if not datetime_str:
             return None
             
-        # 首先检查缓存
-        cache_key = str(datetime_str)
-        if cache_key in self._datetime_cache:
-            return self._datetime_cache[cache_key]
-        
-        # 增加计数器并检查是否需要清理缓存
-        SmartArrangeThread._datetime_cache_clean_count += 1
-        if SmartArrangeThread._datetime_cache_clean_count >= SmartArrangeThread._datetime_cache_clean_interval:
-            self._cleanup_datetime_cache()
-        
         try:
-            # 简单预处理，规范化常见分隔符
-            if isinstance(datetime_str, str):
-                # 替换常见的时间分隔符变体
-                datetime_str = datetime_str.strip()
-                # 尝试直接匹配最常见的格式
-                if 'T' in datetime_str:
-                    # ISO格式
-                    try:
-                        dt = datetime.datetime.fromisoformat(datetime_str.replace('Z', '+00:00'))
-                        result = dt.replace(tzinfo=None) if dt.tzinfo else dt
-                        self._datetime_cache[cache_key] = result
-                        return result
-                    except ValueError:
-                        pass
-                
-                # 常见格式预检查 - 减少尝试次数
-                if len(datetime_str) == 19 and datetime_str[4] in ':-/' and datetime_str[10] == ' ' and datetime_str[13] in ':.':
-                    # 标准格式: YYYY-MM-DD HH:MM:SS
-                    fmt = '%Y-%m-%d %H:%M:%S'
-                    if datetime_str[4] == ':':
-                        fmt = '%Y:%m:%d %H:%M:%S'
-                    elif datetime_str[4] == '/':
-                        fmt = '%Y/%m/%d %H:%M:%S'
-                    try:
-                        dt = datetime.datetime.strptime(datetime_str, fmt)
-                        # 视频文件通常使用UTC时间
-                        if any(ext in str(self.current_file).lower() for ext in ('.mov', '.mp4', '.m4v', '.avi')):
-                            utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
-                            dt = utc_dt.astimezone().replace(tzinfo=None)
-                        self._datetime_cache[cache_key] = dt
-                        return dt
-                    except ValueError:
-                        pass
-                
-                # 只有日期的情况
-                elif len(datetime_str) in (8, 10):
-                    if len(datetime_str) == 8 and datetime_str.isdigit():
-                        # YYYYMMDD
-                        try:
-                            dt = datetime.datetime.strptime(datetime_str, '%Y%m%d')
-                            self._datetime_cache[cache_key] = dt
-                            return dt
-                        except ValueError:
-                            pass
-                    elif len(datetime_str) == 10 and datetime_str[4] in ':-/' and datetime_str[7] in ':-/':
-                        # YYYY-MM-DD
-                        fmt = '%Y-%m-%d'
-                        if datetime_str[4] == ':':
-                            fmt = '%Y:%m:%d'
-                        elif datetime_str[4] == '/':
-                            fmt = '%Y/%m/%d'
-                        try:
-                            dt = datetime.datetime.strptime(datetime_str, fmt)
-                            self._datetime_cache[cache_key] = dt
-                            return dt
-                        except ValueError:
-                            pass
-                
-                # 带时区信息
-                if ('+' in datetime_str or '-' in datetime_str[-6:]) and len(datetime_str) >= 19:
-                    # 尝试几种可能的带时区格式
-                    tz_formats = ['%Y-%m-%d %H:%M:%S%z', '%Y:%m:%d %H:%M:%S%z', '%Y/%m/%d %H:%M:%S%z']
-                    for fmt in tz_formats:
-                        try:
-                            dt = datetime.datetime.strptime(datetime_str, fmt)
-                            result = dt.astimezone().replace(tzinfo=None)
-                            self._datetime_cache[cache_key] = result
-                            return result
-                        except ValueError:
-                            continue
+            formats_with_timezone = [
+                '%Y:%m:%d %H:%M:%S%z',
+                '%Y-%m-%d %H:%M:%S%z',
+                '%Y/%m/%d %H:%M:%S%z',
+            ]
             
-            # 备用全面尝试
             formats_without_timezone = [
                 '%Y:%m:%d %H:%M:%S',
                 '%Y-%m-%d %H:%M:%S', 
@@ -1411,61 +837,34 @@ class SmartArrangeThread(QtCore.QThread):
                 '%Y%m%d'
             ]
             
-            for fmt in formats_without_timezone:
+            for fmt in formats_with_timezone:
                 try:
                     dt = datetime.datetime.strptime(datetime_str, fmt)
-                    self._datetime_cache[cache_key] = dt
+                    if dt.tzinfo is not None:
+                        dt = dt.astimezone()
+                        return dt.replace(tzinfo=None)
                     return dt
                 except ValueError:
                     continue
-        except (ValueError, TypeError):
+            
+            for fmt in formats_without_timezone:
+                try:
+                    dt = datetime.datetime.strptime(datetime_str, fmt)
+                    if 'mov' in fmt.lower() or fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
+                        import time
+                        utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                        local_dt = utc_dt.astimezone()
+                        return local_dt.replace(tzinfo=None)
+                    
+                    return dt
+                except ValueError:
+                    continue
+        except (ValueError, TypeError) as e:
             pass
-        
-        # 缓存失败结果
-        self._datetime_cache[cache_key] = None
+            
         return None
-    
-    def _cleanup_datetime_cache(self):
-        """清理日期时间解析缓存，防止内存占用过大"""
-        # 重置清理计数器
-        SmartArrangeThread._datetime_cache_clean_count = 0
-        
-        # 检查缓存大小
-        if len(SmartArrangeThread._datetime_cache) <= SmartArrangeThread._datetime_cache_max_size:
-            return
-        
-        # 清理缓存，保留一半的项
-        # 注意：由于我们没有记录访问时间，这里采用简单的方式清理一半的缓存
-        # 在实际应用中，可以考虑使用OrderedDict并记录访问顺序
-        cache_items = list(SmartArrangeThread._datetime_cache.items())
-        # 只保留后面的一半，假设较新添加的项在列表后面
-        new_size = max(10000, SmartArrangeThread._datetime_cache_max_size // 2)
-        
-        # 重新构建缓存，保留最新添加的项
-        # 注意：Python 3.7+的字典保持插入顺序
-        new_cache = {}
-        for key, value in cache_items[-new_size:]:
-            new_cache[key] = value
-        
-        # 替换缓存
-        SmartArrangeThread._datetime_cache = new_cache
-        
-        # 记录清理日志（可以根据需要启用）
-        # self.log("DEBUG", f"日期时间缓存已清理，当前大小: {len(new_cache)}/{SmartArrangeThread._datetime_cache_max_size}")
 
     def parse_gps_coordinates(self, gps_info):
-        """解析GPS坐标信息
-        
-        从GPS信息字典中提取并解析经纬度坐标。支持多种GPS坐标格式，
-        优先尝试从'GPS Coordinates'和'GPS Position'字段解析，
-        失败时回退到分别解析'GPS Latitude'和'GPS Longitude'。
-        
-        Args:
-            gps_info: 包含GPS信息的字典
-            
-        Returns:
-            tuple: (纬度, 经度)，解析失败时返回(None, None)
-        """
         if not gps_info:
             return None, None
             
@@ -1492,7 +891,7 @@ class SmartArrangeThread(QtCore.QThread):
                 lon = self._parse_dms_coordinate(lon_str)
                 
                 return lat, lon
-        except (ValueError, TypeError, KeyError):
+        except Exception:
             pass
             
         return None, None
@@ -1531,25 +930,11 @@ class SmartArrangeThread(QtCore.QThread):
                 
             return decimal
             
-        except (OSError, ValueError, TypeError):
+        except Exception as e:
             return None
 
     def get_city_and_province(self, lat, lon):
-        """根据经纬度坐标获取省份和城市信息。
-        
-        Args:
-            lat: 纬度坐标，可以是浮点数、整数或字符串格式
-            lon: 经度坐标，可以是浮点数、整数或字符串格式
-            
-        Returns:
-            tuple: 包含省份和城市的元组，格式为(province, city)
-                  如果无法确定位置，返回("未知省份", "未知城市")
-        """
-        try:
-            # 检查 province_data 和 city_data 是否存在
-            _ = self.province_data
-            _ = self.city_data
-        except AttributeError:
+        if not hasattr(self, 'province_data') or not hasattr(self, 'city_data'):
             return "未知省份", "未知城市"
 
         def is_point_in_polygon(x, y, polygon):
@@ -1567,21 +952,19 @@ class SmartArrangeThread(QtCore.QThread):
                         if x <= max(p1x, p2x):
                             if p1y != p2y:
                                 xinters = (y - p1y) * (p2x - p1x) / (p2y - p1y) + p1x
-                                if p1x == p2x or x <= xinters:
-                                    inside = not inside
-                            elif p1x == p2x:
+                            if p1x == p2x or x <= xinters:
                                 inside = not inside
                 p1x, p1y = p2x, p2y
             
             return inside
 
         def query_location(longitude, latitude, data):
-            for feature in data['features']:
+            for i, feature in enumerate(data['features']):
                 name, coordinates = feature['properties']['name'], feature['geometry']['coordinates']
                 polygons = [polygon for multi_polygon in coordinates for polygon in
                             ([multi_polygon] if isinstance(multi_polygon[0][0], (float, int)) else multi_polygon)]
                 
-                for polygon in polygons:
+                for j, polygon in enumerate(polygons):
                     if is_point_in_polygon(longitude, latitude, polygon):
                         return name
 
@@ -1602,18 +985,11 @@ class SmartArrangeThread(QtCore.QThread):
                 province if province else "未知省份",
                 city if city else "未知城市"
             )
-        return "未知省份", "未知城市"
+        else:
+            return "未知省份", "未知城市"
 
     @staticmethod
     def convert_to_degrees(value):
-        """将GPS坐标从度分秒格式转换为十进制度格式
-        
-        Args:
-            value: GPS坐标值（度分秒格式）
-            
-        Returns:
-            float: 转换后的十进制度坐标值，如果转换失败则返回None
-        """
         if not value:
             return None
 
@@ -1627,32 +1003,21 @@ class SmartArrangeThread(QtCore.QThread):
                 pass
 
         try:
-            if len(value.values) >= 3:
+            if hasattr(value, 'values') and len(value.values) >= 3:
                 d = float(value.values[0].num) / float(value.values[0].den)
                 m = float(value.values[1].num) / float(value.values[1].den)
                 s = float(value.values[2].num) / float(value.values[2].den)
                 result = d + (m / 60.0) + (s / 3600.0)
                 return result
-        except (ValueError, TypeError, AttributeError):
+        except Exception:
             pass
 
         try:
             return float(value)
-        except (ValueError, TypeError):
+        except Exception:
             return None
 
     def build_new_file_name(self, file_path, file_time, original_name, exif_data=None):
-        """构建新的文件名
-        
-        Args:
-            file_path: 文件路径
-            file_time: 文件时间
-            original_name: 原始文件名
-            exif_data: 可选，EXIF数据
-            
-        Returns:
-            新的文件名
-        """
         if not self.file_name_structure:
             return original_name
         
@@ -1660,562 +1025,180 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data = self.get_exif_data(file_path)
         
         parts = []
-        # 准备文件上下文信息
-        file_context = {
-            'file_path': file_path,
-            'file_time': file_time,
-            'original_name': original_name,
-            'exif_data': exif_data
-        }
-        
-        # 严格按照用户点击tag的顺序构建文件名
         for tag in self.file_name_structure:
-            # 调用get_file_name_part获取每个标签对应的值
-            file_part = self.get_file_name_part(tag, file_context)
-            # 只添加非空的部分
-            if file_part:
-                parts.append(file_part)
+            parts.append(self.get_file_name_part(tag, file_path, file_time, original_name, exif_data))
         
-        # 确保文件名不为空
-        if not parts:
-            return original_name
-        
-        # 用指定的分隔符连接各部分
         return self.separator.join(parts)
         
     def process_single_file(self, file_path, base_folder=None):
-        """处理单个文件的分类和重命名
-        
-        Args:
-            file_path: 文件路径
-            base_folder: 可选，基础文件夹
-            
-        Returns:
-            处理后的信息或None
-        """
         try:
-            if self.is_stopped():
-                return
-                
-            # 设置当前文件属性，供其他方法使用
-            self.current_file = file_path
-                
-            # 文件大小检查，避免处理过大的文件
-            file_size = file_path.stat().st_size
-            if file_size > 500 * 1024 * 1024:  # 500MB限制
-                self.log("WARNING", f"跳过过大的文件: {file_path.name} ({file_size / 1024 / 1024:.1f}MB)")
-                return
-                
             exif_data = self.get_exif_data(file_path)
             
-            # 解析文件时间 - 简化格式解析逻辑
-            file_time = None
-            if exif_data.get('DateTime'):
-                # 使用更高效的方式尝试解析日期时间
-                # 首先尝试调用专门的解析方法，如果存在的话
-                if hasattr(self, 'parse_datetime'):
-                    file_time = self.parse_datetime(str(exif_data['DateTime']))
-                
-                # 如果专门的方法不存在或失败，回退到尝试多种格式
-                if file_time is None:
-                    date_formats = [
-                        '%Y-%m-%d %H:%M:%S',
-                        '%Y:%m:%d %H:%M:%S',
-                        '%Y-%m-%dT%H:%M:%S',
-                        '%Y:%m:%dT%H:%M:%S'
-                    ]
-                    
-                    # 优先尝试最常见的格式，减少循环次数
-                    for fmt in date_formats:
-                        try:
-                            file_time = datetime.datetime.strptime(str(exif_data['DateTime']), fmt)
-                            break
-                        except ValueError:
-                            continue
-                
-                if file_time is None:
-                    self.log("WARNING", f"无法解析文件时间格式: {exif_data['DateTime']} 对于文件 {file_path.name}")
-                    
-            # 如果EXIF时间解析失败，使用文件系统时间
-            if file_time is None:
-                try:
-                    # 简化文件时间获取逻辑
-                    timestamp = file_path.stat().st_ctime if self.time_derive == "文件创建时间" else file_path.stat().st_mtime
-                    file_time = datetime.datetime.fromtimestamp(timestamp)
-                    self.log("DEBUG", f"使用文件系统时间: {file_time} 对于文件 {file_path.name}")
-                except (OSError, IOError) as e:
-                    self.log("ERROR", f"获取文件系统时间失败 {file_path.name}: {str(e)}")
+            file_time = datetime.datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S') if exif_data.get('DateTime') else None
 
-            # 设置目标根目录
             if self.destination_root:
                 base_folder = self.destination_root
             
-            # 构建目标路径和新文件名
             target_path = self.build_target_path(file_path, exif_data, file_time, base_folder)
+            
             original_name = file_path.stem
             new_file_name = self.build_new_file_name(file_path, file_time, original_name, exif_data)
+            
             new_file_name_with_ext = f"{new_file_name}{file_path.suffix}"
+            
             full_target_path = target_path / new_file_name_with_ext
             
-            # 简化文件操作判断逻辑
-            needs_operation = file_path.name != new_file_name_with_ext or file_path.parent != target_path
+            needs_operation = False
+            operation_type = "重命名"
+            
+            if file_path.name != new_file_name_with_ext:
+                needs_operation = True
+                operation_type = "重命名"
+            
+            if file_path.parent != target_path:
+                needs_operation = True
+                operation_type = "移动"
             
             if needs_operation:
-                with self.files_lock:
-                    self.files_to_rename.append({
-                        'old_path': str(file_path),
-                        'new_path': str(full_target_path)
-                    })
+                self.files_to_rename.append({
+                    'old_path': str(file_path),
+                    'new_path': str(full_target_path)
+                })
             
-            # 线程安全地更新处理计数
-            with self.processed_lock:
-                self.processed_files += 1
-                
-        except (OSError, IOError, ValueError, TypeError) as e:
+        except Exception as e:
             self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
 
-    def get_file_name_part(self, tag_info, file_context):
-        """根据标签获取文件名部分
+    def get_file_name_part(self, tag, file_path, file_time, original_name, exif_data=None):
+        if isinstance(tag, dict) and 'tag' in tag and 'content' in tag:
+            tag_name = tag['tag']
+            if tag_name == "自定义":
+                return tag['content']  
+            else:
+                if tag['content'] is not None:
+                    return tag['content']
+                else:
+                    tag = tag_name
         
-        Args:
-            tag_info: 标签或标签字典
-            file_context: 包含文件信息的字典，包含'file_path'、'file_time'、'original_name'、'exif_data'等键
-            
-        Returns:
-            文件名部分字符串
-        """
-        # 处理标签字典情况
-        if isinstance(tag_info, dict):
-            return self._process_tag_dict(tag_info, file_context)
+        if exif_data is None:
+            exif_data = self.get_exif_data(file_path)
         
-        # 确保exif_data可用
-        if 'exif_data' not in file_context or file_context['exif_data'] is None:
-            file_context['exif_data'] = self.get_exif_data(file_context['file_path'])
-        
-        # 处理单个标签
-        return self._process_tag(tag_info, file_context)
-        
-    def _get_original_name(self, ctx):
-        """获取原始文件名"""
-        return ctx['original_name']
-    
-    def _get_year(self, ctx):
-        """获取年份"""
-        return str(ctx['file_time'].year) if ctx['file_time'] else ""
-    
-    def _get_month(self, ctx):
-        """获取月份"""
-        return f"{ctx['file_time'].month:02d}" if ctx['file_time'] else ""
-    
-    def _get_day(self, ctx):
-        """获取日"""
-        return f"{ctx['file_time'].day:02d}" if ctx['file_time'] else ""
-    
-    def _get_weekday(self, ctx):
-        """获取星期"""
-        return self._get_weekday_name(ctx['file_time']) if ctx['file_time'] else ""
-    
-    def _get_time(self, ctx):
-        """获取时间"""
-        return ctx['file_time'].strftime('%H%M%S') if ctx['file_time'] else ""
-    
-    def _get_device_make_info(self, ctx):
-        """获取设备品牌"""
-        return self._get_device_info(ctx['exif_data'], 'Make', '未知品牌')
-    
-    def _get_device_model_info(self, ctx):
-        """获取设备型号"""
-        return self._get_device_info(ctx['exif_data'], 'Model', '未知型号')
-    
-    def _get_location_from_ctx(self, ctx):
-        """获取位置信息"""
-        return self._get_location_name(ctx)
-    
-    def _get_custom_text(self, ctx):
-        """获取自定义文本"""
-        return "自定义"
-        
-    def _process_tag(self, tag_info, file_context):
-        """处理单个标签"""
-        # 特殊处理复合标签 "年份-月份-日"
-        if tag_info == "年份-月份-日" and file_context.get('file_time'):
-            year = self._get_year(file_context)
-            month = self._get_month(file_context)
-            day = self._get_day(file_context)
-            if year and month and day:
-                return f"{year}-{month}-{day}"
-            return ""
-        
-        # 使用字典映射代替多个if语句和lambda表达式
-        tag_processors = {
-            "原文件名": self._get_original_name,
-            "年份": self._get_year,
-            "月份": self._get_month,
-            "日": self._get_day,
-            "星期": self._get_weekday,
-            "时间": self._get_time,
-            "品牌": self._get_device_make_info,
-            "型号": self._get_device_model_info,
-            "位置": self._get_location_from_ctx,
-            "自定义": self._get_custom_text
-        }
-        
-        # 获取对应的处理器并执行
-        processor = tag_processors.get(tag_info)
-        return processor(file_context) if processor else ""
-    
-    def _process_tag_dict(self, tag_dict, file_context):
-        """处理标签字典格式"""
-        # 特殊处理复合标签：年份-月份-日
-        if tag_dict.get('tag') == "年份-月份-日":
-            # 获取文件时间
-            if file_context and 'file_time' in file_context:
-                year = self._get_year(file_context)
-                month = self._get_month(file_context)
-                day = self._get_day(file_context)
-                return f"{year}-{month}-{day}"
-            return ""
-        
-        if tag_dict.get('tag') == "自定义" or tag_dict.get('content') is not None:
-            return tag_dict.get('content', "")
-        # 处理标签字典中的标准标签
-        tag = tag_dict.get('tag', "")
-        if tag:
-            # 对于标准标签，使用_process_tag方法处理
-            return self._process_tag(tag, file_context)
-        return ""
-    
-    def _get_weekday_name(self, file_time):
-        """获取星期名称"""
-        weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
-        return weekdays[file_time.weekday()]
-    
-    def _get_device_info(self, exif_data, key, default):
-        """获取设备信息"""
-        value = exif_data.get(key, default)
-        if isinstance(value, str):
-            value = value.strip().strip('"\'')
-        return str(value) if value is not None else default
-    
-    def _get_location_name(self, file_context):
-        """获取位置名称"""
-        exif_data = file_context['exif_data']
-        if not exif_data.get('GPS GPSLatitude') or not exif_data.get('GPS GPSLongitude'):
+        if tag == "原文件名":
+            return original_name
+        elif tag == "年份" and file_time:
+            return str(file_time.year)
+        elif tag == "月份" and file_time:
+            return f"{file_time.month:02d}"
+        elif tag == "日" and file_time:
+            return f"{file_time.day:02d}"
+        elif tag == "星期" and file_time:
+            weekdays = ["周一", "周二", "周三", "周四", "周五", "周六", "周日"]
+            return weekdays[file_time.weekday()]
+        elif tag == "时间" and file_time:
+            return file_time.strftime('%H%M%S')
+        elif tag == "品牌":
+            brand = exif_data.get('Make', '未知品牌')
+            if isinstance(brand, str):
+                brand = brand.strip().strip('"\'')
+            return str(brand) if brand is not None else '未知品牌'
+        elif tag == "型号":
+            model = exif_data.get('Model', '未知型号')
+            if isinstance(model, str):
+                model = model.strip().strip('"\'')
+            return str(model) if model is not None else '未知型号'
+        elif tag == "位置":
+            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
+                lat = float(exif_data['GPS GPSLatitude'])
+                lon = float(exif_data['GPS GPSLongitude'])
+                
+                # 尝试从缓存获取（使用config_manager的带容差缓存功能，5公里≈0.045度）
+                from config_manager import config_manager
+                cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
+                if cached_address and cached_address != "未知位置":
+                    return cached_address
+                
+                address = get_address_from_coordinates(lat, lon)
+                if address and address != "未知位置":
+                    config_manager.cache_location(lat, lon, address)
+                    return address
+                
+                province, city = self.get_city_and_province(exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude'])
+                return f"{province}{city}" if city != "未知城市" else province
             return "未知位置"
-        
-        try:
-            lat = float(exif_data['GPS GPSLatitude'])
-            lon = float(exif_data['GPS GPSLongitude'])
-            
-            # 尝试从缓存获取
-            cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, 0.045)
-            if cached_address and cached_address != "未知位置":
-                return cached_address
-            
-            # 尝试获取地址信息
-            address = get_address_from_coordinates(lat, lon)
-            if address and address != "未知位置":
-                config_manager.cache_location(lat, lon, address)
-                return address
-            
-            # 获取省份城市信息
-            province, city = self.get_city_and_province(exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude'])
-            return f"{province}{city}" if city != "未知城市" else province
-        except (ValueError, TypeError):
-            return "未知位置"
+        elif tag == "自定义":
+            return "自定义"
+        else:
+            return ""
 
     def build_target_path(self, file_path, exif_data, file_time, base_folder):
-        """构建目标路径并确保目录存在，增强了错误处理和权限检查"""
         if not self.classification_structure:
             return file_path.parent
         
-        # 确定基础目标路径
         if base_folder:
-            target_path = self._safe_path_resolve(base_folder)
+            target_path = Path(base_folder)
         elif self.destination_root:
-            target_path = self._safe_path_resolve(self.destination_root)
+            target_path = Path(self.destination_root)
         else:
             target_path = file_path.parent
         
-        # 验证基础路径的有效性
-        if not self._validate_folder_path(target_path):
-            self.log("ERROR", f"无效的目标路径: {target_path}")
-            return file_path.parent
-        
-        # 构建分类路径
-        target_path = self._build_classification_path(target_path, exif_data, file_time, file_path)
-        
-        # 添加文件类型文件夹
-        target_path = self._add_file_type_folder(target_path, file_path)
-        
-        # 检查路径长度限制（Windows默认260字符限制）
-        if self._check_path_length_limit(target_path):
-            self.log("WARNING", f"路径长度可能超过系统限制: {target_path}")
-            # 尝试简化路径
-            target_path = self._simplify_path_if_needed(target_path)
-        
-        # 尝试创建目录结构
-        success = self._create_directory_structure(target_path)
-        if not success:
-            return file_path.parent
-        
-        return target_path
-        
-    def _build_classification_path(self, target_path, exif_data, file_time, file_path):
-        """构建分类路径，处理每个分类级别"""
         for level in self.classification_structure:
-            # 使用函数处理以避免嵌套异常
-            folder_name = self._get_safe_folder_name(level, exif_data, file_time, file_path)
-            if folder_name:
-                target_path = target_path / folder_name
-        return target_path
-    
-    def _get_safe_folder_name(self, level, exif_data, file_time, file_path):
-        """获取安全的文件夹名称"""
-        try:
             folder_name = self.get_folder_name(level, exif_data, file_time, file_path)
             if folder_name:
-                # 清理文件夹名称，移除或替换非法字符
-                safe_folder_name = self._sanitize_folder_name(folder_name)
-                if safe_folder_name:
-                    return safe_folder_name
-                # 移除else子句
-                self.log("WARNING", f"无效的文件夹名称: {folder_name}，跳过该级别")
-        except (ValueError, TypeError, OSError) as e:
-            self.log("WARNING", f"处理分类级别 '{level}' 时出错: {str(e)}，跳过该级别")
-        return None
-    
-    def _add_file_type_folder(self, target_path, file_path):
-        """添加文件类型文件夹"""
-        try:
-            file_type = get_file_type(file_path)
-            if file_type:
-                safe_file_type = self._sanitize_folder_name(file_type)
-                return target_path / safe_file_type
-        except (ValueError, TypeError) as e:
-            self.log("WARNING", f"获取文件类型时出错: {str(e)}")
+                target_path = target_path / folder_name
+        
+        file_type = get_file_type(file_path)
+        target_path = target_path / file_type
+        
         return target_path
-    
-    def _create_directory_structure(self, target_path):
-        """创建目录结构并处理可能的错误"""
-        try:
-            self._ensure_directory_exists(target_path)
-            return True
-        except (OSError, PermissionError) as e:
-            self.log("ERROR", f"创建目标目录失败: {target_path}，错误: {str(e)}")
-            return False
-    
-    def _safe_path_resolve(self, path_str):
-        """安全地解析路径，避免路径遍历攻击"""
-        try:
-            # 使用Path对象解析路径
-            path = Path(path_str).resolve()
-            # 确保是绝对路径
-            if not path.is_absolute():
-                self.log("WARNING", f"路径不是绝对路径，将使用当前工作目录: {path_str}")
-                path = Path.cwd() / path_str
-                path = path.resolve()
-            return path
-        except (OSError, ValueError, TypeError) as e:
-            self.log("ERROR", f"解析路径失败: {path_str}，错误: {str(e)}")
-            # 返回当前工作目录作为备选
-            return Path.cwd()
-    
-    def _sanitize_folder_name(self, folder_name):
-        """清理文件夹名称，移除或替换非法字符"""
-        try:
-            # 替换Windows文件系统中的非法字符
-            illegal_chars = '<>:"/\\|?*'
-            safe_name = folder_name
-            for char in illegal_chars:
-                safe_name = safe_name.replace(char, '_')
-            
-            # 移除控制字符
-            safe_name = ''.join(char for char in safe_name if ord(char) > 31)
-            
-            # 处理空字符串或仅包含空格的情况
-            safe_name = safe_name.strip()
-            if not safe_name:
-                safe_name = "未知"
-            
-            # 处理过长的文件夹名称（Windows限制为255个字符）
-            if len(safe_name) > 255:
-                safe_name = safe_name[:252] + "..."
-            
-            return safe_name
-        except (TypeError, ValueError):
-            return "未知"
-    
-    def _check_path_length_limit(self, path):
-        """检查路径长度是否接近系统限制"""
-        try:
-            # Windows通常有260字符的限制，我们设置240作为预警值
-            path_str = str(path)
-            return len(path_str) > 240
-        except (TypeError, ValueError):
-            return False
-    
-    def _simplify_path_if_needed(self, path):
-        """在需要时简化路径"""
-        try:
-            # 这里可以根据需要实现更复杂的路径简化逻辑
-            # 目前只是返回父目录作为简单的备选方案
-            if len(path.parts) > 2:
-                # 保留最后两个部分，其他用父目录替换
-                return path.parent.parent / path.name
-            return path
-        except (OSError, TypeError, AttributeError):
-            return path
-    
-    def _ensure_directory_exists(self, directory_path):
-        """确保目录存在，如果不存在则创建，并处理权限问题"""
-        try:
-            if not directory_path.exists():
-                # 使用parents=True确保所有父目录都被创建
-                directory_path.mkdir(parents=True, exist_ok=True)
-                self.log("DEBUG", f"成功创建目录: {directory_path}")
-            
-            # 验证目录是否可以写入
-            if not self._can_write_to_directory(directory_path):
-                raise PermissionError(f"没有写入权限: {directory_path}")
-            
-            return True
-        except PermissionError as e:
-            self.log("ERROR", f"权限错误: {str(e)}")
-            raise
-        except Exception as e:
-            self.log("ERROR", f"创建目录失败: {directory_path}，错误: {str(e)}")
-            raise
-    
-    def _can_write_to_directory(self, directory_path):
-        """检查是否有写入目录的权限"""
-        try:
-            # 尝试创建一个临时文件来验证写权限
-            test_file = directory_path / f".permission_test_{int(time.time())}"
-            test_file.touch()
-            test_file.unlink()
-            return True
-        except (PermissionError, IOError):
-            return False
 
     def get_folder_name(self, level, exif_data, file_time, file_path):
-        """根据分类级别获取文件夹名称
-        
-        Args:
-            level: 分类级别（如"年份"、"月份"、"拍摄设备"等）
-            exif_data: EXIF数据字典
-            file_time: 文件时间对象
-            file_path: 文件路径
-            
-        Returns:
-            str: 文件夹名称，如果为"不分类"则返回None
-        """
-        # 处理特殊情况：不分类
         if level == "不分类":
             return None
-            
-        # 使用字典映射处理不同级别的文件夹名称生成
-        folder_name_map = {
-            "年份": lambda: str(file_time.year) if file_time else "未知",
-            "月份": lambda: f"{file_time.month:02d}" if file_time else "未知",
-            "日期": lambda: f"{file_time.day:02d}" if file_time else "未知",
-            "星期": lambda: self._get_weekday_name(file_time) if file_time else "未知",
-            "拍摄设备": lambda: self._get_device_make(exif_data),
-            "相机型号": lambda: self._get_device_model(exif_data),
-            "拍摄省份": lambda: self._get_geographic_location(exif_data, 'province'),
-            "拍摄城市": lambda: self._get_geographic_location(exif_data, 'city'),
-            "文件类型": lambda: get_file_type(file_path)
-        }
+        elif level == "年份" and file_time:
+            return str(file_time.year)
+        elif level == "月份" and file_time:
+            return f"{file_time.month:02d}"
+        elif level == "日期" and file_time:
+            return f"{file_time.day:02d}"
+        elif level == "星期" and file_time:
+            weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
+            return weekdays[file_time.weekday()]
         
-        # 获取对应的处理函数并执行，如不存在则返回"未知"
-        folder_name_func = folder_name_map.get(level)
-        return folder_name_func() if folder_name_func else "未知"
+        elif level in ["拍摄设备"]:
+            if exif_data.get('Make'):
+                make = exif_data['Make']
+                if isinstance(make, str):
+                    make = make.strip().strip('"\'')
+                return make
+            else:
+                return "未知设备"
+        elif level == "相机型号":
+            if exif_data.get('Model'):
+                model = exif_data['Model']
+                if isinstance(model, str):
+                    model = model.strip().strip('"\'')
+                return model
+            else:
+                return "未知设备"
         
-    def _get_weekday_name(self, file_time):
-        """获取星期名称"""
-        weekdays = ["星期一", "星期二", "星期三", "星期四", "星期五", "星期六", "星期日"]
-        return weekdays[file_time.weekday()]
+        elif level == "拍摄省份":
+            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
+                province, _ = self.get_city_and_province(
+                    exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
+                )
+                return province
+            else:
+                return "未知省份"
+        elif level == "拍摄城市":
+            if exif_data.get('GPS GPSLatitude') and exif_data.get('GPS GPSLongitude'):
+                _, city = self.get_city_and_province(
+                    exif_data['GPS GPSLatitude'], exif_data['GPS GPSLongitude']
+                )
+                return city
+            else:
+                return "未知城市"
         
-    def _get_device_make(self, exif_data):
-        """获取设备制造商"""
-        if exif_data.get('Make'):
-            make = exif_data['Make']
-            if isinstance(make, str):
-                make = make.strip().strip('"\'')
-            return make
-        return "未知设备"
+        elif level == "文件类型":
+            return get_file_type(file_path)
         
-    def _get_device_model(self, exif_data):
-        """获取相机型号"""
-        if exif_data.get('Model'):
-            model = exif_data['Model']
-            if isinstance(model, str):
-                model = model.strip().strip('"\'')
-            return model
-        return "未知型号"
-    
-    def _get_geographic_location(self, exif_data, location_type):
-        """获取地理位置信息
-        
-        Args:
-            exif_data: EXIF数据字典
-            location_type: 位置类型，可以是'province'（省份）或'city'（城市）
-            
-        Returns:
-            str: 地理位置信息，如果无法获取则返回"未知省份"或"未知城市"
-        """
-        try:
-            # 尝试从EXIF数据中获取GPS信息
-            gps_lat = None
-            gps_lon = None
-            
-            # 检查不同可能的GPS字段
-            if 'GPS GPSLatitude' in exif_data and 'GPS GPSLongitude' in exif_data:
-                try:
-                    # 处理exifread格式的GPS数据
-                    lat_data = exif_data['GPS GPSLatitude'].values
-                    lon_data = exif_data['GPS GPSLongitude'].values
-                    lat_ref = str(exif_data.get('GPS GPSLatitudeRef', 'N'))
-                    lon_ref = str(exif_data.get('GPS GPSLongitudeRef', 'E'))
-                    
-                    # 转换度分秒格式到十进制度
-                    def dms_to_decimal(dms, ref):
-                        degrees = float(dms[0].num) / float(dms[0].den)
-                        minutes = float(dms[1].num) / float(dms[1].den)
-                        seconds = float(dms[2].num) / float(dms[2].den)
-                        decimal = degrees + (minutes / 60.0) + (seconds / 3600.0)
-                        if ref in ['S', 'W']:
-                            decimal = -decimal
-                        return decimal
-                    
-                    gps_lat = dms_to_decimal(lat_data, lat_ref)
-                    gps_lon = dms_to_decimal(lon_data, lon_ref)
-                except (ValueError, TypeError, AttributeError):
-                    pass
-            
-            # 如果没有找到标准GPS字段，尝试其他格式
-            if gps_lat is None or gps_lon is None:
-                # 尝试直接从exif_data中获取已解析的GPS坐标
-                if 'GPSLatitude' in exif_data and 'GPSLongitude' in exif_data:
-                    gps_lat = exif_data['GPSLatitude']
-                    gps_lon = exif_data['GPSLongitude']
-                
-                # 尝试从GPS信息字典中解析
-                elif 'GPSInfo' in exif_data:
-                    lat, lon = self.parse_gps_coordinates(exif_data['GPSInfo'])
-                    if lat is not None and lon is not None:
-                        gps_lat = lat
-                        gps_lon = lon
-            
-            # 如果获取到了GPS坐标，尝试获取地理位置
-            if gps_lat is not None and gps_lon is not None:
-                province, city = self.get_city_and_province(gps_lat, gps_lon)
-                if location_type == 'province':
-                    return province
-                elif location_type == 'city':
-                    return city
-        except Exception as e:
-            self.log("DEBUG", f"获取地理位置失败: {str(e)}")
-        
-        # 默认返回值
-        return "未知省份" if location_type == 'province' else "未知城市"
+        else:
+            return "未知"
