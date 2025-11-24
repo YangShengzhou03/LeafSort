@@ -196,7 +196,7 @@ class SmartArrangeThread(QtCore.QThread):
                         percent_complete = int((self.processed_files / self.total_files) * 80)
                         self.progress_signal.emit(percent_complete)
 
-    def _truncate_filename(self, filename, max_length=24):
+    def _truncate_filename(self, filename, max_length=20):
         """截断过长的文件名，中间用...省略"""
         if len(filename) <= max_length:
             return filename
