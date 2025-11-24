@@ -1,7 +1,7 @@
 import os
 import logging
 from PyQt6 import QtWidgets
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import pyqtSignal, Qt
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -173,7 +173,7 @@ class FolderPage(QtWidgets.QWidget):
     
     def get_folder_info(self, folder_path):
         info_lines = [
-            "=== 待处理的源文件夹信息 ===",
+            "=" * 15 + "待处理的源文件夹信息" + "=" * 15,
             f"路径：{folder_path}"
         ]
         
@@ -208,10 +208,11 @@ class FolderPage(QtWidgets.QWidget):
         
         info_lines.extend([
             "",
-            "-" * 10 + "注意！会递归遍历处理子文件夹" + "-" * 10,
-            "顶层内容统计                               ",
+            "-" * 20 + "注意！会递归遍历处理子文件夹" + "-" * 20,
+            "顶层内容统计",
             f"顶层文件数量：{file_count}       顶层文件夹数量：{directory_count}       总计：{total_items}",
-            "-" * 75
+            "-" * 75,
+            " LeafView © 2025 Yangshengzhou.All Rights Reserved "
         ])
         
         return '\n'.join(info_lines)

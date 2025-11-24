@@ -4,9 +4,10 @@ import traceback
 import socket
 from PyQt6.QtWidgets import QApplication
 from PyQt6.QtCore import QCoreApplication
+from pyqt6_plugins.examplebutton import QtWidgets
+
 from main_window import MainWindow
 
-# 配置logging
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
@@ -39,7 +40,6 @@ def main():
         QCoreApplication.setApplicationName("LeafView")
         QCoreApplication.setApplicationVersion("1.0.0")
         
-        # 改进的单实例检测
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)

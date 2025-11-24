@@ -10,7 +10,6 @@ import requests
 from filetype import guess
 from playwright.sync_api import sync_playwright
 
-# 配置logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
@@ -173,7 +172,6 @@ class GeocodingService:
                     key = page.get_attribute("#code_origin", "data-jskey")
                     return cookies, key
                 finally:
-                    # 确保资源释放
                     if browser.is_connected():
                         browser.close()
         except (ImportError, TimeoutError, ConnectionError) as e:
