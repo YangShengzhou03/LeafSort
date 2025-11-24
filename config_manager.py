@@ -103,6 +103,9 @@ class ConfigManager:
         self.config["last_modified"] = datetime.now().isoformat()
         return self._save_file_no_lock(self.config_file, self.config)
     
+    def _save_location_cache_no_lock(self) -> bool:
+        return self._save_file_no_lock(self.cache_file, self.location_cache)
+    
     @_thread_safe_method
     def save_config(self) -> bool:
         return self._save_config_no_lock()
@@ -304,7 +307,7 @@ class ConfigManager:
         return result
     
     @_thread_safe_method
-    def get_cached_location_with_tolerance(self, latitude: float, longitude: float, tolerance: float = 0.01) -> Optional[str]:
+    def get_cached_location_with_tolerance(self, latitude: float, longitude: float, tolerance: float = 0.02) -> Optional[str]:
         exact_match = self._get_cached_location_no_lock(latitude, longitude)
         if exact_match:
             return exact_match

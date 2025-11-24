@@ -196,6 +196,17 @@ class SmartArrangeThread(QtCore.QThread):
                         percent_complete = int((self.processed_files / self.total_files) * 80)
                         self.progress_signal.emit(percent_complete)
 
+    def _truncate_filename(self, filename, max_length=24):
+        """截断过长的文件名，中间用...省略"""
+        if len(filename) <= max_length:
+            return filename
+        # 保留开头和结尾字符，中间用...省略
+        keep_length = max_length - 3  # 减去...的3个字符
+        if keep_length <= 0:
+            return filename[:max_length]
+        half = keep_length // 2
+        return f"{filename[:half]}...{filename[-(keep_length-half):]}"
+    
     def process_renaming(self):
         file_count = {}
         total_rename_files = len(self.files_to_rename)
@@ -209,8 +220,10 @@ class SmartArrangeThread(QtCore.QThread):
             old_path = Path(file_info['old_path'])
             new_path = Path(file_info['new_path'])
             
+            # 确保目标文件夹存在
             new_path.parent.mkdir(parents=True, exist_ok=True)
             
+            # 处理文件名冲突
             base_name = new_path.stem
             ext = new_path.suffix
             counter = 1
@@ -221,21 +234,23 @@ class SmartArrangeThread(QtCore.QThread):
                 counter += 1
             
             try:
-                if self.destination_root:
-                    import shutil
+                import shutil
+                
+                # 操作类型：0 = 复制, 1 = 移动
+                old_name = os.path.basename(old_path)
+                new_name = os.path.basename(unique_path)
+                # 截断过长的文件名
+                truncated_old_name = self._truncate_filename(old_name)
+                truncated_new_name = self._truncate_filename(new_name)
+                
+                if self.operation_type == 0 or not self.destination_root:
+                    # 复制操作：无论如何都复制到目标位置，保持原文件不变
                     shutil.copy2(old_path, unique_path)
-                    self.log("INFO", f"复制文件: {old_path} -> {unique_path}")
+                    self.log("INFO", f"复制文件: {truncated_old_name} -> {truncated_new_name}")
                 else:
-                    if old_path.parent == unique_path.parent:
-                        old_path.rename(unique_path)
-                        self.log("DEBUG", f"重命名文件: {old_path.name} -> {unique_path.name}")
-                    else:
-                        import shutil
-                        shutil.move(old_path, unique_path)
-                        # 不再暴露完整文件路径，只显示文件名信息
-                        old_filename = os.path.basename(old_path)
-                        new_filename = os.path.basename(unique_path)
-                        self.log("INFO", f"移动文件: {old_filename} -> {new_filename}")
+                    # 移动操作：从源位置移动到目标位置
+                    shutil.move(old_path, unique_path)
+                    self.log("INFO", f"移动文件: {truncated_old_name} -> {truncated_new_name}")
                 
                 renamed_files += 1
                 if total_rename_files > 0:
@@ -276,10 +291,20 @@ class SmartArrangeThread(QtCore.QThread):
                         import shutil
                         if self.destination_root:
                             shutil.copy2(file_path, target_path)
-                            self.log("INFO", f"复制文件: {file_path} -> {target_path}")
+                            # 截断文件名显示
+                            old_name = os.path.basename(file_path)
+                            new_name = os.path.basename(target_path)
+                            truncated_old_name = self._truncate_filename(old_name)
+                            truncated_new_name = self._truncate_filename(new_name)
+                            self.log("INFO", f"复制文件: {truncated_old_name} -> {truncated_new_name}")
                         else:
                             shutil.move(file_path, target_path)
-                            self.log("INFO", f"移动文件: {file_path} -> {target_path}")
+                            # 截断文件名显示
+                            old_name = os.path.basename(file_path)
+                            new_name = os.path.basename(target_path)
+                            truncated_old_name = self._truncate_filename(old_name)
+                            truncated_new_name = self._truncate_filename(new_name)
+                            self.log("INFO", f"移动文件: {truncated_old_name} -> {truncated_new_name}")
                         
                         file_count += 1
                         
@@ -1086,10 +1111,10 @@ class SmartArrangeThread(QtCore.QThread):
                 except ValueError:
                     self.log("WARNING", f"无法解析文件时间: {file_path}")
 
-            if self.destination_root:
-                base_folder = self.destination_root
+            # 总是使用目标根路径或确保base_folder不是源文件夹
+            target_base = self.destination_root
             
-            target_path = self.build_target_path(file_path, exif_data, file_time, base_folder)
+            target_path = self.build_target_path(file_path, exif_data, file_time, target_base)
             
             original_name = file_path.stem
             new_file_name = self.build_new_file_name(file_path, file_time, original_name, exif_data)
@@ -1098,11 +1123,11 @@ class SmartArrangeThread(QtCore.QThread):
             
             full_target_path = target_path / new_file_name_with_ext
             
-            if file_path.name != new_file_name_with_ext or file_path.parent != target_path:
-                self.files_to_rename.append({
-                    'old_path': str(file_path),
-                    'new_path': str(full_target_path)
-                })
+            # 总是添加到待处理列表，确保文件操作在目标位置进行
+            self.files_to_rename.append({
+                'old_path': str(file_path),
+                'new_path': str(full_target_path)
+            })
             
         except Exception as e:
             self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
@@ -1166,16 +1191,21 @@ class SmartArrangeThread(QtCore.QThread):
         else:
             return ""
 
-    def build_target_path(self, file_path, exif_data, file_time, base_folder):
+    def build_target_path(self, file_path, exif_data, file_time, target_base):
+        # 确保目标路径总是基于目标根目录，而不是源文件夹
         if not self.classification_structure:
-            return file_path.parent
+            # 即使没有分类结构，也应该使用目标根目录
+            if target_base:
+                return Path(target_base)
+            else:
+                # 如果没有指定目标根目录，至少创建一个安全的默认目标目录
+                return file_path.parent / "整理结果"
         
-        if base_folder:
-            target_path = Path(base_folder)
-        elif self.destination_root:
-            target_path = Path(self.destination_root)
+        if target_base:
+            target_path = Path(target_base)
         else:
-            target_path = file_path.parent
+            # 为了安全，即使没有指定目标根目录，也不应该直接在源文件夹操作
+            target_path = file_path.parent / "整理结果"
         
         # 记录构建路径的开始
         original_path = target_path
