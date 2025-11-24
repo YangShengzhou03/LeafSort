@@ -1759,7 +1759,7 @@ class Ui_MainWindow(object):
         self.layoutTagsInput.setSpacing(6)
         self.layoutTagsInput.setObjectName("layoutTagsInput")
         self.btnAddOriginalTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
-        self.btnAddOriginalTag.setMaximumSize(QtCore.QSize(80, 28))
+        self.btnAddOriginalTag.setMaximumSize(QtCore.QSize(46, 28))
         self.btnAddOriginalTag.setStyleSheet("QPushButton {\n"
 "  background-color: #ffffff;\n"
 "  color: #2c3e50;\n"
@@ -1945,7 +1945,7 @@ class Ui_MainWindow(object):
         self.btnAddTimeTag.setObjectName("btnAddTimeTag")
         self.layoutTagsInput.addWidget(self.btnAddTimeTag)
         self.btnAddMakeTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
-        self.btnAddMakeTag.setMaximumSize(QtCore.QSize(74, 28))
+        self.btnAddMakeTag.setMaximumSize(QtCore.QSize(46, 28))
         self.btnAddMakeTag.setStyleSheet("QPushButton {\n"
 "  background-color: #ffffff;\n"
 "  color: #2c3e50;\n"
@@ -1975,7 +1975,7 @@ class Ui_MainWindow(object):
         self.btnAddMakeTag.setObjectName("btnAddMakeTag")
         self.layoutTagsInput.addWidget(self.btnAddMakeTag)
         self.btnModelTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
-        self.btnModelTag.setMaximumSize(QtCore.QSize(74, 28))
+        self.btnModelTag.setMaximumSize(QtCore.QSize(46, 28))
         self.btnModelTag.setStyleSheet("QPushButton {\n"
 "  background-color: #ffffff;\n"
 "  color: #2c3e50;\n"
@@ -2038,7 +2038,7 @@ class Ui_MainWindow(object):
         self.btnAddressTag.setObjectName("btnAddressTag")
         self.layoutTagsInput.addWidget(self.btnAddressTag)
         self.btnCustomizeTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
-        self.btnCustomizeTag.setMaximumSize(QtCore.QSize(80, 28))
+        self.btnCustomizeTag.setMaximumSize(QtCore.QSize(60, 28))
         self.btnCustomizeTag.setStyleSheet("QPushButton {\n"
 "  background-color: #ffffff;\n"
 "  color: #2c3e50;\n"
@@ -2546,7 +2546,7 @@ class Ui_MainWindow(object):
         font.setBold(False)
         self.separatorLabel2.setFont(font)
         self.separatorLabel2.setStyleSheet("QLabel {\n"
-"    color: #333333;\n"
+"    color: rgb(255, 85, 127);\n"
 "    border: none;\n"
 "}")
         self.separatorLabel2.setObjectName("separatorLabel2")

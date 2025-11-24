@@ -18,7 +18,6 @@ class ResourceManager:
         try:
             return Path(sys._MEIPASS)
         except AttributeError:
-            # 非打包环境下sys._MEIPASS不存在
             return Path(__file__).parent if '__file__' in globals() else Path.cwd()
     
     def get_resource_path(self, relative_path):
@@ -105,8 +104,6 @@ class MediaTypeDetector:
         }
 
 
-import threading
-
 class GeocodingService:
     def __init__(self):
         self.headers = {
@@ -135,7 +132,6 @@ class GeocodingService:
         return self._call_geocoding_api(loc, cookies, key)
     
     def _load_cached_credentials(self):
-        # 优先使用内存缓存
         import time
         current_time = time.time()
         if self._cached_cookies and self._cached_key and (current_time - self._credentials_last_checked < 300):
@@ -147,13 +143,11 @@ class GeocodingService:
                     saved = json.load(f)
                     cookies = saved.get("cookies")
                     key = saved.get("key")
-                    # 更新内存缓存
                     self._cached_cookies = cookies
                     self._cached_key = key
                     self._credentials_last_checked = current_time
                     return cookies, key
             except (json.JSONDecodeError, IOError, PermissionError) as e:
-                # 处理JSON解析错误和文件IO错误
                 print(f"读取cookies.json失败: {str(e)}")
         return None, None
     
@@ -179,7 +173,6 @@ class GeocodingService:
             return None, None
     
     def _save_credentials(self, cookies, key):
-        # 更新内存缓存
         self._cached_cookies = cookies
         self._cached_key = key
         self._credentials_last_checked = time.time()
@@ -197,7 +190,7 @@ class GeocodingService:
         try:
             url = self.url_template.format(key=key, loc=loc)
             resp = requests.get(url, headers=self.headers, cookies=cookies, timeout=10)
-            resp.raise_for_status()  # 检查HTTP错误
+            resp.raise_for_status()
             
             if resp.status_code == 200 and "formatted_address" in resp.text:
                 json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
@@ -221,14 +214,10 @@ def detect_media_type(file_path):
 def get_address_from_coordinates(lat, lon):
     return _geocoding_service.get_address_from_coordinates(lat, lon)
 
-# 兼容性函数，与smart_arrange_thread.py中的get_file_type功能保持一致
 def get_file_type(file_path):
-    """根据文件扩展名或MIME类型确定文件类型类别"""
-    # 如果是Path对象，转换为字符串
     file_path_str = str(file_path)
     file_ext = os.path.splitext(file_path_str)[1].lower()
     
-    # 首先尝试使用扩展名快速匹配
     file_type_mapping = {
         '图像': ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
                 '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
@@ -244,13 +233,11 @@ def get_file_type(file_path):
         if file_ext in extensions:
             return file_type
     
-    # 如果扩展名匹配失败且文件存在，尝试使用MIME类型检测
     if os.path.isfile(file_path_str):
         try:
             result = detect_media_type(file_path_str)
             if result['valid']:
                 media_type = result['type']
-                # 映射MIME类型到类别名称
                 mime_to_category = {
                     'image': '图像',
                     'video': '视频',
@@ -259,7 +246,6 @@ def get_file_type(file_path):
                 if media_type in mime_to_category:
                     return mime_to_category[media_type]
         except (FileNotFoundError, IOError):
-            # 如果检测失败，返回'其他'
             pass
     
     return '其他'

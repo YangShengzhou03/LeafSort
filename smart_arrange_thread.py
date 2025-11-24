@@ -1088,7 +1088,6 @@ class SmartArrangeThread(QtCore.QThread):
             
             full_target_path = target_path / new_file_name_with_ext
             
-            # 检查是否需要重命名或移动
             if file_path.name != new_file_name_with_ext or file_path.parent != target_path:
                 self.files_to_rename.append({
                     'old_path': str(file_path),
@@ -1230,3 +1229,4 @@ class SmartArrangeThread(QtCore.QThread):
         
         else:
             return "未知"
+

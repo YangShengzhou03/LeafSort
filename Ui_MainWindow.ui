@@ -2800,7 +2800,7 @@ border: 0px;
                              <widget class="QPushButton" name="btnAddOriginalTag">
                               <property name="maximumSize">
                                <size>
-                                <width>80</width>
+                                <width>46</width>
                                 <height>28</height>
                                </size>
                               </property>
@@ -3057,7 +3057,7 @@ QPushButton:pressed {
                              <widget class="QPushButton" name="btnAddMakeTag">
                               <property name="maximumSize">
                                <size>
-                                <width>74</width>
+                                <width>46</width>
                                 <height>28</height>
                                </size>
                               </property>
@@ -3098,7 +3098,7 @@ QPushButton:pressed {
                              <widget class="QPushButton" name="btnModelTag">
                               <property name="maximumSize">
                                <size>
-                                <width>74</width>
+                                <width>46</width>
                                 <height>28</height>
                                </size>
                               </property>
@@ -3184,7 +3184,7 @@ QPushButton:pressed {
                              <widget class="QPushButton" name="btnCustomizeTag">
                               <property name="maximumSize">
                                <size>
-                                <width>80</width>
+                                <width>60</width>
                                 <height>28</height>
                                </size>
                               </property>
@@ -3944,7 +3944,7 @@ QComboBox:focus {
                              </property>
                              <property name="styleSheet">
                               <string notr="true">QLabel {
-    color: #333333;
+    color: rgb(255, 85, 127);
     border: none;
 }</string>
                              </property>

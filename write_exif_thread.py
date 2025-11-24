@@ -258,8 +258,7 @@ class WriteExifThread(QThread):
         if not os.access(image_path, os.R_OK):
             logger.error("文件不可读: %s", image_path)
             self.log_signal.emit("ERROR", "文件不可读: %s", os.path.basename(image_path))
-            return False
-            
+            return False            
         return True
         
     def _get_format_handler(self, file_ext):
@@ -369,14 +368,12 @@ class WriteExifThread(QThread):
         if shoot_time != 0:
             self._handle_shoot_time(exif_dict, image_path, updated_fields, shoot_time)
         
-        # 处理GPS坐标
         if self.lat is not None and self.lon is not None:
             exif_dict["GPS"] = self._create_gps_data(self.lat, self.lon)
             updated_fields.append(
                 f"GPS坐标: {abs(self.lat):.6f}°{'N' if self.lat >= 0 else 'S'}, {abs(self.lon):.6f}°{'E' if self.lon >= 0 else 'W'}")
     
     def _check_update_result(self, updated_fields, image_path):
-        """检查更新结果并返回适当的值"""
         if not updated_fields:
             logger.info("文件 %s 没有需要更新的内容", image_path)
             self.log_signal.emit("WARNING", "未对 %s 进行任何更改\n\n可能的原因：\n• 所有EXIF字段均为空", os.path.basename(image_path))
@@ -384,7 +381,6 @@ class WriteExifThread(QThread):
         return updated_fields
     
     def _save_exif_data(self, image_path, exif_dict, updated_fields):
-        """保存EXIF数据"""
         try:
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, image_path)
@@ -769,7 +765,6 @@ class WriteExifThread(QThread):
         return cmd_parts, updated_fields, exiftool_path
     
     def _add_gps_to_command(self, cmd_parts, updated_fields):
-        """向命令中添加GPS信息"""
         lat_dms = self.decimal_to_dms(self.lat)
         lon_dms = self.decimal_to_dms(self.lon)
         cmd_parts.append(f'-GPSLatitude="{lat_dms}"')
@@ -1050,10 +1045,7 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", "坐标转换错误: %s", str(e))
             return str(decimal)
 
-
-
     def _create_gps_data(self, lat, lon):
-        """创建GPS数据字典"""
         def decimal_to_piexif_dms(decimal):
             degrees = int(abs(decimal))
             minutes_decimal = (abs(decimal) - degrees) * 60
@@ -1082,10 +1074,8 @@ class WriteExifThread(QThread):
         return gps_dict
 
     def get_date_from_filename(self, image_path):
-        """从文件名中提取日期时间"""
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        # 日期模式匹配
         date_pattern = r'(?P<year>\d{4})[年\-\.\/\s]?' \
                       r'(?P<month>1[0-2]|0?[1-9])[月\-\.\/\s]?' \
                       r'(?P<day>3[01]|[12]\d|0?[1-9])[日号\-\.\/\s]?' \
@@ -1100,11 +1090,9 @@ class WriteExifThread(QThread):
         
         groups = match.groupdict()
         
-        # 检查必要的时间组件
         if not all([groups.get('year'), groups.get('month'), groups.get('day')]):
             return None
         
-        # 构建日期字符串
         date_str_parts = [
             groups['year'],
             groups['month'].rjust(2, '0'),
@@ -1124,7 +1112,6 @@ class WriteExifThread(QThread):
         
         date_str = ''.join(date_str_parts)
         
-        # 解析日期字符串
         format_map = {
             8: "%Y%m%d",
             12: "%Y%m%d%H%M",
@@ -1144,4 +1131,4 @@ class WriteExifThread(QThread):
         except ValueError as e:
             logger.debug("解析日期字符串失败: %s", str(e))
         
-        return None
+        return None

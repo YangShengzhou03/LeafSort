@@ -9,8 +9,8 @@ from common import get_resource_path
 
 class ConfigManager:
     CONFIG_VERSION = "1.0.0"
-    MAX_CACHE_ITEMS = 1000  # 最大缓存项数量
-    CACHE_EXPIRATION_DAYS = 30  # 缓存过期时间（天）
+    MAX_CACHE_ITEMS = 1000
+    CACHE_EXPIRATION_DAYS = 30
     
     def __init__(self, config_file: str = "_internal/leafview_config.json", 
                  cache_file: str = "_internal/cache_location.json"):
@@ -20,7 +20,6 @@ class ConfigManager:
         self.config = self._load_config()
         self.location_cache = self._load_location_cache()
         self._validate_and_migrate_config()
-        # 初始化时清理过期缓存和过大缓存
         with self._lock:
             self._cleanup_expired_cache()
             self._reduce_cache_size(self.MAX_CACHE_ITEMS)
@@ -212,7 +211,6 @@ class ConfigManager:
                 'last_accessed': datetime.now().isoformat()
             }
             
-            # 添加新缓存后，检查并限制缓存大小
             self._reduce_cache_size(self.MAX_CACHE_ITEMS)
             return self._save_location_cache_no_lock()
         except TypeError as e:
@@ -222,7 +220,6 @@ class ConfigManager:
         return False
         
     def _cleanup_expired_cache(self):
-        """清理过期的缓存项"""
         try:
             from datetime import datetime, timedelta
             expiration_date = datetime.now() - timedelta(days=self.CACHE_EXPIRATION_DAYS)
@@ -235,28 +232,23 @@ class ConfigManager:
                         if cache_time < expiration_date:
                             expired_keys.append(key)
                     except (ValueError, TypeError):
-                        # 时间戳格式无效，标记为过期
                         expired_keys.append(key)
                 else:
-                    # 数据格式不正确，标记为过期
                     expired_keys.append(key)
             
             for key in expired_keys:
                 del self.location_cache[key]
             
             if expired_keys:
-                # 有缓存项被清理，保存更新后的缓存
                 self._save_location_cache_no_lock()
         except Exception as e:
             print(f"清理过期缓存时出错: {str(e)}")
     
     def _reduce_cache_size(self, max_size):
-        """当缓存超过最大大小时，删除最旧的缓存项"""
         try:
             if len(self.location_cache) <= max_size:
                 return
             
-            # 按照访问时间排序缓存项
             from datetime import datetime
             cache_items = []
             
@@ -268,13 +260,10 @@ class ConfigManager:
                             cache_time = datetime.fromisoformat(timestamp)
                             cache_items.append((key, cache_time))
                         except (ValueError, TypeError):
-                            # 无效的时间戳，使用当前时间
                             cache_items.append((key, datetime.now()))
                     else:
-                        # 没有时间戳，使用当前时间
                         cache_items.append((key, datetime.now()))
             
-            # 按时间排序，删除最旧的项目
             cache_items.sort(key=lambda x: x[1])
             items_to_remove = len(self.location_cache) - max_size
             
@@ -283,7 +272,6 @@ class ConfigManager:
                     del self.location_cache[cache_items[i][0]]
             
             if items_to_remove > 0:
-                # 有缓存项被删除，保存更新后的缓存
                 self._save_location_cache_no_lock()
         except Exception as e:
             print(f"限制缓存大小时出错: {str(e)}")
@@ -292,7 +280,6 @@ class ConfigManager:
         return f"{latitude:.6f},{longitude:.6f}"
     
     def _update_cache_access_time(self, cached_data: Dict[str, Any]):
-        """更新缓存项的最后访问时间"""
         if isinstance(cached_data, dict):
             cached_data['last_accessed'] = datetime.now().isoformat()
     
@@ -309,12 +296,10 @@ class ConfigManager:
     @_thread_safe_method
     def get_cached_location(self, latitude: float, longitude: float) -> Optional[str]:
         result = self._get_cached_location_no_lock(latitude, longitude)
-        # 如果找到缓存，更新访问时间
         if result:
             key = self._get_cache_key(latitude, longitude)
             if key in self.location_cache:
                 self._update_cache_access_time(self.location_cache[key])
-                # 异步保存更新（不阻塞主流程）
                 threading.Thread(target=self._save_location_cache_no_lock, daemon=True).start()
         return result
     

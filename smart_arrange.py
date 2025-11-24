@@ -59,12 +59,10 @@ class SmartArrangeManager(QObject):
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
     def connect_signals(self):
-        # 确保log_signal正确初始化和连接
         if not hasattr(self, 'log_signal'):
             from PyQt6.QtCore import pyqtSignal
             self.log_signal = pyqtSignal(str, str)
         
-        # 连接fileOperation下拉列表的信号
         if hasattr(self.parent, 'fileOperation'):
             try:
                 self.parent.fileOperation.currentIndexChanged.disconnect(self.update_operation_display)
@@ -124,7 +122,6 @@ class SmartArrangeManager(QObject):
             self.log("DEBUG", f"folders: {len(self.selected_folders)}")
             
             if not self.destination_root:
-                # 首先尝试从folder_page获取已选择的目标文件夹
                 self.log("INFO", "尝试从folder_page获取目标文件夹")
                 import os
                 if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
@@ -132,9 +129,7 @@ class SmartArrangeManager(QObject):
                     target_folder = self.folder_page.get_target_folder()
                     self.log("INFO", f"从folder_page获取的目标文件夹: {target_folder}")
                     if target_folder:
-                        # 验证目标文件夹路径
                         destination = target_folder
-                        # 验证是否有写入权限
                         if not os.access(destination, os.W_OK):
                             from PyQt6.QtWidgets import QMessageBox
                             QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
@@ -147,7 +142,6 @@ class SmartArrangeManager(QObject):
                         operation_text = "目标路径: "
                         self.parent.copyRoute.setText(f"{operation_text}{display_path}")
                     else:
-                        # 如果folder_page中没有选择目标文件夹，则弹出选择对话框
                         import os
                         from PyQt6.QtWidgets import QFileDialog
                         folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
@@ -156,10 +150,8 @@ class SmartArrangeManager(QObject):
                             self.log("WARNING", "No destination")
                             return
                         
-                        # 验证目标文件夹路径
                         destination = folder
                         if not os.path.exists(destination):
-                            # 询问是否创建目标文件夹
                             from PyQt6.QtWidgets import QMessageBox
                             reply = QMessageBox.question(
                                 self.parent,
@@ -176,7 +168,6 @@ class SmartArrangeManager(QObject):
                             else:
                                 return
                         
-                        # 验证是否有写入权限
                         if not os.access(destination, os.W_OK):
                             from PyQt6.QtWidgets import QMessageBox
                             QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
@@ -189,7 +180,6 @@ class SmartArrangeManager(QObject):
                         operation_text = "Destination: "
                         self.parent.copyRoute.setText(f"{operation_text}{display_path}")
                 else:
-                    # 如果没有folder_page或缺少get_target_folder方法，则弹出选择对话框
                     import os
                     from PyQt6.QtWidgets import QFileDialog
                     folder = QFileDialog.getExistingDirectory(self.parent, "Select folder",
@@ -198,10 +188,8 @@ class SmartArrangeManager(QObject):
                         self.log("WARNING", "No destination")
                         return
                     
-                    # 验证目标文件夹路径
                     destination = folder
                     if not os.path.exists(destination):
-                        # 询问是否创建目标文件夹
                         from PyQt6.QtWidgets import QMessageBox
                         reply = QMessageBox.question(
                             self.parent,
@@ -218,7 +206,6 @@ class SmartArrangeManager(QObject):
                         else:
                             return
                     
-                    # 验证是否有写入权限
                     if not os.access(destination, os.W_OK):
                         from PyQt6.QtWidgets import QMessageBox
                         QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
@@ -241,7 +228,6 @@ class SmartArrangeManager(QObject):
 
             self.log("DEBUG", "confirm")
             
-            # 添加局部导入以确保QMessageBox在这个作用域中可用
             from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
@@ -261,22 +247,18 @@ class SmartArrangeManager(QObject):
 
             self.log("DEBUG", "confirmed")
             
-            # 确保selected_folders是列表格式，修复string indices错误
             if isinstance(self.selected_folders, str):
                 self.selected_folders = [{'path': self.selected_folders, 'include_sub': 1}]
             elif not all(isinstance(f, dict) and 'path' in f for f in self.selected_folders):
-                # 如果不是正确格式的字典列表，则尝试转换
                 corrected_folders = []
                 for folder in self.selected_folders:
                     if isinstance(folder, str):
                         corrected_folders.append({'path': folder, 'include_sub': 1})
                     elif isinstance(folder, dict) and 'path' in folder:
-                        # 始终包含子文件夹，设为1
                         folder['include_sub'] = 1
                         corrected_folders.append(folder)
                 self.selected_folders = corrected_folders
             else:
-                # 确保所有文件夹字典都包含include_sub且值为1（始终包含子文件夹）
                 for folder in self.selected_folders:
                     if isinstance(folder, dict) and 'path' in folder:
                         folder['include_sub'] = 1
@@ -320,7 +302,6 @@ class SmartArrangeManager(QObject):
                     operation_type=operation_type
                 )
                 
-                # 统一处理信号断开连接
                 signals_to_disconnect = [
                     ('log_signal', self.handle_log_signal),
                     ('progress_signal', self.update_progress_bar),
@@ -334,7 +315,6 @@ class SmartArrangeManager(QObject):
                     except (TypeError, RuntimeError) as e:
                         self.log("DEBUG", f"断开{signal_name}连接失败: {str(e)}")
                 
-                # 连接信号到对应的槽函数
                 self.SmartArrange_thread.log_signal.connect(self.handle_log_signal)
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
                 self.SmartArrange_thread.finished.connect(self.on_thread_finished)
@@ -347,7 +327,6 @@ class SmartArrangeManager(QObject):
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
-        # 封装异常处理的辅助方法
         def safe_operation(operation, error_level="ERROR", message_prefix=""):
             try:
                 return operation()
@@ -355,55 +334,46 @@ class SmartArrangeManager(QObject):
                 self.log(error_level, f"{message_prefix}{str(e)}")
                 return None
         
-        # 恢复按钮状态
         safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setText", "开始整理")(), 
                       error_level="ERROR")
         safe_operation(lambda: setattr(self.parent.btnStartSmartArrange, "setEnabled", True)(), 
                       error_level="ERROR")
         
-        # 检查是否被停止
         stopped_status = False
         if hasattr(self.SmartArrange_thread, 'is_stopped'):
             stopped_status = safe_operation(lambda: self.SmartArrange_thread.is_stopped(), 
                                            error_level="WARNING", 
                                            message_prefix="获取线程停止状态失败: ") or False
         
-        # 重置进度条
         safe_operation(lambda: self.update_progress_bar(0), 
                       error_level="WARNING", 
                       message_prefix="重置进度条失败: ")
         
-        # 如果不是被停止，则显示完成消息
         if not stopped_status:
             safe_operation(lambda: QMessageBox.information(self.parent, "完成", "操作已完成！"), 
                           error_level="WARNING", 
                           message_prefix="显示完成消息失败: ")
         
-        # 清理线程引用
         self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
         self.update_combobox_state(level)
 
     def update_combobox_state(self, level):
-        # 获取当前级别的combo box
         current_combo = getattr(self.parent, f'comboClassificationLevel{level}')
         current_text = current_combo.currentText()
 
-        # 处理不分类的情况
         if current_text == "不分类":
             for i in range(level + 1, 6):
                 combo = getattr(self.parent, f'comboClassificationLevel{i}')
                 combo.setEnabled(False)
                 combo.setCurrentIndex(0)
         else:
-            # 启用下一级并递归更新
             if level < 5:
                 next_combo = getattr(self.parent, f'comboClassificationLevel{level + 1}')
                 next_combo.setEnabled(True)
                 self.update_combobox_state(level + 1)
 
-        # 收集有效的分类路径和设置
         SmartArrange_paths = []
         self.SmartArrange_settings = []
         
@@ -415,14 +385,12 @@ class SmartArrangeManager(QObject):
                 SmartArrange_paths.append(self.get_specific_value(text))
                 self.SmartArrange_settings.append(text)
 
-        # 更新预览路径
         if SmartArrange_paths:
             preview_text = "/".join(SmartArrange_paths)
         else:
             preview_text = "顶层目录（不分类）"
         
         self.parent.previewRoute.setText(preview_text)
-        # 更新操作显示
         self.update_operation_display()
 
     def update_operation_display(self):
@@ -462,8 +430,8 @@ class SmartArrangeManager(QObject):
         return {
             "年份": str(now.year),
             "月份": str(now.month),
-            "拍摄设备": "小米",
-            "相机型号": "EOS 5D Mark IV",
+            "拍摄设备": "Apple",
+            "相机型号": "iPhone17",
             "拍摄省份": "江西",
             "拍摄城市": "南昌"
         }.get(text, text)
@@ -480,60 +448,48 @@ class SmartArrangeManager(QObject):
                 len(filename) <= 255)
 
     def move_tag(self, button):
-        # 检查已选标签数量限制
         if self.selected_frame.layout().count() >= 5:
             return
 
-        # 保存原始属性
         button.setProperty('original_style', button.styleSheet())
         button.setProperty('original_text', button.text())
 
-        # 处理自定义标签
         if button.text() == '自定义':
-            # 创建并配置输入对话框
             input_dialog = QInputDialog(self.parent)
             input_dialog.setWindowTitle("自定义标签")
             input_dialog.setLabelText("请输入自定义部分的文件名内容:")
             input_dialog.setTextEchoMode(QtWidgets.QLineEdit.EchoMode.Normal)
             input_dialog.setTextValue("")
             
-            # 设置最大长度限制
             line_edit = input_dialog.findChild(QtWidgets.QLineEdit)
             if line_edit:
                 line_edit.setMaxLength(255)
 
-            # 显示对话框并处理结果
             if input_dialog.exec() and input_dialog.textValue():
                 custom_text = input_dialog.textValue()
                 
-                # 验证文件名
                 if not self.is_valid_windows_filename(custom_text):
                     QMessageBox.warning(self.parent, "文件名无效", 
                                       f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
                     return
 
-                # 设置显示文本和自定义内容
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
                 button.setText(display_text)
                 button.setProperty('custom_content', custom_text)
             else:
-                return  # 用户取消操作
+                return
 
-        # 移动按钮从可用区域到已选区域
         self.available_frame.layout().removeWidget(button)
         self.selected_frame.layout().addWidget(button)
         button.hide()
         button.show()
 
-        # 更新按钮连接的槽函数
         button.clicked.disconnect()
         button.clicked.connect(lambda checked, b=button: self.move_tag_back(b))
 
-        # 更新UI显示
         self.update_example_label()
         self.update_operation_display()
 
-        # 当已选满5个标签时，禁用剩余可用标签
         if self.selected_frame.layout().count() >= 5:
             for btn in self.tag_buttons.values():
                 if btn.parent() == self.available_frame:
@@ -553,15 +509,15 @@ class SmartArrangeManager(QObject):
                 example_parts.append(custom_content[:3] if len(custom_content) > 3 else custom_content)
             else:
                 parts = {
-                    "原名": "IMG_1234",
+                    "原名": "IMG",
                     "年份": f"{now.year}",
                     "月份": f"{now.month:02d}",
                     "日": f"{now.day:02d}",
                     "星期": f"{self._get_weekday(now)}",
                     "时间": f"{now.strftime('%H%M%S')}",
-                    "品牌": "佳能",
-                    "型号": "EOS 5D Mark IV",
-                    "位置": "浙大"
+                    "品牌": "Apple",
+                    "型号": "iPhone17",
+                    "位置": "江西南昌"
                 }
                 example_parts.append(parts.get(button_text, button_text))
 
@@ -573,40 +529,32 @@ class SmartArrangeManager(QObject):
         return ["周一", "周二", "周三", "周四", "周五", "周六", "周日"][date.weekday()]
 
     def handle_log_signal(self, level, message):
-        """处理日志信号"""
-        # 过滤英文日志，只保留包含中文的日志
         message_str = str(message)
         if not any('\u4e00' <= char <= '\u9fff' for char in message_str):
             return
             
         log_component = self.parent.txtSmartArrangeLog if hasattr(self.parent, 'txtSmartArrangeLog') else None
         
-        # 格式化消息 - 检查是否已包含时间戳
         if "[" in message_str and "]" in message_str and len(message_str) > 20:
             final_message = message_str
         else:
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             final_message = f"[{timestamp}] {level}: {message_str}"
         
-        # 定义日志颜色映射
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
             
-        # 显示日志
         if log_component:
             try:
-                # 添加HTML样式以增强可读性
                 log_component.append(
                     f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
                     f'<span style="color:{color};">{final_message}</span>'  \
                     f'</div>'
                 )
             except Exception:
-                pass  # 静默忽略日志写入失败
+                pass
         else:
-            # 控制台输出
             print(final_message)
-            # 尝试调用父组件的log方法
             if hasattr(self.parent, 'log'):
                 try:
                     self.parent.log(level, message_str)

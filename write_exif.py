@@ -1,10 +1,10 @@
 import json
-import json
 import re
 from datetime import datetime
 
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtWidgets import QMessageBox
+from PyQt6.QtGui import QPixmap
 
 from common import get_resource_path
 from config_manager import config_manager
@@ -36,7 +36,7 @@ class WriteExifManager(QObject):
         try:
             self.log(level, message)
         except Exception as e:
-            pass  # 静默忽略日志记录失败
+            pass
 
     def _get_parent_component(self, name):
         try:
@@ -54,7 +54,6 @@ class WriteExifManager(QObject):
         self.highlight_stars(0)
 
     def highlight_stars(self, count):
-        """高亮显示指定数量的星级按钮"""
         star_on = get_resource_path("assets/star_on.png")
         star_off = get_resource_path("assets/star_off.png")
         
@@ -65,13 +64,11 @@ class WriteExifManager(QObject):
                 button.setIcon(QPixmap(star_off))
 
     def set_selected_star(self, star):
-        """设置选中的星级"""
         self.selected_star = star
         self.highlight_stars(star)
         self._safe_log("INFO", f"已选择 {star} 星评分")
 
     def load_camera_lens_mapping(self):
-        """加载相机镜头映射数据"""
         mapping_file = get_resource_path("assets/camera_lens_mapping.json")
         try:
             with open(mapping_file, 'r', encoding='utf-8') as f:
@@ -81,7 +78,6 @@ class WriteExifManager(QObject):
             return {}
 
     def init_camera_brand_model(self):
-        """初始化相机品牌和型号下拉框"""
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -93,16 +89,13 @@ class WriteExifManager(QObject):
         
         camera_data = self.load_camera_lens_mapping()
         
-        # 添加默认选项
         camera_brand_combo.addItem("选择品牌")
         camera_model_combo.addItem("选择型号")
         
-        # 填充品牌数据
         for brand in sorted(camera_data.keys()):
             camera_brand_combo.addItem(brand)
 
     def _on_brand_changed(self, index):
-        """处理相机品牌变更事件"""
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -123,7 +116,6 @@ class WriteExifManager(QObject):
                 camera_model_combo.addItem(model)
 
     def _on_model_changed(self, index):
-        """处理相机型号变更事件"""
         if index <= 0:
             return
             
@@ -139,15 +131,6 @@ class WriteExifManager(QObject):
         self._safe_log("INFO", f"已选择相机: {selected_brand} {selected_model}")
 
     def get_lens_info_for_camera(self, brand, model):
-        """根据相机品牌和型号获取镜头信息
-        
-        Args:
-            brand: 相机品牌
-            model: 相机型号
-            
-        Returns:
-            镜头型号信息，如果未找到则返回空字符串
-        """
         if not brand or not model:
             return ""
             
@@ -155,17 +138,7 @@ class WriteExifManager(QObject):
         return camera_data.get(brand, {}).get(model, "")
 
     def parse_dms_coordinates(self, latitude_str, longitude_str):
-        """解析度分秒格式的坐标
-        
-        Args:
-            latitude_str: 纬度字符串
-            longitude_str: 经度字符串
-            
-        Returns:
-            转换后的十进制坐标元组 (纬度, 经度)，解析失败返回None
-        """
         def parse_dms(dms_str):
-            """解析度分秒字符串为十进制数值"""
             try:
                 parts = re.split(r'[;\s,]+', dms_str.strip())
                 if len(parts) == 3:
@@ -184,13 +157,7 @@ class WriteExifManager(QObject):
             return lat_decimal, lon_decimal
         return None
 
-
-
     def _setup_connections(self):
-        """设置信号连接
-        
-        连接界面控件的事件信号到对应的处理函数。
-        """
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -200,20 +167,11 @@ class WriteExifManager(QObject):
             camera_model_combo.currentIndexChanged.connect(self._on_model_changed)
 
     def on_combobox_time_changed(self, index):
-        """处理拍摄时间来源变更事件
-        
-        Args:
-            index: 选中的时间来源索引
-        """
         date_time_edit = self._get_parent_component('dateTimeEdit_shootTime')
         if date_time_edit:
             date_time_edit.setEnabled(index == 0)
 
     def update_button_state(self):
-        """更新按钮状态
-        
-        根据当前操作状态启用或禁用相关按钮。
-        """
         start_button = self._get_parent_component('btnStartWriteEXIF')
         stop_button = self._get_parent_component('btnStopWriteEXIF')
         
@@ -222,21 +180,12 @@ class WriteExifManager(QObject):
             stop_button.setEnabled(self.is_running)
 
     def connect_worker_signals(self):
-        """连接工作线程信号
-        
-        连接EXIF写入线程的信号到对应的处理函数。
-        """
         if self.worker:
             self.worker.progress_signal.connect(self.update_progress)
             self.worker.log_signal.connect(self.handle_log_signal)
             self.worker.finished.connect(self.on_finished)
 
     def start_exif_writing(self):
-        """开始EXIF信息写入操作
-        
-        Returns:
-            操作是否成功启动
-        """
         if self.is_running:
             self._safe_log("WARNING", "EXIF写入操作正在进行中")
             return False
@@ -250,7 +199,6 @@ class WriteExifManager(QObject):
             self._safe_log("ERROR", "请先选择要处理的文件")
             return False
 
-        # 收集EXIF参数
         params = self._collect_exif_params()
         if not params:
             return False
@@ -270,12 +218,6 @@ class WriteExifManager(QObject):
         return True
 
     def _collect_exif_params(self):
-        """收集EXIF参数
-        
-        Returns:
-            EXIF参数字典，收集失败返回None
-        """
-        # 获取基本EXIF信息
         title_edit = self._get_parent_component('titleLineEdit')
         author_edit = self._get_parent_component('authorLineEdit')
         subject_edit = self._get_parent_component('themeLineEdit')
@@ -301,25 +243,15 @@ class WriteExifManager(QObject):
             )
         }
         
-        # 处理拍摄时间
         if shoot_time_source and shoot_time_source.currentIndex() == 0 and date_time_edit:
             params['shoot_time'] = date_time_edit.dateTime().toString("yyyy:MM:dd HH:mm:ss")
         
-        # 处理位置信息
         if not self._handle_location_info(params):
             return None
             
         return params
 
     def _handle_location_info(self, params):
-        """处理位置信息
-        
-        Args:
-            params: EXIF参数字典
-            
-        Returns:
-            位置信息处理是否成功
-        """
         longitude_edit = self._get_parent_component('lineEdit_EXIF_longitude')
         latitude_edit = self._get_parent_component('lineEdit_EXIF_latitude')
         
@@ -334,7 +266,6 @@ class WriteExifManager(QObject):
             self.log("ERROR", "请输入经纬度信息")
             return False
             
-        # 尝试解析十进制坐标
         try:
             lon = float(longitude)
             lat = float(latitude)
@@ -345,7 +276,6 @@ class WriteExifManager(QObject):
                 self.log("ERROR", "经纬度范围无效")
                 return False
         except ValueError:
-            # 尝试解析度分秒坐标
             coords = self.parse_dms_coordinates(latitude, longitude)
             if coords:
                 lat_decimal, lon_decimal = coords
@@ -361,11 +291,6 @@ class WriteExifManager(QObject):
                 return False
 
     def _log_operation_summary(self, params):
-        """记录操作摘要
-        
-        Args:
-            params: EXIF参数字典
-        """
         operation_summary = "操作类型: EXIF信息写入"
         if params.get('title'):
             operation_summary += f", 标题: {params['title']}"
@@ -379,7 +304,6 @@ class WriteExifManager(QObject):
         self.log("INFO", f"摘要: {operation_summary}")
 
     def stop_exif_writing(self):
-        """停止EXIF写入操作"""
         if self.worker:
             self.worker.stop()
             self.worker.wait(1000)
@@ -390,22 +314,11 @@ class WriteExifManager(QObject):
         self.update_button_state()
 
     def update_progress(self, value):
-        """更新进度条
-        
-        Args:
-            value: 进度值 (0-100)
-        """
         progress_bar = self._get_parent_component('progressBar_EXIF')
         if progress_bar:
             progress_bar.setValue(value)
 
     def handle_log_signal(self, level, message):
-        """处理日志信号
-        
-        Args:
-            level: 日志级别
-            message: 日志消息
-        """
         log_component = self._get_parent_component('txtWriteEXIFLog')
         
         if log_component:
@@ -418,21 +331,15 @@ class WriteExifManager(QObject):
             try:
                 log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
             except Exception as e:
-                pass  # 静默忽略日志写入失败
+                pass
         else:
             print(f"[{level}] {message}")
             try:
                 self.parent.log(level, message)
             except Exception as e:
-                pass  # 静默忽略日志传递失败
+                pass
 
     def log(self, level, message):
-        """记录日志消息
-        
-        Args:
-            level: 日志级别
-            message: 日志消息
-        """
         if level == 'ERROR':
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.error_messages.append(f"[{timestamp}] [{level}] {message}")
@@ -441,11 +348,10 @@ class WriteExifManager(QObject):
         try:
             self.log_signal.emit(level, log_message)
         except Exception as e:
-            pass  # 静默忽略日志信号发送失败
-            pass  # 静默忽略控制台输出失败
+            pass
+            pass
 
     def on_finished(self):
-        """处理EXIF写入完成事件"""
         self.is_running = False
         self.update_button_state()
         
@@ -463,7 +369,6 @@ class WriteExifManager(QObject):
             )
 
     def load_exif_settings(self):
-        """加载EXIF设置"""
         try:
             components = {
                 'titleLineEdit': "exif_title",
@@ -498,7 +403,6 @@ class WriteExifManager(QObject):
             self._safe_log("WARNING", f"加载EXIF设置时出错: {e}")
 
     def save_exif_settings(self):
-        """保存EXIF设置"""
         try:
             components = {
                 'titleLineEdit': "exif_title",
@@ -532,7 +436,6 @@ class WriteExifManager(QObject):
             self._safe_log("WARNING", f"保存EXIF设置时出错: {e}")
     
     def refresh(self):
-        """刷新页面状态"""
         camera_brand_combo = self._get_parent_component('cameraBrand')
         camera_model_combo = self._get_parent_component('cameraModel')
         
@@ -552,7 +455,6 @@ class WriteExifManager(QObject):
             self._safe_log("ERROR", f"刷新EXIF信息写入页面时出错: {e}")
     
     def _reset_state(self):
-        """重置页面状态"""
         try:
             self.selected_star = 0
             
@@ -570,11 +472,9 @@ class WriteExifManager(QObject):
             self._safe_log("ERROR", f"重置状态时出错: {e}")
     
     def _update_ui_components(self):
-        """更新UI组件状态"""
         try:
             self.highlight_stars(0)
             self.init_camera_brand_model()
             self.load_exif_settings()
         except Exception as e:
             self._safe_log("ERROR", f"更新UI组件时出错: {e}")
-
