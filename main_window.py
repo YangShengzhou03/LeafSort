@@ -43,8 +43,18 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tray_menu.addSeparator()
         tray_menu.addAction(action_exit)
         
+        # 加载并应用指定的CSS样式文件
+        css_path = get_resource_path('resources/stylesheet/menu.setStyleSheet.css')
+        try:
+            with open(css_path, 'r', encoding='utf-8') as f:
+                menu_style = f.read()
+                tray_menu.setStyleSheet(menu_style)
+        except Exception as e:
+            print(f"加载菜单样式文件失败: {e}")
+        
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._handle_tray_activation)
+        self.tray_icon.show()  # 确保托盘图标始终显示
 
     def _connect_signals(self):
         self.btnMinimize.clicked.connect(self.showMinimized)
