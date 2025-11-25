@@ -303,7 +303,7 @@ class WriteExifManager(QObject):
 
     def _update_log_display(self, level, message):
         message_str = str(message)
-        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#008000', 'DEBUG': '#006400'}
+        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
             
         try:
