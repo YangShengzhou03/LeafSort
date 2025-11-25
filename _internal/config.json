@@ -1,6 +1,6 @@
 {
     "version": "1.1",
-    "last_modified": "2025-11-25T22:20:30.497079",
+    "last_modified": "2025-11-25T23:13:19.732215",
     "folders": [],
     "settings": {
         "thumbnail_size": 200,
@@ -25,15 +25,15 @@
             "height": 580
         },
         "location_cache_tolerance": 0.027,
-        "exif_title": "",
-        "exif_author": "",
-        "exif_subject": "",
-        "exif_copyright": "",
-        "exif_latitude": "",
-        "exif_longitude": "",
-        "exif_camera_brand": "不写入",
-        "exif_camera_model": "",
-        "exif_star_rating": 1
+        "exif_title": "我爱写入标题",
+        "exif_author": "我爱写入作者",
+        "exif_subject": "我爱写入主题",
+        "exif_copyright": "我爱版权",
+        "exif_latitude": "39.0685",
+        "exif_longitude": "116.4735",
+        "exif_camera_brand": "OPPO",
+        "exif_camera_model": "A2 Pro",
+        "exif_star_rating": 3
     },
     "api_limits": {
         "gaode": {

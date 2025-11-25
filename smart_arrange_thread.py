@@ -8,7 +8,7 @@ import shutil
 from pathlib import Path
 import io
 from typing import List, Dict, Any, Optional
-from common import get_address_from_coordinates, get_resource_path, get_file_type
+from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
 import exifread
 import pillow_heif
 from PIL import Image
@@ -1125,6 +1125,16 @@ class SmartArrangeThread(QtCore.QThread):
         
     def process_single_file(self, file_path, base_folder=None):
         try:
+            # 先验证文件扩展名是否与内容匹配
+            is_valid_ext, magic_info = verify_file_extension(str(file_path))
+            if not is_valid_ext and magic_info and magic_info.get('detected', False):
+                # 获取文件扩展名
+                _, actual_ext = os.path.splitext(str(file_path).lower())
+                expected_ext = magic_info.get('extension', '')
+                expected_type = magic_info.get('file_type', '')
+                # 记录ERROR日志
+                self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
+            
             exif_data = self.get_exif_data(file_path)
             
             file_time = None

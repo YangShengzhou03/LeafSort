@@ -2,6 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
+from typing import Dict, Tuple, Optional, List
 
 import requests
 
@@ -11,6 +12,38 @@ logger = logging.getLogger(__name__)
 IMAGE_EXTENSIONS = ['.jpg', '.jpeg', '.png', '.bmp', '.gif', '.webp', '.tiff', '.heic', '.heif', '.svg']
 VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm', '.m4v', '.3gp']
 AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a']
+
+# 文件魔数定义
+MAGIC_NUMBERS = {
+    # 图像文件
+    b'\xff\xd8\xff': ('.jpg', '图像'),  # JPEG
+    b'\x89\x50\x4E\x47': ('.png', '图像'),  # PNG
+    b'GIF8': ('.gif', '图像'),  # GIF
+    b'BM': ('.bmp', '图像'),  # BMP
+    b'RIFF': ('.avi', '视频'),  # AVI
+    b'WEBP': ('.webp', '图像'),  # WebP
+    b'II*': ('.tiff', '图像'),  # TIFF (小端序)
+    b'MM*': ('.tiff', '图像'),  # TIFF (大端序)
+    b'ftyp': ('.mp4', '视频'),  # MP4/MOV/HEIC/HEIF
+    b'ftypheic': ('.heic', '图像'),  # HEIC
+    b'ftypheix': ('.heic', '图像'),  # HEIC
+    b'ftypmif1': ('.heif', '图像'),  # HEIF
+    b'ftypmsf1': ('.heif', '图像'),  # HEIF
+    b'%PDF': ('.pdf', '文档'),  # PDF
+    b'PK\x03\x04': ('.zip', '压缩包'),  # ZIP
+    b'Rar!': ('.rar', '压缩包'),  # RAR
+    b'7z\xBC\xAF\x27\x1C': ('.7z', '压缩包'),  # 7z
+    b'ID3': ('.mp3', '音乐'),  # MP3
+    b'\x1A\x45\xDF\xA3': ('.mkv', '视频'),  # MKV
+    b'\x4F\x67\x67\x53': ('.ogv', '视频'),  # OGG
+    b'\x52\x49\x46\x46': ('.wav', '音乐'),  # WAV
+    b'\x42\x4D': ('.bmp', '图像'),  # BMP (另一种识别)
+    b'GIF9': ('.gif', '图像'),  # GIF (另一种版本)
+    b'<svg': ('.svg', '图像'),  # SVG (文本格式)
+    b'<?xml': ('.svg', '图像'),  # SVG (带XML声明)
+    b'\x00\x00\x00\x1Cftyp': ('.mp4', '视频'),  # MP4 (另一种格式)
+    b'\x00\x00\x00\x20ftyp': ('.mp4', '视频'),  # MP4 (另一种格式)
+}
 
 class ResourceManager:
     def __init__(self):
@@ -36,6 +69,81 @@ class ResourceManager:
             logger.error(f"获取资源路径时出错: {str(e)}")
         
         return None
+
+class FileMagicNumberDetector:
+    def __init__(self):
+        self.magic_numbers = MAGIC_NUMBERS
+    
+    def get_file_magic_info(self, file_path: str) -> Optional[Dict[str, str]]:
+        try:
+            if not os.path.isfile(file_path):
+                return None
+            
+            # 读取文件前12个字节作为魔数
+            with open(file_path, 'rb') as f:
+                header = f.read(12)
+            
+            # 尝试匹配魔数
+            for magic, (ext, file_type) in self.magic_numbers.items():
+                if header.startswith(magic):
+                    return {
+                        'extension': ext,
+                        'file_type': file_type,
+                        'detected': True
+                    }
+            
+            # 尝试文本文件的检查（如SVG）
+            try:
+                with open(file_path, 'r', encoding='utf-8') as f:
+                    text_header = f.read(100).lower()
+                    if '<svg' in text_header or '<?xml' in text_header and 'svg' in text_header:
+                        return {
+                            'extension': '.svg',
+                            'file_type': '图像',
+                            'detected': True
+                        }
+            except UnicodeDecodeError:
+                # 不是文本文件，忽略
+                pass
+            
+            # 未检测到已知魔数
+            return {
+                'extension': '',
+                'file_type': '未知',
+                'detected': False
+            }
+            
+        except Exception as e:
+            logger.error(f"检测文件魔数时出错: {str(e)}")
+            return None
+    
+    def verify_file_extension(self, file_path: str) -> Tuple[bool, Optional[Dict[str, str]]]:
+        """
+        验证文件扩展名是否与内容匹配
+        
+        Args:
+            file_path: 文件路径
+            
+        Returns:
+            (是否匹配, 魔数检测结果)
+        """
+        magic_info = self.get_file_magic_info(file_path)
+        
+        if not magic_info or not magic_info['detected']:
+            return True, magic_info
+        
+        # 获取文件的实际扩展名
+        _, actual_ext = os.path.splitext(file_path.lower())
+        
+        # 检查扩展名是否匹配
+        expected_ext = magic_info['extension']
+        
+        # 处理一些特殊情况（如HEIC和HEIF可能使用相同的魔数）
+        if expected_ext in ['.heic', '.heif'] and actual_ext in ['.heic', '.heif']:
+            return True, magic_info
+        
+        return actual_ext == expected_ext, magic_info
+
 
 class MediaTypeDetector:
     def __init__(self):
@@ -153,6 +261,7 @@ class GeocodingService:
 
 _resource_manager = ResourceManager()
 _media_detector = MediaTypeDetector()
+_file_magic_detector = FileMagicNumberDetector()
 
 # 工具函数
 def get_resource_path(relative_path):
@@ -179,8 +288,48 @@ def get_common_app_data_path():
         app_support_path = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support')
         return os.path.join(app_support_path, 'LeafView')
 
+def get_file_magic_info(file_path):
+    """
+    使用魔数检测文件的真实类型
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        包含文件类型信息的字典，或None
+    """
+    return _file_magic_detector.get_file_magic_info(file_path)
+
+def verify_file_extension(file_path):
+    """
+    验证文件扩展名是否与内容匹配
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        (是否匹配, 魔数检测结果)
+    """
+    return _file_magic_detector.verify_file_extension(file_path)
+
 def get_file_type(file_path):
+    """
+    获取文件类型，优先使用魔数检测
+    
+    Args:
+        file_path: 文件路径
+        
+    Returns:
+        文件类型字符串
+    """
     file_path_str = str(file_path)
+    
+    # 首先尝试通过魔数检测
+    magic_info = get_file_magic_info(file_path_str)
+    if magic_info and magic_info.get('detected', False):
+        return magic_info.get('file_type', '其他')
+    
+    # 魔数检测失败，回退到扩展名检测
     file_ext = os.path.splitext(file_path_str)[1].lower()
     
     file_type_mapping = {
