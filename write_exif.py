@@ -137,15 +137,35 @@ class WriteExifManager(QObject):
                               "请重新启动应用程序或联系技术支持")
             return False
 
-        if not self.is_running:
+        thread_running = bool(self.worker and self.worker.isRunning())
+        if thread_running:
+            self.log("INFO", "正在停止操作")
+            self.parent.btnStartExif.setText("正在停止...")
+            try:
+                self.stop_exif_writing()
+                self.is_running = False
+                return False
+            except Exception as e:
+                self.log("ERROR", f"停止线程时出错: {str(e)}")
+                self.is_running = False
+                self.update_button_state()
+                return False
+        else:
+            # 首先检查文件夹是否存在
+            folders = self.folder_page.get_all_folders() if self.folder_page else []
+            if not folders:
+                self.log("WARNING", "没有选择文件夹")
+                try:
+                    QMessageBox.warning(self.parent, "警告", "请先选择要处理的文件夹！")
+                except Exception as e:
+                    self.log("ERROR", f"显示警告消息失败: {str(e)}")
+                return False
+            
+            # 然后再开始操作并更新按钮状态
             success = self.start_exif_writing()
             if success:
                 self.is_running = True
             return success
-        else:
-            self.stop_exif_writing()
-            self.is_running = False
-            return False
 
     def connect_worker_signals(self):
         if self.worker:
@@ -201,16 +221,8 @@ class WriteExifManager(QObject):
         self.is_running = True
         self.update_button_state()
 
+        # 文件夹检查已在toggle_exif_writing中完成
         folders = self.folder_page.get_all_folders()
-        if not folders:
-            self.log("WARNING", "没有选择文件夹")
-            try:
-                QMessageBox.warning(self.parent, "警告", "请先选择要处理的文件夹！")
-            except Exception as e:
-                self.log("ERROR", f"显示警告消息失败: {str(e)}")
-            self.is_running = False
-            self.update_button_state()
-            return False
 
         camera_brand = self.parent.cameraBrand.currentText() if self.parent.cameraBrand.currentIndex() > 0 else None
         camera_model = self.parent.cameraModel.currentText() if self.parent.cameraModel.currentIndex() > 0 else None
