@@ -27,8 +27,10 @@ class ConfigManager:
         self._validate_and_migrate_config()
     
     def _get_config_file_path(self) -> os.PathLike:
-        app_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-        return os.path.join(app_dir, 'config.json')
+        app_dir = os.path.dirname(os.path.abspath(__file__))
+        internal_dir = os.path.join(app_dir, '_internal')
+        os.makedirs(internal_dir, exist_ok=True)
+        return os.path.join(internal_dir, 'config.json')
     
     def _get_cache_file_path(self) -> os.PathLike:
         app_dir = os.path.dirname(os.path.abspath(__file__))
