@@ -365,7 +365,7 @@ class WriteExifThread(QThread):
             ("author", "0th", 315, "author", "作者: {}", "utf-8"),
             ("subject", "0th", piexif.ImageIFD.XPSubject, "subject", "主题: {}", "utf-16le"),
             ("rating", "0th", piexif.ImageIFD.Rating, "rating", "评分: {}星", None, int),
-            ("copyright", "0th", piexif.ImageIFD.Copyright, "copyright_text", "版权: {}", "utf-8"),
+            ("copyright", "0th", piexif.ImageIFD.Copyright, "copyright", "版权: {}", "utf-8"),
             ("camera_brand", "0th", piexif.ImageIFD.Make, "camera_brand", "相机品牌: {}", "utf-8"),
             ("camera_model", "0th", piexif.ImageIFD.Model, "camera_model", "相机型号: {}", "utf-8"),
             ("lens_brand", "Exif", piexif.ExifIFD.LensMake, "lens_brand", "镜头品牌: {}", "utf-8"),

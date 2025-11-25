@@ -368,6 +368,8 @@ class WriteExifManager(QObject):
             operation_summary += f", 标题: {exif_config['title']}"
         if exif_config.get('author'):
             operation_summary += f", 作者: {exif_config['author']}"
+        if exif_config.get('copyright'):
+            operation_summary += f", 版权: {exif_config['copyright']}"
         if exif_config.get('position'):
             operation_summary += f", 位置: {exif_config['position']}"
         if exif_config.get('rating') != '0':
