@@ -1,18 +1,15 @@
-import os
-import shutil
-import logging
 import datetime
-import re
-from typing import Dict, List, Tuple, Optional, Union
-from enum import Enum
-from PyQt6.QtCore import QObject, pyqtSignal, pyqtSlot
-from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit
-from common import get_resource_path
-from config_manager import config_manager
+import logging
+import os
+
+from PyQt6.QtCore import QObject, pyqtSignal
+from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QFileDialog, QInputDialog
+
 from smart_arrange_thread import SmartArrangeThread
 
 logger = logging.getLogger('SmartArrangeManager')
 logger.setLevel(logging.DEBUG)
+
 
 class SmartArrangeManager(QObject):
     log_signal = pyqtSignal(str, str)
@@ -80,7 +77,7 @@ class SmartArrangeManager(QObject):
             self.parent.fileOperation.currentIndexChanged.connect(self.update_operation_display)
         except Exception as e:
             self.log("ERROR", f"连接fileOperation信号失败: {str(e)}")
-        
+
         try:
             try:
                 self.log_signal.disconnect(self.handle_log_signal)
@@ -89,14 +86,14 @@ class SmartArrangeManager(QObject):
             self.log_signal.connect(self.handle_log_signal)
         except Exception as e:
             self.log("DEBUG", f"连接log_signal信号失败: {str(e)}")
-        
+
         try:
             try:
                 self.parent.btnStartSmartArrange.clicked.disconnect()
             except (TypeError, RuntimeError):
                 pass
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
-            
+
             self.parent.btnStartSmartArrange.setEnabled(True)
         except Exception as e:
             self.log("ERROR", f"连接btnStartSmartArrange信号失败: {str(e)}")
@@ -114,32 +111,32 @@ class SmartArrangeManager(QObject):
                         return True
                 except Exception as e:
                     self.log("WARNING", f"从folder_page获取目标文件夹失败: {str(e)}")
-            
+
             folder = QFileDialog.getExistingDirectory(
-                self.parent, 
+                self.parent,
                 "Select destination folder",
                 options=QFileDialog.Option.ShowDirsOnly
             )
-            
+
             if not folder:
                 self.log("WARNING", "未选择目标文件夹")
                 return False
-            
+
             if self.validate_destination(folder):
                 self.destination_root = folder
                 return True
-            
+
             return False
         except Exception as e:
             self.log("ERROR", f"选择目标文件夹时出错: {str(e)}")
             return False
-    
+
     def validate_destination(self, destination: str) -> bool:
         try:
             if not os.path.exists(destination):
                 reply = QMessageBox.question(
                     self.parent,
-                    "Confirm", 
+                    "Confirm",
                     f"Destination folder does not exist. Create it?\n{destination}",
                     QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
                 )
@@ -153,12 +150,12 @@ class SmartArrangeManager(QObject):
                         return False
                 else:
                     return False
-            
+
             if not os.access(destination, os.W_OK):
                 self.log("ERROR", f"目标文件夹没有写入权限: {destination}")
                 QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
                 return False
-            
+
             display_path = destination + '/'
             if len(display_path) > 20:
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
@@ -171,9 +168,9 @@ class SmartArrangeManager(QObject):
             self.parent.copyRoute.setText(f"{operation_text}{display_path}")
         except Exception as e:
             self.log("ERROR", f"更新目标文件夹显示失败: {str(e)}")
-        
+
         return True
-            
+
     def toggle_SmartArrange(self):
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
         if thread_running:
@@ -187,7 +184,7 @@ class SmartArrangeManager(QObject):
                 self.parent.btnStartSmartArrange.setText("开始整理")
         else:
             self.parent.btnStartSmartArrange.setEnabled(True)
-            
+
             self.selected_folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not self.selected_folders:
                 self.log("WARNING", "没有选择文件夹")
@@ -196,7 +193,7 @@ class SmartArrangeManager(QObject):
                 except Exception as e:
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return
-            
+
             if not self.destination_root:
                 if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
                     try:
@@ -213,7 +210,7 @@ class SmartArrangeManager(QObject):
                 else:
                     QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                     return
-            
+
             if self.SmartArrange_thread:
                 try:
                     if self.SmartArrange_thread.isRunning():
@@ -221,14 +218,14 @@ class SmartArrangeManager(QObject):
                 except Exception as e:
                     self.log("WARNING", f"{str(e)}")
                     self.SmartArrange_thread = None
-            
+
             reply = QMessageBox.question(
                 self.parent,
                 "确认操作？",
-                "操作无法撤销！\n\n"  
-                "• 移动：原始文件将被删除\n"  
-                "• 复制：原始文件将被保留\n\n"  
-                "请备份重要文件！\n\n"  
+                "操作无法撤销！\n\n"
+                "• 移动：原始文件将被删除\n"
+                "• 复制：原始文件将被保留\n\n"
+                "请备份重要文件！\n\n"
                 "是否继续？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
@@ -237,7 +234,7 @@ class SmartArrangeManager(QObject):
             if reply != QMessageBox.StandardButton.Yes:
                 self.log("INFO", "操作已取消")
                 return
-            
+
             if isinstance(self.selected_folders, str):
                 self.selected_folders = [{'path': self.selected_folders, 'include_sub': 1}]
             elif not all(isinstance(f, dict) and 'path' in f for f in self.selected_folders):
@@ -253,7 +250,7 @@ class SmartArrangeManager(QObject):
                 for folder in self.selected_folders:
                     if isinstance(folder, dict) and 'path' in folder:
                         folder['include_sub'] = 1
-            
+
             SmartArrange_structure = [
                 getattr(self.parent, f'comboClassificationLevel{i}').currentText()
                 for i in range(1, 6)
@@ -267,7 +264,8 @@ class SmartArrangeManager(QObject):
                     if item and item.widget() and isinstance(item.widget(), QPushButton):
                         button = item.widget()
                         tag_name = button.text()
-                        content = button.property('custom_content') if button.property('original_text') == '自定义' and button.property('custom_content') is not None else None
+                        content = button.property('custom_content') if button.property(
+                            'original_text') == '自定义' and button.property('custom_content') is not None else None
                         file_name_parts.append({'tag': tag_name, 'content': content})
             except Exception as e:
                 self.log("ERROR", f"{str(e)}")
@@ -277,9 +275,9 @@ class SmartArrangeManager(QObject):
             separator = self.separator_mapping.get(separator_text, "-")
 
             operation_type = self.parent.fileOperation.currentIndex()
-            
+
             self.parent.btnStartSmartArrange.setText("停止整理")
-            
+
             try:
                 self.SmartArrange_thread = SmartArrangeThread(
                     parent=self,
@@ -291,24 +289,24 @@ class SmartArrangeManager(QObject):
                     time_derive="文件创建时间",
                     operation_type=operation_type
                 )
-                
+
                 signals_to_disconnect = [
                     ('log_signal', self.handle_log_signal),
                     ('progress_signal', self.update_progress_bar),
                     ('finished', self.on_thread_finished)
                 ]
-                
+
                 for signal_name, slot in signals_to_disconnect:
                     try:
                         signal = getattr(self.SmartArrange_thread, signal_name)
                         signal.disconnect(slot)
                     except (TypeError, RuntimeError) as e:
                         self.log("DEBUG", f"断开{signal_name}连接失败: {str(e)}")
-                
+
                 self.SmartArrange_thread.log_signal.connect(self.handle_log_signal)
                 self.SmartArrange_thread.progress_signal.connect(self.update_progress_bar)
                 self.SmartArrange_thread.finished.connect(self.on_thread_finished)
-                
+
                 self.SmartArrange_thread.start()
             except Exception as e:
                 self.log("ERROR", f"{str(e)}")
@@ -319,16 +317,16 @@ class SmartArrangeManager(QObject):
     def on_thread_finished(self):
         self.parent.btnStartSmartArrange.setText("开始整理")
         self.parent.btnStartSmartArrange.setEnabled(True)
-        
+
         stopped_status = False
         if hasattr(self.SmartArrange_thread, 'is_stopped'):
             stopped_status = self.SmartArrange_thread.is_stopped() or False
-        
+
         self.update_progress_bar(0)
-        
+
         if not stopped_status:
             QMessageBox.information(self.parent, "完成", "操作已完成！")
-        
+
         self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
@@ -351,7 +349,7 @@ class SmartArrangeManager(QObject):
 
         SmartArrange_paths = []
         self.SmartArrange_settings = []
-        
+
         for i in range(1, 6):
             combo = getattr(self.parent, f'comboClassificationLevel{i}')
             if combo.isEnabled() and combo.currentText() != "不分类":
@@ -364,7 +362,7 @@ class SmartArrangeManager(QObject):
             preview_text = "/".join(SmartArrange_paths)
         else:
             preview_text = "不分类"
-        
+
         self.parent.previewRoute.setText(preview_text)
         self.update_operation_display()
 
@@ -417,7 +415,7 @@ class SmartArrangeManager(QObject):
         reserved_names = {'CON', 'PRN', 'AUX', 'NUL'}
         reserved_names.update({f'COM{i}' for i in range(1, 10)})
         reserved_names.update({f'LPT{i}' for i in range(1, 10)})
-        
+
         return (not any(char in filename for char in invalid_chars) and
                 filename not in reserved_names and
                 not filename.endswith(('.', ' ')) and
@@ -436,17 +434,17 @@ class SmartArrangeManager(QObject):
             input_dialog.setLabelText("请输入自定义部分的文件名内容:")
             input_dialog.setTextEchoMode(QLineEdit.EchoMode.Normal)
             input_dialog.setTextValue("")
-            
+
             line_edit = input_dialog.findChild(QLineEdit)
             if line_edit:
                 line_edit.setMaxLength(255)
 
             if input_dialog.exec() and input_dialog.textValue():
                 custom_text = input_dialog.textValue()
-                
+
                 if not self.is_valid_windows_filename(custom_text):
-                    QMessageBox.warning(self.parent, "文件名无效", 
-                                      f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
+                    QMessageBox.warning(self.parent, "文件名无效",
+                                        f"文件名 '{custom_text}' 不符合Windows命名规范，请修改后重试。")
                     return
 
                 display_text = custom_text[:3] if len(custom_text) > 3 else custom_text
@@ -473,7 +471,8 @@ class SmartArrangeManager(QObject):
 
     def update_example_label(self):
         now = datetime.now()
-        selected_buttons = [self.selected_frame.layout().itemAt(i).widget() for i in range(self.selected_frame.layout().count())
+        selected_buttons = [self.selected_frame.layout().itemAt(i).widget() for i in
+                            range(self.selected_frame.layout().count())
                             if isinstance(self.selected_frame.layout().itemAt(i).widget(), QPushButton)]
         current_separator = self.separator_mapping.get(self.parent.fileNameSeparator.currentText(), "")
 
@@ -506,21 +505,21 @@ class SmartArrangeManager(QObject):
 
     def handle_log_signal(self, level, message):
         message_str = str(message)
-        
+
         color_map = {
             'ERROR': '#FF0000',
-            'WARNING': '#FFA500', 
+            'WARNING': '#FFA500',
             'INFO': '#8677FD',
             'DEBUG': '#006400'
         }
-        
+
         color = color_map.get(level, '#006400')
-            
+
         try:
             if hasattr(self.parent, 'txtSmartArrangeLog'):
                 self.parent.txtSmartArrangeLog.append(
-                    f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'  \
-                    f'<span style="color:{color};">{message_str}</span>'  \
+                    f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">' \
+                    f'<span style="color:{color};">{message_str}</span>' \
                     f'</div>'
                 )
                 self.parent.txtSmartArrangeLog.verticalScrollBar().setValue(
@@ -528,7 +527,7 @@ class SmartArrangeManager(QObject):
                 )
         except AttributeError:
             pass
-        
+
         if hasattr(self.parent, 'log'):
             self.parent.log(level, message_str)
 
@@ -536,16 +535,16 @@ class SmartArrangeManager(QObject):
         try:
             if not isinstance(level, str) or not isinstance(message, str):
                 raise TypeError("日志级别和消息必须是字符串类型")
-            
+
             valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
             if level not in valid_levels:
                 level = 'INFO'
-            
+
             current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
-            
+
             self.log_signal.emit(level, log_message)
-            
+
             getattr(logger, level.lower(), logger.info)(message)
         except Exception as e:
             try:

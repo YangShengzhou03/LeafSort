@@ -1,11 +1,9 @@
-import os
-import re
-import logging
-from PyQt6.QtCore import QUrl, QStandardPaths
-from PyQt6.QtWidgets import QMessageBox
 import json
+import logging
+import os
+from datetime import datetime
+
 import requests
-from datetime import datetime, timedelta
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
