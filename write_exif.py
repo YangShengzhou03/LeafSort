@@ -2,10 +2,8 @@ import json
 import logging
 import os
 from datetime import datetime
-
 from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot
 from PyQt6.QtWidgets import QMessageBox
-
 from common import get_resource_path
 from config_manager import config_manager
 from write_exif_thread import WriteExifThread
@@ -15,8 +13,7 @@ logger.setLevel(logging.DEBUG)
 
 
 class WriteExifManager(QObject):
-    # 日志信号用于将日志信息传递给UI线程
-    log = pyqtSignal(str, str)
+    log_signal = pyqtSignal(str, str)
 
     def __init__(self, parent=None, folder_page=None):
         super().__init__(parent)
@@ -37,8 +34,8 @@ class WriteExifManager(QObject):
             btn = getattr(self.parent, f'btnStar{i}')
             btn.setStyleSheet(
                 "QPushButton { "
-                f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});\n"
-                "border: none; padding: 0; }" "\n"
+                f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});"
+                "border: none; padding: 0\n"
                 "QPushButton:hover { background-color: transparent; }"
             )
             btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
@@ -48,7 +45,6 @@ class WriteExifManager(QObject):
 
         self.init_camera_brand_model()
         self.load_camera_lens_mapping()
-        self.setup_connections()
 
         self.update_button_state()
         self.load_exif_settings()
@@ -120,18 +116,13 @@ class WriteExifManager(QObject):
                     self.parent.cameraModel.addItem(model)
 
     def setup_connections(self):
-        # 开始按钮连接
         self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
-
-        # 星级按钮连接
+        
         for i in range(1, 6):
             getattr(self.parent, f'btnStar{i}').clicked.connect(self.save_exif_settings)
-
-        # 相机品牌变化连接
+        
         self.parent.cameraBrand.currentIndexChanged.connect(self._on_brand_changed)
-
-        # 连接日志信号到UI更新
-        self.log.connect(self._update_log_display)
+        self.log_signal.connect(self._update_log_display)
 
     def update_button_state(self):
         if self.is_running:
@@ -158,7 +149,7 @@ class WriteExifManager(QObject):
     def connect_worker_signals(self):
         if self.worker:
             self.worker.progress_updated.connect(self.update_progress)
-            self.worker.log.connect(self.log)
+            self.worker.log_signal.connect(self.log)
             self.worker.finished_conversion.connect(self.on_finished)
 
     @pyqtSlot(int)
@@ -211,8 +202,7 @@ class WriteExifManager(QObject):
 
         folders = self.folder_page.get_all_folders()
         if not folders:
-            self.log("ERROR", "没有选择任何文件夹\n\n"
-                              "请在左侧选择至少一个包含图片的文件夹")
+            self.log("ERROR", "没有选择文件夹")
             self.is_running = False
             self.update_button_state()
             return False
@@ -307,32 +297,53 @@ class WriteExifManager(QObject):
         self.parent.progressBar_EXIF.setValue(value)
 
     def _update_log_display(self, level, message):
-        # 在UI线程中更新日志显示
-        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'DEBUG': '#008000', 'INFO': '#8677FD'}
+        message_str = str(message)
+        
+        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
+        color = color_map.get(level, '#006400')
+            
         try:
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.parent.txtWriteEXIFLog.append(
-                f'<span style="color:{color_map.get(level, "#000000")}">[{timestamp}] {level}: {message}</span>')
-        except Exception as e:
-            logger.error(f"日志更新错误: {str(e)}")
+                f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'
+                f'<span style="color:{color};">{message_str}</span>'
+                f'</div>'
+            )
+            # 滚动到底部
+            self.parent.txtWriteEXIFLog.verticalScrollBar().setValue(
+                self.parent.txtWriteEXIFLog.verticalScrollBar().maximum()
+            )
+        except AttributeError:
+            pass
 
     def log(self, level, message):
-        # 使用logger记录日志
-        timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-        log_message = f"[{timestamp}] {level}: {message}"
-
-        if level == 'ERROR':
-            logger.error(message)
-            self.error_messages.append(log_message)
-        elif level == 'WARNING':
-            logger.warning(message)
-        elif level == 'DEBUG':
-            logger.debug(message)
-        else:
-            logger.info(message)
-
-        # 通过信号将日志发送到UI线程
-        self.log.emit(level, message)
+        try:
+            if not isinstance(level, str) or not isinstance(message, str):
+                raise TypeError("日志级别和消息必须是字符串类型")
+            
+            valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
+            if level not in valid_levels:
+                level = 'INFO'
+            
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            log_message = f"[{current_time}] {level}: {message}"
+            
+            self.log_signal.emit(level, log_message)
+            
+            if level == 'ERROR':
+                logger.error(message)
+                self.error_messages.append(log_message)
+            elif level == 'WARNING':
+                logger.warning(message)
+            elif level == 'DEBUG':
+                logger.debug(message)
+            else:
+                logger.info(message)
+        except Exception as e:
+            try:
+                error_msg = f"日志记录失败: {str(e)}"
+                logger.error(error_msg)
+            except:
+                pass
 
     def on_finished(self):
         self.is_running = False

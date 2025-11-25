@@ -438,7 +438,6 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level: str, message: str) -> None:
-        """线程安全的日志记录方法"""
         try:
             if not isinstance(level, str) or not isinstance(message, str):
                 raise TypeError("日志级别和消息必须是字符串类型")
@@ -452,12 +451,10 @@ class SmartArrangeThread(QtCore.QThread):
             
             with self._lock:
                 self.log_signal.emit(level, log_message)
-                
                 getattr(logger, level.lower(), logger.info)(message)
         except Exception as e:
             try:
-                error_msg = f"日志记录失败: {str(e)}"
-                logger.error(error_msg)
+                logger.error(f"日志记录失败: {str(e)}")
             except:
                 pass
     
