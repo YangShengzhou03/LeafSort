@@ -2,7 +2,8 @@ import json
 import logging
 import os
 from datetime import datetime
-from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot
+from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize
+from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QMessageBox
 from common import get_resource_path
 from config_manager import config_manager
@@ -32,12 +33,11 @@ class WriteExifManager(QObject):
     def init_ui(self):
         for i in range(1, 6):
             btn = getattr(self.parent, f'btnStar{i}')
-            btn.setStyleSheet(
-                "QPushButton { "
-                f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});"
-                "border: none; padding: 0\n"
-                "QPushButton:hover { background-color: transparent; }"
-            )
+            icon = QIcon()
+            icon.addPixmap(QPixmap(get_resource_path('resources/img/page_4/星级_暗.svg')), QIcon.Mode.Normal, QIcon.State.Off)
+            btn.setIcon(icon)
+            btn.setIconSize(QSize(32, 32))
+            btn.setStyleSheet("border: none; padding: 0")
             btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
             btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
             btn.clicked.connect(lambda _, idx=i: self.set_selected_star(idx))
@@ -176,9 +176,11 @@ class WriteExifManager(QObject):
     @pyqtSlot(int)
     def highlight_stars(self, count):
         for i, btn in enumerate(self.star_buttons, 1):
-            icon = "星级_亮.svg" if i <= count else "星级_暗.svg"
-            btn.setStyleSheet(
-                f"QPushButton {{ image: url({get_resource_path(f'resources/img/page_4/{icon}')}); border: none; padding: 0; }}")
+            icon = QIcon()
+            icon_path = '星级_亮.svg' if i <= count else '星级_暗.svg'
+            icon.addPixmap(QPixmap(get_resource_path(f'resources/img/page_4/{icon_path}')), QIcon.Mode.Normal, QIcon.State.Off)
+            btn.setIcon(icon)
+            btn.setIconSize(QSize(32, 32))
 
     @pyqtSlot(int)
     def set_selected_star(self, star):

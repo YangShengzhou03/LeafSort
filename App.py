@@ -16,19 +16,16 @@ def handle_exception(exc_type, exc_value, exc_traceback):
     logging.critical("Unhandled exception", exc_info=(exc_type, exc_value, exc_traceback))
     app = QApplication.instance()
     if app:
-        try:
-            error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
-            print(f"Error: {exc_type.__name__}: {exc_value}")
-            print(error_message)
-            msg = QMessageBox()
-            msg.setIcon(QMessageBox.Icon.Critical)
-            msg.setWindowTitle("Application Error")
-            msg.setText("An unexpected error occurred. The application may need to close.")
-            msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
-            msg.setDetailedText(error_message)
-            msg.exec()
-        except Exception:
-            pass
+        error_message = ''.join(traceback.format_exception(exc_type, exc_value, exc_traceback))
+        print(f"Error: {exc_type.__name__}: {exc_value}")
+        print(error_message)
+        msg = QMessageBox()
+        msg.setIcon(QMessageBox.Icon.Critical)
+        msg.setWindowTitle("Application Error")
+        msg.setText("An unexpected error occurred. The application may need to close.")
+        msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
+        msg.setDetailedText(error_message)
+        msg.exec()
 
 def main():
     try:
@@ -49,10 +46,7 @@ def main():
         logging.error(f"Failed to start application: {str(e)}")
         print(f"Start error: {str(e)}")
         traceback.print_exc()
-        try:
-            QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
-        except Exception:
-            pass
+        QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
         sys.exit(1)
 
 if __name__ == "__main__":
