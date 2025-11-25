@@ -4,6 +4,7 @@ import os
 import subprocess
 import logging
 import threading
+import shutil
 from pathlib import Path
 import io
 from typing import List, Dict, Any, Optional, Union, Set
@@ -16,8 +17,6 @@ from config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
-# 常量定义 - 仅保留SUPPORTED_EXTENSIONS用于文件过滤
-# 注意：get_file_type函数现在从common.py导入
 IMAGE_EXTENSIONS = (
     '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
     '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
@@ -52,17 +51,13 @@ class SmartArrangeThread(QtCore.QThread):
                  file_name_structure: Optional[List[str]] = None,
                  destination_root: Optional[str] = None, separator: str = "-", 
                  time_derive: str = "文件创建时间", operation_type: int = 0):
-        # 参数类型检查
         if folders is not None and not isinstance(folders, list):
             raise TypeError("folders参数必须是列表类型")
         
         super().__init__(parent)
-        # 添加线程锁以确保线程安全
         self._lock = threading.RLock()
-        # 添加日志计数器，用于限制日志频率
         self.log_counter = 0
         super().__init__(parent)
-        # 初始化所有实例变量，提供默认值以避免潜在的None引用问题
         self.parent = parent
         self.folders = folders or []
         self.classification_structure = classification_structure or []
@@ -70,25 +65,21 @@ class SmartArrangeThread(QtCore.QThread):
         self.destination_root = destination_root
         self.separator = separator if separator else "-"
         self.time_derive = time_derive if time_derive else "文件创建时间"
-        self.operation_type = operation_type  # 保存操作类型
+        self.operation_type = operation_type
         self._is_running = True
         self._stop_flag = False
         self.total_files = 0
         self.processed_files = 0
-        # 初始化地理数据属性
         self.city_data = {'features': []}
         self.province_data = {'features': []}
-        # 使用类定义的信号而不是从parent获取
         self.log_signal = parent.log_signal if parent and hasattr(parent, 'log_signal') else self.log_signal
         self.files_to_rename = []
         
-        # 加载地理数据
         self.load_geographic_data()
 
     def calculate_total_files(self) -> int:
         """计算所有文件夹中的文件总数，增强错误处理和线程安全"""
         try:
-            # 使用线程锁保护共享资源
             with self._lock:
                 self.total_files = 0
             
@@ -97,25 +88,21 @@ class SmartArrangeThread(QtCore.QThread):
                 return 0
             
             for folder_info in self.folders:
-                # 检查是否需要停止
                 if self._stop_flag:
                     self.log("INFO", "文件计数操作被用户取消")
                     break
                 
                 try:
-                    # 参数验证
                     if not isinstance(folder_info, dict):
                         self.log("WARNING", "文件夹信息格式不正确，跳过")
                         continue
                     
-                    # 安全地获取路径
                     if 'path' not in folder_info:
                         self.log("WARNING", "文件夹信息中缺少path字段")
                         continue
                     
                     folder_path = Path(folder_info['path'])
                     
-                    # 验证路径是否存在且是目录
                     if not folder_path.exists() or not folder_path.is_dir():
                         self.log("WARNING", f"路径不存在或不是目录: {folder_path}")
                         continue
@@ -127,16 +114,13 @@ class SmartArrangeThread(QtCore.QThread):
                             if self._stop_flag:
                                 break
                             
-                            # 线程安全地更新计数
                             with self._lock:
                                 self.total_files += len(files)
                     else:
-                        # 使用更安全的方式获取文件列表
                         try:
                             items = list(folder_path.iterdir())
                             file_count = sum(1 for item in items if item.is_file())
                             
-                            # 线程安全地更新计数
                             with self._lock:
                                 self.total_files += file_count
                         except PermissionError:
@@ -156,7 +140,6 @@ class SmartArrangeThread(QtCore.QThread):
 
     def load_geographic_data(self):
         try:
-            # 尝试加载城市地理数据
             city_file_path = get_resource_path('resources/json/City_Reverse_Geocode.json')
             if os.path.exists(city_file_path):
                 with open(city_file_path, 'r', encoding='utf-8') as f:
@@ -164,7 +147,6 @@ class SmartArrangeThread(QtCore.QThread):
             else:
                 self.log("WARNING", f"城市地理数据文件不存在: {city_file_path}")
                 
-            # 尝试加载省份地理数据
             province_file_path = get_resource_path('resources/json/Province_Reverse_Geocode.json')
             if os.path.exists(province_file_path):
                 with open(province_file_path, 'r', encoding='utf-8') as f:
@@ -176,7 +158,6 @@ class SmartArrangeThread(QtCore.QThread):
             self.log("ERROR", f"解析地理数据JSON失败: {str(e)}")
         except Exception as e:
             self.log("ERROR", f"加载地理数据时出错: {str(e)}")
-            # 已经在__init__中初始化了默认值，这里不再需要重新初始化
 
     def run(self):
         try:
@@ -255,7 +236,6 @@ class SmartArrangeThread(QtCore.QThread):
                     return
                 full_file_path = folder_path / file
                 if full_file_path.is_file():
-                    # 如果有目标根路径（复制操作），则不传递base_folder参数
                     if self.destination_root:
                         self.process_single_file(full_file_path)
                     else:
@@ -269,8 +249,7 @@ class SmartArrangeThread(QtCore.QThread):
         """截断过长的文件名，中间用...省略"""
         if len(filename) <= max_length:
             return filename
-        # 保留开头和结尾字符，中间用...省略
-        keep_length = max_length - 3  # 减去...的3个字符
+        keep_length = max_length - 3
         if keep_length <= 0:
             return filename[:max_length]
         half = keep_length // 2
@@ -289,10 +268,8 @@ class SmartArrangeThread(QtCore.QThread):
             old_path = Path(file_info['old_path'])
             new_path = Path(file_info['new_path'])
             
-            # 确保目标文件夹存在
             new_path.parent.mkdir(parents=True, exist_ok=True)
             
-            # 处理文件名冲突
             base_name = new_path.stem
             ext = new_path.suffix
             counter = 1
@@ -303,21 +280,16 @@ class SmartArrangeThread(QtCore.QThread):
                 counter += 1
             
             try:
-                import shutil
                 
-                # 操作类型：0 = 复制, 1 = 移动
                 old_name = os.path.basename(old_path)
                 new_name = os.path.basename(unique_path)
-                # 截断过长的文件名
                 truncated_old_name = self._truncate_filename(old_name)
                 truncated_new_name = self._truncate_filename(new_name)
                 
                 if self.operation_type == 0 or not self.destination_root:
-                    # 复制操作：无论如何都复制到目标位置，保持原文件不变
                     shutil.copy2(old_path, unique_path)
                     self.log("INFO", f"复制文件: {truncated_old_name} -> {truncated_new_name}")
                 else:
-                    # 移动操作：从源位置移动到目标位置
                     shutil.move(old_path, unique_path)
                     self.log("INFO", f"移动文件: {truncated_old_name} -> {truncated_new_name}")
                 
@@ -328,7 +300,6 @@ class SmartArrangeThread(QtCore.QThread):
                     self.progress_signal.emit(min(total_progress, 99))
                 
             except Exception as e:
-                # 只记录文件名而非完整路径
                 filename = os.path.basename(old_path)
                 self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
 
@@ -357,10 +328,8 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 if file_path != target_path:
                     try:
-                        import shutil
                         if self.destination_root:
                             shutil.copy2(file_path, target_path)
-                            # 截断文件名显示
                             old_name = os.path.basename(file_path)
                             new_name = os.path.basename(target_path)
                             truncated_old_name = self._truncate_filename(old_name)
@@ -368,7 +337,6 @@ class SmartArrangeThread(QtCore.QThread):
                             self.log("INFO", f"复制文件: {truncated_old_name} -> {truncated_new_name}")
                         else:
                             shutil.move(file_path, target_path)
-                            # 截断文件名显示
                             old_name = os.path.basename(file_path)
                             new_name = os.path.basename(target_path)
                             truncated_old_name = self._truncate_filename(old_name)
@@ -382,7 +350,6 @@ class SmartArrangeThread(QtCore.QThread):
                             percent_complete = int((self.processed_files / self.total_files) * 80)
                             self.progress_signal.emit(percent_complete)
                     except Exception as e:
-                        # 只记录文件名而非完整路径
                         filename = os.path.basename(file_path)
                         self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
         
@@ -473,33 +440,26 @@ class SmartArrangeThread(QtCore.QThread):
     def log(self, level: str, message: str) -> None:
         """线程安全的日志记录方法"""
         try:
-            # 参数验证
             if not isinstance(level, str) or not isinstance(message, str):
                 raise TypeError("日志级别和消息必须是字符串类型")
             
-            # 验证日志级别
             valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
             if level not in valid_levels:
-                level = 'INFO'  # 默认为INFO级别
+                level = 'INFO'
             
-            # 统一日志格式，与smart_arrange.py保持一致
             current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
             
-            # 使用线程锁确保线程安全
             with self._lock:
-                # 发送信号到UI线程
                 self.log_signal.emit(level, log_message)
                 
-                # 同时使用Python标准logging
                 getattr(logger, level.lower(), logger.info)(message)
         except Exception as e:
-            # 防止日志系统本身出错而影响程序运行
             try:
                 error_msg = f"日志记录失败: {str(e)}"
                 logger.error(error_msg)
             except:
-                pass  # 极端情况下静默失败
+                pass
     
     def get_exif_data(self, file_path):
         exif_data = {}
@@ -545,12 +505,10 @@ class SmartArrangeThread(QtCore.QThread):
     def _process_raw_exif(self, file_path, exif_data):
         """处理RAW格式文件（ARW、CR2、CR3、NEF等）的EXIF信息读取"""
         
-        # 检查文件是否存在
         if not os.path.exists(file_path):
             self.log("DEBUG", f"文件不存在: {file_path}")
             return None
         
-        # 构建exiftool路径
         exiftool_path = os.path.join(os.path.dirname(__file__), "resources", "exiftool", "exiftool.exe")
         
         if not os.path.exists(exiftool_path):
@@ -558,7 +516,6 @@ class SmartArrangeThread(QtCore.QThread):
             return None
         
         try:
-            # 使用exiftool读取EXIF信息
             cmd = [exiftool_path, file_path]
             result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
             
@@ -569,20 +526,16 @@ class SmartArrangeThread(QtCore.QThread):
             
             exif_data_str = result.stdout.decode('utf-8', errors='ignore')
             
-            # 解析拍摄时间
             date_taken = self._parse_raw_datetime(exif_data_str)
             
-            # 提取相机和GPS信息
             self._extract_raw_metadata(exif_data_str, exif_data)
             
             return date_taken
                 
         except subprocess.TimeoutExpired:
-            # 不暴露文件路径，只记录操作结果
             self.log("DEBUG", "读取EXIF数据超时")
             return None
         except Exception as e:
-            # 不暴露文件路径，只记录错误信息
             self.log("DEBUG", f"读取EXIF数据时出错: {str(e)}")
             return None
     
@@ -610,7 +563,6 @@ class SmartArrangeThread(QtCore.QThread):
     
     def _extract_raw_metadata(self, exif_data_str, exif_data):
         """从RAW格式的EXIF数据中提取相机和GPS信息"""
-        # 提取相机信息
         for line in exif_data_str.split('\n'):
             if 'Make' in line and ':' in line:
                 try:
@@ -631,7 +583,6 @@ class SmartArrangeThread(QtCore.QThread):
                 except (ValueError, IndexError):
                     pass
         
-        # 提取GPS信息
         gps_lat = None
         gps_lon = None
         for line in exif_data_str.split('\n'):
@@ -663,7 +614,6 @@ class SmartArrangeThread(QtCore.QThread):
             self._extract_gps_and_camera_info(tags, exif_data)
             return date_taken
         else:
-            # 简化日志信息
             self.log("DEBUG", "文件没有EXIF数据")
             return None
 
@@ -708,7 +658,6 @@ class SmartArrangeThread(QtCore.QThread):
             if key in video_metadata:
                 make_value = video_metadata[key]
                 if make_value:
-                    # Remove quotes from camera brand name
                     if isinstance(make_value, str):
                         make_value = make_value.strip().strip('"\'')
                     exif_data['Make'] = make_value
@@ -722,7 +671,6 @@ class SmartArrangeThread(QtCore.QThread):
             if key in video_metadata:
                 model_value = video_metadata[key]
                 if model_value:
-                    # Remove quotes from camera model name
                     if isinstance(model_value, str):
                         model_value = model_value.strip().strip('"\'')
                     exif_data['Model'] = model_value
@@ -786,7 +734,6 @@ class SmartArrangeThread(QtCore.QThread):
             if key in video_metadata:
                 make_value = video_metadata[key]
                 if make_value:
-                    # Remove quotes from camera brand name
                     if isinstance(make_value, str):
                         make_value = make_value.strip().strip('"\'')
                     exif_data['Make'] = make_value
@@ -837,7 +784,6 @@ class SmartArrangeThread(QtCore.QThread):
         elif self.time_derive == "修改时间":
             return modify_time.strftime('%Y-%m-%d %H:%M:%S')
         else:
-            # 获取所有非None的时间并选择最早的
             times = [t for t in [date_taken, create_time, modify_time] if t is not None]
             if times:
                 return min(times).strftime('%Y-%m-%d %H:%M:%S')
@@ -851,17 +797,13 @@ class SmartArrangeThread(QtCore.QThread):
         gps_lon = tags.get('GPS GPSLongitude')
         
         if gps_lat and gps_lon:
-            # 检查GPS数据是否已经是浮点数格式
             if isinstance(gps_lat, (int, float)) and isinstance(gps_lon, (int, float)):
-                # 如果是浮点数格式，直接使用
                 lat = gps_lat
                 lon = gps_lon
             elif hasattr(gps_lat, 'values') and hasattr(gps_lon, 'values'):
-                # 如果是EXIF格式的度分秒数据，使用convert_to_degrees方法转换
                 lat = self.convert_to_degrees(gps_lat)
                 lon = self.convert_to_degrees(gps_lon)
             else:
-                # 其他情况，尝试转换为浮点数
                 try:
                     lat = float(gps_lat)
                     lon = float(gps_lon)
@@ -870,7 +812,6 @@ class SmartArrangeThread(QtCore.QThread):
                     lon = None
             
             if lat is not None and lon is not None:
-                # 应用方向参考
                 if lat_ref and lat_ref.lower() == 's':
                     lat = -abs(lat)
                 elif lat_ref and lat_ref.lower() == 'n':
@@ -886,7 +827,6 @@ class SmartArrangeThread(QtCore.QThread):
         make = str(tags.get('Image Make', '')).strip()
         model = str(tags.get('Image Model', '')).strip()
         
-        # Remove quotes from camera brand and model names
         if isinstance(make, str):
             make = make.strip().strip('"\'')
         if isinstance(model, str):
@@ -899,19 +839,16 @@ class SmartArrangeThread(QtCore.QThread):
 
     def _get_video_metadata(self, file_path, timeout=30):
         try:
-            # 确保文件存在
             if not os.path.exists(file_path):
                 self.log("DEBUG", f"文件不存在: {file_path}")
                 return None
                 
-            # 获取exiftool路径并确保它存在
             exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
             if not os.path.exists(exiftool_path):
                 self.log("DEBUG", "exiftool工具不存在，无法读取视频元数据")
                 return None
                 
             file_path_normalized = str(file_path).replace('\\', '/')
-            # 使用列表传递命令参数，避免shell=True的安全风险
             cmd = [exiftool_path, "-fast", file_path_normalized]
 
             result = subprocess.run(
@@ -919,10 +856,9 @@ class SmartArrangeThread(QtCore.QThread):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                shell=False  # 不使用shell执行，提高安全性
+                shell=False
             )
 
-            # 检查命令是否执行成功
             if result.returncode != 0:
                 self.log("DEBUG", f"exiftool执行失败: {result.stderr}")
                 return None
@@ -994,7 +930,6 @@ class SmartArrangeThread(QtCore.QThread):
             '%Y%m%d'
         ]
         
-        # 尝试解析带时区的格式
         for fmt in formats_with_timezone:
             try:
                 dt = datetime.datetime.strptime(datetime_str, fmt)
@@ -1005,11 +940,9 @@ class SmartArrangeThread(QtCore.QThread):
             except ValueError:
                 continue
         
-        # 尝试解析不带时区的格式
         for fmt in formats_without_timezone:
             try:
                 dt = datetime.datetime.strptime(datetime_str, fmt)
-                # 对于特定格式，假定UTC并转换为本地时间
                 if fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
                     utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
                     local_dt = utc_dt.astimezone()
@@ -1185,7 +1118,6 @@ class SmartArrangeThread(QtCore.QThread):
         for tag in self.file_name_structure:
             parts.append(self.get_file_name_part(tag, file_path, file_time, original_name, exif_data))
         
-        # 生成文件名
         file_name = self.separator.join(parts)
         
         invalid_chars = '<>:"/\\|?*'
@@ -1266,7 +1198,6 @@ class SmartArrangeThread(QtCore.QThread):
                 lat = float(exif_data['GPS GPSLatitude'])
                 lon = float(exif_data['GPS GPSLongitude'])
                 
-                # 使用配置文件中的容差值，默认直径3公里(约0.0135度)
                 tolerance = config_manager.config.get('settings', {}).get('location_cache_tolerance', 0.0135)
                 cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, tolerance)
                 if cached_address and cached_address != "未知位置":
@@ -1275,11 +1206,9 @@ class SmartArrangeThread(QtCore.QThread):
                 else:
                     logger.info(f"缓存未命中，尝试获取坐标({lat},{lon})的地址")
                 
-                # 先尝试获取省份和城市信息作为备选
                 province, city = self.get_city_and_province(lat, lon)
                 local_location = f"{province}{city}" if city != "未知城市" else province
                 
-                # 再尝试网络请求获取更详细的地址
                 try:
                     address = get_address_from_coordinates(lat, lon)
                     if address and address != "未知位置":
@@ -1291,7 +1220,6 @@ class SmartArrangeThread(QtCore.QThread):
                 except Exception as e:
                     logger.error(f"获取地址时发生异常: {str(e)}，使用本地地理数据: {local_location}")
                 
-                # 如果有本地地理数据且不是"未知位置"，则缓存它
                 if local_location != "未知省份" and local_location != "未知省份未知城市":
                     config_manager.cache_location(lat, lon, local_location)
                 

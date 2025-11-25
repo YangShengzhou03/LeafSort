@@ -1,5 +1,3 @@
-#!/usr/bin/env python3
-
 import os
 import re
 import time
@@ -9,21 +7,18 @@ import tempfile
 import logging
 from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime, timedelta
-
 import piexif
 from PIL import Image, PngImagePlugin
 from PyQt6.QtCore import QThread, pyqtSignal
-
 from common import detect_media_type, get_resource_path
+from pillow_heif import open_heif, register_heif_opener
 
 try:
-    from pillow_heif import open_heif, register_heif_opener
     PILLOW_HEIF_AVAILABLE = True
 except ImportError:
     PILLOW_HEIF_AVAILABLE = False
 
 logger = logging.getLogger(__name__)
-
 
 class WriteExifThread(QThread):
     
@@ -72,19 +67,14 @@ class WriteExifThread(QThread):
         success_count = 0
         error_count = 0
         
-        # 根据系统资源动态调整线程数
         cpu_count = os.cpu_count() or 1
-        # 对于I/O密集型任务，可以使用更多线程
-        # 但避免过多线程导致系统资源耗尽
-        max_workers = min(max(2, cpu_count), 8)  # 最少2个线程，最多8个线程
+        max_workers = min(max(2, cpu_count), 8)
         
-        # 预先过滤文件，避免在executor内部进行过滤
         valid_paths = []
         for path in image_paths:
             if self._stop_requested:
                 break
                 
-            # 检查文件大小
             try:
                 file_size = os.path.getsize(path)
                 if file_size > 500 * 1024 * 1024:
@@ -104,8 +94,7 @@ class WriteExifThread(QThread):
         
         self.log_signal.emit("INFO", f"使用 {max_workers} 个线程处理 {total_valid} 个有效文件")
         
-        # 使用线程池处理有效文件 - 分批提交任务以减少内存占用
-        batch_size = max(100, max_workers * 10)  # 每批处理的文件数
+        batch_size = max(100, max_workers * 10)
         processed_count = 0
         
         for i in range(0, total_valid, batch_size):
@@ -114,10 +103,8 @@ class WriteExifThread(QThread):
                 
             batch = valid_paths[i:i+batch_size]
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                # 提交当前批次的任务
                 future_to_path = {executor.submit(self.process_image, path): path for path in batch}
                 
-                # 处理结果
                 for future in as_completed(future_to_path):
                     if self._stop_requested:
                         self._cancel_all_tasks(future_to_path)
@@ -134,7 +121,6 @@ class WriteExifThread(QThread):
                         self.log_signal.emit("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
                         error_count += 1
                     
-                    # 更新进度
                     processed_count += 1
                     progress = int((processed_count / total_valid) * 100)
                     self.progress_updated.emit(progress)
@@ -155,9 +141,7 @@ class WriteExifThread(QThread):
 
     def _collect_image_paths(self):
         """收集所有图像路径"""
-        # 简化图像扩展名列表，只保留常见格式
         image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv')
-        # 相机RAW格式单独列出
         raw_extensions = ('.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf')
         all_extensions = image_extensions + raw_extensions
         
@@ -166,14 +150,12 @@ class WriteExifThread(QThread):
         for folder_path, include_sub in self.folders_dict.items():
             if os.path.isdir(folder_path):
                 if include_sub:
-                    # 递归遍历子文件夹
                     for root, _, files in os.walk(folder_path):
                         if self._stop_requested:
                             break
                         image_paths.extend([os.path.join(root, f) for f in files 
                                           if os.path.splitext(f)[1].lower() in all_extensions])
                 else:
-                    # 仅处理当前文件夹
                     try:
                         files = [f for f in os.listdir(folder_path) 
                                 if os.path.isfile(os.path.join(folder_path, f)) 
@@ -258,7 +240,8 @@ class WriteExifThread(QThread):
         if not os.access(image_path, os.R_OK):
             logger.error("文件不可读: %s", image_path)
             self.log_signal.emit("ERROR", "文件不可读: %s", os.path.basename(image_path))
-            return False            
+            return False
+            
         return True
         
     def _get_format_handler(self, file_ext):
@@ -510,7 +493,6 @@ class WriteExifThread(QThread):
         """加载HEIF文件的现有EXIF数据"""
         exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
         
-        # 从heif_file加载EXIF
         try:
             try:
                 if heif_file.exif:
@@ -521,10 +503,8 @@ class WriteExifThread(QThread):
         except (IOError, ValueError) as e:
             logger.debug("加载HEIF EXIF数据失败: %s", str(e))
         
-        # 从PIL加载EXIF
         self._load_pil_exif_data(image, exif_dict)
         
-        # 从image.info加载EXIF
         try:
             if 'exif' in image.info:
                 info_exif = piexif.load(image.info['exif'])
@@ -532,14 +512,11 @@ class WriteExifThread(QThread):
         except (KeyError, ValueError, TypeError) as e:
             logger.debug("从image.info加载EXIF失败: %s", str(e))
         
-        # 尝试再次打开文件加载EXIF（作为备选方案）
         try:
             with Image.open(image_path) as img:
-                # 使用公共API获取EXIF数据
                 try:
                     pil_exif = img.getexif()
                 except AttributeError:
-                    # 兼容旧版本PIL
                     pil_exif = None
                 if pil_exif:
                     self._load_pil_exif_data_to_dict(pil_exif, exif_dict)
@@ -592,7 +569,6 @@ class WriteExifThread(QThread):
         """
         updated_fields = []
         
-        # 更新各类EXIF字段
         self._update_heic_basic_fields(exif_dict, updated_fields)
         self._update_heic_rating(exif_dict, updated_fields)
         self._update_heic_lens_info(exif_dict, updated_fields)
@@ -608,7 +584,6 @@ class WriteExifThread(QThread):
             exif_dict: EXIF数据字典
             updated_fields: 更新字段列表
         """
-        # 基本字段映射
         field_mappings = [
             ('title', "0th", piexif.ImageIFD.ImageDescription, "标题: {}", 'utf-8'),
             ('author', "0th", 315, "作者: {}", 'utf-8'),
@@ -696,20 +671,15 @@ class WriteExifThread(QThread):
             register_heif_opener()
             heif_file = open_heif(image_path)
             
-            # 处理不同版本的pillow-heif API
             if hasattr(heif_file, 'to_pillow'):
                 image = heif_file.to_pillow()
             else:
-                # 兼容旧版本API，使用Image.open替代直接调用to_pil
                 image = Image.open(image_path)
             
-            # 加载现有EXIF数据
             exif_dict = self._load_heic_exif_data(heif_file, image, image_path)
             
-            # 更新EXIF字段
             updated_fields = self._update_heic_exif_fields(exif_dict, image_path)
             
-            # 保存更改
             if updated_fields:
                 self._save_heic_data(image, image_path, exif_dict, updated_fields)
             else:
@@ -807,17 +777,14 @@ class WriteExifThread(QThread):
     
     def _cleanup_temp_resources(self, temp_file_path, temp_dir, original_file_path, current_path):
         """清理临时资源"""
-        # 复制文件回原始路径
         if temp_file_path and os.path.exists(temp_file_path) and original_file_path != current_path:
             try:
                 shutil.copy2(temp_file_path, original_file_path)
             except (IOError, OSError) as e:
                 self.log_signal.emit("ERROR", f"复制文件回原始路径失败: {str(e)}")
         
-        # 删除临时文件
         self._cleanup_temp_file(temp_file_path)
         
-        # 删除临时目录
         if temp_dir and os.path.exists(temp_dir):
             try:
                 shutil.rmtree(temp_dir)
@@ -830,20 +797,16 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", f"文件不存在: {image_path}")
             return False
         
-        # 处理非ASCII路径
         image_path, original_file_path, temp_file_path, temp_dir = self._handle_non_ascii_path(image_path)
         file_path_normalized = image_path.replace('\\', '/')
         
         try:
-            # 准备命令和参数
             cmd_parts, updated_fields, exiftool_path = self._prepare_exiftool_command(original_file_path)
             cmd_parts.append(file_path_normalized)
             
-            # 执行exiftool命令
             result = subprocess.run(cmd_parts, capture_output=True, text=False, shell=False, check=False)
             
             if result.returncode != 0:
-                # 安全地解码错误信息
                 error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
                 self.log_signal.emit("ERROR", f"写入EXIF数据失败: {error_msg}")
                 return False
@@ -851,7 +814,6 @@ class WriteExifThread(QThread):
             if updated_fields:
                 self.log_signal.emit("INFO", f"写入成功 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
             
-            # 验证写入
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
             subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False)
             
@@ -861,7 +823,6 @@ class WriteExifThread(QThread):
             self.log_signal.emit("ERROR", f"执行exiftool命令时出错: {str(e)}")
             return False
         finally:
-            # 清理临时资源
             self._cleanup_temp_resources(temp_file_path, temp_dir, original_file_path, image_path)
 
     def _process_raw_format(self, image_path):
@@ -900,13 +861,10 @@ class WriteExifThread(QThread):
         exif_data = {}
         updated_fields = []
         
-        # 处理拍摄时间 - 注意使用正确的属性名
         self._prepare_raw_shoot_time(exif_data, updated_fields, image_path)
         
-        # 处理其他基本字段
         self._prepare_raw_basic_fields(exif_data, updated_fields)
         
-        # 处理GPS坐标
         self._prepare_raw_gps_data(exif_data, updated_fields)
         
         return exif_data, updated_fields
@@ -919,7 +877,6 @@ class WriteExifThread(QThread):
             updated_fields: 更新字段列表
             image_path: 文件路径
         """
-        # 注意使用实例变量名时保持一致（与__init__中定义的一致）
         if self.shoot_time != 0:
             if self.shoot_time == 1:
                 date_from_filename = self.get_date_from_filename(image_path)
@@ -929,7 +886,6 @@ class WriteExifThread(QThread):
                     updated_fields.append(f"拍摄时间: {time_str}")
             else:
                 try:
-                    # 验证时间格式
                     datetime.strptime(self.shoot_time, "%Y:%m:%d %H:%M:%S")
                     self._add_time_fields_to_data(exif_data, self.shoot_time)
                     updated_fields.append(f"拍摄时间: {self.shoot_time}")
@@ -954,7 +910,6 @@ class WriteExifThread(QThread):
             exif_data: EXIF数据字典
             updated_fields: 更新字段列表
         """
-        # 字段映射定义
         field_mappings = [
             ('title', 'ImageDescription', '标题: {}'),
             ('author', 'Artist', '作者: {}'),
@@ -965,7 +920,6 @@ class WriteExifThread(QThread):
             ('lens_model', 'LensModel', '镜头型号: {}')
         ]
         
-        # 批量处理基本字段
         for attr_name, exif_key, format_str in field_mappings:
             attr_value = getattr(self, attr_name, None)
             if attr_value:
@@ -993,7 +947,6 @@ class WriteExifThread(QThread):
             image_path: 目标文件路径
             updated_fields: 更新字段列表
         """
-        # 构建命令参数
         commands = self._build_exiftool_commands(exif_data)
         cmd = [exiftool_path, "-overwrite_original"] + commands + [image_path]
         
@@ -1006,7 +959,6 @@ class WriteExifThread(QThread):
                 else:
                     self.log_signal.emit("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
             else:
-                # 使用replace模式处理无法解码的字符
                 error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
                 self.log_signal.emit("ERROR", f"写入 {os.path.basename(image_path)} 失败: {error_msg}")
                 
@@ -1131,4 +1083,4 @@ class WriteExifThread(QThread):
         except ValueError as e:
             logger.debug("解析日期字符串失败: %s", str(e))
         
-        return None
+        return None

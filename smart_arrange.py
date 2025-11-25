@@ -1,11 +1,9 @@
 import logging
 import os
 from datetime import datetime
-
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtWidgets import QMessageBox, QInputDialog, QFileDialog
-
 from smart_arrange_thread import SmartArrangeThread
 
 logger = logging.getLogger('SmartArrangeManager')
@@ -193,14 +191,12 @@ class SmartArrangeManager(QObject):
                 return
             
             if not self.destination_root:
-                # 先尝试从folder_page获取目标文件夹
                 if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
                     try:
                         target_folder = self.folder_page.get_target_folder()
                         if target_folder and self.validate_destination(target_folder):
                             self.destination_root = target_folder
                         else:
-                            # 如果没有获取到有效的目标文件夹，显示提示信息
                             QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                             return
                     except Exception as e:
@@ -208,7 +204,6 @@ class SmartArrangeManager(QObject):
                         QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                         return
                 else:
-                    # 如果没有folder_page或无法访问get_target_folder方法，显示提示信息
                     QtWidgets.QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                     return
             
@@ -220,7 +215,6 @@ class SmartArrangeManager(QObject):
                     self.log("WARNING", f"{str(e)}")
                     self.SmartArrange_thread = None
             
-            from PyQt6.QtWidgets import QMessageBox
             reply = QMessageBox.question(
                 self.parent,
                 "确认操作？",

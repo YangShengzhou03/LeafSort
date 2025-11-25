@@ -5,11 +5,9 @@ import time
 import threading
 from pathlib import Path
 import logging
-
 import requests
 from filetype import guess
 from playwright.sync_api import sync_playwright
-
 from config_manager import config_manager
 
 logging.basicConfig(level=logging.INFO)

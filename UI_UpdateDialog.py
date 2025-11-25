@@ -1,12 +1,10 @@
+from PyQt6 import QtCore, QtGui, QtWidgets
 """
 更新对话框UI模块
 
 该模块定义了Ui_UpdateDialog类，用于管理应用程序的更新对话框界面。
 包含标题、内容显示和操作按钮等UI组件。
 """
-
-from PyQt6 import QtCore, QtGui, QtWidgets
-
 
 class Ui_UpdateDialog(object):
     """更新对话框UI类"""
@@ -20,13 +18,11 @@ class Ui_UpdateDialog(object):
         UpdateDialog.setObjectName("UpdateDialog")
         UpdateDialog.resize(512, 320)
         
-        # 主布局
         self.layoutMain = QtWidgets.QVBoxLayout(UpdateDialog)
         self.layoutMain.setContentsMargins(0, 0, 0, 0)
         self.layoutMain.setSpacing(0)
         self.layoutMain.setObjectName("layoutMain")
         
-        # 对话框框架
         self.frameDialog = QtWidgets.QFrame(parent=UpdateDialog)
         self.frameDialog.setMinimumSize(QtCore.QSize(512, 320))
         self.frameDialog.setStyleSheet(self._get_frame_style())
@@ -34,22 +30,18 @@ class Ui_UpdateDialog(object):
         self.frameDialog.setFrameShadow(QtWidgets.QFrame.Shadow.Raised)
         self.frameDialog.setObjectName("frameDialog")
         
-        # 对话框布局
         self.layoutDialog = QtWidgets.QHBoxLayout(self.frameDialog)
         self.layoutDialog.setContentsMargins(0, 0, 0, 0)
         self.layoutDialog.setSpacing(12)
         self.layoutDialog.setObjectName("layoutDialog")
         
-        # 内容布局
         self.layoutContent = QtWidgets.QVBoxLayout()
         self.layoutContent.setContentsMargins(9, 9, 9, 9)
         self.layoutContent.setSpacing(0)
         self.layoutContent.setObjectName("layoutContent")
         
-        # 头部组件
         self._setup_header_widget()
         
-        # 添加到布局
         self.layoutContent.addWidget(self.widgetHeader)
         self.layoutContent.setStretch(0, 9)
         self.layoutDialog.addLayout(self.layoutContent)
@@ -74,27 +66,22 @@ class Ui_UpdateDialog(object):
         self.widgetHeader.setStyleSheet(self._get_header_style())
         self.widgetHeader.setObjectName("widgetHeader")
         
-        # 头部布局
         self.layoutHeader = QtWidgets.QHBoxLayout(self.widgetHeader)
         self.layoutHeader.setContentsMargins(18, 18, 18, 18)
         self.layoutHeader.setSpacing(18)
         self.layoutHeader.setObjectName("layoutHeader")
         
-        # 标题内容布局
         self.layoutTitleContent = QtWidgets.QHBoxLayout()
         self.layoutTitleContent.setObjectName("layoutTitleContent")
         
-        # 对话框元素布局
         self.layoutDialogElements = QtWidgets.QVBoxLayout()
         self.layoutDialogElements.setSpacing(0)
         self.layoutDialogElements.setObjectName("layoutDialogElements")
         
-        # 添加标题和内容标签
         self._add_title_label()
         self._add_content_label()
         self._add_button_layout()
         
-        # 设置布局拉伸比例
         self.layoutDialogElements.setStretch(0, 1)
         self.layoutDialogElements.setStretch(1, 3)
         self.layoutDialogElements.setStretch(2, 1)
@@ -157,14 +144,11 @@ class Ui_UpdateDialog(object):
         self.layoutButtons.setSpacing(12)
         self.layoutButtons.setObjectName("layoutButtons")
         
-        # 添加弹性空间
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.layoutButtons.addItem(spacerItem)
         
-        # 添加取消按钮
         self._add_cancel_button()
         
-        # 添加下载按钮
         self._add_download_button()
         
         self.layoutDialogElements.addLayout(self.layoutButtons)

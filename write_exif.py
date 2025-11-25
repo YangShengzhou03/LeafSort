@@ -1,15 +1,12 @@
 import json
 import re
 from datetime import datetime
-
 from PyQt6.QtCore import pyqtSignal, QObject
 from PyQt6.QtWidgets import QMessageBox
 from PyQt6.QtGui import QPixmap
-
 from common import get_resource_path
 from config_manager import config_manager
 from write_exif_thread import WriteExifThread
-
 
 class WriteExifManager(QObject):
     log_signal = pyqtSignal(str, str)

@@ -8,7 +8,6 @@ from bs4 import BeautifulSoup
 from UI_UpdateDialog import Ui_UpdateDialog
 from common import get_resource_path
 
-
 class UpdateDialog(QDialog):
     def __init__(self, url, title, content, version="", necessary=False):
         super().__init__()
@@ -38,7 +37,6 @@ class UpdateDialog(QDialog):
             event.ignore()
         else:
             super().closeEvent(event)
-
 
 def check_update():
     url = 'https://www.cnblogs.com/YangShengzhou/p/18679899'
