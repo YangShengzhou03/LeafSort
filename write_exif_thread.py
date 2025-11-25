@@ -360,27 +360,53 @@ class WriteExifThread(QThread):
             exif_dict["GPS"] = {}
     
     def _update_basic_fields(self, exif_dict, updated_fields):
-        field_mappings = [
+        # 先处理基本字段
+        basic_mappings = [
             ("title", "0th", piexif.ImageIFD.ImageDescription, "title", "标题: {}", "utf-8"),
             ("author", "0th", 315, "author", "作者: {}", "utf-8"),
             ("subject", "0th", piexif.ImageIFD.XPSubject, "subject", "主题: {}", "utf-16le"),
             ("rating", "0th", piexif.ImageIFD.Rating, "rating", "评分: {}星", None, int),
             ("copyright", "0th", piexif.ImageIFD.Copyright, "copyright", "版权: {}", "utf-8"),
             ("camera_brand", "0th", piexif.ImageIFD.Make, "camera_brand", "相机品牌: {}", "utf-8"),
-            ("camera_model", "0th", piexif.ImageIFD.Model, "camera_model", "相机型号: {}", "utf-8"),
-            ("lens_brand", "Exif", piexif.ExifIFD.LensMake, "lens_brand", "镜头品牌: {}", "utf-8"),
-            ("lens_model", "Exif", piexif.ExifIFD.LensModel, "lens_model", "镜头型号: {}", "utf-8")
+            ("camera_model", "0th", piexif.ImageIFD.Model, "camera_model", "相机型号: {}", "utf-8")
         ]
         
-        for _, section, tag, config_key, format_str, encoding, *transform in field_mappings:
+        for _, section, tag, config_key, format_str, encoding, *transform in basic_mappings:
             value = self.exif_config.get(config_key)
             if value:
-                processed_value = transform[0](value) if transform else value
-                if encoding and isinstance(processed_value, str):
-                    processed_value = processed_value.encode(encoding)
-                
-                exif_dict[section][tag] = processed_value
-                updated_fields.append(format_str.format(value))
+                try:
+                    processed_value = transform[0](value) if transform else value
+                    if encoding and isinstance(processed_value, str):
+                        processed_value = processed_value.encode(encoding)
+                    
+                    exif_dict[section][tag] = processed_value
+                    updated_fields.append(format_str.format(value))
+                except Exception as e:
+                    logger.error(f"写入基本字段 {config_key} 失败: {str(e)}")
+        
+        # 单独处理镜头信息，确保Exif部分存在并添加更好的错误处理
+        if "Exif" not in exif_dict:
+            exif_dict["Exif"] = {}
+        
+        # 处理镜头品牌
+        lens_brand = self.exif_config.get('lens_brand')
+        if lens_brand:
+            try:
+                exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
+                updated_fields.append(f"镜头品牌: {lens_brand}")
+                logger.debug(f"成功写入镜头品牌: {lens_brand}")
+            except Exception as e:
+                logger.error(f"写入镜头品牌失败: {str(e)}")
+        
+        # 处理镜头型号
+        lens_model = self.exif_config.get('lens_model')
+        if lens_model:
+            try:
+                exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
+                updated_fields.append(f"镜头型号: {lens_model}")
+                logger.debug(f"成功写入镜头型号: {lens_model}")
+            except Exception as e:
+                logger.error(f"写入镜头型号失败: {str(e)}")
     
     def _update_special_fields(self, exif_dict, image_path, updated_fields):
         shoot_time = self.exif_config.get('shoot_time', 0)
