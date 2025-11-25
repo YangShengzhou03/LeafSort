@@ -36,7 +36,7 @@ class WriteExifManager(QObject):
             icon = QIcon()
             icon.addPixmap(QPixmap(get_resource_path('resources/img/page_4/星级_暗.svg')), QIcon.Mode.Normal, QIcon.State.Off)
             btn.setIcon(icon)
-            btn.setIconSize(QSize(32, 32))
+            btn.setIconSize(QSize(20, 20))
             btn.setStyleSheet("border: none; padding: 0")
             btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
             btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
@@ -180,7 +180,7 @@ class WriteExifManager(QObject):
             icon_path = '星级_亮.svg' if i <= count else '星级_暗.svg'
             icon.addPixmap(QPixmap(get_resource_path(f'resources/img/page_4/{icon_path}')), QIcon.Mode.Normal, QIcon.State.Off)
             btn.setIcon(icon)
-            btn.setIconSize(QSize(32, 32))
+            btn.setIconSize(QSize(20, 20))
 
     @pyqtSlot(int)
     def set_selected_star(self, star):
