@@ -1,294 +1,436 @@
 import json
-import re
+import os
+import requests
 from datetime import datetime
-from PyQt6.QtCore import pyqtSignal, QObject
-from PyQt6.QtWidgets import QMessageBox
-from PyQt6.QtGui import QPixmap
+from PyQt6.QtCore import pyqtSlot, QDateTime
+from PyQt6.QtWidgets import QWidget, QMessageBox
+from write_exif_thread import WriteExifThread
 from common import get_resource_path
 from config_manager import config_manager
-from write_exif_thread import WriteExifThread
 
-class WriteExifManager(QObject):
-    log_signal = pyqtSignal(str, str)
-    
-    def __init__(self, parent=None):
+
+class WriteExif(QWidget):    
+    def __init__(self, parent=None, folder_page=None):
         super().__init__(parent)
         self.parent = parent
-        self.folder_page = None
-        self.worker = None
-        self.is_running = False
+        self.folder_page = folder_page
         self.selected_star = 0
+        self.worker = None
+        self.star_buttons = []
+        self.is_running = False
+        self.camera_lens_mapping = {}
         self.error_messages = []
-        self.log_signal.connect(self.handle_log_signal)
         self.init_ui()
-        self._setup_connections()
-        self._safe_log("INFO", "欢迎使用EXIF信息写入功能，您可以批量修改照片的元数据信息")
+        self.setup_connections()
 
     def init_ui(self):
-        self._init_star_buttons()
-        self.init_camera_brand_model()
-        self.load_exif_settings()
-
-    def _safe_log(self, level, message):
-        try:
-            self.log(level, message)
-        except Exception as e:
-            pass
-
-    def _get_parent_component(self, name):
-        try:
-            return getattr(self.parent, name, None)
-        except Exception:
-            return None
-
-    def _init_star_buttons(self):
-        self.star_buttons = []
         for i in range(1, 6):
-            button = self._get_parent_component(f'star{i}Button')
-            if button:
-                button.clicked.connect(lambda checked, star=i: self.set_selected_star(star))
-                self.star_buttons.append(button)
-        self.highlight_stars(0)
-
-    def highlight_stars(self, count):
-        star_on = get_resource_path("assets/star_on.png")
-        star_off = get_resource_path("assets/star_off.png")
+            btn = getattr(self.parent, f'btnStar{i}')
+            btn.setStyleSheet(
+                "QPushButton { "
+                f"image: url({get_resource_path('resources/img/page_4/星级_暗.svg')});\n"
+                "border: none; padding: 0; }" "\n"
+                "QPushButton:hover { background-color: transparent; }"
+            )
+            btn.enterEvent = lambda e, idx=i: self.highlight_stars(idx)
+            btn.leaveEvent = lambda e: self.highlight_stars(self.selected_star)
+            btn.clicked.connect(lambda _, idx=i: self.set_selected_star(idx))
+            self.star_buttons.append(btn)
         
-        for i, button in enumerate(self.star_buttons, 1):
-            if i <= count:
-                button.setIcon(QPixmap(star_on))
-            else:
-                button.setIcon(QPixmap(star_off))
-
-    def set_selected_star(self, star):
-        self.selected_star = star
-        self.highlight_stars(star)
-        self._safe_log("INFO", f"已选择 {star} 星评分")
-
+        self.init_camera_brand_model()
+        
+        self.load_camera_lens_mapping()
+        
+        self.update_button_state()
+        self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
+        self.parent.dateTimeEdit_shootTime.hide()
+        self.parent.lineEdit_EXIF_longitude.hide()
+        self.parent.lineEdit_EXIF_latitude.hide()
+        self.load_exif_settings()
+        self.save_exif_settings()
+        self.log("INFO", "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
+        
     def load_camera_lens_mapping(self):
-        mapping_file = get_resource_path("assets/camera_lens_mapping.json")
         try:
-            with open(mapping_file, 'r', encoding='utf-8') as f:
-                return json.load(f)
+            data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    'resources', 'json', 'camera_lens_mapping.json')
+            if os.path.exists(data_path):
+                with open(data_path, 'r', encoding='utf-8') as f:
+                    self.camera_lens_mapping = json.load(f)
+            else:
+                self.log("WARNING", "相机镜头映射文件不存在，将使用默认镜头信息")
         except Exception as e:
-            self._safe_log("ERROR", f"加载相机镜头映射文件失败: {e}")
-            return {}
-
-    def init_camera_brand_model(self):
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
-        
-        if not camera_brand_combo or not camera_model_combo:
-            return
-            
-        camera_brand_combo.clear()
-        camera_model_combo.clear()
-        
-        camera_data = self.load_camera_lens_mapping()
-        
-        camera_brand_combo.addItem("选择品牌")
-        camera_model_combo.addItem("选择型号")
-        
-        for brand in sorted(camera_data.keys()):
-            camera_brand_combo.addItem(brand)
-
-    def _on_brand_changed(self, index):
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
-        
-        if not camera_brand_combo or not camera_model_combo:
-            return
-            
-        camera_model_combo.clear()
-        camera_model_combo.addItem("选择型号")
-        
-        if index <= 0:
-            return
-            
-        selected_brand = camera_brand_combo.currentText()
-        camera_data = self.load_camera_lens_mapping()
-        
-        if selected_brand in camera_data:
-            for model in sorted(camera_data[selected_brand].keys()):
-                camera_model_combo.addItem(model)
-
-    def _on_model_changed(self, index):
-        if index <= 0:
-            return
-            
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
-        
-        if not camera_brand_combo or not camera_model_combo:
-            return
-            
-        selected_brand = camera_brand_combo.currentText()
-        selected_model = camera_model_combo.currentText()
-        
-        self._safe_log("INFO", f"已选择相机: {selected_brand} {selected_model}")
+            self.log("WARNING", f"加载相机镜头映射数据失败: {str(e)}")
+            self.camera_lens_mapping = {}
 
     def get_lens_info_for_camera(self, brand, model):
-        if not brand or not model:
-            return ""
-            
-        camera_data = self.load_camera_lens_mapping()
-        return camera_data.get(brand, {}).get(model, "")
-
-    def parse_dms_coordinates(self, latitude_str, longitude_str):
-        def parse_dms(dms_str):
-            try:
-                parts = re.split(r'[;\s,]+', dms_str.strip())
-                if len(parts) == 3:
-                    degrees = float(parts[0])
-                    minutes = float(parts[1])
-                    seconds = float(parts[2])
-                    return degrees + minutes/60 + seconds/3600
-            except (ValueError, IndexError):
-                pass
-            return None
-        
-        lat_decimal = parse_dms(latitude_str)
-        lon_decimal = parse_dms(longitude_str)
-        
-        if lat_decimal is not None and lon_decimal is not None:
-            return lat_decimal, lon_decimal
+        if brand in self.camera_lens_mapping:
+            brand_data = self.camera_lens_mapping[brand]
+            if model in brand_data:
+                return brand_data[model]
         return None
 
-    def _setup_connections(self):
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
+    def get_default_model_for_brand(self, brand):
+        if brand in self.camera_data:
+            models = self.camera_data[brand]
+            if models:
+                return models[0]
+        return None
+
+    def _on_model_changed(self, index):
+        if index > 0:
+            brand = self.parent.comboBox_brand.currentText()
+            model = self.parent.comboBox_model.currentText()
+            self.get_lens_info_for_camera(brand, model)
         
-        if camera_brand_combo:
-            camera_brand_combo.currentIndexChanged.connect(self._on_brand_changed)
-        if camera_model_combo:
-            camera_model_combo.currentIndexChanged.connect(self._on_model_changed)
+        self.update_button_state()
+        self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
+        self.parent.dateTimeEdit_shootTime.hide()
+
+
+    def init_camera_brand_model(self):
+        camera_data = self._load_camera_data()
+
+        if not camera_data:
+            camera_data = {
+                "Apple": ["iPhone 15 Pro Max", "iPhone 15 Pro", "iPhone 15", "iPhone 14 Pro Max", "iPhone 14 Pro", "iPhone 14", "iPhone 13 Pro Max", "iPhone 13 Pro"],
+                "Samsung": ["Galaxy S24 Ultra", "Galaxy S24+", "Galaxy S24", "Galaxy S23 Ultra", "Galaxy S23+", "Galaxy S23", "Galaxy Z Fold5", "Galaxy Z Flip5"],
+                "Google": ["Pixel 8 Pro", "Pixel 8", "Pixel 7 Pro", "Pixel 7", "Pixel 6 Pro", "Pixel 6", "Pixel 5"],
+                "OnePlus": ["12 Pro", "12", "11 Pro", "11", "10 Pro", "10", "9 Pro", "9"],
+                "Xiaomi": ["14 Ultra", "14 Pro", "14", "13 Ultra", "13 Pro", "13", "12S Ultra", "12S Pro"],
+                "Huawei": ["P60 Pro", "P60", "Mate 60 Pro", "Mate 60", "P50 Pro", "P50", "Mate 50 Pro", "Mate 50"],
+                "OPPO": ["Find X6 Pro", "Find X6", "Find X5 Pro", "Find X5", "Reno10 Pro+", "Reno10 Pro", "Reno10", "Reno9 Pro+"],
+                "Vivo": ["X100 Pro", "X100", "X90 Pro+", "X90 Pro", "X90", "X80 Pro", "X80", "S18 Pro"]
+            }
+        for brand in sorted(camera_data.keys()):
+            self.parent.comboBox_brand.addItem(brand)
+        self.camera_data = camera_data
+        self.parent.comboBox_brand.currentIndexChanged.connect(self._on_brand_changed)
+        self.parent.comboBox_model.currentIndexChanged.connect(self._on_model_changed)
+        
+    def _load_camera_data(self):
+        try:
+            data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                    'resources', 'json', 'camera_brand_model.json')
+            if os.path.exists(data_path):
+                with open(data_path, 'r', encoding='utf-8') as f:
+                    return json.load(f)
+        except Exception as e:
+            self.log("WARNING", f"加载相机品牌型号数据失败: {str(e)}")
+        return None
+        
+    def _on_brand_changed(self, index):
+        self.parent.comboBox_model.clear()
+        if index > 0:
+            brand = self.parent.comboBox_brand.currentText()
+            if brand in self.camera_data:
+                for model in sorted(self.camera_data[brand]):
+                    self.parent.comboBox_model.addItem(model)
+        
+
+
+    def setup_connections(self):
+        self.parent.btnStartExif.clicked.connect(self.toggle_exif_writing)
+        self.parent.pushButton_Position.clicked.connect(self.update_position_by_ip)
+        self.parent.comboBox_shootTime.currentIndexChanged.connect(self.on_combobox_time_changed)
+        self.parent.comboBox_location.currentIndexChanged.connect(self.on_combobox_location_changed)
+        self.parent.lineEdit_EXIF_Title.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_Author.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_Theme.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_Copyright.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_Position.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_latitude.textChanged.connect(self.save_exif_settings)
+        self.parent.lineEdit_EXIF_longitude.textChanged.connect(self.save_exif_settings)
+        self.parent.comboBox_brand.currentIndexChanged.connect(self.save_exif_settings)
+        self.parent.comboBox_model.currentIndexChanged.connect(self.save_exif_settings)
+        self.parent.comboBox_shootTime.currentIndexChanged.connect(self.save_exif_settings)
+        self.parent.comboBox_location.currentIndexChanged.connect(self.save_exif_settings)
+        for i in range(1, 6):
+            getattr(self.parent, f'btnStar{i}').clicked.connect(self.save_exif_settings)
+
+    def on_combobox_location_changed(self, index):
+        if index == 1:
+            self.parent.lineEdit_EXIF_longitude.show()
+            self.parent.lineEdit_EXIF_latitude.show()
+            self.parent.horizontalFrame.hide()
+        else:
+            self.parent.lineEdit_EXIF_longitude.hide()
+            self.parent.lineEdit_EXIF_latitude.hide()
+            self.parent.horizontalFrame.show()
 
     def on_combobox_time_changed(self, index):
-        date_time_edit = self._get_parent_component('dateTimeEdit_shootTime')
-        if date_time_edit:
-            date_time_edit.setEnabled(index == 0)
+        if index == 2:
+            self.parent.dateTimeEdit_shootTime.show()
+        else:
+            self.parent.dateTimeEdit_shootTime.hide()
 
     def update_button_state(self):
-        start_button = self._get_parent_component('btnStartWriteEXIF')
-        stop_button = self._get_parent_component('btnStopWriteEXIF')
-        
-        if start_button and stop_button:
-            start_button.setEnabled(not self.is_running)
-            stop_button.setEnabled(self.is_running)
+        if self.is_running:
+            self.parent.btnStartExif.setText("停止")
+        else:
+            self.parent.btnStartExif.setText("开始")
+
+    def toggle_exif_writing(self):
+        if self.is_running:
+            self.stop_exif_writing()
+            self.is_running = False
+        else:
+            success = self.start_exif_writing()
+            if success:
+                self.is_running = True
+        self.update_button_state()
 
     def connect_worker_signals(self):
         if self.worker:
-            self.worker.progress_signal.connect(self.update_progress)
-            self.worker.log_signal.connect(self.handle_log_signal)
-            self.worker.finished.connect(self.on_finished)
+            self.worker.progress_updated.connect(self.update_progress)
+            self.worker.log.connect(self.log)
+            self.worker.finished_conversion.connect(self.on_finished)
+
+    @pyqtSlot(int)
+    def highlight_stars(self, count):
+        for i, btn in enumerate(self.star_buttons, 1):
+            icon = "星级_亮.svg" if i <= count else "星级_暗.svg"
+            btn.setStyleSheet(f"QPushButton {{ image: url({get_resource_path(f'resources/img/page_4/{icon}')}); border: none; padding: 0; }}")
+
+    @pyqtSlot(int)
+    def set_selected_star(self, star):
+        self.selected_star = star
+        self.highlight_stars(star)
+
+    def get_location(self, address):
+        try:
+            url = "https://restapi.amap.com/v3/geocode/geo"
+            amap_key = '0db079da53e08cbb62b52a42f657b994'
+            
+            params = {
+                'address': address, 
+                'key': amap_key, 
+                'output': 'JSON',
+                'city': '全国'
+            }
+            
+            self.log("INFO", f"正在请求高德地图API，地址: {address}")
+            response = requests.get(url, params=params, timeout=5)
+            response.raise_for_status()
+            data = response.json()
+            self.log("INFO", f"高德地图API返回数据: {data}")
+            
+            if data.get('status') == '1' and int(data.get('count', 0)) > 0:
+                location = data['geocodes'][0]['location'].split(',')
+                self.log("INFO", f"成功获取位置坐标: 纬度={location[1]}, 经度={location[0]}")
+                return location
+            else:
+                error_info = data.get('info', '未知错误')
+                error_code = data.get('infocode', '未知错误码')
+                self.log("ERROR", f"高德地图API返回错误: {error_info} (错误码: {error_code})")
+                
+                if len(address) > 10:
+                    simplified_address = address[:10]
+                    self.log("INFO", f"尝试使用简化地址再次请求: {simplified_address}")
+                    params['address'] = simplified_address
+                    response = requests.get(url, params=params, timeout=5)
+                    response.raise_for_status()
+                    data = response.json()
+                    
+                    if data.get('status') == '1' and int(data.get('count', 0)) > 0:
+                        location = data['geocodes'][0]['location'].split(',')
+                        self.log("INFO", f"使用简化地址成功获取位置坐标: 纬度={location[1]}, 经度={location[0]}")
+                        return location
+        except Exception as e:
+            self.log("ERROR", f"获取位置失败: {str(e)}")
+        return None
+
+    def get_location_by_ip(self):
+        try:
+            response = requests.get('https://ipinfo.io', timeout=5)
+            data = response.json()
+            if 'loc' in data:
+                lat, lon = data['loc'].split(',')
+                location = f"{data.get('city', '')}, {data.get('region', '')}, {data.get('country', '')}"
+                self.parent.lineEdit_EXIF_Position.setText(location)
+                return lat, lon
+            else:
+                self.log("ERROR", "无法解析位置信息\n\n"
+                             "IP地址定位服务返回的数据格式异常")
+                return None
+        except Exception as e:
+            self.log("ERROR", f"获取位置信息失败: {str(e)}\n\n"
+                         "请检查网络连接或稍后重试")
+            return None
+
+    def parse_dms_coordinates(self, lat_str, lon_str):
+        try:
+            lat_parts = lat_str.strip().replace(' ', '').split(';')
+            if len(lat_parts) != 3:
+                return None
+                
+            lat_deg = float(lat_parts[0])
+            lat_min = float(lat_parts[1])
+            lat_sec = float(lat_parts[2])
+            
+            lon_parts = lon_str.strip().replace(' ', '').split(';')
+            if len(lon_parts) != 3:
+                return None
+                
+            lon_deg = float(lon_parts[0])
+            lon_min = float(lon_parts[1])
+            lon_sec = float(lon_parts[2])
+            
+            lat_decimal = lat_deg + lat_min / 60 + lat_sec / 3600
+            lon_decimal = lon_deg + lon_min / 60 + lon_sec / 3600
+            
+            if -90 <= lat_decimal <= 90 and -180 <= lon_decimal <= 180:
+                return lat_decimal, lon_decimal
+            else:
+                return None
+                
+        except Exception as e:
+            self.log("ERROR", f"解析度分秒坐标失败: {str(e)}")
+            return None
+
+    def update_position_by_ip(self):
+        location_info = self.get_location_by_ip()
+        if location_info is not None:
+            lat, lon = location_info
+            self.parent.lineEdit_EXIF_Position.setText(f"{lat}, {lon}")
+            self.log("WARNING", f"当前纬度={lat}, 经度={lon}，位置已加载，可直接开始。")
+        else:
+            self.log("ERROR", "获取位置信息失败\n\n"
+                         "可能的原因：\n"
+                         "• 网络连接异常\n"
+                         "• 定位服务暂时不可用\n"
+                         "• 防火墙或代理设置阻止了网络请求")
 
     def start_exif_writing(self):
-        if self.is_running:
-            self._safe_log("WARNING", "EXIF写入操作正在进行中")
-            return False
-            
         if not self.folder_page:
-            self._safe_log("ERROR", "文件夹页面未初始化")
+            self.log("ERROR", "文件夹页面未初始化\n\n"
+                         "请重新启动应用程序或联系技术支持")
             return False
             
-        selected_files = self.folder_page.get_selected_files()
-        if not selected_files:
-            self._safe_log("ERROR", "请先选择要处理的文件")
+        folders = self.folder_page.get_all_folders()
+        if not folders:
+            self.log("WARNING", "请先导入一个有效的文件夹\n\n"
+                           "点击\"导入文件夹\"按钮添加包含图片的文件夹")
             return False
-
-        params = self._collect_exif_params()
-        if not params:
-            return False
-            
-        params['files'] = selected_files
         
-        self.save_exif_settings()
-        self._log_operation_summary(params)
+        camera_brand = self.parent.comboBox_brand.currentText() if self.parent.comboBox_brand.currentIndex() > 0 else None
+        camera_model = self.parent.comboBox_model.currentText() if self.parent.comboBox_model.currentIndex() > 0 else None
         
-        self.error_messages = []
-        self.worker = WriteExifThread(**params)
-        self.connect_worker_signals()
-        self.worker.start()
-        self.parent.progressBar_EXIF.setValue(0)
-        self.is_running = True
-        self.update_button_state()
-        return True
-
-    def _collect_exif_params(self):
-        title_edit = self._get_parent_component('titleLineEdit')
-        author_edit = self._get_parent_component('authorLineEdit')
-        subject_edit = self._get_parent_component('themeLineEdit')
-        copyright_edit = self._get_parent_component('copyrightLineEdit')
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
-        shoot_time_source = self._get_parent_component('shootTimeSource')
-        date_time_edit = self._get_parent_component('dateTimeEdit_shootTime')
+        if camera_brand and not camera_model:
+            camera_model = self.get_default_model_for_brand(camera_brand)
         
         params = {
-            'title': title_edit.text() if title_edit else "",
-            'author': author_edit.text() if author_edit else "",
-            'subject': subject_edit.text() if subject_edit else "",
+            'folders_dict': folders,
+            'title': self.parent.lineEdit_EXIF_Title.text(),
+            'author': self.parent.lineEdit_EXIF_Author.text(),
+            'subject': self.parent.lineEdit_EXIF_Theme.text(),
             'rating': str(self.selected_star),
-            'copyright_text': copyright_edit.text() if copyright_edit else "",
+            'copyright': self.parent.lineEdit_EXIF_Copyright.text(),
             'position': None,
-            'shoot_time': None,
-            'camera_brand': camera_brand_combo.currentText() if camera_brand_combo else "",
-            'camera_model': camera_model_combo.currentText() if camera_model_combo else "",
-            'lens_model': self.get_lens_info_for_camera(
-                camera_brand_combo.currentText() if camera_brand_combo else "",
-                camera_model_combo.currentText() if camera_model_combo else ""
-            )
+            'shootTime': self.parent.dateTimeEdit_shootTime.dateTime().toString(
+                "yyyy:MM:dd HH:mm:ss")
+            if self.parent.comboBox_shootTime.currentIndex() == 2
+            else self.parent.comboBox_shootTime.currentIndex(),
+            'cameraBrand': camera_brand,
+            'cameraModel': camera_model,
+            'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
         
-        if shoot_time_source and shoot_time_source.currentIndex() == 0 and date_time_edit:
-            params['shoot_time'] = date_time_edit.dateTime().toString("yyyy:MM:dd HH:mm:ss")
-        
-        if not self._handle_location_info(params):
-            return None
-            
-        return params
-
-    def _handle_location_info(self, params):
-        longitude_edit = self._get_parent_component('lineEdit_EXIF_longitude')
-        latitude_edit = self._get_parent_component('lineEdit_EXIF_latitude')
-        
-        if not longitude_edit or not latitude_edit:
-            self.log("ERROR", "位置输入组件未找到")
-            return False
-            
-        longitude = longitude_edit.text()
-        latitude = latitude_edit.text()
-        
-        if not longitude or not latitude:
-            self.log("ERROR", "请输入经纬度信息")
-            return False
-            
-        try:
-            lon = float(longitude)
-            lat = float(latitude)
-            if -180 <= lon <= 180 and -90 <= lat <= 90:
-                params['position'] = f"{lat},{lon}"
-                return True
-            else:
-                self.log("ERROR", "经纬度范围无效")
-                return False
-        except ValueError:
-            coords = self.parse_dms_coordinates(latitude, longitude)
-            if coords:
-                lat_decimal, lon_decimal = coords
-                if -180 <= lon_decimal <= 180 and -90 <= lat_decimal <= 90:
-                    params['position'] = f"{lat_decimal},{lon_decimal}"
-                    self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
-                    return True
+        location_type = self.parent.comboBox_location.currentIndex()
+        if location_type == 0:
+            address = self.parent.lineEdit_EXIF_Position.text()
+            if address:
+                import re
+                coord_pattern = r'^\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*$'
+                coord_match = re.match(coord_pattern, address)
+                
+                if coord_match:
+                    lat, lon = coord_match.groups()
+                    try:
+                        lat_float = float(lat)
+                        lon_float = float(lon)
+                        if -90 <= lat_float <= 90 and -180 <= lon_float <= 180:
+                            params['position'] = f"{lat_float},{lon_float}"
+                        else:
+                            self.log("ERROR", "坐标范围无效\n\n"
+                                     "• 经度应在-180到180之间\n"
+                                     "• 纬度应在-90到90之间")
+                            return False
+                    except ValueError:
+                        self.log("ERROR", "坐标格式无效\n\n"
+                                 "请输入有效的数字格式")
+                        return False
                 else:
-                    self.log("ERROR", "经纬度范围无效")
-                    return False
+                    dms_pattern = r'纬度\s*([0-9;.\s]+)\s*经度\s*([0-9;.\s]+)'
+                    dms_match = re.match(dms_pattern, address)
+                    
+                    if not dms_match:
+                        dms_pattern = r'([0-9;.\s]+)\s*,\s*([0-9;.\s]+)'
+                        dms_match = re.match(dms_pattern, address)
+                    
+                    if dms_match:
+                        lat_str, lon_str = dms_match.groups()
+                        coords = self.parse_dms_coordinates(lat_str, lon_str)
+                        if coords:
+                            lat_decimal, lon_decimal = coords
+                            params['position'] = f"{lat_decimal},{lon_decimal}"
+                            self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
+                        else:
+                            self.log("ERROR", "度分秒坐标格式无效\n\n"
+                                     "请确保格式为：纬度30;6;51.50999999999474 经度120;23;53.3499999999766317")
+                            return False
+                    else:
+                        if coords := self.get_location(address):
+                            params['position'] = ','.join(coords)
+                        else:
+                            self.log("ERROR", f"无法找到地址'{address}'对应的地理坐标\n\n"
+                                       "请检查：\n"
+                                       "• 地址拼写是否正确\n"
+                                       "• 是否包含详细的门牌号或地标\n"
+                                       "• 高德地图API密钥是否有效")
+                            return False
+        elif location_type == 1:
+            longitude = self.parent.lineEdit_EXIF_longitude.text()
+            latitude = self.parent.lineEdit_EXIF_latitude.text()
+            if longitude and latitude:
+                try:
+                    lon = float(longitude)
+                    lat = float(latitude)
+                    if -180 <= lon <= 180 and -90 <= lat <= 90:
+                        params['position'] = f"{lat},{lon}"
+                    else:
+                        self.log("ERROR", "经纬度范围无效\n\n"
+                                 "• 经度应在-180到180之间\n"
+                                 "• 纬度应在-90到90之间\n\n"
+                                 "请检查输入的数值是否正确")
+                        return False
+                except ValueError:
+                    coords = self.parse_dms_coordinates(latitude, longitude)
+                    if coords:
+                        lat_decimal, lon_decimal = coords
+                        if -180 <= lon_decimal <= 180 and -90 <= lat_decimal <= 90:
+                            params['position'] = f"{lat_decimal},{lon_decimal}"
+                            self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
+                        else:
+                            self.log("ERROR", "经纬度范围无效\n\n"
+                                     "• 经度应在-180到180之间\n"
+                                     "• 纬度应在-90到90之间\n\n"
+                                     "请检查输入的数值是否正确")
+                            return False
+                    else:
+                        self.log("ERROR", "经纬度格式无效\n\n"
+                                 "请输入有效的数字格式，例如：\n"
+                                 "• 十进制格式: 经度116.397128, 纬度39.916527\n"
+                                 "• 度分秒格式: 经度120;23;53.34, 纬度30;6;51.51")
+                        return False
             else:
-                self.log("ERROR", "经纬度格式无效")
+                self.log("ERROR", "请输入经纬度信息\n\n"
+                             "请在对应的文本框中输入经度和纬度值")
                 return False
-
-    def _log_operation_summary(self, params):
-        operation_summary = "操作类型: EXIF信息写入"
+        
+        self.save_exif_settings()
+        
+        operation_summary = f"操作类型: EXIF信息写入"
         if params.get('title'):
             operation_summary += f", 标题: {params['title']}"
         if params.get('author'):
@@ -299,6 +441,14 @@ class WriteExifManager(QObject):
             operation_summary += f", 评分: {params['rating']}星"
         
         self.log("INFO", f"摘要: {operation_summary}")
+        
+        self.error_messages = []
+        
+        self.worker = WriteExifThread(**params)
+        self.connect_worker_signals()
+        self.worker.start()
+        self.parent.progressBar_EXIF.setValue(0)
+        return True
 
     def stop_exif_writing(self):
         if self.worker:
@@ -306,47 +456,25 @@ class WriteExifManager(QObject):
             self.worker.wait(1000)
             if self.worker.isRunning():
                 self.worker.terminate()
-            self._safe_log("WARNING", "正在停止EXIF写入操作...")
+            self.log("WARNING", "正在停止EXIF写入操作...")
         self.is_running = False
         self.update_button_state()
 
     def update_progress(self, value):
-        progress_bar = self._get_parent_component('progressBar_EXIF')
-        if progress_bar:
-            progress_bar.setValue(value)
-
-    def handle_log_signal(self, level, message):
-        log_component = self._get_parent_component('txtWriteEXIFLog')
-        
-        if log_component:
-            color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD'}
-            color = color_map.get(level, '#006400')
-            
-            timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-            formatted_message = f"[{timestamp}] {message}"
-            
-            try:
-                log_component.append(f'<span style="color:{color}">{formatted_message}</span>')
-            except Exception as e:
-                pass
-        else:
-            print(f"[{level}] {message}")
-            try:
-                self.parent.log(level, message)
-            except Exception as e:
-                pass
+        self.parent.progressBar_EXIF.setValue(value)
 
     def log(self, level, message):
+        c = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'DEBUG': '#008000', 'INFO': '#8677FD'}
+        
         if level == 'ERROR':
             timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             self.error_messages.append(f"[{timestamp}] [{level}] {message}")
         
-        log_message = f"[{level}] {message}"
         try:
-            self.log_signal.emit(level, log_message)
+            self.parent.textEdit_WriteEXIF_Log.append(
+                f'<span style="color:{c.get(level, "#000000")}">[{datetime.now().strftime("%H:%M:%S")}] [{level}] {message}</span>')
         except Exception as e:
-            pass
-            pass
+            print(f"日志更新错误: {e}")
 
     def on_finished(self):
         self.is_running = False
@@ -356,122 +484,85 @@ class WriteExifManager(QObject):
             QMessageBox.information(
                 self.parent, 
                 "操作完成", 
-                f"写入操作完成，但是有 {len(self.error_messages)} 个错误！"
+                f"写入操作完成，但是有 {len(self.error_messages)} 个错误！\n\n"
+                "您可以在原文件夹中查看更新后的文件。"
             )
         else:
             QMessageBox.information(
                 self.parent, 
                 "操作完成", 
-                "EXIF信息写入操作已完成！"
+                "EXIF信息写入操作已完成！\n\n"
+                "所有选定的图片文件已成功更新EXIF信息。\n\n"
+                "您可以在原文件夹中查看更新后的文件。"
             )
 
     def load_exif_settings(self):
         try:
-            components = {
-                'titleLineEdit': "exif_title",
-                'authorLineEdit': "exif_author", 
-                'themeLineEdit': "exif_subject",
-                'copyrightLineEdit': "exif_copyright",
-                'lineEdit_EXIF_latitude': "exif_latitude",
-                'lineEdit_EXIF_longitude': "exif_longitude",
-                'cameraBrand': "exif_camera_brand",
-                'cameraModel': "exif_camera_model",
-                'shootTimeSource': "exif_shoot_time_index"
-            }
+            if title := config_manager.get_setting("exif_title"):
+                self.parent.lineEdit_EXIF_Title.setText(title)
             
-            for comp_name, setting_name in components.items():
-                component = self._get_parent_component(comp_name)
-                if component and (value := config_manager.get_setting(setting_name)):
-                    if comp_name in ['cameraBrand', 'cameraModel']:
-                        index = component.findText(value)
-                        if index >= 0:
-                            component.setCurrentIndex(index)
-                            if comp_name == 'cameraBrand':
-                                self._on_brand_changed(index)
-                    elif comp_name == 'shootTimeSource':
-                        component.setCurrentIndex(int(value))
-                        self.on_combobox_time_changed(int(value))
-                    else:
-                        component.setText(value)
+            if author := config_manager.get_setting("exif_author"):
+                self.parent.lineEdit_EXIF_Author.setText(author)
+                
+            if subject := config_manager.get_setting("exif_subject"):
+                self.parent.lineEdit_EXIF_Theme.setText(subject)
+                
+            if copyright := config_manager.get_setting("exif_copyright"):
+                self.parent.lineEdit_EXIF_Copyright.setText(copyright)
+            
+            if position := config_manager.get_setting("exif_position"):
+                self.parent.lineEdit_EXIF_Position.setText(position)
+                
+            if latitude := config_manager.get_setting("exif_latitude"):
+                self.parent.lineEdit_EXIF_latitude.setText(latitude)
+                
+            if longitude := config_manager.get_setting("exif_longitude"):
+                self.parent.lineEdit_EXIF_longitude.setText(longitude)
+            
+            if location_index := config_manager.get_setting("exif_location_index"):
+                self.parent.comboBox_location.setCurrentIndex(int(location_index))
+                self.on_combobox_location_changed(int(location_index))
+            
+            if camera_brand := config_manager.get_setting("exif_camera_brand"):
+                index = self.parent.comboBox_brand.findText(camera_brand)
+                if index >= 0:
+                    self.parent.comboBox_brand.setCurrentIndex(index)
+                    self._on_brand_changed(index)
+            
+            if camera_model := config_manager.get_setting("exif_camera_model"):
+                index = self.parent.comboBox_model.findText(camera_model)
+                if index >= 0:
+                    self.parent.comboBox_model.setCurrentIndex(index)
+            
+            if shoot_time_index := config_manager.get_setting("exif_shoot_time_index"):
+                self.parent.comboBox_shootTime.setCurrentIndex(int(shoot_time_index))
+                self.on_combobox_time_changed(int(shoot_time_index))
             
             if star_rating := config_manager.get_setting("exif_star_rating"):
                 self.set_selected_star(int(star_rating))
         except Exception as e:
-            self._safe_log("WARNING", f"加载EXIF设置时出错: {e}")
+            self.log("WARNING", f"加载EXIF设置时出错: {str(e)}")
 
     def save_exif_settings(self):
         try:
-            components = {
-                'titleLineEdit': "exif_title",
-                'authorLineEdit': "exif_author",
-                'themeLineEdit': "exif_subject", 
-                'copyrightLineEdit': "exif_copyright",
-                'lineEdit_EXIF_latitude': "exif_latitude",
-                'lineEdit_EXIF_longitude': "exif_longitude",
-                'cameraBrand': "exif_camera_brand",
-                'cameraModel': "exif_camera_model",
-                'shootTimeSource': "exif_shoot_time_index"
-            }
+            config_manager.update_setting("exif_title", self.parent.lineEdit_EXIF_Title.text())
+            config_manager.update_setting("exif_author", self.parent.lineEdit_EXIF_Author.text())
+            config_manager.update_setting("exif_subject", self.parent.lineEdit_EXIF_Theme.text())
+            config_manager.update_setting("exif_copyright", self.parent.lineEdit_EXIF_Copyright.text())
             
-            for comp_name, setting_name in components.items():
-                component = self._get_parent_component(comp_name)
-                if component:
-                    if comp_name in ['cameraBrand', 'cameraModel']:
-                        config_manager.update_setting(setting_name, component.currentText())
-                    elif comp_name == 'shootTimeSource':
-                        config_manager.update_setting(setting_name, component.currentIndex())
-                    else:
-                        config_manager.update_setting(setting_name, component.text())
+            config_manager.update_setting("exif_position", self.parent.lineEdit_EXIF_Position.text())
+            config_manager.update_setting("exif_latitude", self.parent.lineEdit_EXIF_latitude.text())
+            config_manager.update_setting("exif_longitude", self.parent.lineEdit_EXIF_longitude.text())
             
-            date_time_edit = self._get_parent_component('dateTimeEdit_shootTime')
-            if date_time_edit:
-                config_manager.update_setting("exif_shoot_time", 
-                                            date_time_edit.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
+            config_manager.update_setting("exif_location_index", self.parent.comboBox_location.currentIndex())
+            
+            config_manager.update_setting("exif_camera_brand", self.parent.comboBox_brand.currentText())
+            config_manager.update_setting("exif_camera_model", self.parent.comboBox_model.currentText())
+            
+            config_manager.update_setting("exif_shoot_time_index", self.parent.comboBox_shootTime.currentIndex())
+            config_manager.update_setting("exif_shoot_time", 
+                                        self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
             
             config_manager.update_setting("exif_star_rating", self.selected_star)
         except Exception as e:
-            self._safe_log("WARNING", f"保存EXIF设置时出错: {e}")
-    
-    def refresh(self):
-        camera_brand_combo = self._get_parent_component('cameraBrand')
-        camera_model_combo = self._get_parent_component('cameraModel')
-        
-        if camera_brand_combo:
-            camera_brand_combo.setCurrentIndex(0)
-        if camera_model_combo:
-            camera_model_combo.setCurrentIndex(0)
-            
-        try:
-            self._safe_log("INFO", "正在刷新EXIF信息写入页面")
-            self._reset_state()
-            self.folder_page = self.parent.folder_page
-            self._safe_log("INFO", "已重新获取文件夹页面引用")
-            self._update_ui_components()
-            self._safe_log("INFO", "EXIF信息写入页面刷新完成")
-        except Exception as e:
-            self._safe_log("ERROR", f"刷新EXIF信息写入页面时出错: {e}")
-    
-    def _reset_state(self):
-        try:
-            self.selected_star = 0
-            
-            if self.worker:
-                self.worker.stop()
-                self.worker = None
-                
-            progress_bar = self._get_parent_component('progressBar_EXIF')
-            if progress_bar:
-                progress_bar.setValue(0)
-                
-            self.is_running = False
-            self.update_button_state()
-        except Exception as e:
-            self._safe_log("ERROR", f"重置状态时出错: {e}")
-    
-    def _update_ui_components(self):
-        try:
-            self.highlight_stars(0)
-            self.init_camera_brand_model()
-            self.load_exif_settings()
-        except Exception as e:
-            self._safe_log("ERROR", f"更新UI组件时出错: {e}")
+            self.log("WARNING", f"保存EXIF设置时出错: {str(e)}")

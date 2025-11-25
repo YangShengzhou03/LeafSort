@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt, QPoint
 from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
 from smart_arrange import SmartArrangeManager
-from write_exif import WriteExifManager
+from write_exif import WriteExif
 from common import get_resource_path
 import logging
 import os
@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             self.folder_page = FolderPage(self)
             self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
-            self.write_exif_page = WriteExifManager(self)
+            self.write_exif_page = WriteExif(self, self.folder_page)
         except Exception as e:
             logger.error(f"初始化页面组件时出错: {str(e)}")
 
