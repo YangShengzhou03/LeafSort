@@ -13,23 +13,25 @@ from config_manager import config_manager
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+
 class ResourceManager:
     def __init__(self):
         self._base_path = self._get_base_path()
-    
+
     def _get_base_path(self):
         try:
             return Path(sys._MEIPASS)
         except AttributeError:
             return Path(__file__).parent if '__file__' in globals() else Path.cwd()
-    
+
     def get_resource_path(self, relative_path):
         return str((self._base_path / relative_path).resolve()).replace('\\', '/')
+
 
 class MediaTypeDetector:
     def __init__(self):
         self.mime_to_ext = self._build_mime_mapping()
-    
+
     def _build_mime_mapping(self):
         return {
             **{f'image/{fmt}': (ext, 'image') for fmt, ext in {
@@ -59,13 +61,13 @@ class MediaTypeDetector:
             }.items()},
             'application/octet-stream': ('bin', 'other')
         }
-    
+
     def detect_media_type(self, file_path):
         if not os.path.isfile(file_path):
             raise FileNotFoundError(f"文件不存在: {file_path}")
 
         file_ext = os.path.splitext(file_path)[1].lower().lstrip('.')
-        
+
         try:
             kind = guess(file_path)
         except (IOError, PermissionError, OSError) as e:
@@ -86,7 +88,7 @@ class MediaTypeDetector:
             })
 
         return result
-    
+
     def _create_invalid_result(self):
         return {
             'valid': False,
@@ -95,7 +97,7 @@ class MediaTypeDetector:
             'extension': None,
             'extension_match': False
         }
-    
+
     def _create_base_result(self, mime):
         return {
             'valid': mime in self.mime_to_ext,
@@ -105,10 +107,11 @@ class MediaTypeDetector:
             'extension_match': False
         }
 
+
 class GeocodingService:
     def __init__(self):
         self.headers = {
-            'accept': '*/*', 
+            'accept': '*/*',
             'accept-language': 'zh-CN,zh;q=0.9',
             'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
             'user-agent': 'Mozilla/5.0'
@@ -118,28 +121,28 @@ class GeocodingService:
         self._cached_cookies = None
         self._cached_key = None
         self._credentials_last_checked = 0
-    
+
     def get_address_from_coordinates(self, lat, lon):
         loc = f"{lon},{lat}"
         if not config_manager.can_make_api_call():
             return "未知位置"
-        
+
         with self._lock:
             cookies, key = self._load_cached_credentials()
-            
+
             if not (cookies and key):
                 cookies, key = self._fetch_credentials()
                 if cookies and key:
                     self._save_credentials(cookies, key)
-        
+
         address = self._call_geocoding_api(loc, cookies, key)
         return address
-    
+
     def _load_cached_credentials(self):
         current_time = time.time()
         if self._cached_cookies and self._cached_key and (current_time - self._credentials_last_checked < 300):
             return self._cached_cookies, self._cached_key
-            
+
         if os.path.exists("cookies.json"):
             try:
                 with open("cookies.json", "r", encoding="utf-8") as f:
@@ -153,7 +156,7 @@ class GeocodingService:
             except (json.JSONDecodeError, IOError, PermissionError) as e:
                 logger.error(f"读取cookies.json失败: {str(e)}")
         return None, None
-    
+
     def _fetch_credentials(self):
         try:
             with sync_playwright() as p:
@@ -162,13 +165,13 @@ class GeocodingService:
                 try:
                     page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
                     page.wait_for_timeout(3000)
-                    
-                    target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT', 
-                                  'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
-                                  'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
-                    cookies = {c['name']: c['value'] for c in page.context.cookies() 
-                              if c['name'] in target_keys}
-                    
+
+                    target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT',
+                                   'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909',
+                                   'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909', 'tfstk']
+                    cookies = {c['name']: c['value'] for c in page.context.cookies()
+                               if c['name'] in target_keys}
+
                     key = page.get_attribute("#code_origin", "data-jskey")
                     return cookies, key
                 finally:
@@ -177,32 +180,32 @@ class GeocodingService:
         except (ImportError, TimeoutError, ConnectionError) as e:
             logger.error(f"获取地理编码凭证失败: {str(e)}")
             return None, None
-    
+
     def _save_credentials(self, cookies, key):
         self._cached_cookies = cookies
         self._cached_key = key
         self._credentials_last_checked = time.time()
-        
+
         try:
             with open("cookies.json", "w", encoding="utf-8") as f:
                 json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
         except (IOError, PermissionError) as e:
             logger.error(f"保存cookies.json失败: {str(e)}")
-    
+
     def _call_geocoding_api(self, loc, cookies, key):
         if not (cookies and key):
             return "未知位置"
-        
+
         if not config_manager.can_make_api_call():
             return "未知位置"
-        
+
         try:
             url = self.url_template.format(key=key, loc=loc)
             config_manager.increment_api_call()
-            
+
             with requests.get(url, headers=self.headers, cookies=cookies, timeout=10) as resp:
                 resp.raise_for_status()
-                
+
                 if resp.status_code == 200 and "formatted_address" in resp.text:
                     try:
                         json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
@@ -212,41 +215,46 @@ class GeocodingService:
                         logger.error(f"解析地理编码响应失败: {str(parse_error)}")
         except requests.exceptions.RequestException as e:
             logger.error(f"地理编码API调用失败: {str(e)}")
-        
+
         return "未知位置"
+
 
 _resource_manager = ResourceManager()
 _media_detector = MediaTypeDetector()
 _geocoding_service = GeocodingService()
 
+
 def get_resource_path(relative_path):
     return _resource_manager.get_resource_path(relative_path)
+
 
 def detect_media_type(file_path):
     return _media_detector.detect_media_type(file_path)
 
+
 def get_address_from_coordinates(lat, lon):
     return _geocoding_service.get_address_from_coordinates(lat, lon)
+
 
 def get_file_type(file_path):
     file_path_str = str(file_path)
     file_ext = os.path.splitext(file_path_str)[1].lower()
-    
+
     file_type_mapping = {
         '图像': ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
-                '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
-                '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'),
+                 '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
+                 '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'),
         '视频': ('.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.webm'),
         '音乐': ('.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a'),
         '文档': ('.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx',
-                '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'),
+                 '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'),
         '压缩包': ('.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar')
     }
-    
+
     for file_type, extensions in file_type_mapping.items():
         if file_ext in extensions:
             return file_type
-    
+
     if os.path.isfile(file_path_str):
         try:
             result = detect_media_type(file_path_str)
@@ -261,5 +269,5 @@ def get_file_type(file_path):
                     return mime_to_category[media_type]
         except (FileNotFoundError, IOError):
             pass
-    
+
     return '其他'
