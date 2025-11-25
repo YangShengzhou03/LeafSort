@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 import json
 import os
 import subprocess
@@ -132,7 +132,7 @@ class SmartArrangeThread(QtCore.QThread):
                 except Exception as e:
                     self.log("ERROR", f"处理文件夹时出错: {str(e)}")
             
-            self.log("DEBUG", f"待处理总文件数: {self.total_files}")
+            self.log("DEBUG", f"{'='*10} 待处理总文件数: {self.total_files} {'='*10}")
             return self.total_files
         except Exception as e:
             self.log("ERROR", f"总文件计数过程中发生严重错误: {str(e)}")
@@ -446,7 +446,7 @@ class SmartArrangeThread(QtCore.QThread):
             if level not in valid_levels:
                 level = 'INFO'
             
-            current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
             
             with self._lock:
@@ -462,8 +462,8 @@ class SmartArrangeThread(QtCore.QThread):
         exif_data = {}
         file_path_obj = Path(file_path)
         suffix = file_path_obj.suffix.lower()
-        create_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_ctime)
-        modify_time = datetime.datetime.fromtimestamp(file_path_obj.stat().st_mtime)
+        create_time = datetime.fromtimestamp(file_path_obj.stat().st_ctime)
+        modify_time = datetime.fromtimestamp(file_path_obj.stat().st_mtime)
         
         date_taken = None
         
@@ -639,8 +639,8 @@ class SmartArrangeThread(QtCore.QThread):
                     date_taken = self.parse_datetime(date_str)
                 else:
                     try:
-                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
-                        utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                        dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
+                        utc_dt = dt.replace(tzinfo=timezone.utc)
                         date_taken = utc_dt.astimezone().replace(tzinfo=None)
                     except ValueError:
                         date_taken = self.parse_datetime(date_str)
@@ -714,8 +714,8 @@ class SmartArrangeThread(QtCore.QThread):
                     date_taken = self.parse_datetime(date_str)
                 else:
                     try:
-                        dt = datetime.datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
-                        utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                        dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
+                        utc_dt = dt.replace(tzinfo=timezone.utc)
                         date_taken = utc_dt.astimezone().replace(tzinfo=None)
                     except ValueError:
                         date_taken = self.parse_datetime(date_str)
@@ -880,27 +880,27 @@ class SmartArrangeThread(QtCore.QThread):
             if datetime_str and datetime_str != 'None':
                 if '+' in datetime_str or '-' in datetime_str[-5:]:
                     try:
-                        dt = datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S%z')
+                        dt = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S%z')
                         if dt.tzinfo is not None:
                             dt = dt.astimezone()
                             return dt.replace(tzinfo=None)
                     except ValueError:
                         pass
                 
-                return datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
+                return datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
             
             datetime_str = str(tags.get('Image DateTime', ''))
             if datetime_str and datetime_str != 'None':
                 if '+' in datetime_str or '-' in datetime_str[-5:]:
                     try:
-                        dt = datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S%z')
+                        dt = datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S%z')
                         if dt.tzinfo is not None:
                             dt = dt.astimezone()
                             return dt.replace(tzinfo=None)
                     except ValueError:
                         pass
                 
-                return datetime.datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
+                return datetime.strptime(datetime_str, '%Y:%m:%d %H:%M:%S')
                 
         except (ValueError, TypeError):
             pass
@@ -929,7 +929,7 @@ class SmartArrangeThread(QtCore.QThread):
         
         for fmt in formats_with_timezone:
             try:
-                dt = datetime.datetime.strptime(datetime_str, fmt)
+                dt = datetime.strptime(datetime_str, fmt)
                 if dt.tzinfo is not None:
                     dt = dt.astimezone()
                     return dt.replace(tzinfo=None)
@@ -939,9 +939,9 @@ class SmartArrangeThread(QtCore.QThread):
         
         for fmt in formats_without_timezone:
             try:
-                dt = datetime.datetime.strptime(datetime_str, fmt)
+                dt = datetime.strptime(datetime_str, fmt)
                 if fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
-                    utc_dt = dt.replace(tzinfo=datetime.timezone.utc)
+                    utc_dt = dt.replace(tzinfo=timezone.utc)
                     local_dt = utc_dt.astimezone()
                     return local_dt.replace(tzinfo=None)
                 
@@ -1130,7 +1130,7 @@ class SmartArrangeThread(QtCore.QThread):
             file_time = None
             if exif_data.get('DateTime'):
                 try:
-                    file_time = datetime.datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S')
+                    file_time = datetime.strptime(exif_data['DateTime'], '%Y-%m-%d %H:%M:%S')
                 except ValueError:
                     self.log("WARNING", f"无法解析文件时间: {file_path}")
 
