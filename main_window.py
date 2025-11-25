@@ -156,9 +156,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             event.accept()
 
     def _open_github(self):
-        logger.info("用户点击了GitHub链接")
         try:
-            url = QtCore.QUrl("https://github.com/yourusername/LeafView")
+            url = QtCore.QUrl("https://gitee.com/Yangshengzhou/leaf-view")
             if not QtGui.QDesktopServices.openUrl(url):
                 QtWidgets.QMessageBox.information(self, "信息",
                                                   "无法打开GitHub页面，请手动访问")
