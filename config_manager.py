@@ -93,14 +93,14 @@ class ConfigManager:
     def add_folder(self, folder_path: str) -> bool:
         if folder_path not in self.config["folders"]:
             self.config["folders"].append(folder_path)
-            return self._save_config_no_lock()
+            return self._save_file_no_lock()
         return True
     
     @_thread_safe_method
     def remove_folder(self, folder_path: str) -> bool:
         if folder_path in self.config["folders"]:
             self.config["folders"].remove(folder_path)
-            return self._save_config_no_lock()
+            return self._save_file_no_lock()
         return True
     
     @_thread_safe_method
@@ -111,8 +111,7 @@ class ConfigManager:
     def has_folder(self, folder_path: str) -> bool:
         return folder_path in self.config["folders"]
     
-    def _save_config_no_lock(self) -> bool:
-        return self._save_file_no_lock()
+
     
     def _load_location_cache(self) -> None:
         if not os.path.exists(self.cache_file):
@@ -226,7 +225,7 @@ class ConfigManager:
     @_thread_safe_method
     def clear_folders(self) -> bool:
         self.config["folders"] = []
-        return self._save_config_no_lock()
+        return self._save_file_no_lock()
     
     @_thread_safe_method
     def update_setting(self, key: str, value: Any) -> bool:
@@ -234,7 +233,7 @@ class ConfigManager:
             return False
         
         self.config["settings"][key] = value
-        return self._save_config_no_lock()
+        return self._save_file_no_lock()
     
     @_thread_safe_method
     def update_settings(self, settings_dict: Dict[str, Any]) -> bool:
@@ -245,7 +244,7 @@ class ConfigManager:
                     self.config["settings"][key] = value
                     changes_made = True
         
-        return self._save_config_no_lock() if changes_made else True
+        return self._save_file_no_lock() if changes_made else True
     
     @_thread_safe_method
     def get_setting(self, key: str, default: Any = None) -> Any:
@@ -272,7 +271,7 @@ class ConfigManager:
             self.config["settings"] = default_config["settings"].copy()
             changes_made = True
         
-        return self._save_config_no_lock() if changes_made else True
+        return self._save_file_no_lock() if changes_made else True
     
     def _validate_setting(self, key: str, value: Any) -> bool:
         validation_rules = {
@@ -334,7 +333,7 @@ class ConfigManager:
         if self.config["api_limits"]["gaode"]["last_reset_date"] != current_date:
             self.config["api_limits"]["gaode"]["daily_calls"] = 0
             self.config["api_limits"]["gaode"]["last_reset_date"] = current_date
-            self._save_config_no_lock()
+            self._save_file_no_lock()
     
     @_thread_safe_method
     def can_make_api_call(self) -> bool:
@@ -348,7 +347,7 @@ class ConfigManager:
         self._check_and_reset_daily_limit()
         self.config["api_limits"]["gaode"]["daily_calls"] += 1
         self.config["api_limits"]["gaode"]["last_call_time"] = datetime.now().isoformat()
-        self._save_config_no_lock()
+        self._save_file_no_lock()
     
     @_thread_safe_method
     def get_remaining_daily_calls(self) -> int:

@@ -14,7 +14,6 @@ from common import get_resource_path
 
 logger = logging.getLogger(__name__)
 
-# 尝试导入pillow_heif，处理HEIF/HEIC格式
 try:
     from pillow_heif import open_heif, register_heif_opener
     PILLOW_HEIF_AVAILABLE = True
@@ -38,7 +37,6 @@ class WriteExifThread(QThread):
             if level not in valid_levels:
                 level = 'INFO'
             
-            # 使用logger记录日志
             if level == 'ERROR':
                 logger.error(message)
             elif level == 'WARNING':
@@ -48,7 +46,6 @@ class WriteExifThread(QThread):
             else:
                 logger.info(message)
                 
-            # 通过信号将日志发送到UI线程
             self.log_signal.emit(level, message)
         except Exception as e:
             try:
@@ -1070,13 +1067,9 @@ class WriteExifThread(QThread):
         """
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        # 定义多种可能的日期格式正则表达式
         patterns = [
-            # 格式: YYYYMMDD_HHMMSS 或 YYYYMMDD-HHMMSS 或 YYYYMMDDHHMMSS
             r'^(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?:[-_]?(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
-            # 格式: YYYY-MM-DD_HHMMSS 或 YYYY/MM/DD_HHMMSS
             r'^(?P<year>\d{4})[-/](?P<month>\d{2})[-/](?P<day>\d{2})(?:[-_](?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
-            # 通用格式匹配（包含中文字符分隔符）
             r'(?P<year>\d{4})[年\\-\.\/\s]?(?P<month>1[0-2]|0?[1-9])[月\\-\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[日号\\-\.\/\s]?(?:[^0-9]*?)?(?P<hour>[0-2]?\d)?(?P<minute>[0-5]?\d)?(?P<second>[0-5]?\d)?'
         ]
         
@@ -1085,18 +1078,15 @@ class WriteExifThread(QThread):
             if match:
                 groups = match.groupdict()
                 try:
-                    # 构建日期时间对象
                     kwargs = {
                         'year': int(groups['year']),
                         'month': int(groups['month']),
                         'day': int(groups['day'])
                     }
                     
-                    # 检查日期有效性
                     if not (1900 <= kwargs['year'] <= 2100 and 1 <= kwargs['month'] <= 12 and 1 <= kwargs['day'] <= 31):
                         continue
                     
-                    # 添加时间信息（如果有）
                     if groups.get('hour'):
                         kwargs['hour'] = int(groups['hour'])
                         if groups.get('minute'):
@@ -1104,7 +1094,6 @@ class WriteExifThread(QThread):
                             if groups.get('second'):
                                 kwargs['second'] = int(groups['second'])
                     else:
-                        # 没有时间信息时设置默认值
                         kwargs['hour'] = kwargs.get('hour', 0)
                         kwargs['minute'] = kwargs.get('minute', 0)
                         kwargs['second'] = kwargs.get('second', 0)

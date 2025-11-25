@@ -26,8 +26,8 @@ class WriteExifManager(QObject):
         self.camera_lens_mapping = {}
         self.error_messages = []
         self.camera_data = {}
-        self.init_ui()
         self.setup_connections()
+        self.init_ui()
 
     def init_ui(self):
         for i in range(1, 6):
@@ -48,6 +48,7 @@ class WriteExifManager(QObject):
 
         self.update_button_state()
         self.load_exif_settings()
+
         self.log("INFO", "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
 
     def load_camera_lens_mapping(self):
@@ -302,8 +303,6 @@ class WriteExifManager(QObject):
 
     def _update_log_display(self, level, message):
         message_str = str(message)
-        
-        # 统一日志颜色格式
         color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#008000', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
             
@@ -313,7 +312,6 @@ class WriteExifManager(QObject):
                 f'<span style="color:{color};">{message_str}</span>'
                 f'</div>'
             )
-            # 滚动到底部
             self.parent.txtWriteEXIFLog.verticalScrollBar().setValue(
                 self.parent.txtWriteEXIFLog.verticalScrollBar().maximum()
             )
@@ -371,7 +369,6 @@ class WriteExifManager(QObject):
             )
 
     def load_exif_settings(self):
-        # 加载EXIF设置到UI
         if title := config_manager.get_setting("exif_title"):
             self.parent.titleLineEdit.setText(title)
 
@@ -408,7 +405,6 @@ class WriteExifManager(QObject):
                 logger.warning(f"无法转换星级评分: {star_rating}")
 
     def save_exif_settings(self):
-        # 保存EXIF设置到配置管理器
         try:
             config_manager.update_setting("exif_title", self.parent.titleLineEdit.text())
             config_manager.update_setting("exif_author", self.parent.authorLineEdit.text())
