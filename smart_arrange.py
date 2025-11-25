@@ -1,4 +1,4 @@
-import datetime
+from datetime import datetime
 import logging
 import os
 
@@ -540,7 +540,7 @@ class SmartArrangeManager(QObject):
             if level not in valid_levels:
                 level = 'INFO'
 
-            current_time = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
 
             self.log_signal.emit(level, log_message)
