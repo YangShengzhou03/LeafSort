@@ -1249,9 +1249,6 @@ class SmartArrangeThread(QtCore.QThread):
         file_type = get_file_type(file_path)
         target_path = target_path / file_type
         
-        self.log_counter += 1
-        if self.log_counter % 10 == 0:
-            self.log("WARNING", f"构建文件夹示例: {original_path} -> {target_path} (文件类型: {file_type})")
         return target_path
 
     def get_folder_name(self, level, exif_data, file_time, file_path):

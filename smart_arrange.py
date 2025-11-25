@@ -311,16 +311,7 @@ class SmartArrangeManager(QObject):
     def on_thread_finished(self):
         self.parent.btnStartSmartArrange.setText("开始整理")
         self.parent.btnStartSmartArrange.setEnabled(True)
-
-        stopped_status = False
-        if hasattr(self.SmartArrange_thread, 'is_stopped'):
-            stopped_status = self.SmartArrange_thread.is_stopped() or False
-
         self.update_progress_bar(0)
-
-        if not stopped_status:
-            QMessageBox.information(self.parent, "完成", "操作已完成！")
-
         self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
