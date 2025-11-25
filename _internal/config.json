@@ -1,6 +1,6 @@
 {
     "version": "1.1",
-    "last_modified": "2025-11-25T22:04:44.979613",
+    "last_modified": "2025-11-25T22:20:30.497079",
     "folders": [],
     "settings": {
         "thumbnail_size": 200,
@@ -33,7 +33,7 @@
         "exif_longitude": "",
         "exif_camera_brand": "不写入",
         "exif_camera_model": "",
-        "exif_star_rating": 4
+        "exif_star_rating": 1
     },
     "api_limits": {
         "gaode": {

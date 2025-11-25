@@ -161,6 +161,15 @@ class WriteExifManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return False
             
+            # 检查是否选择了目标文件夹
+            if not hasattr(self.folder_page, 'get_target_folder') or not self.folder_page.get_target_folder():
+                self.log("WARNING", "未选择有效的目标文件夹")
+                try:
+                    QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
+                except Exception as e:
+                    self.log("ERROR", f"显示警告消息失败: {str(e)}")
+                return False
+            
             # 然后再开始操作并更新按钮状态
             success = self.start_exif_writing()
             if success:
@@ -218,6 +227,13 @@ class WriteExifManager(QObject):
         if not self.folder_page:
             self.log("ERROR", "文件夹页面未初始化\n\n"
                               "请重新启动应用程序或联系技术支持")
+            return False
+
+        # 获取并验证目标文件夹
+        target_folder = self.folder_page.get_target_folder() if hasattr(self.folder_page, 'get_target_folder') else None
+        if not target_folder:
+            self.log("WARNING", "未选择有效的目标文件夹")
+            QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
             return False
 
         self.is_running = True
@@ -304,18 +320,7 @@ class WriteExifManager(QObject):
 
         self.error_messages = []
 
-        # Get target folder from UI
-        target_folder = self.folder_page.get_target_folder() if hasattr(self.folder_page, 'get_target_folder') else None
-        if not target_folder:
-            # Use default target folder if none selected
-            target_folder = os.path.expanduser("~/Desktop/Processed_Images")
-            # Create the folder if it doesn't exist
-            try:
-                os.makedirs(target_folder, exist_ok=True)
-            except OSError as e:
-                self.log("ERROR", f"创建目标文件夹失败: {str(e)}")
-                return False
-
+        # 使用已验证的target_folder创建worker
         self.worker = WriteExifThread(folders_dict, exif_config, target_folder)
         self.connect_worker_signals()
         self.worker.start()

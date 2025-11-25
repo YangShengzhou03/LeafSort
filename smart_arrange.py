@@ -163,13 +163,6 @@ class SmartArrangeManager(QObject):
         except Exception as e:
             self.log("ERROR", f"验证目标文件夹时出错: {str(e)}")
             return False
-        operation_text = "目标: "
-        try:
-            self.parent.copyRoute.setText(f"{operation_text}{display_path}")
-        except Exception as e:
-            self.log("ERROR", f"更新目标文件夹显示失败: {str(e)}")
-
-        return True
 
     def toggle_SmartArrange(self):
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
@@ -194,6 +187,7 @@ class SmartArrangeManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return
 
+            # 强制要求必须选择目标文件夹
             if not self.destination_root:
                 if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
                     try:
@@ -201,6 +195,7 @@ class SmartArrangeManager(QObject):
                         if target_folder and self.validate_destination(target_folder):
                             self.destination_root = target_folder
                         else:
+                            self.log("WARNING", "未选择有效的目标文件夹")
                             QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                             return
                     except Exception as e:
@@ -208,6 +203,7 @@ class SmartArrangeManager(QObject):
                         QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                         return
                 else:
+                    self.log("WARNING", "无法获取目标文件夹信息")
                     QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
                     return
 
@@ -221,12 +217,10 @@ class SmartArrangeManager(QObject):
 
             reply = QMessageBox.question(
                 self.parent,
-                "确认操作？",
-                "操作无法撤销！\n\n"
+                "确认操作吗？此操作无法撤销！\n\n"
                 "• 移动：原始文件将被删除\n"
-                "• 复制：原始文件将被保留\n\n"
-                "请备份重要文件！\n\n"
-                "是否继续？",
+                "• 复制：原始文件完全保留\n\n"
+                "请务必备份重要文件！是否继续？",
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
                 QMessageBox.StandardButton.No
             )
