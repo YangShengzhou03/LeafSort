@@ -161,6 +161,10 @@ class ConfigManager:
     
     def _cleanup_expired_cache(self) -> None:
         expiry_days = self.config["cache_settings"]["cache_expiry_days"]
+        # 如果expiry_days为0，表示永不过期，不执行清理
+        if expiry_days <= 0:
+            return
+            
         current_time = datetime.now()
         
         expired_keys = []
@@ -309,19 +313,19 @@ class ConfigManager:
                 "last_opened_folder": '',
                 "window_position": {'x': 100, 'y': 100},
                 "window_size": {'width': 942, 'height': 580},
-                "location_cache_tolerance": 0.0135
+                "location_cache_tolerance": 0.027
             },
             "api_limits": {
                 "gaode": {
                     "daily_calls": 0,
-                    "max_daily_calls": 300,
+                    "max_daily_calls": 100,
                     "last_reset_date": current_time.strftime("%Y-%m-%d"),
                     "last_call_time": None
                 }
             },
             "cache_settings": {
-                "max_location_cache_size": 200000,
-                "cache_expiry_days": 30
+                "max_location_cache_size": 500000,
+                "cache_expiry_days": 0
             }
         }
     

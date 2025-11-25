@@ -7,7 +7,7 @@ import threading
 import shutil
 from pathlib import Path
 import io
-from typing import List, Dict, Any, Optional, Union, Set
+from typing import List, Dict, Any, Optional
 from common import get_address_from_coordinates, get_resource_path, get_file_type
 import exifread
 import pillow_heif
@@ -1198,7 +1198,7 @@ class SmartArrangeThread(QtCore.QThread):
                 lat = float(exif_data['GPS GPSLatitude'])
                 lon = float(exif_data['GPS GPSLongitude'])
                 
-                tolerance = config_manager.config.get('settings', {}).get('location_cache_tolerance', 0.0135)
+                tolerance = config_manager.config.get('settings', {}).get('location_cache_tolerance', 0.027)
                 cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, tolerance)
                 if cached_address and cached_address != "未知位置":
                     logger.info(f"缓存命中! 坐标({lat},{lon})使用缓存地址: {cached_address}")

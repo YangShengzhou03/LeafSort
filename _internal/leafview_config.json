@@ -5,7 +5,7 @@
     "gaode": {
       "daily_calls": 0,
       "last_reset_date": "",
-      "max_daily_calls": 500,
+      "max_daily_calls": 100,
       "last_call_time": null
     }
   },
@@ -41,11 +41,12 @@
     "window_size": {
       "width": 942,
       "height": 580
-    }
+    },
+    "location_cache_tolerance": 0.027
   },
   "last_modified": "2025-11-23T00:38:07.844724",
   "cache_settings": {
-    "max_location_cache_size": 200000,
-    "cache_expiry_days": 30
+    "max_location_cache_size": 500000,
+    "cache_expiry_days": 0
   }
 }
