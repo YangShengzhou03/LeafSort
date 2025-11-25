@@ -5,7 +5,6 @@ import subprocess
 import shutil
 import tempfile
 import logging
-from concurrent.futures import as_completed, ThreadPoolExecutor
 from datetime import datetime, timedelta
 import piexif
 from PIL import Image, PngImagePlugin
@@ -90,12 +89,9 @@ class WriteExifThread(QThread):
         self.finished_conversion.emit()
     
     def _process_all_images(self, image_paths):
-        """处理所有图像，优化的任务执行流程"""
+        """处理所有图像，单线程执行流程"""
         success_count = 0
         error_count = 0
-        
-        cpu_count = os.cpu_count() or 1
-        max_workers = min(max(2, cpu_count), 8)
         
         valid_paths = []
         for path in image_paths:
@@ -119,48 +115,28 @@ class WriteExifThread(QThread):
         if total_valid == 0:
             return success_count, error_count
         
-        self.log("INFO", f"使用 {max_workers} 个线程处理 {total_valid} 个有效文件")
+        self.log("INFO", f"使用单线程处理 {total_valid} 个有效文件")
         
-        batch_size = max(100, max_workers * 10)
         processed_count = 0
         
-        for i in range(0, total_valid, batch_size):
+        for path in valid_paths:
             if self.isInterruptionRequested():
                 break
                 
-            batch = valid_paths[i:i+batch_size]
-            with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                future_to_path = {executor.submit(self.process_image, path): path for path in batch}
-                
-                for future in as_completed(future_to_path):
-                    if self.isInterruptionRequested():
-                        self._cancel_all_tasks(future_to_path)
-                        break
-                    
-                    path = future_to_path[future]
-                    try:
-                        future.result(timeout=30)
-                        success_count += 1
-                    except TimeoutError:
-                        self.log("ERROR", f"处理文件 {os.path.basename(path)} 时间太长，已超时")
-                        error_count += 1
-                    except (IOError, ValueError, TypeError) as e:
-                        self.log("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
-                        error_count += 1
-                    
-                    processed_count += 1
-                    progress = int((processed_count / total_valid) * 100)
-                    self.progress_updated.emit(progress)
+            try:
+                self.process_image(path)
+                success_count += 1
+            except (IOError, ValueError, TypeError, TimeoutError) as e:
+                self.log("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
+                error_count += 1
+            
+            processed_count += 1
+            progress = int((processed_count / total_valid) * 100)
+            self.progress_updated.emit(progress)
         
         return success_count, error_count
     
-    def _cancel_all_tasks(self, futures):
-        """取消所有任务"""
-        for f in futures:
-            if not f.done():
-                f.cancel()
-        time.sleep(0.1)
-        self.log("DEBUG", "EXIF写入操作已成功中止")
+
     
     def _log_completion_summary(self, success_count, error_count, total_files):
         self.log("DEBUG", "=" * 40)
@@ -628,41 +604,49 @@ class WriteExifThread(QThread):
                 updated_fields.append(format_str.format(attr_value))
     
     def _update_heic_rating(self, exif_dict, updated_fields):
-        if self.rating:
-            exif_dict["0th"][piexif.ImageIFD.Rating] = int(self.rating)
-            updated_fields.append(f"评分: {self.rating}星")
+        rating = self.exif_config.get('rating')
+        if rating:
+            exif_dict["0th"][piexif.ImageIFD.Rating] = int(rating)
+            updated_fields.append(f"评分: {rating}星")
     
     def _update_heic_lens_info(self, exif_dict, updated_fields):
-        if not (self.lens_brand or self.lens_model):
+        lens_brand = self.exif_config.get('lens_brand')
+        lens_model = self.exif_config.get('lens_model')
+        
+        if not (lens_brand or lens_model):
             return
+            
+        self._ensure_exif_sections(exif_dict)
         
-        if "Exif" not in exif_dict:
-            exif_dict["Exif"] = {}
-        
-        if self.lens_brand:
-            exif_dict["Exif"][piexif.ExifIFD.LensMake] = self.lens_brand.encode('utf-8')
-            updated_fields.append(f"镜头品牌: {self.lens_brand}")
-        
-        if self.lens_model:
-            exif_dict["Exif"][piexif.ExifIFD.LensModel] = self.lens_model.encode('utf-8')
-            updated_fields.append(f"镜头型号: {self.lens_model}")
+        if lens_brand:
+            exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
+            updated_fields.append(f"镜头品牌: {lens_brand}")
+            
+        if lens_model:
+            exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
+            updated_fields.append(f"镜头型号: {lens_model}")
     
     def _update_heic_shoot_time(self, exif_dict, updated_fields, image_path):
-        if self.shoot_time == 0:
+        shoot_time = self.exif_config.get('shoot_time', 0)
+        if shoot_time == 0:
             return
         
         if "Exif" not in exif_dict:
             exif_dict["Exif"] = {}
         
-        if self.shoot_time == 1:
+        if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(image_path)
             if date_from_filename:
                 time_str = date_from_filename.strftime("%Y:%m:%d %H:%M:%S")
                 exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = time_str.encode('utf-8')
                 updated_fields.append(f"文件名识别拍摄时间: {time_str}")
         else:
-            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = self.shoot_time.encode('utf-8')
-            updated_fields.append(f"拍摄时间: {self.shoot_time}")
+            if isinstance(shoot_time, str):
+                exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = shoot_time.encode('utf-8')
+                updated_fields.append(f"拍摄时间: {shoot_time}")
+            else:
+                logger.warning("拍摄时间格式无效: %s", shoot_time)
+                self.log("WARNING", f"拍摄时间格式无效: {shoot_time}")
     
     def _update_heic_gps_data(self, exif_dict, updated_fields):
         if self.lat is not None and self.lon is not None:
@@ -744,19 +728,23 @@ class WriteExifThread(QThread):
         cmd_parts = [exiftool_path, "-overwrite_original"]
         updated_fields = []
         
-        if self.cameraBrand:
-            cmd_parts.append(f'-Make="{self.cameraBrand}"')
-            updated_fields.append(f"相机品牌: {self.cameraBrand}")
+        camera_brand = self.exif_config.get('camera_brand')
+        camera_model = self.exif_config.get('camera_model')
+        shoot_time = self.exif_config.get('shoot_time', 0)
         
-        if self.cameraModel:
-            cmd_parts.append(f'-Model="{self.cameraModel}"')
-            updated_fields.append(f"相机型号: {self.cameraModel}")
+        if camera_brand:
+            cmd_parts.append(f'-Make="{camera_brand}"')
+            updated_fields.append(f"相机品牌: {camera_brand}")
+        
+        if camera_model:
+            cmd_parts.append(f'-Model="{camera_model}"')
+            updated_fields.append(f"相机型号: {camera_model}")
         
         if self.lat is not None and self.lon is not None:
             self._add_gps_to_command(cmd_parts, updated_fields)
         
-        if self.shootTime != 0:
-            self._add_time_to_command(cmd_parts, updated_fields, original_file_path)
+        if shoot_time != 0:
+            self._add_time_to_command(cmd_parts, updated_fields, original_file_path, shoot_time)
         
         return cmd_parts, updated_fields, exiftool_path
     
@@ -770,9 +758,9 @@ class WriteExifThread(QThread):
         cmd_parts.append(f'-GPSCoordinates="{self.lat}, {self.lon}"')
         updated_fields.append(f"GPS坐标: {abs(self.lat):.6f}°{'N' if self.lat >= 0 else 'S'}, {abs(self.lon):.6f}°{'E' if self.lon >= 0 else 'W'}")
     
-    def _add_time_to_command(self, cmd_parts, updated_fields, original_file_path):
+    def _add_time_to_command(self, cmd_parts, updated_fields, original_file_path, shoot_time):
         """向命令中添加时间信息"""
-        if self.shootTime == 1:
+        if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(original_file_path)
             if date_from_filename:
                 self._add_time_fields(cmd_parts, date_from_filename)
@@ -781,12 +769,12 @@ class WriteExifThread(QThread):
                 self.log("WARNING", f"无法从文件名提取时间: {os.path.basename(original_file_path)}")
         else:
             try:
-                datetime.strptime(self.shootTime, "%Y:%m:%d %H:%M:%S")
-                local_time = datetime.strptime(self.shootTime, "%Y:%m:%d %H:%M:%S")
+                datetime.strptime(shoot_time, "%Y:%m:%d %H:%M:%S")
+                local_time = datetime.strptime(shoot_time, "%Y:%m:%d %H:%M:%S")
                 self._add_time_fields(cmd_parts, local_time)
-                updated_fields.append(f"拍摄时间: {self.shootTime} (已调整为UTC时间)")
-            except ValueError:
-                self.log("ERROR", f"拍摄时间格式无效: {self.shootTime}，请使用 YYYY:MM:DD HH:MM:SS 格式")
+                updated_fields.append(f"拍摄时间: {shoot_time} (已调整为UTC时间)")
+            except (ValueError, TypeError):
+                self.log("ERROR", f"拍摄时间格式无效: {shoot_time}，请使用 YYYY:MM:DD HH:MM:SS 格式")
     
     def _add_time_fields(self, cmd_parts, datetime_obj):
         """添加时间相关的字段到命令中"""
@@ -903,8 +891,9 @@ class WriteExifThread(QThread):
             updated_fields: 更新字段列表
             image_path: 文件路径
         """
-        if self.shoot_time != 0:
-            if self.shoot_time == 1:
+        shoot_time = self.exif_config.get('shoot_time', 0)
+        if shoot_time != 0:
+            if shoot_time == 1:
                 date_from_filename = self.get_date_from_filename(image_path)
                 if date_from_filename:
                     time_str = date_from_filename.strftime('%Y:%m:%d %H:%M:%S')
@@ -912,11 +901,11 @@ class WriteExifThread(QThread):
                     updated_fields.append(f"拍摄时间: {time_str}")
             else:
                 try:
-                    datetime.strptime(self.shoot_time, "%Y:%m:%d %H:%M:%S")
-                    self._add_time_fields_to_data(exif_data, self.shoot_time)
-                    updated_fields.append(f"拍摄时间: {self.shoot_time}")
+                    datetime.strptime(shoot_time, "%Y:%m:%d %H:%M:%S")
+                    self._add_time_fields_to_data(exif_data, shoot_time)
+                    updated_fields.append(f"拍摄时间: {shoot_time}")
                 except ValueError:
-                    self.log.emit("ERROR", f"拍摄时间格式无效: {self.shoot_time}")
+                    self.log.emit("ERROR", f"拍摄时间格式无效: {shoot_time}")
     
     def _add_time_fields_to_data(self, exif_data, time_str):
         """向EXIF数据添加时间相关字段
@@ -946,8 +935,8 @@ class WriteExifThread(QThread):
             ('lens_model', 'LensModel', '镜头型号: {}')
         ]
         
-        for attr_name, exif_key, format_str in field_mappings:
-            attr_value = getattr(self, attr_name, None)
+        for config_key, exif_key, format_str in field_mappings:
+            attr_value = self.exif_config.get(config_key)
             if attr_value:
                 exif_data[exif_key] = attr_value
                 updated_fields.append(format_str.format(attr_value))

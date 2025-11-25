@@ -232,8 +232,17 @@ class WriteExifManager(QObject):
         if camera_brand and not camera_model:
             camera_model = self.get_default_model_for_brand(camera_brand)
 
-        params = {
-            'folders_dict': folders,
+        # Create folders_dict in the format expected by WriteExifThread
+        folders_dict = []
+        for folder_path in folders:
+            if folder_path and os.path.exists(folder_path) and os.path.isdir(folder_path):
+                folders_dict.append({
+                    'path': folder_path,
+                    'include_sub': True  # include_sub = True by default
+                })
+        
+        # Create exif_config dictionary
+        exif_config = {
             'title': self.parent.titleLineEdit.text(),
             'author': self.parent.authorLineEdit.text(),
             'subject': self.parent.themeLineEdit.text(),
@@ -252,7 +261,7 @@ class WriteExifManager(QObject):
                 lon = float(longitude)
                 lat = float(latitude)
                 if -180 <= lon <= 180 and -90 <= lat <= 90:
-                    params['position'] = f"{lat},{lon}"
+                    exif_config['position'] = f"{lat},{lon}"
                 else:
                     self.log("ERROR", "经纬度范围无效\n\n"
                                       "• 经度应在-180到180之间\n"
@@ -264,7 +273,7 @@ class WriteExifManager(QObject):
                 if coords:
                     lat_decimal, lon_decimal = coords
                     if -180 <= lon_decimal <= 180 and -90 <= lat_decimal <= 90:
-                        params['position'] = f"{lat_decimal},{lon_decimal}"
+                        exif_config['position'] = f"{lat_decimal},{lon_decimal}"
                         self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
                     else:
                         self.log("ERROR", "经纬度范围无效\n\n"
@@ -282,20 +291,20 @@ class WriteExifManager(QObject):
         self.save_exif_settings()
 
         operation_summary = f"操作类型: EXIF信息写入"
-        if params.get('title'):
-            operation_summary += f", 标题: {params['title']}"
-        if params.get('author'):
-            operation_summary += f", 作者: {params['author']}"
-        if params.get('position'):
-            operation_summary += f", 位置: {params['position']}"
-        if params.get('rating') != '0':
-            operation_summary += f", 评分: {params['rating']}星"
+        if exif_config.get('title'):
+            operation_summary += f", 标题: {exif_config['title']}"
+        if exif_config.get('author'):
+            operation_summary += f", 作者: {exif_config['author']}"
+        if exif_config.get('position'):
+            operation_summary += f", 位置: {exif_config['position']}"
+        if exif_config.get('rating') != '0':
+            operation_summary += f", 评分: {exif_config['rating']}星"
 
         self.log("INFO", f"摘要: {operation_summary}")
 
         self.error_messages = []
 
-        self.worker = WriteExifThread(**params)
+        self.worker = WriteExifThread(folders_dict, exif_config)
         self.connect_worker_signals()
         self.worker.start()
         self.parent.progressBar_EXIF.setValue(0)
