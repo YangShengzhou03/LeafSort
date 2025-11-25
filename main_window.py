@@ -3,7 +3,7 @@ from PyQt6.QtCore import Qt, QPoint
 from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
 from smart_arrange import SmartArrangeManager
-from write_exif import WriteExif
+from write_exif import WriteExifManager
 from common import get_resource_path
 import logging
 import os
@@ -13,37 +13,27 @@ logger = logging.getLogger(__name__)
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
-        try:
-            super().__init__()
-            self.setupUi(self)
-            self._drag_position = QPoint()
-            self.tray_icon = None
-            self._initialize_pages()
-            self._setup_ui()
-            self._connect_signals()
-        except Exception as e:
-            logger.error(f"初始化主窗口时出错: {str(e)}")
-            QtWidgets.QMessageBox.critical(self, "错误", f"初始化失败: {str(e)}")
+        super().__init__()
+        self.setupUi(self)
+        self._drag_position = QPoint()
+        self.tray_icon = None
+        self._setup_ui()
+        self._connect_signals()
+        self._initialize_pages()
 
     def _initialize_pages(self):
-        try:
-            self.folder_page = FolderPage(self)
-            self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
-            self.write_exif_page = WriteExif(self, self.folder_page)
-        except Exception as e:
-            logger.error(f"初始化页面组件时出错: {str(e)}")
+        self.folder_page = FolderPage(self)
+        self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
+        self.write_exif_page = WriteExifManager(self, self.folder_page)
 
     def _setup_ui(self):
-        try:
-            self.setWindowTitle("枫叶相册")
-            icon_path = get_resource_path('resources/img/icon.ico')
-            if icon_path:
-                self.setWindowIcon(QtGui.QIcon(icon_path))
-            self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
-            self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-            self._setup_system_tray()
-        except Exception as e:
-            logger.error(f"设置窗口UI时出错: {str(e)}")
+        self.setWindowTitle("枫叶相册")
+        icon_path = get_resource_path('resources/img/icon.ico')
+        if icon_path:
+            self.setWindowIcon(QtGui.QIcon(icon_path))
+        self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        self._setup_system_tray()
 
     def _setup_system_tray(self):
         try:

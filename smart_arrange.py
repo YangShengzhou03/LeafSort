@@ -52,6 +52,8 @@ class SmartArrangeManager(QObject):
         self.init_page()
         self.set_combo_box_states()
 
+        logger.info("初始化智能整理功能")
+
     def init_page(self):
         self.connect_signals()
 
