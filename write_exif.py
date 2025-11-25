@@ -66,11 +66,60 @@ class WriteExifManager(QObject):
             self.camera_lens_mapping = {}
 
     def get_lens_info_for_camera(self, brand, model):
-        if brand in self.camera_lens_mapping:
-            brand_data = self.camera_lens_mapping[brand]
-            if model in brand_data:
-                return brand_data[model]
-        return None
+        """根据相机品牌和型号获取镜头信息"""
+        lens_info = {'lens_brand': '', 'lens_model': ''}
+        
+        # 输入验证
+        if not brand or not model:
+            logger.debug(f"品牌或型号为空: brand={brand}, model={model}")
+            return lens_info
+        
+        try:
+            # 检查相机镜头映射数据是否已加载
+            if not self.camera_lens_mapping:
+                logger.debug("相机镜头映射数据未加载")
+                return lens_info
+            
+            # 检查是否在已加载的相机镜头映射中
+            if brand in self.camera_lens_mapping:
+                brand_data = self.camera_lens_mapping[brand]
+                # 检查brand_data是否为字典类型
+                if isinstance(brand_data, dict):
+                    if model in brand_data:
+                        lens_info['lens_model'] = brand_data[model]
+                        # 为主要相机品牌设置对应的镜头品牌
+                        brand_mapping = {
+                            'Canon': 'Canon',
+                            'Nikon': 'Nikon',
+                            'Sony': 'Sony',
+                            'Fujifilm': 'Fujifilm',
+                            'Leica': 'Leica',
+                            'Panasonic': 'Panasonic',
+                            'Olympus': 'Olympus',
+                            'Pentax': 'Pentax',
+                            'Sigma': 'Sigma',
+                            'Xiaomi': 'Xiaomi',
+                            'Huawei': 'Huawei',
+                            'Apple': 'Apple',
+                            'Samsung': 'Samsung',
+                            'OPPO': 'OPPO',
+                            'vivo': 'vivo',
+                            'OnePlus': 'OnePlus',
+                            'Google': 'Google'
+                        }
+                        if brand in brand_mapping:
+                            lens_info['lens_brand'] = brand_mapping[brand]
+                        logger.debug(f"成功匹配镜头信息: 品牌={lens_info['lens_brand']}, 型号={lens_info['lens_model']}")
+                    else:
+                        logger.debug(f"未找到型号 {model} 对应的镜头信息")
+                else:
+                    logger.debug(f"品牌 {brand} 的数据格式不正确")
+            else:
+                logger.debug(f"未找到品牌 {brand} 的镜头映射数据")
+        except Exception as e:
+            logger.error(f"获取镜头信息失败: {str(e)}")
+        
+        return lens_info
 
     def get_default_model_for_brand(self, brand):
         if brand in self.camera_data:
@@ -257,6 +306,13 @@ class WriteExifManager(QObject):
                     'include_sub': True  # include_sub = True by default
                 })
         
+        # 获取镜头信息
+        lens_info = self.get_lens_info_for_camera(camera_brand, camera_model)
+        
+        # 记录日志，确认镜头信息是否正确匹配
+        if lens_info['lens_brand'] or lens_info['lens_model']:
+            self.log("INFO", f"为相机 {camera_brand} {camera_model} 匹配到镜头: {lens_info['lens_brand']} {lens_info['lens_model']}")
+        
         # Create exif_config dictionary
         exif_config = {
             'title': self.parent.titleLineEdit.text(),
@@ -267,7 +323,8 @@ class WriteExifManager(QObject):
             'position': None,
             'camera_brand': camera_brand,
             'camera_model': camera_model,
-            'lens_model': self.get_lens_info_for_camera(camera_brand, camera_model)
+            'lens_brand': lens_info.get('lens_brand', ''),
+            'lens_model': lens_info.get('lens_model', '')
         }
 
         longitude = self.parent.lineEdit_EXIF_longitude.text()

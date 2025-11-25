@@ -620,28 +620,43 @@ class WriteExifThread(QThread):
             exif_dict: EXIF数据字典
             updated_fields: 更新字段列表
         """
+        # 确保基本EXIF部分存在
+        if "0th" not in exif_dict:
+            exif_dict["0th"] = {}
+        
+        # 使用exif_config而不是直接获取属性
         field_mappings = [
-            ('title', "0th", piexif.ImageIFD.ImageDescription, "标题: {}", 'utf-8'),
-            ('author', "0th", 315, "作者: {}", 'utf-8'),
-            ('subject', "0th", piexif.ImageIFD.XPSubject, "主题: {}", 'utf-16le'),
-            ('copyright', "0th", piexif.ImageIFD.Copyright, "版权: {}", 'utf-8'),
-            ('camera_brand', "0th", piexif.ImageIFD.Make, "相机品牌: {}", 'utf-8'),
-            ('camera_model', "0th", piexif.ImageIFD.Model, "相机型号: {}", 'utf-8'),
+            ('title', piexif.ImageIFD.ImageDescription, "标题: {}", 'utf-8'),
+            ('author', 315, "作者: {}", 'utf-8'),
+            ('subject', piexif.ImageIFD.XPSubject, "主题: {}", 'utf-16le'),
+            ('copyright', piexif.ImageIFD.Copyright, "版权: {}", 'utf-8'),
+            ('camera_brand', piexif.ImageIFD.Make, "相机品牌: {}", 'utf-8'),
+            ('camera_model', piexif.ImageIFD.Model, "相机型号: {}", 'utf-8'),
         ]
         
-        for attr_name, exif_key, ifd_key, format_str, encoding in field_mappings:
-            attr_value = getattr(self, attr_name, None)
-            if attr_value:
-                if exif_key not in exif_dict:
-                    exif_dict[exif_key] = {}
-                exif_dict[exif_key][ifd_key] = attr_value.encode(encoding)
-                updated_fields.append(format_str.format(attr_value))
+        for config_key, ifd_key, format_str, encoding in field_mappings:
+            value = self.exif_config.get(config_key)
+            if value:
+                try:
+                    exif_dict["0th"][ifd_key] = value.encode(encoding)
+                    updated_fields.append(format_str.format(value))
+                except Exception as e:
+                    logger.error(f"写入HEIC字段 {config_key} 失败: {str(e)}")
     
     def _update_heic_rating(self, exif_dict, updated_fields):
         rating = self.exif_config.get('rating')
         if rating:
-            exif_dict["0th"][piexif.ImageIFD.Rating] = int(rating)
-            updated_fields.append(f"评分: {rating}星")
+            try:
+                # 确保0th部分存在
+                if "0th" not in exif_dict:
+                    exif_dict["0th"] = {}
+                
+                # 将评分转换为整数并写入
+                rating_value = int(rating)
+                exif_dict["0th"][piexif.ImageIFD.Rating] = rating_value
+                updated_fields.append(f"评分: {rating}星")
+            except (ValueError, TypeError) as e:
+                logger.error(f"写入HEIC评分失败: {str(e)}")
     
     def _update_heic_lens_info(self, exif_dict, updated_fields):
         lens_brand = self.exif_config.get('lens_brand')
@@ -650,15 +665,25 @@ class WriteExifThread(QThread):
         if not (lens_brand or lens_model):
             return
             
-        self._ensure_exif_sections(exif_dict)
+        # 确保Exif部分存在
+        if "Exif" not in exif_dict:
+            exif_dict["Exif"] = {}
         
+        # 写入镜头品牌
         if lens_brand:
-            exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
-            updated_fields.append(f"镜头品牌: {lens_brand}")
+            try:
+                exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
+                updated_fields.append(f"镜头品牌: {lens_brand}")
+            except Exception as e:
+                logger.error(f"写入HEIC镜头品牌失败: {str(e)}")
             
+        # 写入镜头型号
         if lens_model:
-            exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
-            updated_fields.append(f"镜头型号: {lens_model}")
+            try:
+                exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
+                updated_fields.append(f"镜头型号: {lens_model}")
+            except Exception as e:
+                logger.error(f"写入HEIC镜头型号失败: {str(e)}")
     
     def _update_heic_shoot_time(self, exif_dict, updated_fields, image_path):
         shoot_time = self.exif_config.get('shoot_time', 0)
