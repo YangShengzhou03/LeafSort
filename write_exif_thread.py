@@ -53,10 +53,11 @@ class WriteExifThread(QThread):
             except:
                 pass
             
-    def __init__(self, folders_dict, exif_config=None):
+    def __init__(self, folders_dict, exif_config=None, target_folder=None):
         super().__init__()
         self.folders_dict = {item['path']: item['include_sub'] for item in folders_dict}
         self.exif_config = exif_config or {}
+        self.target_folder = target_folder or os.path.expanduser("~/Desktop/Processed_Images")
         self.lat, self.lon = None, None
         position = self.exif_config.get('position', '')
         if position and ',' in position:
@@ -80,7 +81,7 @@ class WriteExifThread(QThread):
             self.finished_conversion.emit()
             return
         
-        self.log("WARNING", f"开始处理 {total_files} 张图片")
+        self.log("DEBUG", f"{'=' * 10} 待处理总文件数： {total_files} {'=' * 10}")
         self.progress_updated.emit(0)
         
         success_count, error_count = self._process_all_images(image_paths)
@@ -115,8 +116,6 @@ class WriteExifThread(QThread):
         if total_valid == 0:
             return success_count, error_count
         
-        self.log("INFO", f"使用单线程处理 {total_valid} 个有效文件")
-        
         processed_count = 0
         
         for path in valid_paths:
@@ -136,12 +135,10 @@ class WriteExifThread(QThread):
         
         return success_count, error_count
     
-
-    
     def _log_completion_summary(self, success_count, error_count, total_files):
-        self.log("DEBUG", "=" * 40)
-        self.log("INFO", f"属性写入完成了，成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
-        self.log("DEBUG", "=" * 3 + "LeafView © 2025 杨生洲 版权所有" + "=" * 3)
+        self.log("DEBUG", "="*40)
+        self.log("DEBUG", f"文件写入完成：成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
+        self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
 
     def _collect_image_paths(self):
         """收集所有图像路径"""
@@ -220,12 +217,17 @@ class WriteExifThread(QThread):
             if not self._validate_file(image_path):
                 return
             
+            # 复制文件到目标文件夹
+            target_path = self._copy_to_target(image_path)
+            if not target_path:
+                return
+            
             file_ext = os.path.splitext(image_path)[1].lower()
-            logger.debug("处理文件: %s, 扩展名: %s", image_path, file_ext)
+            logger.debug("处理文件: %s, 扩展名: %s", target_path, file_ext)
             
             format_handler = self._get_format_handler(file_ext)
             if format_handler:
-                format_handler(image_path)
+                format_handler(target_path)
             else:
                 logger.warning("不支持的文件格式: %s", file_ext)
                 self.log("WARNING", f"不支持的文件格式: {file_ext}")
@@ -266,6 +268,38 @@ class WriteExifThread(QThread):
         error_msg = f"处理 {os.path.basename(image_path)} 时出错: {str(error)}"
         logger.error("处理文件 %s 时出错: %s", image_path, str(error))
         self.log("ERROR", error_msg)
+    
+    def _get_target_path(self, source_path):
+        """获取目标文件路径，保持目录结构"""
+        # 找到与源路径匹配的根文件夹
+        for root_folder, include_sub in self.folders_dict.items():
+            if source_path.startswith(root_folder):
+                # 计算相对路径
+                relative_path = os.path.relpath(source_path, root_folder)
+                # 构建目标路径
+                target_path = os.path.join(self.target_folder, relative_path)
+                return target_path
+        
+        # 如果没有找到匹配的根文件夹，使用文件名
+        return os.path.join(self.target_folder, os.path.basename(source_path))
+    
+    def _copy_to_target(self, source_path):
+        """复制文件到目标文件夹，保持目录结构"""
+        try:
+            target_path = self._get_target_path(source_path)
+            target_dir = os.path.dirname(target_path)
+            
+            # 创建目标目录
+            if not os.path.exists(target_dir):
+                os.makedirs(target_dir)
+            
+            # 复制文件
+            shutil.copy2(source_path, target_path)
+            return target_path
+            
+        except (IOError, OSError, shutil.Error) as e:
+            self.log("ERROR", f"复制文件失败 {os.path.basename(source_path)}: {str(e)}")
+            return None
 
     def _process_exif_format(self, image_path):
         if self.isInterruptionRequested():
@@ -370,7 +404,7 @@ class WriteExifThread(QThread):
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, image_path)
             logger.info("成功写入EXIF数据到 %s", image_path)
-            self.log("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
         except (IOError, ValueError, OSError) as e:
             logger.error("写入EXIF数据失败 %s: %s", image_path, str(e))
             self.log("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
@@ -663,7 +697,7 @@ class WriteExifThread(QThread):
             exif_bytes = piexif.dump(exif_dict)
             image.save(temp_path, format="HEIF", exif=exif_bytes)
             os.replace(temp_path, image_path)
-            self.log("INFO", f"写入成功 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
         except (IOError, ValueError, OSError) as e:
             self.log("ERROR", f"写入EXIF数据失败: {str(e)}")
         finally:
@@ -826,7 +860,7 @@ class WriteExifThread(QThread):
                 return False
 
             if updated_fields:
-                self.log("INFO", f"写入成功 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
+                self.log("INFO", f"写入并复制 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
             
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
             subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False)

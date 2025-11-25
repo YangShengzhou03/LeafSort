@@ -300,11 +300,23 @@ class WriteExifManager(QObject):
         if exif_config.get('rating') != '0':
             operation_summary += f", 评分: {exif_config['rating']}星"
 
-        self.log("INFO", f"摘要: {operation_summary}")
+        self.log("WARNING", f"写入摘要: {operation_summary}")
 
         self.error_messages = []
 
-        self.worker = WriteExifThread(folders_dict, exif_config)
+        # Get target folder from UI
+        target_folder = self.folder_page.get_target_folder() if hasattr(self.folder_page, 'get_target_folder') else None
+        if not target_folder:
+            # Use default target folder if none selected
+            target_folder = os.path.expanduser("~/Desktop/Processed_Images")
+            # Create the folder if it doesn't exist
+            try:
+                os.makedirs(target_folder, exist_ok=True)
+            except OSError as e:
+                self.log("ERROR", f"创建目标文件夹失败: {str(e)}")
+                return False
+
+        self.worker = WriteExifThread(folders_dict, exif_config, target_folder)
         self.connect_worker_signals()
         self.worker.start()
         self.parent.progressBar_EXIF.setValue(0)
