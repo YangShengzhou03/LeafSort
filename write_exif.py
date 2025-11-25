@@ -265,9 +265,9 @@ class WriteExifManager(QObject):
             'rating': str(self.selected_star),
             'copyright': self.parent.copyrightLineEdit.text(),
             'position': None,
-            'cameraBrand': camera_brand,
-            'cameraModel': camera_model,
-            'lensModel': self.get_lens_info_for_camera(camera_brand, camera_model)
+            'camera_brand': camera_brand,
+            'camera_model': camera_model,
+            'lens_model': self.get_lens_info_for_camera(camera_brand, camera_model)
         }
 
         longitude = self.parent.lineEdit_EXIF_longitude.text()
