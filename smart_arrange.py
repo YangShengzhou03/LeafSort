@@ -62,7 +62,7 @@ class SmartArrangeManager(QObject):
         for button in self.tag_buttons.values():
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
 
-        self.log("INFO", "页面初始化完成")
+        self.log("INFO", "欢迎使用智能整理功能，您可以根据多种规则整理文件")
 
     def connect_signals(self):
         try:

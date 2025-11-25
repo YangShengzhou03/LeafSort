@@ -22,7 +22,7 @@ class WriteExifManager(QObject):
         self.log_signal.connect(self.handle_log_signal)
         self.init_ui()
         self._setup_connections()
-        self._safe_log("INFO", "EXIF信息写入页面初始化完成")
+        self._safe_log("INFO", "欢迎使用EXIF信息写入功能，您可以批量修改照片的元数据信息")
 
     def init_ui(self):
         self._init_star_buttons()

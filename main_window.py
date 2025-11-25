@@ -78,7 +78,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.btnMinimize.clicked.connect(self.showMinimized)
             self.btnMaximize.clicked.connect(self._toggle_maximize)
             self.btnClose.clicked.connect(self._hide_to_tray)
-            self.btnGitHub.clicked.connect(self._open_github)
+            self.btnGithub.clicked.connect(self._open_github)
         except Exception as e:
             logger.error(f"连接UI信号时出错: {str(e)}")
 
@@ -156,6 +156,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             event.accept()
 
     def _open_github(self):
+        logger.info("用户点击了GitHub链接")
         try:
             url = QtCore.QUrl("https://github.com/yourusername/LeafView")
             if not QtGui.QDesktopServices.openUrl(url):
