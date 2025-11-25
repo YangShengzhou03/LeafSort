@@ -51,9 +51,6 @@ class WriteExifManager(QObject):
         
         self.update_button_state()
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
-        self.parent.dateTimeEdit_shootTime.hide()
-        self.parent.lineEdit_EXIF_longitude.hide()
-        self.parent.lineEdit_EXIF_latitude.hide()
         self.load_exif_settings()
         self.save_exif_settings()
         self.log("INFO", "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
@@ -93,7 +90,6 @@ class WriteExifManager(QObject):
         
         self.update_button_state()
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
-        self.parent.dateTimeEdit_shootTime.hide()
 
 
     def init_camera_brand_model(self):
@@ -113,8 +109,6 @@ class WriteExifManager(QObject):
         for brand in sorted(camera_data.keys()):
             self.parent.cameraBrand.addItem(brand)
         self.camera_data = camera_data
-        self.parent.cameraBrand.currentIndexChanged.connect(self._on_brand_changed)
-        self.parent.cameraModel.currentIndexChanged.connect(self._on_model_changed)
         
     def _load_camera_data(self):
         try:
@@ -142,27 +136,11 @@ class WriteExifManager(QObject):
         for i in range(1, 6):
             getattr(self.parent, f'btnStar{i}').clicked.connect(self.save_exif_settings)
 
-    def on_combobox_location_changed(self, index):
-        if index == 1:
-            self.parent.lineEdit_EXIF_longitude.show()
-            self.parent.lineEdit_EXIF_latitude.show()
-            self.parent.horizontalFrame.hide()
-        else:
-            self.parent.lineEdit_EXIF_longitude.hide()
-            self.parent.lineEdit_EXIF_latitude.hide()
-            self.parent.horizontalFrame.show()
-
-    def on_combobox_time_changed(self, index):
-        if index == 2:
-            self.parent.dateTimeEdit_shootTime.show()
-        else:
-            self.parent.dateTimeEdit_shootTime.hide()
-
     def update_button_state(self):
         if self.is_running:
-            self.parent.btnStartExif.setText("停止")
+            self.parent.btnStartExif.setText("停止写入EXIF信息")
         else:
-            self.parent.btnStartExif.setText("开始")
+            self.parent.btnStartExif.setText("开始写入EXIF信息")
 
     def toggle_exif_writing(self):
         if self.is_running:
