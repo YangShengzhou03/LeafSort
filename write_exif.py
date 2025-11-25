@@ -202,7 +202,11 @@ class WriteExifManager(QObject):
 
         folders = self.folder_page.get_all_folders()
         if not folders:
-            self.log("ERROR", "没有选择文件夹")
+            self.log("WARNING", "没有选择文件夹")
+            try:
+                QMessageBox.warning(self.parent, "警告", "请先选择要处理的文件夹！")
+            except Exception as e:
+                self.log("ERROR", f"显示警告消息失败: {str(e)}")
             self.is_running = False
             self.update_button_state()
             return False
@@ -299,7 +303,8 @@ class WriteExifManager(QObject):
     def _update_log_display(self, level, message):
         message_str = str(message)
         
-        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
+        # 统一日志颜色格式
+        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#008000', 'DEBUG': '#006400'}
         color = color_map.get(level, '#006400')
             
         try:
