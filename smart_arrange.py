@@ -217,12 +217,12 @@ class SmartArrangeManager(QObject):
 
             reply = QMessageBox.question(
                 self.parent,
+                "确认操作",
                 "确认操作吗？此操作无法撤销！\n\n"
                 "• 移动：原始文件将被删除\n"
                 "• 复制：原始文件完全保留\n\n"
                 "请务必备份重要文件！是否继续？",
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
             )
 
             if reply != QMessageBox.StandardButton.Yes:
