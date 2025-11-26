@@ -2757,7 +2757,7 @@ class Ui_MainWindow(object):
         self.deduplicationPage = QtWidgets.QWidget()
         self.deduplicationPage.setObjectName("deduplicationPage")
         self.deduplicationLayout = QtWidgets.QHBoxLayout(self.deduplicationPage)
-        self.deduplicationLayout.setContentsMargins(0, 0, 0, 0)
+        self.deduplicationLayout.setContentsMargins(9, 9, 9, 9)
         self.deduplicationLayout.setSpacing(0)
         self.deduplicationLayout.setObjectName("deduplicationLayout")
         self.deduplicationViewerWidget = QtWidgets.QWidget(parent=self.deduplicationPage)
@@ -2806,21 +2806,21 @@ class Ui_MainWindow(object):
         self.contrastProgressBar.setObjectName("contrastProgressBar")
         self.deduplicationHeaderLayout.addWidget(self.contrastProgressBar)
         self.btnStartContrast = QtWidgets.QToolButton(parent=self.deduplicationHeaderFrame)
-        self.btnStartContrast.setMinimumSize(QtCore.QSize(104, 32))
-        self.btnStartContrast.setMaximumSize(QtCore.QSize(88, 16777215))
+        self.btnStartContrast.setMinimumSize(QtCore.QSize(80, 28))
+        self.btnStartContrast.setMaximumSize(QtCore.QSize(80, 28))
         self.btnStartContrast.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 8px 12px;\n"
-"    border-radius: 6px;\n"
+"    padding: 6px 10px;\n"
+"    border-radius: 5px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"
 "        stop:1 rgba(119, 111, 252, 255)\n"
 "    );\n"
-"    font-size: 12px;\n"
+"    font-size: 11px;\n"
 "    font-weight: 500;\n"
-"    min-width: 80px;\n"
+"    min-width: 60px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2862,6 +2862,12 @@ class Ui_MainWindow(object):
         self.deduplicationViewerLayout.addWidget(self.deduplicationViewerFrame)
         self.deduplicationViewerLayout.setStretch(1, 3)
         self.deduplicationLayout.addWidget(self.deduplicationViewerWidget)
+        self.line = QtWidgets.QFrame(parent=self.deduplicationPage)
+        self.line.setStyleSheet("background-color: rgb(235, 236, 237);")
+        self.line.setFrameShape(QtWidgets.QFrame.Shape.VLine)
+        self.line.setFrameShadow(QtWidgets.QFrame.Shadow.Sunken)
+        self.line.setObjectName("line")
+        self.deduplicationLayout.addWidget(self.line)
         self.deduplicationTableLayout = QtWidgets.QVBoxLayout()
         self.deduplicationTableLayout.setObjectName("deduplicationTableLayout")
         self.duplicateFilesTableWidget = QtWidgets.QTableWidget(parent=self.deduplicationPage)
@@ -2873,19 +2879,21 @@ class Ui_MainWindow(object):
         self.deduplicationActionsLayout.setContentsMargins(-1, 0, -1, -1)
         self.deduplicationActionsLayout.setObjectName("deduplicationActionsLayout")
         self.btnRandomSelect = QtWidgets.QToolButton(parent=self.deduplicationPage)
+        self.btnRandomSelect.setMinimumSize(QtCore.QSize(80, 28))
+        self.btnRandomSelect.setMaximumSize(QtCore.QSize(70, 28))
         self.btnRandomSelect.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 8px 12px;\n"
-"    border-radius: 6px;\n"
+"    padding: 6px 10px;\n"
+"    border-radius: 5px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"
 "        stop:1 rgba(119, 111, 252, 255)\n"
 "    );\n"
-"    font-size: 12px;\n"
+"    font-size: 11px;\n"
 "    font-weight: 500;\n"
-"    min-width: 80px;\n"
+"    min-width: 60px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2908,19 +2916,21 @@ class Ui_MainWindow(object):
         self.btnRandomSelect.setObjectName("btnRandomSelect")
         self.deduplicationActionsLayout.addWidget(self.btnRandomSelect)
         self.btnMoveToRecycleBin = QtWidgets.QToolButton(parent=self.deduplicationPage)
+        self.btnMoveToRecycleBin.setMinimumSize(QtCore.QSize(80, 28))
+        self.btnMoveToRecycleBin.setMaximumSize(QtCore.QSize(85, 28))
         self.btnMoveToRecycleBin.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 8px 12px;\n"
-"    border-radius: 6px;\n"
+"    padding: 6px 10px;\n"
+"    border-radius: 5px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(244, 67, 54, 255),\n"
 "        stop:1 rgba(233, 30, 99, 255)\n"
 "    );\n"
-"    font-size: 12px;\n"
+"    font-size: 11px;\n"
 "    font-weight: 500;\n"
-"    min-width: 80px;\n"
+"    min-width: 60px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2945,7 +2955,7 @@ class Ui_MainWindow(object):
         self.deduplicationTableLayout.addLayout(self.deduplicationActionsLayout)
         self.deduplicationLayout.addLayout(self.deduplicationTableLayout)
         self.deduplicationLayout.setStretch(0, 2)
-        self.deduplicationLayout.setStretch(1, 1)
+        self.deduplicationLayout.setStretch(2, 1)
         self.stackedWidget.addWidget(self.deduplicationPage)
         self.imageDetailsPage = QtWidgets.QWidget()
         self.imageDetailsPage.setStyleSheet("background:rgb(255, 255, 255);")
