@@ -291,22 +291,20 @@ class WriteExifManager(QObject):
             if folder_path and os.path.exists(folder_path) and os.path.isdir(folder_path):
                 folders_dict.append({
                     'path': folder_path,
-                    'include_sub': True  # include_sub = True by default
+                    'include_sub': True
                 })
         
-        # 获取镜头信息
         lens_info = self.get_lens_info_for_camera(camera_brand, camera_model)
         
         if lens_info['lens_brand'] or lens_info['lens_model']:
             self.log("INFO", f"为相机 {camera_brand} {camera_model} 匹配到镜头: {lens_info['lens_brand']} {lens_info['lens_model']}")
         
-        # 获取拍摄时间设置
         shoot_time_source = self.parent.shootTimeSource.currentIndex()
         shoot_time_value = 0
         
-        if shoot_time_source == 1:  # 从文件名
+        if shoot_time_source == 1:
             shoot_time_value = 1
-        elif shoot_time_source == 2:  # 指定时间
+        elif shoot_time_source == 2:
             shoot_time_value = self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss")
         
         exif_config = {
@@ -379,7 +377,6 @@ class WriteExifManager(QObject):
 
         self.log("WARNING", f"写入摘要: {operation_summary}")
 
-        # 在所有验证都通过后，才设置is_running并更新按钮状态
         self.is_running = True
         self.update_button_state()
         
@@ -508,7 +505,6 @@ class WriteExifManager(QObject):
             except ValueError:
                 logger.warning(f"无法转换星级评分: {star_rating}")
         
-        # 加载拍摄时间设置
         if shoot_time_source := config_manager.get_setting("exif_shoot_time_source"):
             try:
                 self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_source))
@@ -539,7 +535,6 @@ class WriteExifManager(QObject):
 
             config_manager.update_setting("exif_star_rating", self.selected_star)
             
-            # 保存拍摄时间设置
             config_manager.update_setting("exif_shoot_time_source", self.parent.shootTimeSource.currentIndex())
             config_manager.update_setting("exif_shoot_time", self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
         except Exception as e:
