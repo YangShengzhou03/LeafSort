@@ -1122,7 +1122,7 @@ class WriteExifThread(QThread):
         patterns = [
             r'^(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?:[-_]?(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
             r'^(?P<year>\d{4})[-/](?P<month>\d{2})[-/](?P<day>\d{2})(?:[-_](?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
-            r'(?P<year>\d{4})[年\\-\.\/\s]?(?P<month>1[0-2]|0?[1-9])[月\\-\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[日号\\-\.\/\s]?(?:[^0-9]*?)?(?P<hour>[0-2]?\d)?(?P<minute>[0-5]?\d)?(?P<second>[0-5]?\d)?'
+            r'(?P<year>\d{4})[-年\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-月\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[-日号\\.\/\s]?(?:[^0-9]*?)?(?P<hour>[0-2]?\d)?(?P<minute>[0-5]?\d)?(?P<second>[0-5]?\d)?'
         ]
         
         for pattern in patterns:

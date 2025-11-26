@@ -3900,7 +3900,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>160</width>
+                               <width>200</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -3932,7 +3932,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>250</width>
+                               <width>280</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -3983,7 +3983,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>300</width>
+                               <width>280</width>
                                <height>16777215</height>
                               </size>
                              </property>
