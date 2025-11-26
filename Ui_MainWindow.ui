@@ -4478,7 +4478,64 @@ border-bottom-left-radius:0px;</string>
                         <number>0</number>
                        </property>
                        <item>
-                        <widget class="QListWidget" name="duplicateItemsListWidget"/>
+                        <widget class="QListWidget" name="duplicateItemsListWidget">
+                         <property name="styleSheet">
+                          <string notr="true">QListWidget {
+    background-color: rgba(255, 255, 255, 0.8);
+    border: none;
+    border-radius: 2px;
+    outline: none;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+
+QListWidget::item {
+    background-color: transparent;
+    padding: 8px 12px;
+    margin: 2px 4px;
+    border-radius: 6px;
+    color: #374151;
+    font-size: 13px;
+    border: 1px solid transparent;
+    transition: all 0.2s ease;
+}
+
+QListWidget::item:hover {
+    background-color: #f3f4f6;
+    border-color: #e5e7eb;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+QListWidget::item:selected {
+    background: qlineargradient(
+        spread:pad, x1:0, y1:0, x2:1, y2:0,
+        stop:0 rgba(139, 92, 246, 0.15),
+        stop:1 rgba(139, 92, 246, 0.05)
+    );
+    color: #6d28d9;
+    font-weight: 500;
+    border-left: 3px solid #8b5cf6;
+    padding-left: 10px;
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #f3f4f6;
+    width: 6px;
+    margin: 2px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical {
+    background: #cbd5e1;
+    min-height: 20px;
+    border-radius: 3px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #94a3b8;
+}</string>
+                         </property>
+                        </widget>
                        </item>
                       </layout>
                      </widget>
@@ -4501,7 +4558,96 @@ border-bottom-left-radius:0px;</string>
                    <item>
                     <widget class="QTableWidget" name="duplicateFilesTableWidget">
                      <property name="styleSheet">
-                      <string notr="true"/>
+                      <string notr="true">QTableWidget {
+    background-color: rgba(255, 255, 255, 0.9);
+    border: none;
+    border-radius: 2px;
+    gridline-color: rgba(0, 0, 0, 0.05);
+    outline: none;
+    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+}
+
+QTableWidget::item {
+    padding: 8px 12px;
+    border: none;
+    color: #374151;
+    font-size: 13px;
+    background-color: transparent;
+}
+
+QTableWidget::item:selected {
+    background-color: rgba(139, 92, 246, 0.1);
+    color: #6d28d9;
+    font-weight: 500;
+}
+
+QTableWidget::item:hover {
+    background-color: rgba(139, 92, 246, 0.05);
+}
+
+QHeaderView::section {
+    background-color: rgba(249, 250, 251, 0.9);
+    padding: 10px 12px;
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+    color: #4b5563;
+    font-size: 12px;
+    font-weight: 600;
+    text-align: left;
+}
+
+QHeaderView::section:checked {
+    background-color: rgba(139, 92, 246, 0.15);
+    color: #6d28d9;
+}
+
+QHeaderView::section:hover {
+    background-color: rgba(139, 92, 246, 0.08);
+}
+
+QTableCornerButton::section {
+    background-color: rgba(249, 250, 251, 0.9);
+    border: none;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+QScrollBar:vertical {
+    border: none;
+    background: #f3f4f6;
+    width: 8px;
+    margin: 2px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical {
+    background: #cbd5e1;
+    min-height: 24px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+QScrollBar::handle:vertical:hover {
+    background: #94a3b8;
+}
+
+QScrollBar:horizontal {
+    border: none;
+    background: #f3f4f6;
+    height: 8px;
+    margin: 2px;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal {
+    background: #cbd5e1;
+    min-width: 24px;
+    border-radius: 4px;
+    transition: background 0.2s ease;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background: #94a3b8;
+}</string>
                      </property>
                     </widget>
                    </item>
