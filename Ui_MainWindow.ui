@@ -4288,7 +4288,7 @@ QTextEdit:focus {
                 </layout>
                </widget>
                <widget class="QWidget" name="deduplicationPage">
-                <layout class="QHBoxLayout" name="deduplicationLayout" stretch="2,0,1">
+                <layout class="QHBoxLayout" name="deduplicationLayout" stretch="2,0,3">
                  <property name="spacing">
                   <number>0</number>
                  </property>
@@ -4391,7 +4391,7 @@ QProgressBar::chunk {
                         </widget>
                        </item>
                        <item>
-                        <widget class="QToolButton" name="btnStartContrast">
+                        <widget class="QToolButton" name="btnStartDeduplication">
                          <property name="minimumSize">
                           <size>
                            <width>80</width>
@@ -4439,7 +4439,7 @@ QToolButton:pressed {
 }</string>
                          </property>
                          <property name="text">
-                          <string>开始对比</string>
+                          <string>开始查重</string>
                          </property>
                          <property name="iconSize">
                           <size>
@@ -4487,7 +4487,7 @@ border-bottom-left-radius:0px;</string>
                   </widget>
                  </item>
                  <item>
-                  <widget class="Line" name="line">
+                  <widget class="Line" name="verticalDividerDeduplication">
                    <property name="styleSheet">
                     <string notr="true">background-color: rgb(235, 236, 237);</string>
                    </property>
