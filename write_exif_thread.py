@@ -19,10 +19,8 @@ try:
     register_heif_opener()
 except ImportError:
     PILLOW_HEIF_AVAILABLE = False
-    logger.warning("pillow_heif库未安装，HEIF/HEIC格式文件将无法处理")
 
 class WriteExifThread(QThread):
-    
     progress_updated = pyqtSignal(int)
     finished_conversion = pyqtSignal()
     log_signal = pyqtSignal(str, str)
@@ -90,7 +88,6 @@ class WriteExifThread(QThread):
         self.finished_conversion.emit()
     
     def _process_all_images(self, image_paths):
-        """处理所有图像，单线程执行流程"""
         success_count = 0
         error_count = 0
         
@@ -141,7 +138,6 @@ class WriteExifThread(QThread):
         self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
 
     def _collect_image_paths(self):
-        """收集所有图像路径"""
         image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv')
         raw_extensions = ('.cr2', '.cr3', '.nef', '.arw', '.orf', '.dng', '.raf')
         all_extensions = image_extensions + raw_extensions
@@ -169,7 +165,6 @@ class WriteExifThread(QThread):
         return image_paths
     
     def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
-        """处理包含子文件夹的情况"""
         try:
             for root, _, files in os.walk(folder_path):
                 if self.isInterruptionRequested():
@@ -181,7 +176,6 @@ class WriteExifThread(QThread):
             self.log("ERROR", error_msg)
     
     def _process_folder_without_subfolders(self, folder_path, image_extensions, image_paths):
-        """处理不包含子文件夹的情况"""
         try:
             if os.path.isdir(folder_path):
                 files = os.listdir(folder_path)
@@ -196,7 +190,6 @@ class WriteExifThread(QThread):
             self.log("ERROR", f"列出文件夹 {os.path.basename(folder_path)} 内容时出错: {str(e)}")
     
     def _process_folder_content(self, root, files, image_extensions, image_paths):
-        """处理文件夹内容，添加符合条件的图像文件"""
         try:
             image_paths.extend(
                 os.path.join(root, file)
@@ -217,7 +210,6 @@ class WriteExifThread(QThread):
             if not self._validate_file(image_path):
                 return
             
-            # 复制文件到目标文件夹
             target_path = self._copy_to_target(image_path)
             if not target_path:
                 return
@@ -270,30 +262,22 @@ class WriteExifThread(QThread):
         self.log("ERROR", error_msg)
     
     def _get_target_path(self, source_path):
-        """获取目标文件路径，保持目录结构"""
-        # 找到与源路径匹配的根文件夹
         for root_folder, include_sub in self.folders_dict.items():
             if source_path.startswith(root_folder):
-                # 计算相对路径
                 relative_path = os.path.relpath(source_path, root_folder)
-                # 构建目标路径
                 target_path = os.path.join(self.target_folder, relative_path)
                 return target_path
         
-        # 如果没有找到匹配的根文件夹，使用文件名
         return os.path.join(self.target_folder, os.path.basename(source_path))
     
     def _copy_to_target(self, source_path):
-        """复制文件到目标文件夹，保持目录结构"""
         try:
             target_path = self._get_target_path(source_path)
             target_dir = os.path.dirname(target_path)
             
-            # 创建目标目录
             if not os.path.exists(target_dir):
                 os.makedirs(target_dir)
             
-            # 复制文件
             shutil.copy2(source_path, target_path)
             return target_path
             
@@ -360,7 +344,6 @@ class WriteExifThread(QThread):
             exif_dict["GPS"] = {}
     
     def _update_basic_fields(self, exif_dict, updated_fields):
-        # 先处理基本字段
         basic_mappings = [
             ("title", "0th", piexif.ImageIFD.ImageDescription, "title", "标题: {}", "utf-8"),
             ("author", "0th", 315, "author", "作者: {}", "utf-8"),
@@ -384,11 +367,9 @@ class WriteExifThread(QThread):
                 except Exception as e:
                     logger.error(f"写入基本字段 {config_key} 失败: {str(e)}")
         
-        # 单独处理镜头信息，确保Exif部分存在并添加更好的错误处理
         if "Exif" not in exif_dict:
             exif_dict["Exif"] = {}
         
-        # 处理镜头品牌
         lens_brand = self.exif_config.get('lens_brand')
         if lens_brand:
             try:
@@ -398,7 +379,6 @@ class WriteExifThread(QThread):
             except Exception as e:
                 logger.error(f"写入镜头品牌失败: {str(e)}")
         
-        # 处理镜头型号
         lens_model = self.exif_config.get('lens_model')
         if lens_model:
             try:
@@ -436,7 +416,6 @@ class WriteExifThread(QThread):
             self.log("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
 
     def _handle_shoot_time(self, exif_dict, image_path, updated_fields, shoot_time):
-        """处理拍摄时间逻辑"""
         if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(image_path)
             if date_from_filename:
@@ -552,7 +531,6 @@ class WriteExifThread(QThread):
                 logger.debug("清理临时文件失败: %s", str(e))
     
     def _load_heic_exif_data(self, heif_file, image, image_path):
-        """加载HEIF文件的现有EXIF数据"""
         exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
         
         try:

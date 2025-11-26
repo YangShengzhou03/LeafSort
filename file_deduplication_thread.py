@@ -30,7 +30,6 @@ class FileScanThread(QtCore.QThread):
     
     def stop(self):
         self._stop_flag = True
-        logger.info("扫描线程收到停止信号")
     
     def _calculate_md5(self, file_path, block_size=8192*16):
         with self._cache_lock:
@@ -119,7 +118,6 @@ class FileScanThread(QtCore.QThread):
                     md5_hash.update(chunk)
                     bytes_read += len(chunk)
                     
-                    # 每读取100MB发送一次进度更新
                     if bytes_read % (100 * 1024 * 1024) < block_size:
                         progress = min(100, int((bytes_read / file_size) * 100))
                         self.progress_updated.emit(progress, f"正在计算MD5: {os.path.basename(file_path)}")
@@ -135,7 +133,7 @@ class FileScanThread(QtCore.QThread):
             
             return file_hash
         except OSError as e:
-            if e.errno == 22:  # 无效参数错误
+            if e.errno == 22:
                 logger.warning(f"文件名编码问题，跳过文件: {file_path}")
             else:
                 logger.error(f"分块计算文件{file_path}的MD5值失败: {str(e)}")
@@ -244,7 +242,6 @@ class FileScanThread(QtCore.QThread):
                     
                     file_path = os.path.join(root, filename)
                     
-                    # 检查文件过滤器
                     if self.filters:
                         file_ext = os.path.splitext(filename)[1].lower()
                         if file_ext not in self.filters:
@@ -296,7 +293,6 @@ class FileScanThread(QtCore.QThread):
                 skipped_files += 1
                 logger.warning(f"获取文件大小失败 {file_path}: {str(e)}")
         
-        # 输出大小分组统计信息
         single_files = 0
         potential_duplicates = 0
         for size, files in size_groups.items():
@@ -372,12 +368,7 @@ class FileScanThread(QtCore.QThread):
                     logger.warning(f"获取文件信息失败 {file}: {str(e)}")
         
         if len(duplicate_groups) == 0 and potential_duplicates > 0:
-            logger.warning("警告: 虽然存在相同大小的文件组，但未找到MD5值完全相同的重复文件")
-            logger.warning("可能原因:")
-            logger.warning("1. 文件内容实际上不同，只是大小相同")
-            logger.warning("2. 文件访问权限问题")
-            logger.warning("3. 文件在扫描过程中被修改")
-            logger.warning("4. 存在隐藏文件或系统文件导致判断错误")
+            pass
         
         return duplicate_groups
     
@@ -390,10 +381,9 @@ class FileScanThread(QtCore.QThread):
 
 class FileDeduplicateThread(QtCore.QThread):
     
-    # 信号定义
-    progress_updated = QtCore.pyqtSignal(int, str)  # 进度更新信号
-    deduplicate_completed = QtCore.pyqtSignal(int, int)  # 去重完成信号
-    error_occurred = QtCore.pyqtSignal(str)  # 错误发生信号
+    progress_updated = QtCore.pyqtSignal(int, str)
+    deduplicate_completed = QtCore.pyqtSignal(int, int)
+    error_occurred = QtCore.pyqtSignal(str)
     
     def __init__(self, duplicate_groups, delete_list=None):
         super().__init__()
@@ -403,7 +393,6 @@ class FileDeduplicateThread(QtCore.QThread):
     
     def stop(self):
         self._stop_flag = True
-        logger.info("去重线程收到停止信号")
     
     def run(self):
         logger.info(f"开始执行去重操作，共有 {len(self.delete_list)} 个文件待删除")
@@ -446,7 +435,6 @@ class FileDeduplicateThread(QtCore.QThread):
                         failed_deletions += 1
                         logger.error(f"删除文件{file_path}失败: {str(e)}")
             else:
-                # 使用重复组进行去重
                 for group_idx, file_group in enumerate(self.duplicate_groups):
                     for file_idx, file_path in enumerate(file_group):
                         if file_idx == 0:
