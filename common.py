@@ -110,13 +110,14 @@ class FileMagicNumberDetector:
             logger.error(f"检测文件魔数时出错: {str(e)}")
             return None
     
-    def verify_file_extension(self, file_path: str) -> Tuple[bool, Optional[Dict[str, str]]]:
-        magic_info = self.get_file_magic_info(file_path)
+    def verify_file_extension(self, file_path) -> Tuple[bool, Optional[Dict[str, str]]]:
+        file_path_str = str(file_path)
+        magic_info = self.get_file_magic_info(file_path_str)
         
         if not magic_info or not magic_info['detected']:
             return True, magic_info
         
-        _, actual_ext = os.path.splitext(file_path.lower())
+        _, actual_ext = os.path.splitext(file_path_str.lower())
         
         expected_ext = magic_info['extension']
         

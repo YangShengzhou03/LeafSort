@@ -458,7 +458,8 @@ class SmartArrangeThread(QtCore.QThread):
     def get_exif_data(self, file_path):
         exif_data = {}
         file_path_obj = Path(file_path)
-        suffix = file_path_obj.suffix.lower()
+        # 确保先将suffix转换为字符串再调用lower方法
+        suffix = str(file_path_obj.suffix).lower()
         create_time = datetime.fromtimestamp(file_path_obj.stat().st_ctime)
         modify_time = datetime.fromtimestamp(file_path_obj.stat().st_mtime)
         
@@ -471,11 +472,13 @@ class SmartArrangeThread(QtCore.QThread):
                 try:
                     # 使用文件头检查或verify_file_extension函数
                     if 'verify_file_extension' in globals():
-                        file_type = verify_file_extension(file_path)
-                        if file_type and file_type != 'image/heic':
-                            self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{file_type}")
+                        is_valid_ext, magic_info = verify_file_extension(file_path)
+                        if not is_valid_ext and magic_info:
+                            expected_ext = magic_info.get('extension', '')
+                            expected_type = magic_info.get('file_type', '')
+                            self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
                             # 对于伪装成HEIC的JPG文件，尝试用JPG方式处理
-                            if 'jpg' in file_type:
+                            if magic_info and magic_info.get('file_type', '').lower() == '图像' and magic_info.get('extension', '').lower() == '.jpg':
                                 date_taken = self._process_image_exif(file_path_obj, exif_data)
                             else:
                                 # 其他类型的文件使用默认时间
@@ -1150,10 +1153,12 @@ class SmartArrangeThread(QtCore.QThread):
     def process_single_file(self, file_path, base_folder=None):
         try:
             # 先验证文件扩展名是否与内容匹配
-            is_valid_ext, magic_info = verify_file_extension(str(file_path))
+            # 确保传入字符串类型给verify_file_extension
+            file_path_str = str(file_path)
+            is_valid_ext, magic_info = verify_file_extension(file_path_str)
             if not is_valid_ext and magic_info and magic_info.get('detected', False):
                 # 获取文件扩展名
-                _, actual_ext = os.path.splitext(str(file_path).lower())
+                _, actual_ext = os.path.splitext(file_path_str.lower())
                 expected_ext = magic_info.get('extension', '')
                 expected_type = magic_info.get('file_type', '')
                 # 记录ERROR日志
@@ -1280,7 +1285,8 @@ class SmartArrangeThread(QtCore.QThread):
             if folder_name:
                 target_path = target_path / folder_name
         
-        file_type = get_file_type(file_path)
+        # 确保传递字符串类型给get_file_type
+        file_type = get_file_type(str(file_path))
         target_path = target_path / file_type
         
         return target_path

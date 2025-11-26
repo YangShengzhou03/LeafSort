@@ -1,6 +1,6 @@
 {
     "version": "1.1",
-    "last_modified": "2025-11-26T12:26:20.442186",
+    "last_modified": "2025-11-27T00:00:24.461144",
     "folders": [],
     "settings": {
         "thumbnail_size": 200,
@@ -25,14 +25,14 @@
             "height": 580
         },
         "location_cache_tolerance": 0.027,
-        "exif_title": "我爱写入标题",
-        "exif_author": "我爱写入作者",
-        "exif_subject": "我爱写入主题",
-        "exif_copyright": "我爱版权",
+        "exif_title": "标题123",
+        "exif_author": "作者123",
+        "exif_subject": "主题123",
+        "exif_copyright": "版权123",
         "exif_latitude": "39.0685",
         "exif_longitude": "116.4735",
-        "exif_camera_brand": "Huawei",
-        "exif_camera_model": "Mate 70 Pro",
+        "exif_camera_brand": "Xiaomi",
+        "exif_camera_model": "REDMI K80 Ultra",
         "exif_star_rating": 3
     },
     "api_limits": {

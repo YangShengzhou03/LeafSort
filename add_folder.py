@@ -69,7 +69,7 @@ class FolderPage(QtWidgets.QWidget):
             try:
                 items = os.listdir(selected_path)
                 if items:
-                    QtWidgets.QMessageBox.warning(self, "注意", "目标文件夹不是一个空文件夹。",
+                    QtWidgets.QMessageBox.warning(self, "请注意，这不是一个空文件夹", "目标文件夹不是一个空文件夹，但不影响您继续。",
                                                   QtWidgets.QMessageBox.StandardButton.Ok)
             except Exception as e:
                 logger.warning(f"检查目标文件夹是否为空时出错: {str(e)}")
