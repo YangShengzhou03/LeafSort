@@ -1,12 +1,10 @@
 from datetime import datetime, timedelta, timezone
 import json
 import os
-import subprocess
 import logging
 import threading
 import shutil
 from pathlib import Path
-import io
 from typing import List, Dict, Any, Optional
 from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
 import exifread
@@ -57,7 +55,6 @@ class SmartArrangeThread(QtCore.QThread):
         super().__init__(parent)
         self._lock = threading.RLock()
         self.log_counter = 0
-        super().__init__(parent)
         self.parent = parent
         self.folders = folders or []
         self.classification_structure = classification_structure or []
@@ -245,16 +242,14 @@ class SmartArrangeThread(QtCore.QThread):
                         percent_complete = int((self.processed_files / self.total_files) * 80)
                         self.progress_signal.emit(percent_complete)
 
-    def _truncate_filename(self, filename, max_length=20):
+
+    
+    def _truncate_filename(self, filename, max_length=50):
         """截断过长的文件名，中间用...省略"""
         if len(filename) <= max_length:
             return filename
-        keep_length = max_length - 3
-        if keep_length <= 0:
-            return filename[:max_length]
-        half = keep_length // 2
-        return f"{filename[:half]}...{filename[-(keep_length-half):]}"
-    
+        return filename[:max_length - 3] + "..."
+        
     def process_renaming(self):
         file_count = {}
         total_rename_files = len(self.files_to_rename)
@@ -1316,8 +1311,3 @@ class SmartArrangeThread(QtCore.QThread):
         
         else:
             return "未知"
-
-    def _truncate_filename(self, filename, max_length=50):
-        if len(filename) <= max_length:
-            return filename
-        return filename[:max_length - 3] + "..."
