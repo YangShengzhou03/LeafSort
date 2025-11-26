@@ -31,3 +31,8 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         # 步骤2：设置表头（列名）
         headers = ["文件路径", "文件大小(KB)", "修改时间"]
         self.parent.duplicateFilesTableWidget.setHorizontalHeaderLabels(headers)
+
+
+        self.parent.btnStartDeduplication.clicked.connect(lambda: logger.info('Start Deduplication Clicked'))
+        self.parent.btnRandomSelect.clicked.connect(lambda: logger.info('random select Clicked'))
+        self.parent.btnMoveToRecycleBin.clicked.connect(lambda: logger.info('move to Recycle Clicked'))
