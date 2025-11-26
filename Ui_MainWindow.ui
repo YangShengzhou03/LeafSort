@@ -4288,7 +4288,7 @@ QTextEdit:focus {
                 </layout>
                </widget>
                <widget class="QWidget" name="deduplicationPage">
-                <layout class="QHBoxLayout" name="viewerPageLayout" stretch="2,1">
+                <layout class="QHBoxLayout" name="deduplicationLayout" stretch="2,1">
                  <property name="spacing">
                   <number>0</number>
                  </property>
@@ -4305,8 +4305,8 @@ QTextEdit:focus {
                   <number>0</number>
                  </property>
                  <item>
-                  <widget class="QWidget" name="verticalWidget" native="true">
-                   <layout class="QVBoxLayout" name="viewerContentLayout" stretch="0,3">
+                  <widget class="QWidget" name="deduplicationViewerWidget" native="true">
+                   <layout class="QVBoxLayout" name="deduplicationViewerLayout" stretch="0,3">
                     <property name="spacing">
                      <number>0</number>
                     </property>
@@ -4323,7 +4323,7 @@ QTextEdit:focus {
                      <number>0</number>
                     </property>
                     <item>
-                     <widget class="QFrame" name="verticalFrame_9">
+                     <widget class="QFrame" name="deduplicationHeaderFrame">
                       <property name="styleSheet">
                        <string notr="true">background:rgb(255, 255, 255);
 border-top-left-radius:0px;
@@ -4331,7 +4331,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:0px;
 border-bottom-left-radius:0px;</string>
                       </property>
-                      <layout class="QHBoxLayout" name="viewerMainLayout" stretch="1,0">
+                      <layout class="QHBoxLayout" name="deduplicationHeaderLayout" stretch="1,0">
                        <property name="spacing">
                         <number>9</number>
                        </property>
@@ -4394,7 +4394,7 @@ QProgressBar::chunk {
                         <widget class="QToolButton" name="btnStartContrast">
                          <property name="minimumSize">
                           <size>
-                           <width>88</width>
+                           <width>104</width>
                            <height>32</height>
                           </size>
                          </property>
@@ -4408,7 +4408,7 @@ QProgressBar::chunk {
                           <string notr="true">QToolButton {
     color: white;
     border: none;
-    padding: 6px 6px;
+    padding: 8px 12px;
     border-radius: 6px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
@@ -4416,6 +4416,8 @@ QProgressBar::chunk {
         stop:1 rgba(119, 111, 252, 255)
     );
     font-size: 12px;
+    font-weight: 500;
+    min-width: 80px;
 }
 
 QToolButton:hover {
@@ -4424,6 +4426,7 @@ QToolButton:hover {
         stop:0.66 rgba(154, 139, 255, 255),
         stop:1 rgba(139, 131, 254, 255)
     );
+    box-shadow: 0 3px 8px rgba(134, 119, 253, 0.3);
 }
 
 QToolButton:pressed {
@@ -4432,6 +4435,7 @@ QToolButton:pressed {
         stop:0.66 rgba(94, 79, 253, 255),
         stop:1 rgba(79, 71, 252, 255)
     );
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }</string>
                          </property>
                          <property name="text">
@@ -4449,7 +4453,7 @@ QToolButton:pressed {
                      </widget>
                     </item>
                     <item>
-                     <widget class="QFrame" name="verticalFrame_13">
+                     <widget class="QFrame" name="deduplicationViewerFrame">
                       <property name="styleSheet">
                        <string notr="true">background:rgb(255, 255, 255);
 border-top-left-radius:0px;
@@ -4457,7 +4461,7 @@ border-top-right-radius:0px;
 border-bottom-right-radius:12px;
 border-bottom-left-radius:0px;</string>
                       </property>
-                      <layout class="QHBoxLayout" name="viewerToolbarLayout">
+                      <layout class="QHBoxLayout" name="deduplicationViewerContentLayout">
                        <property name="spacing">
                         <number>0</number>
                        </property>
@@ -4474,7 +4478,7 @@ border-bottom-left-radius:0px;</string>
                         <number>0</number>
                        </property>
                        <item>
-                        <widget class="QListWidget" name="listWidget"/>
+                        <widget class="QListWidget" name="duplicateItemsListWidget"/>
                        </item>
                       </layout>
                      </widget>
@@ -4483,22 +4487,22 @@ border-bottom-left-radius:0px;</string>
                   </widget>
                  </item>
                  <item>
-                  <layout class="QVBoxLayout" name="verticalLayout">
+                  <layout class="QVBoxLayout" name="deduplicationTableLayout">
                    <item>
-                    <widget class="QTableWidget" name="tableWidget"/>
+                    <widget class="QTableWidget" name="duplicateFilesTableWidget"/>
                    </item>
                    <item>
-                    <layout class="QHBoxLayout" name="horizontalLayout">
+                    <layout class="QHBoxLayout" name="deduplicationActionsLayout">
                      <property name="topMargin">
                       <number>0</number>
                      </property>
                      <item>
-                      <widget class="QToolButton" name="toolButton_2">
+                      <widget class="QToolButton" name="btnRandomSelect">
                        <property name="styleSheet">
                         <string notr="true">QToolButton {
     color: white;
     border: none;
-    padding: 6px 6px;
+    padding: 8px 12px;
     border-radius: 6px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
@@ -4506,6 +4510,8 @@ border-bottom-left-radius:0px;</string>
         stop:1 rgba(119, 111, 252, 255)
     );
     font-size: 12px;
+    font-weight: 500;
+    min-width: 80px;
 }
 
 QToolButton:hover {
@@ -4514,6 +4520,7 @@ QToolButton:hover {
         stop:0.66 rgba(154, 139, 255, 255),
         stop:1 rgba(139, 131, 254, 255)
     );
+    box-shadow: 0 3px 8px rgba(134, 119, 253, 0.3);
 }
 
 QToolButton:pressed {
@@ -4522,6 +4529,7 @@ QToolButton:pressed {
         stop:0.66 rgba(94, 79, 253, 255),
         stop:1 rgba(79, 71, 252, 255)
     );
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }</string>
                        </property>
                        <property name="text">
@@ -4530,35 +4538,39 @@ QToolButton:pressed {
                       </widget>
                      </item>
                      <item>
-                      <widget class="QToolButton" name="toolButton_3">
+                      <widget class="QToolButton" name="btnMoveToRecycleBin">
                        <property name="styleSheet">
                         <string notr="true">QToolButton {
     color: white;
     border: none;
-    padding: 6px 6px;
+    padding: 8px 12px;
     border-radius: 6px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-        stop:0.66 rgba(134, 119, 253, 255),
-        stop:1 rgba(119, 111, 252, 255)
+        stop:0.66 rgba(244, 67, 54, 255),
+        stop:1 rgba(233, 30, 99, 255)
     );
     font-size: 12px;
+    font-weight: 500;
+    min-width: 80px;
 }
 
 QToolButton:hover {
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-        stop:0.66 rgba(154, 139, 255, 255),
-        stop:1 rgba(139, 131, 254, 255)
+        stop:0.66 rgba(246, 88, 76, 255),
+        stop:1 rgba(236, 64, 122, 255)
     );
+    box-shadow: 0 3px 8px rgba(244, 67, 54, 0.3);
 }
 
 QToolButton:pressed {
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-        stop:0.66 rgba(94, 79, 253, 255),
-        stop:1 rgba(79, 71, 252, 255)
+        stop:0.66 rgba(211, 47, 47, 255),
+        stop:1 rgba(194, 24, 91, 255)
     );
+    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);
 }</string>
                        </property>
                        <property name="text">

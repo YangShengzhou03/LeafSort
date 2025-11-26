@@ -2756,28 +2756,28 @@ class Ui_MainWindow(object):
         self.stackedWidget.addWidget(self.pageClassification)
         self.deduplicationPage = QtWidgets.QWidget()
         self.deduplicationPage.setObjectName("deduplicationPage")
-        self.viewerPageLayout = QtWidgets.QHBoxLayout(self.deduplicationPage)
-        self.viewerPageLayout.setContentsMargins(0, 0, 0, 0)
-        self.viewerPageLayout.setSpacing(0)
-        self.viewerPageLayout.setObjectName("viewerPageLayout")
-        self.verticalWidget = QtWidgets.QWidget(parent=self.deduplicationPage)
-        self.verticalWidget.setObjectName("verticalWidget")
-        self.viewerContentLayout = QtWidgets.QVBoxLayout(self.verticalWidget)
-        self.viewerContentLayout.setContentsMargins(0, 0, 0, 0)
-        self.viewerContentLayout.setSpacing(0)
-        self.viewerContentLayout.setObjectName("viewerContentLayout")
-        self.verticalFrame_9 = QtWidgets.QFrame(parent=self.verticalWidget)
-        self.verticalFrame_9.setStyleSheet("background:rgb(255, 255, 255);\n"
+        self.deduplicationLayout = QtWidgets.QHBoxLayout(self.deduplicationPage)
+        self.deduplicationLayout.setContentsMargins(0, 0, 0, 0)
+        self.deduplicationLayout.setSpacing(0)
+        self.deduplicationLayout.setObjectName("deduplicationLayout")
+        self.deduplicationViewerWidget = QtWidgets.QWidget(parent=self.deduplicationPage)
+        self.deduplicationViewerWidget.setObjectName("deduplicationViewerWidget")
+        self.deduplicationViewerLayout = QtWidgets.QVBoxLayout(self.deduplicationViewerWidget)
+        self.deduplicationViewerLayout.setContentsMargins(0, 0, 0, 0)
+        self.deduplicationViewerLayout.setSpacing(0)
+        self.deduplicationViewerLayout.setObjectName("deduplicationViewerLayout")
+        self.deduplicationHeaderFrame = QtWidgets.QFrame(parent=self.deduplicationViewerWidget)
+        self.deduplicationHeaderFrame.setStyleSheet("background:rgb(255, 255, 255);\n"
 "border-top-left-radius:0px;\n"
 "border-top-right-radius:0px;\n"
 "border-bottom-right-radius:0px;\n"
 "border-bottom-left-radius:0px;")
-        self.verticalFrame_9.setObjectName("verticalFrame_9")
-        self.viewerMainLayout = QtWidgets.QHBoxLayout(self.verticalFrame_9)
-        self.viewerMainLayout.setContentsMargins(9, 6, 9, 6)
-        self.viewerMainLayout.setSpacing(9)
-        self.viewerMainLayout.setObjectName("viewerMainLayout")
-        self.contrastProgressBar = QtWidgets.QProgressBar(parent=self.verticalFrame_9)
+        self.deduplicationHeaderFrame.setObjectName("deduplicationHeaderFrame")
+        self.deduplicationHeaderLayout = QtWidgets.QHBoxLayout(self.deduplicationHeaderFrame)
+        self.deduplicationHeaderLayout.setContentsMargins(9, 6, 9, 6)
+        self.deduplicationHeaderLayout.setSpacing(9)
+        self.deduplicationHeaderLayout.setObjectName("deduplicationHeaderLayout")
+        self.contrastProgressBar = QtWidgets.QProgressBar(parent=self.deduplicationHeaderFrame)
         self.contrastProgressBar.setMinimumSize(QtCore.QSize(0, 0))
         self.contrastProgressBar.setMaximumSize(QtCore.QSize(16777215, 16777215))
         self.contrastProgressBar.setStyleSheet("QProgressBar {\n"
@@ -2804,14 +2804,14 @@ class Ui_MainWindow(object):
 "}")
         self.contrastProgressBar.setProperty("value", 0)
         self.contrastProgressBar.setObjectName("contrastProgressBar")
-        self.viewerMainLayout.addWidget(self.contrastProgressBar)
-        self.btnStartContrast = QtWidgets.QToolButton(parent=self.verticalFrame_9)
-        self.btnStartContrast.setMinimumSize(QtCore.QSize(88, 32))
+        self.deduplicationHeaderLayout.addWidget(self.contrastProgressBar)
+        self.btnStartContrast = QtWidgets.QToolButton(parent=self.deduplicationHeaderFrame)
+        self.btnStartContrast.setMinimumSize(QtCore.QSize(104, 32))
         self.btnStartContrast.setMaximumSize(QtCore.QSize(88, 16777215))
         self.btnStartContrast.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 6px 6px;\n"
+"    padding: 8px 12px;\n"
 "    border-radius: 6px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
@@ -2819,6 +2819,8 @@ class Ui_MainWindow(object):
 "        stop:1 rgba(119, 111, 252, 255)\n"
 "    );\n"
 "    font-size: 12px;\n"
+"    font-weight: 500;\n"
+"    min-width: 80px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2827,6 +2829,7 @@ class Ui_MainWindow(object):
 "        stop:0.66 rgba(154, 139, 255, 255),\n"
 "        stop:1 rgba(139, 131, 254, 255)\n"
 "    );\n"
+"    box-shadow: 0 3px 8px rgba(134, 119, 253, 0.3);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
@@ -2835,44 +2838,45 @@ class Ui_MainWindow(object):
 "        stop:0.66 rgba(94, 79, 253, 255),\n"
 "        stop:1 rgba(79, 71, 252, 255)\n"
 "    );\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
 "}")
         self.btnStartContrast.setIconSize(QtCore.QSize(24, 24))
         self.btnStartContrast.setObjectName("btnStartContrast")
-        self.viewerMainLayout.addWidget(self.btnStartContrast)
-        self.viewerMainLayout.setStretch(0, 1)
-        self.viewerContentLayout.addWidget(self.verticalFrame_9)
-        self.verticalFrame_13 = QtWidgets.QFrame(parent=self.verticalWidget)
-        self.verticalFrame_13.setStyleSheet("background:rgb(255, 255, 255);\n"
+        self.deduplicationHeaderLayout.addWidget(self.btnStartContrast)
+        self.deduplicationHeaderLayout.setStretch(0, 1)
+        self.deduplicationViewerLayout.addWidget(self.deduplicationHeaderFrame)
+        self.deduplicationViewerFrame = QtWidgets.QFrame(parent=self.deduplicationViewerWidget)
+        self.deduplicationViewerFrame.setStyleSheet("background:rgb(255, 255, 255);\n"
 "border-top-left-radius:0px;\n"
 "border-top-right-radius:0px;\n"
 "border-bottom-right-radius:12px;\n"
 "border-bottom-left-radius:0px;")
-        self.verticalFrame_13.setObjectName("verticalFrame_13")
-        self.viewerToolbarLayout = QtWidgets.QHBoxLayout(self.verticalFrame_13)
-        self.viewerToolbarLayout.setContentsMargins(0, 0, 0, 0)
-        self.viewerToolbarLayout.setSpacing(0)
-        self.viewerToolbarLayout.setObjectName("viewerToolbarLayout")
-        self.listWidget = QtWidgets.QListWidget(parent=self.verticalFrame_13)
-        self.listWidget.setObjectName("listWidget")
-        self.viewerToolbarLayout.addWidget(self.listWidget)
-        self.viewerContentLayout.addWidget(self.verticalFrame_13)
-        self.viewerContentLayout.setStretch(1, 3)
-        self.viewerPageLayout.addWidget(self.verticalWidget)
-        self.verticalLayout = QtWidgets.QVBoxLayout()
-        self.verticalLayout.setObjectName("verticalLayout")
-        self.tableWidget = QtWidgets.QTableWidget(parent=self.deduplicationPage)
-        self.tableWidget.setObjectName("tableWidget")
-        self.tableWidget.setColumnCount(0)
-        self.tableWidget.setRowCount(0)
-        self.verticalLayout.addWidget(self.tableWidget)
-        self.horizontalLayout = QtWidgets.QHBoxLayout()
-        self.horizontalLayout.setContentsMargins(-1, 0, -1, -1)
-        self.horizontalLayout.setObjectName("horizontalLayout")
-        self.toolButton_2 = QtWidgets.QToolButton(parent=self.deduplicationPage)
-        self.toolButton_2.setStyleSheet("QToolButton {\n"
+        self.deduplicationViewerFrame.setObjectName("deduplicationViewerFrame")
+        self.deduplicationViewerContentLayout = QtWidgets.QHBoxLayout(self.deduplicationViewerFrame)
+        self.deduplicationViewerContentLayout.setContentsMargins(0, 0, 0, 0)
+        self.deduplicationViewerContentLayout.setSpacing(0)
+        self.deduplicationViewerContentLayout.setObjectName("deduplicationViewerContentLayout")
+        self.duplicateItemsListWidget = QtWidgets.QListWidget(parent=self.deduplicationViewerFrame)
+        self.duplicateItemsListWidget.setObjectName("duplicateItemsListWidget")
+        self.deduplicationViewerContentLayout.addWidget(self.duplicateItemsListWidget)
+        self.deduplicationViewerLayout.addWidget(self.deduplicationViewerFrame)
+        self.deduplicationViewerLayout.setStretch(1, 3)
+        self.deduplicationLayout.addWidget(self.deduplicationViewerWidget)
+        self.deduplicationTableLayout = QtWidgets.QVBoxLayout()
+        self.deduplicationTableLayout.setObjectName("deduplicationTableLayout")
+        self.duplicateFilesTableWidget = QtWidgets.QTableWidget(parent=self.deduplicationPage)
+        self.duplicateFilesTableWidget.setObjectName("duplicateFilesTableWidget")
+        self.duplicateFilesTableWidget.setColumnCount(0)
+        self.duplicateFilesTableWidget.setRowCount(0)
+        self.deduplicationTableLayout.addWidget(self.duplicateFilesTableWidget)
+        self.deduplicationActionsLayout = QtWidgets.QHBoxLayout()
+        self.deduplicationActionsLayout.setContentsMargins(-1, 0, -1, -1)
+        self.deduplicationActionsLayout.setObjectName("deduplicationActionsLayout")
+        self.btnRandomSelect = QtWidgets.QToolButton(parent=self.deduplicationPage)
+        self.btnRandomSelect.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 6px 6px;\n"
+"    padding: 8px 12px;\n"
 "    border-radius: 6px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
@@ -2880,6 +2884,8 @@ class Ui_MainWindow(object):
 "        stop:1 rgba(119, 111, 252, 255)\n"
 "    );\n"
 "    font-size: 12px;\n"
+"    font-weight: 500;\n"
+"    min-width: 80px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
@@ -2888,6 +2894,7 @@ class Ui_MainWindow(object):
 "        stop:0.66 rgba(154, 139, 255, 255),\n"
 "        stop:1 rgba(139, 131, 254, 255)\n"
 "    );\n"
+"    box-shadow: 0 3px 8px rgba(134, 119, 253, 0.3);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
@@ -2896,44 +2903,49 @@ class Ui_MainWindow(object):
 "        stop:0.66 rgba(94, 79, 253, 255),\n"
 "        stop:1 rgba(79, 71, 252, 255)\n"
 "    );\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
 "}")
-        self.toolButton_2.setObjectName("toolButton_2")
-        self.horizontalLayout.addWidget(self.toolButton_2)
-        self.toolButton_3 = QtWidgets.QToolButton(parent=self.deduplicationPage)
-        self.toolButton_3.setStyleSheet("QToolButton {\n"
+        self.btnRandomSelect.setObjectName("btnRandomSelect")
+        self.deduplicationActionsLayout.addWidget(self.btnRandomSelect)
+        self.btnMoveToRecycleBin = QtWidgets.QToolButton(parent=self.deduplicationPage)
+        self.btnMoveToRecycleBin.setStyleSheet("QToolButton {\n"
 "    color: white;\n"
 "    border: none;\n"
-"    padding: 6px 6px;\n"
+"    padding: 8px 12px;\n"
 "    border-radius: 6px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
-"        stop:0.66 rgba(134, 119, 253, 255),\n"
-"        stop:1 rgba(119, 111, 252, 255)\n"
+"        stop:0.66 rgba(244, 67, 54, 255),\n"
+"        stop:1 rgba(233, 30, 99, 255)\n"
 "    );\n"
 "    font-size: 12px;\n"
+"    font-weight: 500;\n"
+"    min-width: 80px;\n"
 "}\n"
 "\n"
 "QToolButton:hover {\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
-"        stop:0.66 rgba(154, 139, 255, 255),\n"
-"        stop:1 rgba(139, 131, 254, 255)\n"
+"        stop:0.66 rgba(246, 88, 76, 255),\n"
+"        stop:1 rgba(236, 64, 122, 255)\n"
 "    );\n"
+"    box-shadow: 0 3px 8px rgba(244, 67, 54, 0.3);\n"
 "}\n"
 "\n"
 "QToolButton:pressed {\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
-"        stop:0.66 rgba(94, 79, 253, 255),\n"
-"        stop:1 rgba(79, 71, 252, 255)\n"
+"        stop:0.66 rgba(211, 47, 47, 255),\n"
+"        stop:1 rgba(194, 24, 91, 255)\n"
 "    );\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
 "}")
-        self.toolButton_3.setObjectName("toolButton_3")
-        self.horizontalLayout.addWidget(self.toolButton_3)
-        self.verticalLayout.addLayout(self.horizontalLayout)
-        self.viewerPageLayout.addLayout(self.verticalLayout)
-        self.viewerPageLayout.setStretch(0, 2)
-        self.viewerPageLayout.setStretch(1, 1)
+        self.btnMoveToRecycleBin.setObjectName("btnMoveToRecycleBin")
+        self.deduplicationActionsLayout.addWidget(self.btnMoveToRecycleBin)
+        self.deduplicationTableLayout.addLayout(self.deduplicationActionsLayout)
+        self.deduplicationLayout.addLayout(self.deduplicationTableLayout)
+        self.deduplicationLayout.setStretch(0, 2)
+        self.deduplicationLayout.setStretch(1, 1)
         self.stackedWidget.addWidget(self.deduplicationPage)
         self.imageDetailsPage = QtWidgets.QWidget()
         self.imageDetailsPage.setStyleSheet("background:rgb(255, 255, 255);")
@@ -4227,8 +4239,8 @@ class Ui_MainWindow(object):
         self.previewName.setText(_translate("MainWindow", "文件名不变"))
         self.btnStartSmartArrange.setText(_translate("MainWindow", "开始整理"))
         self.btnStartContrast.setText(_translate("MainWindow", "开始对比"))
-        self.toolButton_2.setText(_translate("MainWindow", "随机选择"))
-        self.toolButton_3.setText(_translate("MainWindow", "移至回收站"))
+        self.btnRandomSelect.setText(_translate("MainWindow", "随机选择"))
+        self.btnMoveToRecycleBin.setText(_translate("MainWindow", "移至回收站"))
         self.title.setText(_translate("MainWindow", "标题"))
         self.titleLineEdit.setPlaceholderText(_translate("MainWindow", "请输入图像标题"))
         self.star.setText(_translate("MainWindow", "星级"))
