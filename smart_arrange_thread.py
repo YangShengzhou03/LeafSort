@@ -4,6 +4,8 @@ import os
 import logging
 import threading
 import shutil
+import io
+import subprocess
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
@@ -463,10 +465,29 @@ class SmartArrangeThread(QtCore.QThread):
         date_taken = None
         
         try:
-            if suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
+            # 验证文件类型，特别是对于.HEIC文件
+            if suffix == '.heic':
+                # 尝试验证文件是否真的是HEIC格式
+                try:
+                    # 使用文件头检查或verify_file_extension函数
+                    if 'verify_file_extension' in globals():
+                        file_type = verify_file_extension(file_path)
+                        if file_type and file_type != 'image/heic':
+                            self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{file_type}")
+                            # 对于伪装成HEIC的JPG文件，尝试用JPG方式处理
+                            if 'jpg' in file_type:
+                                date_taken = self._process_image_exif(file_path_obj, exif_data)
+                            else:
+                                # 其他类型的文件使用默认时间
+                                self.log("DEBUG", f"文件实际类型与扩展名不符，使用文件系统时间")
+                except Exception as verify_error:
+                    self.log("DEBUG", f"文件类型验证失败: {str(verify_error)}")
+                
+                # 如果上述验证后仍未获取date_taken，则尝试正常的HEIC处理
+                if date_taken is None:
+                    date_taken = self._process_heic_exif(file_path_obj, exif_data)
+            elif suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
-            elif suffix == '.heic':
-                date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix == '.png':
                 date_taken = self._process_png_exif(file_path_obj)
             elif suffix == '.mov':
@@ -596,17 +617,25 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data['GPS GPSLongitude'] = gps_lon
 
     def _process_heic_exif(self, file_path, exif_data):
-        heif_file = pillow_heif.read_heif(file_path)
-        exif_raw = heif_file.info.get('exif', b'')
-        if exif_raw.startswith(b'Exif\x00\x00'):
-            exif_raw = exif_raw[6:]
-        if exif_raw:
-            tags = exifread.process_file(io.BytesIO(exif_raw), details=False)
-            date_taken = self.parse_exif_datetime(tags)
-            self._extract_gps_and_camera_info(tags, exif_data)
-            return date_taken
-        else:
-            self.log("DEBUG", "文件没有EXIF数据")
+        try:
+            heif_file = pillow_heif.read_heif(file_path)
+            exif_raw = heif_file.info.get('exif', b'')
+            if exif_raw.startswith(b'Exif\x00\x00'):
+                exif_raw = exif_raw[6:]
+            if exif_raw:
+                tags = exifread.process_file(io.BytesIO(exif_raw), details=False)
+                date_taken = self.parse_exif_datetime(tags)
+                self._extract_gps_and_camera_info(tags, exif_data)
+                return date_taken
+            else:
+                self.log("DEBUG", "HEIC文件没有EXIF数据")
+                return None
+        except Exception as e:
+            # 专门处理文件格式问题
+            if "No 'ftyp' box" in str(e):
+                self.log("ERROR", f"{file_path.name}文件扩展名异常，可能不是真正的HEIC文件")
+            else:
+                self.log("DEBUG", f"处理HEIC文件EXIF时出错: {str(e)}")
             return None
 
     def _process_png_exif(self, file_path):

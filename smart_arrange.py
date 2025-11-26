@@ -191,15 +191,15 @@ class SmartArrangeManager(QObject):
                         self.destination_root = target_folder
                     else:
                         self.log("WARNING", "未选择有效的目标文件夹")
-                        QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                        QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
                         return
                 except Exception as e:
                     self.log("WARNING", f"从folder_page获取目标文件夹失败: {str(e)}")
-                    QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                    QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
                     return
             else:
                 self.log("WARNING", "无法获取目标文件夹信息")
-                QMessageBox.warning(self.parent, "警告", "请在首页选择目标文件夹！")
+                QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
                 return
 
             if self.SmartArrange_thread:

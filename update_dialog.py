@@ -1,81 +1,82 @@
 import requests
 import sys
+import logging
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import QDialog
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import QUrl
-from bs4 import BeautifulSoup
 from UI_UpdateDialog import Ui_UpdateDialog
 from common import get_resource_path
+
+logger = logging.getLogger(__name__)
 
 class UpdateDialog(QDialog):
     def __init__(self, url, title, content, version="", necessary=False):
         super().__init__()
         self.ui = Ui_UpdateDialog()
         self.ui.setupUi(self)
-        self.necessary = necessary
+        self.url = url
         self.setWindowTitle("枫叶通知 - 更新提示")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.setWindowFlag(QtCore.Qt.WindowType.WindowCloseButtonHint, False)
         self.ui.label_title.setText(title)
         self.ui.label_content.setText(content)
         
-        if necessary:
-            self.ui.pushButton_cancel.hide()
-            self.ui.pushButton_download.clicked.connect(self.force_quit)
-        else:
-            self.ui.pushButton_download.clicked.connect(
-                lambda: (QDesktopServices.openUrl(QUrl(url)), self.force_quit()))
+        # 始终显示取消按钮，不强制更新
+        self.ui.pushButton_download.clicked.connect(self.download_update)
+        self.ui.pushButton_cancel.clicked.connect(self.close)
     
-    def force_quit(self):
-        sys.exit(1)
+    def download_update(self):
+        QDesktopServices.openUrl(QUrl(self.url))
+        self.close()
     
     def closeEvent(self, event):
-        if self.necessary:
-            event.ignore()
-        else:
-            super().closeEvent(event)
+        # 允许用户关闭对话框
+        super().closeEvent(event)
 
 def check_update():
     url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafView/versionInfo'
+    try:
+        from main_window import version as current_version
+        logger.info(f"当前应用版本: {current_version}")
+    except ImportError:
+        current_version = 2.0
     
     try:
         response = requests.get(url, timeout=5)
         response.raise_for_status()
-        soup = BeautifulSoup(response.text, 'html.parser')
         
-        title_element = soup.find('a', class_='postTitle2')
-        post_body = soup.find('div', class_='postBody')
+        # 解析返回的键值对格式
+        content = response.text.strip()
+        info_dict = {}
+        for line in content.split('\n'):
+            if ':' in line:
+                key, value = line.split(':', 1)
+                info_dict[key.strip()] = value.strip()
         
-        if not title_element or not post_body:
-            raise ValueError()
+        # 检查必要的键是否存在
+        if not all(key in info_dict for key in ['Latest Version', 'Download Link', 'Description']):
+            raise ValueError("Invalid update information format")
         
-        title_parts = title_element.text.strip().split('==', 2)
-        content_parts = post_body.get_text().strip().split('==', 1)
+        latest_version_str = info_dict['Latest Version']
+        download_link = info_dict['Download Link']
+        description = info_dict['Description']
         
-        if len(title_parts) == 3:
-            latest_version_str, update_link = title_parts[1:]
-            update_content = content_parts[0]
-            lastlyVersion = float(latest_version_str.strip())
-            lastlyVersionUrl = update_link.strip()
-            current_version = 1.3
-            
-            if lastlyVersion > current_version:
-                necessary = lastlyVersion != current_version
-                version_text = f"LeafView v{latest_version_str.strip()}"
-                dialog = UpdateDialog(lastlyVersionUrl, title_parts[0], update_content, version_text, necessary)
-                dialog.exec()
-    
-    except requests.exceptions.RequestException:
-        dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '网络连接失败',
-                              '别担心，这只是一次小小的插曲，您的满意始终是我们的追求。\n\n网络开了点小差\n\n请检查网络后重新启动，我们期待不久的将来与您重逢。', "", True)
-        dialog.ui.pushButton_download.setText("我知道了")
-        dialog.exec()
-    
+        try:
+            latest_version = float(latest_version_str)
+        except ValueError:
+            raise ValueError("Invalid version number format")
+        
+        if latest_version > current_version:
+            # 移除强制更新逻辑，所有更新都可选
+            version_text = f"LeafView v{latest_version_str}"
+            dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description, version_text, False)
+            dialog.exec()
+
     except Exception:
         dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '检查更新失败',
-                              '更新失败，但您的支持始终是我们前行的重要力量。未来可期，敬请放心，我们一直在努力。\n检查更新时出错了', "", True)
+                              '更新失败，但您的支持始终是我们前行的重要力量。未来可期，敬请放心，我们一直在努力。\n检查更新时出错了', "", False)
         dialog.ui.pushButton_download.setText("我知道了")
+        dialog.ui.pushButton_cancel.hide()  # 错误提示时可以隐藏取消按钮
         dialog.exec()

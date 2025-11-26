@@ -6,12 +6,14 @@ from add_folder import FolderPage
 from smart_arrange import SmartArrangeManager
 from write_exif import WriteExifManager
 from file_deduplication import FileDeduplicationManager
+from update_dialog import check_update
 from common import get_resource_path
 import logging
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+version = 2.0
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def __init__(self):
@@ -22,6 +24,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._setup_ui()
         self._initialize_pages()
         self._connect_signals()
+        
+        # 启动时检查版本更新
+        try:
+            check_update()
+        except Exception as e:
+            logger.error(f"检查更新时出错: {str(e)}")
 
     def _initialize_pages(self):
         self.folder_page = FolderPage(self)
