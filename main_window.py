@@ -20,7 +20,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._drag_position = QPoint()
         self.tray_icon = None
         self._setup_ui()
-        # 先初始化页面，再连接信号，确保属性存在
         self._initialize_pages()
         self._connect_signals()
 

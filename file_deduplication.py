@@ -1,18 +1,17 @@
 import logging
 import os
-from datetime import datetime
 
-from PyQt6 import QtWidgets, QtCore, QtGui
+from PyQt6 import QtWidgets, QtCore
+
 from file_deduplication_thread import FileScanThread, FileDeduplicateThread
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FileDeduplicationManager(QtWidgets.QWidget):
-    # 信号定义
-    progress_updated = QtCore.pyqtSignal(int, str)  # 进度更新信号
-    scan_completed = QtCore.pyqtSignal(list)  # 扫描完成信号
-    error_occurred = QtCore.pyqtSignal(str)  # 错误发生信号
+    progress_updated = QtCore.pyqtSignal(int, str)
+    scan_completed = QtCore.pyqtSignal(list)
+    error_occurred = QtCore.pyqtSignal(str)
     
     def __init__(self, parent=None, folder_page=None):
         super().__init__(parent)
@@ -29,56 +28,39 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self._connect_signals()
     
     def _setup_ui(self):
-        """初始化UI设置"""
-        # 初始化重复文件列表
         self.parent.duplicateItemsListWidget.clear()
         
-        # 设置表格
         self.parent.duplicateFilesTableWidget.setRowCount(0)
-        self.parent.duplicateFilesTableWidget.setColumnCount(3)  # 选择、文件名、文件路径
+        self.parent.duplicateFilesTableWidget.setColumnCount(3)
         headers = ["选择", "文件名", "文件路径"]
         self.parent.duplicateFilesTableWidget.setHorizontalHeaderLabels(headers)
         
-        # 设置表格列宽自适应布局
         header = self.parent.duplicateFilesTableWidget.horizontalHeader()
         
-        # 设置各列的比例权重（相对宽度）
-        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)  # 选择列固定宽度
-        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Interactive)  # 文件名可交互调整
-        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)  # 文件路径自动拉伸
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Interactive)
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         
-        # 设置固定宽度列的尺寸
-        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 65)   # 选择列（增加宽度以完整显示复选框）
+        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 65)
         
-        # 设置初始宽度（用户可手动调整）
-        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 250)  # 文件名（更宽一些）
+        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 250)
         
-        # 文件路径列会自动拉伸填充剩余空间
-        # 用户也可以手动调整各列宽度
-        
-        # 设置表格属性
-        self.parent.duplicateFilesTableWidget.setAlternatingRowColors(True)  # 交替行颜色
+        self.parent.duplicateFilesTableWidget.setAlternatingRowColors(True)
         self.parent.duplicateFilesTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
-        self.parent.duplicateFilesTableWidget.setSortingEnabled(True)  # 启用排序
+        self.parent.duplicateFilesTableWidget.setSortingEnabled(True)
         
-        # 设置进度条初始值
         self.parent.contrastProgressBar.setValue(0)
     
     def _connect_signals(self):
-        """连接信号和槽函数"""
-        # 按钮点击事件
         self.parent.btnStartDeduplication.clicked.connect(self.start_scan)
         self.parent.btnRandomSelect.clicked.connect(self.random_select)
         self.parent.btnMoveToRecycleBin.clicked.connect(self.move_to_recycle_bin)
         
-        # 列表选择事件
         self.parent.duplicateItemsListWidget.currentRowChanged.connect(self.on_group_selected)
         
-        # 表格选择事件
         self.parent.duplicateFilesTableWidget.cellChanged.connect(self.on_file_selection_changed)
     
     def start_scan(self):
-        """开始扫描重复文件"""
         if not self.folder_page:
             QtWidgets.QMessageBox.warning(self.parent, "警告", "系统错误：folder_page未初始化")
             return
@@ -88,7 +70,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要扫描的文件夹")
             return
         
-        # 重置状态
         self.duplicate_groups = []
         self.current_group_index = -1
         self.selected_files.clear()
@@ -96,11 +77,9 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.parent.duplicateFilesTableWidget.setRowCount(0)
         self.parent.contrastProgressBar.setValue(0)
         
-        # 更新按钮状态
         self.parent.btnStartDeduplication.setEnabled(False)
         self.parent.btnStartDeduplication.setText("扫描中...")
         
-        # 创建并启动扫描线程
         self.scan_thread = FileScanThread(folders, self.filters)
         self.scan_thread.progress_updated.connect(self.on_scan_progress)
         self.scan_thread.scan_completed.connect(self.on_scan_completed)
@@ -110,31 +89,24 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         logger.info(f"开始扫描文件夹: {folders}")
     
     def on_scan_progress(self, progress, status_text):
-        """处理扫描进度更新"""
         self.parent.contrastProgressBar.setValue(progress)
-        # 可以在这里更新状态文本
     
     def on_scan_completed(self, duplicate_groups):
-        """处理扫描完成"""
         self.duplicate_groups = duplicate_groups
         
-        # 更新重复文件组列表
         self.parent.duplicateItemsListWidget.clear()
         for i, group in enumerate(duplicate_groups):
             item = QtWidgets.QListWidgetItem(f"重复文件组 {i+1} ({len(group)}个文件)")
             self.parent.duplicateItemsListWidget.addItem(item)
         
-        # 更新按钮状态
         self.parent.btnStartDeduplication.setEnabled(True)
         self.parent.btnStartDeduplication.setText("开始查重")
         self.parent.contrastProgressBar.setValue(100)
         
-        # 显示扫描结果
         if duplicate_groups:
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", 
                                             f"找到 {len(duplicate_groups)} 组重复文件")
             
-            # 自动选择第一个重复组并显示
             self.parent.duplicateItemsListWidget.setCurrentRow(0)
             self.on_group_selected(0)
             logger.info("自动选择第一个重复文件组")
@@ -144,14 +116,12 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         logger.info(f"扫描完成，找到 {len(duplicate_groups)} 组重复文件")
     
     def on_scan_error(self, error_message):
-        """处理扫描错误"""
         self.parent.btnStartDeduplication.setEnabled(True)
         self.parent.btnStartDeduplication.setText("开始查重")
         QtWidgets.QMessageBox.critical(self.parent, "扫描错误", error_message)
         logger.error(f"扫描错误: {error_message}")
     
     def on_group_selected(self, row):
-        """处理重复文件组选择"""
         if row < 0 or row >= len(self.duplicate_groups):
             return
         
@@ -159,13 +129,11 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self._display_group_files(self.duplicate_groups[row])
     
     def _display_group_files(self, file_group):
-        """显示指定文件组的文件信息"""
         self.parent.duplicateFilesTableWidget.setRowCount(0)
         
         for i, file_path in enumerate(file_group):
             self.parent.duplicateFilesTableWidget.insertRow(i)
             
-            # 选择复选框
             checkbox = QtWidgets.QCheckBox()
             checkbox.setChecked(file_path in self.selected_files)
             checkbox.stateChanged.connect(lambda state, path=file_path: self._on_checkbox_changed(state, path))
@@ -173,57 +141,43 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             layout = QtWidgets.QHBoxLayout(checkbox_widget)
             layout.addWidget(checkbox)
             layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            # 设置适当的边距以确保复选框完全显示
             layout.setContentsMargins(5, 3, 5, 3)
             self.parent.duplicateFilesTableWidget.setCellWidget(i, 0, checkbox_widget)
             
-            # 文件名（只显示文件名，不显示完整路径）
             file_name = os.path.basename(file_path)
             self.parent.duplicateFilesTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(file_name))
             
-            # 文件路径（完整路径，但可以悬停查看）
             path_item = QtWidgets.QTableWidgetItem(file_path)
-            path_item.setToolTip(file_path)  # 悬停显示完整路径
+            path_item.setToolTip(file_path)
             self.parent.duplicateFilesTableWidget.setItem(i, 2, path_item)
     
     def _on_checkbox_changed(self, state, file_path):
-        """处理复选框状态变化"""
         if state == QtCore.Qt.CheckState.Checked.value:
             self.selected_files.add(file_path)
         else:
             self.selected_files.discard(file_path)
         
-        # 更新状态显示
         self._update_selection_status()
     
     def _update_selection_status(self):
-        """更新选择状态显示"""
-        # 记录选择状态到日志
         logger.info(f"已选择 {len(self.selected_files)} 个文件待删除")
         
-        # 如果父窗口有状态栏，则更新状态栏信息
         if hasattr(self.parent, 'statusBar'):
             try:
                 status_bar = self.parent.statusBar()
                 if status_bar:
                     status_bar.showMessage(f"已选择 {len(self.selected_files)} 个文件待删除")
             except Exception as e:
-                # 如果更新状态栏失败，继续使用日志记录
                 logger.debug(f"无法更新状态栏: {e}")
-        
-        # 如果有专门用于显示状态的标签，也可以在这里更新
-        # 例如: if hasattr(self.parent, 'selectionStatusLabel'):
-        #         self.parent.selectionStatusLabel.setText(f"已选择 {len(self.selected_files)} 个文件")
     
     def on_file_selection_changed(self, row, column):
-        """处理文件选择变化"""
-        if column != 0 or self.current_group_index < 0:  # 选择列是第0列
+        if column != 0 or self.current_group_index < 0:
             return
         
         file_group = self.duplicate_groups[self.current_group_index]
         if row < len(file_group):
             file_path = file_group[row]
-            checkbox_widget = self.parent.duplicateFilesTableWidget.cellWidget(row, 0)  # 选择列是第0列
+            checkbox_widget = self.parent.duplicateFilesTableWidget.cellWidget(row, 0)
             checkbox = checkbox_widget.findChild(QtWidgets.QCheckBox)
             
             if checkbox.isChecked():
@@ -232,7 +186,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                 self.selected_files.discard(file_path)
     
     def random_select(self):
-        """随机选择重复文件（保留一个文件不选中，其余都选中）"""
         if not self.duplicate_groups:
             QtWidgets.QMessageBox.warning(self.parent, "警告", "请先扫描重复文件")
             return
@@ -242,17 +195,14 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         
         for group in self.duplicate_groups:
             if len(group) > 1:
-                # 随机选择一个要保留的文件
                 import random
                 keep_file = random.choice(group)
                 
-                # 选中除了保留文件外的所有文件
                 for file_path in group:
                     if file_path != keep_file:
                         self.selected_files.add(file_path)
                         selected_count += 1
         
-        # 更新表格显示
         if self.current_group_index >= 0:
             self._display_group_files(self.duplicate_groups[self.current_group_index])
         
@@ -260,7 +210,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                                         f"已随机选择保留每个组中的一个文件，共选择 {selected_count} 个文件待删除")
     
     def move_to_recycle_bin(self):
-        """将选中的文件移动到回收站"""
         if not self.selected_files:
             QtWidgets.QMessageBox.warning(self.parent, "警告", "请先选择要删除的文件")
             return
@@ -270,7 +219,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                                              QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No)
         
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
-            # 创建并启动去重线程
             self.deduplicate_thread = FileDeduplicateThread(self.duplicate_groups, list(self.selected_files))
             self.deduplicate_thread.progress_updated.connect(self.on_deduplicate_progress)
             self.deduplicate_thread.deduplicate_completed.connect(self.on_deduplicate_completed)
@@ -280,24 +228,19 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             logger.info(f"开始删除 {len(self.selected_files)} 个重复文件")
     
     def on_deduplicate_progress(self, progress, status_text):
-        """处理去重进度更新"""
         self.parent.contrastProgressBar.setValue(progress)
     
     def on_deduplicate_completed(self, deleted_count, total_count):
-        """处理去重完成"""
         QtWidgets.QMessageBox.information(self.parent, "去重完成", 
                                         f"成功删除 {deleted_count} 个重复文件")
         
-        # 重新扫描以更新文件列表
         self.start_scan()
     
     def on_deduplicate_error(self, error_message):
-        """处理去重错误"""
         QtWidgets.QMessageBox.critical(self.parent, "去重错误", error_message)
         logger.error(f"去重错误: {error_message}")
     
     def stop_scan(self):
-        """停止扫描"""
         if self.scan_thread and self.scan_thread.isRunning():
             self.scan_thread.stop()
             self.scan_thread.wait()

@@ -14,7 +14,7 @@ class UpdateDialog(QDialog):
         self.ui = Ui_UpdateDialog()
         self.ui.setupUi(self)
         self.necessary = necessary
-        self.setWindowTitle("枫叶通知")
+        self.setWindowTitle("枫叶通知 - 更新提示")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
@@ -39,7 +39,7 @@ class UpdateDialog(QDialog):
             super().closeEvent(event)
 
 def check_update():
-    url = 'https://www.cnblogs.com/YangShengzhou/p/18679899'
+    url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafView/versionInfo'
     
     try:
         response = requests.get(url, timeout=5)

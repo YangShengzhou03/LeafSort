@@ -63,7 +63,6 @@ class SmartArrangeManager(QObject):
 
         for button in self.tag_buttons.values():
             button.clicked.connect(lambda checked, b=button: self.move_tag(b))
-
         self.log("INFO", "欢迎使用智能整理功能，您可以根据多种规则整理文件")
 
     def connect_signals(self):
@@ -185,7 +184,6 @@ class SmartArrangeManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return
 
-            # 每次都重新获取并验证目标文件夹
             if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
                 try:
                     target_folder = self.folder_page.get_target_folder()

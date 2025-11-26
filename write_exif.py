@@ -66,21 +66,17 @@ class WriteExifManager(QObject):
             self.camera_lens_mapping = {}
 
     def get_lens_info_for_camera(self, brand, model):
-        """根据相机品牌和型号获取镜头信息"""
         lens_info = {'lens_brand': '', 'lens_model': ''}
         
-        # 输入验证
         if not brand or not model:
             logger.debug(f"品牌或型号为空: brand={brand}, model={model}")
             return lens_info
         
         try:
-            # 检查相机镜头映射数据是否已加载
             if not self.camera_lens_mapping:
                 logger.debug("相机镜头映射数据未加载")
                 return lens_info
             
-            # 检查是否在已加载的相机镜头映射中
             if brand in self.camera_lens_mapping:
                 brand_data = self.camera_lens_mapping[brand]
                 # 检查brand_data是否为字典类型
@@ -200,7 +196,6 @@ class WriteExifManager(QObject):
                 self.update_button_state()
                 return False
         else:
-            # 首先检查文件夹是否存在
             folders = self.folder_page.get_all_folders() if self.folder_page else []
             if not folders:
                 self.log("WARNING", "没有选择文件夹")
@@ -210,7 +205,6 @@ class WriteExifManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return False
             
-            # 检查是否选择了目标文件夹
             if not hasattr(self.folder_page, 'get_target_folder') or not self.folder_page.get_target_folder():
                 self.log("WARNING", "未选择有效的目标文件夹")
                 try:
@@ -219,7 +213,6 @@ class WriteExifManager(QObject):
                     self.log("ERROR", f"显示警告消息失败: {str(e)}")
                 return False
             
-            # 然后再开始操作并更新按钮状态
             success = self.start_exif_writing()
             if success:
                 self.is_running = True
@@ -278,7 +271,6 @@ class WriteExifManager(QObject):
                               "请重新启动应用程序或联系技术支持")
             return False
 
-        # 获取并验证目标文件夹
         target_folder = self.folder_page.get_target_folder() if hasattr(self.folder_page, 'get_target_folder') else None
         if not target_folder:
             self.log("WARNING", "未选择有效的目标文件夹")
@@ -288,7 +280,6 @@ class WriteExifManager(QObject):
         self.is_running = True
         self.update_button_state()
 
-        # 文件夹检查已在toggle_exif_writing中完成
         folders = self.folder_page.get_all_folders()
 
         camera_brand = self.parent.cameraBrand.currentText() if self.parent.cameraBrand.currentIndex() > 0 else None
@@ -297,7 +288,6 @@ class WriteExifManager(QObject):
         if camera_brand and not camera_model:
             camera_model = self.get_default_model_for_brand(camera_brand)
 
-        # Create folders_dict in the format expected by WriteExifThread
         folders_dict = []
         for folder_path in folders:
             if folder_path and os.path.exists(folder_path) and os.path.isdir(folder_path):
@@ -309,11 +299,9 @@ class WriteExifManager(QObject):
         # 获取镜头信息
         lens_info = self.get_lens_info_for_camera(camera_brand, camera_model)
         
-        # 记录日志，确认镜头信息是否正确匹配
         if lens_info['lens_brand'] or lens_info['lens_model']:
             self.log("INFO", f"为相机 {camera_brand} {camera_model} 匹配到镜头: {lens_info['lens_brand']} {lens_info['lens_model']}")
         
-        # Create exif_config dictionary
         exif_config = {
             'title': self.parent.titleLineEdit.text(),
             'author': self.parent.authorLineEdit.text(),
@@ -379,7 +367,6 @@ class WriteExifManager(QObject):
 
         self.error_messages = []
 
-        # 使用已验证的target_folder创建worker
         self.worker = WriteExifThread(folders_dict, exif_config, target_folder)
         self.connect_worker_signals()
         self.worker.start()
