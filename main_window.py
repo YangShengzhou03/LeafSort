@@ -19,14 +19,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._drag_position = QPoint()
         self.tray_icon = None
         self._setup_ui()
-        self._connect_signals()
+        # 先初始化页面，再连接信号，确保属性存在
         self._initialize_pages()
+        self._connect_signals()
 
     def _initialize_pages(self):
         self.folder_page = FolderPage(self)
         self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
         self.write_exif_page = WriteExifManager(self, self.folder_page)
         self.deduplication_page = FileDeduplicationManager(self, self.folder_page)
+        
+        # 添加文件去重页面到标签栏
+        if hasattr(self, 'tabWidget'):
+            self.tabWidget.addTab(self.deduplication_page, "文件去重")
+            logger.info("已将文件去重页面添加到标签栏")
+        else:
+            logger.warning("找不到tabWidget，将以独立窗口方式使用去重功能")
         
     def _setup_ui(self):
         self.setWindowTitle("枫叶相册")
@@ -67,6 +75,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         self.btnGithub.clicked.connect(self._open_github)
+        
+        if hasattr(self.deduplication_page, 'back_to_main'):
+            self.deduplication_page.back_to_main.connect(self._show_main_page)
+            logger.info("已连接去重页面返回主页面信号")
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.MouseButton.LeftButton and
@@ -121,3 +133,27 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not QtGui.QDesktopServices.openUrl(url):
             QtWidgets.QMessageBox.information(self, "信息",
                                               "无法打开GitHub页面，请手动访问")
+    
+    def _show_main_page(self):
+        """显示主页面"""
+        if hasattr(self, 'tabWidget'):
+            # 假设第0个标签是主页面
+            self.tabWidget.setCurrentIndex(0)
+            logger.info("已切换到主页面")
+        else:
+            logger.warning("找不到tabWidget，无法切换到主页面")
+    
+    def show_deduplication_page(self):
+        """显示去重页面"""
+        if hasattr(self, 'tabWidget') and hasattr(self.deduplication_page, 'refresh_view'):
+            # 切换到去重标签页
+            index = self.tabWidget.indexOf(self.deduplication_page)
+            if index != -1:
+                self.tabWidget.setCurrentIndex(index)
+                # 刷新视图
+                self.deduplication_page.refresh_view()
+                logger.info("已显示去重页面并刷新视图")
+        else:
+            # 如果没有标签页，直接显示去重页面
+            self.deduplication_page.show()
+            logger.info("已独立显示去重页面")
