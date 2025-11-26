@@ -4499,7 +4499,11 @@ border-bottom-left-radius:0px;</string>
                  <item>
                   <layout class="QVBoxLayout" name="deduplicationTableLayout">
                    <item>
-                    <widget class="QTableWidget" name="duplicateFilesTableWidget"/>
+                    <widget class="QTableWidget" name="duplicateFilesTableWidget">
+                     <property name="styleSheet">
+                      <string notr="true"/>
+                     </property>
+                    </widget>
                    </item>
                    <item>
                     <layout class="QHBoxLayout" name="deduplicationActionsLayout">

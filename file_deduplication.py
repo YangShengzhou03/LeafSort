@@ -35,15 +35,31 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         
         # 设置表格
         self.parent.duplicateFilesTableWidget.setRowCount(0)
-        self.parent.duplicateFilesTableWidget.setColumnCount(4)
-        headers = ["选择", "文件路径", "文件大小", "修改时间"]
+        self.parent.duplicateFilesTableWidget.setColumnCount(3)  # 只保留选择、文件名、文件路径
+        headers = ["选择", "文件名", "文件路径"]
         self.parent.duplicateFilesTableWidget.setHorizontalHeaderLabels(headers)
         
-        # 设置列宽
-        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 60)  # 选择列
-        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 400)  # 文件路径
-        self.parent.duplicateFilesTableWidget.setColumnWidth(2, 100)  # 文件大小
-        self.parent.duplicateFilesTableWidget.setColumnWidth(3, 150)  # 修改时间
+        # 设置表格列宽自适应布局
+        header = self.parent.duplicateFilesTableWidget.horizontalHeader()
+        
+        # 设置各列的比例权重（相对宽度）
+        header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Fixed)  # 选择列固定宽度
+        header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.Interactive)  # 文件名可交互调整
+        header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)  # 文件路径自动拉伸
+        
+        # 设置固定宽度列的尺寸
+        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 50)   # 选择列（从40增加到50）
+        
+        # 设置初始宽度（用户可手动调整）
+        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 200)  # 文件名
+        
+        # 文件路径列会自动拉伸填充剩余空间
+        # 用户也可以手动调整各列宽度
+        
+        # 设置表格属性
+        self.parent.duplicateFilesTableWidget.setAlternatingRowColors(True)  # 交替行颜色
+        self.parent.duplicateFilesTableWidget.setSelectionBehavior(QtWidgets.QAbstractItemView.SelectionBehavior.SelectRows)
+        self.parent.duplicateFilesTableWidget.setSortingEnabled(True)  # 启用排序
         
         # 设置进度条初始值
         self.parent.contrastProgressBar.setValue(0)
@@ -147,6 +163,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             # 选择复选框
             checkbox = QtWidgets.QCheckBox()
             checkbox.setChecked(file_path in self.selected_files)
+            checkbox.stateChanged.connect(lambda state, path=file_path: self._on_checkbox_changed(state, path))
             checkbox_widget = QtWidgets.QWidget()
             layout = QtWidgets.QHBoxLayout(checkbox_widget)
             layout.addWidget(checkbox)
@@ -154,32 +171,24 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             layout.setContentsMargins(0, 0, 0, 0)
             self.parent.duplicateFilesTableWidget.setCellWidget(i, 0, checkbox_widget)
             
-            # 文件路径
-            self.parent.duplicateFilesTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(file_path))
+            # 文件名（只显示文件名，不显示完整路径）
+            file_name = os.path.basename(file_path)
+            self.parent.duplicateFilesTableWidget.setItem(i, 1, QtWidgets.QTableWidgetItem(file_name))
             
-            # 文件大小
-            try:
-                size_bytes = os.path.getsize(file_path)
-                size_str = self._format_file_size(size_bytes)
-                self.parent.duplicateFilesTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem(size_str))
-            except:
-                self.parent.duplicateFilesTableWidget.setItem(i, 2, QtWidgets.QTableWidgetItem("未知"))
-            
-            # 修改时间
-            try:
-                mtime = os.path.getmtime(file_path)
-                time_str = datetime.fromtimestamp(mtime).strftime('%Y-%m-%d %H:%M:%S')
-                self.parent.duplicateFilesTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem(time_str))
-            except:
-                self.parent.duplicateFilesTableWidget.setItem(i, 3, QtWidgets.QTableWidgetItem("未知"))
+            # 文件路径（完整路径，但可以悬停查看）
+            path_item = QtWidgets.QTableWidgetItem(file_path)
+            path_item.setToolTip(file_path)  # 悬停显示完整路径
+            self.parent.duplicateFilesTableWidget.setItem(i, 2, path_item)
     
-    def _format_file_size(self, size_bytes):
-        """格式化文件大小"""
-        for unit in ['B', 'KB', 'MB', 'GB']:
-            if size_bytes < 1024.0:
-                return f"{size_bytes:.1f} {unit}"
-            size_bytes /= 1024.0
-        return f"{size_bytes:.1f} TB"
+    def _on_checkbox_changed(self, state, file_path):
+        """处理复选框状态变化"""
+        if state == QtCore.Qt.CheckState.Checked.value:
+            self.selected_files.add(file_path)
+        else:
+            self.selected_files.discard(file_path)
+        
+        # 更新状态显示
+        self._update_selection_status()
     
     def on_file_selection_changed(self, row, column):
         """处理文件选择变化"""

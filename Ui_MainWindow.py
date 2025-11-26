@@ -2871,6 +2871,7 @@ class Ui_MainWindow(object):
         self.deduplicationTableLayout = QtWidgets.QVBoxLayout()
         self.deduplicationTableLayout.setObjectName("deduplicationTableLayout")
         self.duplicateFilesTableWidget = QtWidgets.QTableWidget(parent=self.deduplicationPage)
+        self.duplicateFilesTableWidget.setStyleSheet("")
         self.duplicateFilesTableWidget.setObjectName("duplicateFilesTableWidget")
         self.duplicateFilesTableWidget.setColumnCount(0)
         self.duplicateFilesTableWidget.setRowCount(0)
