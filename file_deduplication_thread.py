@@ -6,7 +6,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
-logging.basicConfig(level=logging.INFO)
+# 提高日志级别到DEBUG以便详细诊断
+logging.basicConfig(level=logging.DEBUG)
 logger = logging.getLogger(__name__)
 
 class FileScanThread(QtCore.QThread):
@@ -152,6 +153,10 @@ class FileScanThread(QtCore.QThread):
     def run(self):
         """运行扫描线程"""
         logger.info(f"开始扫描文件夹: {self.folder_path}")
+        logger.info(f"当前工作目录: {os.getcwd()}")
+        logger.info(f"实际扫描路径: {os.path.abspath(self.folder_path)}")
+        logger.info(f"路径是否存在: {os.path.exists(self.folder_path)}")
+        logger.info(f"是否为目录: {os.path.isdir(self.folder_path)}")
         if self.filters:
             logger.info(f"使用文件过滤器: {self.filters}")
         
@@ -179,6 +184,13 @@ class FileScanThread(QtCore.QThread):
             
             total_files = len(all_files)
             logger.info(f"总共找到 {total_files} 个文件")
+            # 列出部分找到的文件用于诊断
+            if total_files > 0:
+                logger.debug(f"前10个找到的文件:")
+                for file in all_files[:10]:
+                    logger.debug(f"  - {file}")
+                if total_files > 10:
+                    logger.debug(f"  ... 等{total_files-10}个文件")
             
             # 如果文件数量为0，直接返回
             if total_files == 0:
@@ -270,13 +282,29 @@ class FileScanThread(QtCore.QThread):
             
             try:
                 file_size = os.path.getsize(file_path)
+                # 添加详细日志记录文件大小信息
+                logger.debug(f"文件: {file_path}, 大小: {file_size} 字节")
                 if file_size in size_groups:
                     size_groups[file_size].append(file_path)
+                    logger.debug(f"发现相同大小文件组: 大小={file_size}, 文件数={len(size_groups[file_size])}")
                 else:
                     size_groups[file_size] = [file_path]
             except Exception as e:
                 skipped_files += 1
                 logger.warning(f"获取文件大小失败 {file_path}: {str(e)}")
+        
+        # 输出大小分组统计信息
+        single_files = 0
+        potential_duplicates = 0
+        for size, files in size_groups.items():
+            if len(files) == 1:
+                single_files += 1
+            else:
+                potential_duplicates += len(files)
+                logger.info(f"潜在重复组: 大小={size} 字节, 包含文件数={len(files)}")
+                for file in files:
+                    logger.debug(f"  - {file}")
+        logger.info(f"文件大小分析完成: 单文件组={single_files}, 多文件组={len(size_groups)-single_files}, 潜在重复文件={potential_duplicates}")
         
         # 只对有多个文件的大小组计算MD5
         filtered_files = []
@@ -328,7 +356,28 @@ class FileScanThread(QtCore.QThread):
         # 按文件数量降序排序（优先显示重复文件最多的组）
         duplicate_groups.sort(key=len, reverse=True)
         
+        # 详细记录找到的重复组信息
         logger.info(f"扫描完成，找到 {len(duplicate_groups)} 组重复文件")
+        for i, group in enumerate(duplicate_groups):
+            logger.info(f"重复组 #{i+1}: 包含 {len(group)} 个文件")
+            for file in group:
+                logger.debug(f"  - {file}")
+                # 对于每组重复文件，打印它们的大小信息用于验证
+                try:
+                    file_size = os.path.getsize(file)
+                    logger.debug(f"    大小: {file_size} 字节, 修改时间: {os.path.getmtime(file)}")
+                except Exception as e:
+                    logger.warning(f"获取文件信息失败 {file}: {str(e)}")
+        
+        # 如果没有找到重复文件，打印更多诊断信息
+        if len(duplicate_groups) == 0 and potential_duplicates > 0:
+            logger.warning("警告: 虽然存在相同大小的文件组，但未找到MD5值完全相同的重复文件")
+            logger.warning("可能原因:")
+            logger.warning("1. 文件内容实际上不同，只是大小相同")
+            logger.warning("2. 文件访问权限问题")
+            logger.warning("3. 文件在扫描过程中被修改")
+            logger.warning("4. 存在隐藏文件或系统文件导致判断错误")
+        
         return duplicate_groups
     
     def stop(self):

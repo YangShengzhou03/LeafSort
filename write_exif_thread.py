@@ -430,7 +430,7 @@ class WriteExifThread(QThread):
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, image_path)
             logger.info("成功写入EXIF数据到 %s", image_path)
-            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}")
         except (IOError, ValueError, OSError) as e:
             logger.error("写入EXIF数据失败 %s: %s", image_path, str(e))
             self.log("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
@@ -748,7 +748,7 @@ class WriteExifThread(QThread):
             exif_bytes = piexif.dump(exif_dict)
             image.save(temp_path, format="HEIF", exif=exif_bytes)
             os.replace(temp_path, image_path)
-            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}: {'; '.join(updated_fields)}")
+            self.log("INFO", f"写入并复制 {os.path.basename(image_path)}")
         except (IOError, ValueError, OSError) as e:
             self.log("ERROR", f"写入EXIF数据失败: {str(e)}")
         finally:
@@ -911,7 +911,7 @@ class WriteExifThread(QThread):
                 return False
 
             if updated_fields:
-                self.log("INFO", f"写入并复制 {os.path.basename(original_file_path)}: {'; '.join(updated_fields)}")
+                self.log("INFO", f"写入并复制 {os.path.basename(original_file_path)}")
             
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
             subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False)

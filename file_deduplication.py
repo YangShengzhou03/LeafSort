@@ -92,7 +92,42 @@ class FileDeduplicationManager(QtWidgets.QWidget):
     
     def _on_deduplication_clicked(self):
         """去重按钮点击事件处理"""
+        # 优先从folder_page获取文件夹路径
+        folder_path = "未设置"
+        
+        # 尝试从folder_page获取首页选择的文件夹路径
+        if self.folder_page and hasattr(self.folder_page, 'get_all_folders'):
+            try:
+                folder_list = self.folder_page.get_all_folders()
+                if folder_list:
+                    # 使用第一个文件夹作为默认路径
+                    folder_path = folder_list[0]
+                    logger.info(f"从首页获取到文件夹路径: {folder_path}")
+                    # 如果有folder_path_edit，同步更新它
+                    if self.folder_path_edit:
+                        self.folder_path_edit.setText(folder_path)
+                else:
+                    logger.info("首页没有选择文件夹")
+            except Exception as e:
+                logger.warning(f"从首页获取文件夹路径时出错: {str(e)}")
+        
+        # 如果folder_page没有提供有效路径，再从folder_path_edit获取
+        if folder_path == "未设置" and self.folder_path_edit:
+            folder_path = self.folder_path_edit.text() or "未设置"
+        
         logger.info('执行去重按钮点击事件')
+        logger.info(f'当前查重配置:')
+        logger.info(f'  - 原文件夹路径: {folder_path}')
+        logger.info(f'  - 文件夹存在状态: {os.path.exists(folder_path)}')
+        logger.info(f'  - 文件夹是否为目录: {os.path.isdir(folder_path)}')
+        logger.info(f'  - 已扫描到的重复文件组数量: {len(self.duplicate_groups)}')
+        
+        # 根据情况记录更多信息
+        if self.duplicate_groups:
+            total_duplicate_files = sum(len(group) for group in self.duplicate_groups)
+            logger.info(f'  - 重复文件总数: {total_duplicate_files}')
+            logger.info(f'  - 最大重复组文件数: {max(len(group) for group in self.duplicate_groups)}')
+        
         self._start_deduplication()
     
     def _browse_folder(self):
@@ -135,12 +170,36 @@ class FileDeduplicationManager(QtWidgets.QWidget):
     
     def _start_scan(self):
         """开始扫描重复文件"""
-        if not self.folder_path_edit or not self.folder_path_edit.text() or not os.path.exists(self.folder_path_edit.text()):
+        # 获取文件夹路径的优先级：
+        # 1. 从folder_page获取（首页选择的文件夹）
+        # 2. 从folder_path_edit获取（去重页面设置的文件夹）
+        folder_path = None
+        
+        # 尝试从folder_page获取首页选择的文件夹路径
+        if self.folder_page and hasattr(self.folder_page, 'get_all_folders'):
+            try:
+                folder_list = self.folder_page.get_all_folders()
+                if folder_list:
+                    # 使用第一个文件夹作为默认路径
+                    folder_path = folder_list[0]
+                    logger.info(f"从首页获取到文件夹路径用于扫描: {folder_path}")
+                    # 同步更新folder_path_edit
+                    if self.folder_path_edit:
+                        self.folder_path_edit.setText(folder_path)
+                else:
+                    logger.info("首页没有选择文件夹")
+            except Exception as e:
+                logger.warning(f"从首页获取文件夹路径时出错: {str(e)}")
+        
+        # 如果folder_page没有提供有效路径，再从folder_path_edit获取
+        if not folder_path and self.folder_path_edit:
+            folder_path = self.folder_path_edit.text()
+        
+        # 检查路径有效性
+        if not folder_path or not os.path.exists(folder_path):
             QtWidgets.QMessageBox.warning(self, "警告", "请选择有效的文件夹路径")
             logger.warning("无效的文件夹路径")
             return
-        
-        folder_path = self.folder_path_edit.text()
         logger.info(f"开始扫描文件夹: {folder_path}")
         
         # 清空之前的结果
@@ -189,8 +248,58 @@ class FileDeduplicationManager(QtWidgets.QWidget):
     
     def _start_deduplication(self):
         """开始执行去重"""
+        # 获取文件夹路径的优先级：
+        # 1. 从folder_page获取（首页选择的文件夹）
+        # 2. 从folder_path_edit获取（去重页面设置的文件夹）
+        folder_path = None
+        
+        # 尝试从folder_page获取首页选择的文件夹路径
+        if self.folder_page and hasattr(self.folder_page, 'get_all_folders'):
+            try:
+                folder_list = self.folder_page.get_all_folders()
+                if folder_list:
+                    # 使用第一个文件夹作为默认路径
+                    folder_path = folder_list[0]
+                    logger.info(f"从首页获取到文件夹路径用于去重: {folder_path}")
+                    # 同步更新folder_path_edit
+                    if self.folder_path_edit:
+                        self.folder_path_edit.setText(folder_path)
+                else:
+                    logger.info("首页没有选择文件夹")
+            except Exception as e:
+                logger.warning(f"从首页获取文件夹路径时出错: {str(e)}")
+        
+        # 如果folder_page没有提供有效路径，再从folder_path_edit获取
+        if not folder_path and self.folder_path_edit:
+            folder_path = self.folder_path_edit.text()
+        
+        # 检查是否选择了文件夹
+        if not folder_path:
+            logger.warning("没有选择文件夹，无法执行去重")
+            QtWidgets.QMessageBox.warning(
+                self, "操作提示", 
+                "请先选择要查重的文件夹。\n\n操作步骤：\n1. 在首页选择文件夹\n2. 或点击'浏览'按钮选择文件夹\n3. 点击'开始扫描'按钮执行文件扫描\n4. 等待扫描完成后再执行去重"
+            )
+            return
+        
+        # 检查文件夹是否存在
+        if not os.path.exists(folder_path) or not os.path.isdir(folder_path):
+            logger.warning(f"指定的文件夹不存在或不是有效的目录: {folder_path}")
+            QtWidgets.QMessageBox.warning(
+                self, "操作提示", 
+                f"指定的文件夹不存在或不是有效的目录：{folder_path}\n\n请在首页选择有效的文件夹，或点击'浏览'按钮选择有效的文件夹路径后再执行扫描和去重。"
+            )
+            return
+        
+        # 检查是否有重复文件组
         if not self.duplicate_groups:
-            logger.warning("没有重复文件组，无法执行去重")
+            logger.warning(f"没有找到重复文件组，无法执行去重操作")
+            logger.info(f"扫描路径: {folder_path}")
+            logger.info(f"可能原因: 文件夹中没有重复文件，或尚未执行扫描操作")
+            QtWidgets.QMessageBox.warning(
+                self, "操作提示", 
+                "未找到重复文件组，无法执行去重操作。\n\n请确保您已经：\n1. 选择了正确的文件夹\n2. 点击了'开始扫描'按钮执行文件扫描\n3. 确认文件夹中确实存在内容相同的重复文件\n\n扫描路径: " + folder_path
+            )
             return
         
         # 确认对话框
