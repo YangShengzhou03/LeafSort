@@ -79,11 +79,9 @@ class WriteExifManager(QObject):
             
             if brand in self.camera_lens_mapping:
                 brand_data = self.camera_lens_mapping[brand]
-                # 检查brand_data是否为字典类型
                 if isinstance(brand_data, dict):
                     if model in brand_data:
                         lens_info['lens_model'] = brand_data[model]
-                        # 为主要相机品牌设置对应的镜头品牌
                         brand_mapping = {
                             'Canon': 'Canon',
                             'Nikon': 'Nikon',
@@ -239,11 +237,14 @@ class WriteExifManager(QObject):
         self.highlight_stars(star)
 
     def parse_dms_coordinates(self, lat_str, lon_str):
-        lat_parts = lat_str.strip().replace(' ', '').split(';')
+        lat_str = ''.join(char for char in lat_str if ord(char) < 128).strip().replace(' ', '')
+        lon_str = ''.join(char for char in lon_str if ord(char) < 128).strip().replace(' ', '')
+        
+        lat_parts = lat_str.split(';')
         if len(lat_parts) != 3:
             return None
 
-        lon_parts = lon_str.strip().replace(' ', '').split(';')
+        lon_parts = lon_str.split(';')
         if len(lon_parts) != 3:
             return None
 
@@ -277,9 +278,6 @@ class WriteExifManager(QObject):
             QMessageBox.warning(self.parent, "警告", "请先选择目标文件夹！")
             return False
 
-        self.is_running = True
-        self.update_button_state()
-
         folders = self.folder_page.get_all_folders()
 
         camera_brand = self.parent.cameraBrand.currentText() if self.parent.cameraBrand.currentIndex() > 0 else None
@@ -302,6 +300,15 @@ class WriteExifManager(QObject):
         if lens_info['lens_brand'] or lens_info['lens_model']:
             self.log("INFO", f"为相机 {camera_brand} {camera_model} 匹配到镜头: {lens_info['lens_brand']} {lens_info['lens_model']}")
         
+        # 获取拍摄时间设置
+        shoot_time_source = self.parent.shootTimeSource.currentIndex()
+        shoot_time_value = 0
+        
+        if shoot_time_source == 1:  # 从文件名
+            shoot_time_value = 1
+        elif shoot_time_source == 2:  # 指定时间
+            shoot_time_value = self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss")
+        
         exif_config = {
             'title': self.parent.titleLineEdit.text(),
             'author': self.parent.authorLineEdit.text(),
@@ -312,30 +319,39 @@ class WriteExifManager(QObject):
             'camera_brand': camera_brand,
             'camera_model': camera_model,
             'lens_brand': lens_info.get('lens_brand', ''),
-            'lens_model': lens_info.get('lens_model', '')
+            'lens_model': lens_info.get('lens_model', ''),
+            'shoot_time': shoot_time_value
         }
 
-        longitude = self.parent.lineEdit_EXIF_longitude.text()
-        latitude = self.parent.lineEdit_EXIF_latitude.text()
+        longitude = self.parent.lineEdit_EXIF_longitude.text().strip()
+        latitude = self.parent.lineEdit_EXIF_latitude.text().strip()
         if longitude and latitude:
+            def clean_coordinate(text):
+                cleaned = ''.join(char for char in text if char.isdigit() or char in ['.', '-'])
+                return cleaned
+            
+            cleaned_longitude = clean_coordinate(longitude)
+            cleaned_latitude = clean_coordinate(latitude)
+            
             try:
-                lon = float(longitude)
-                lat = float(latitude)
+                lon = float(cleaned_longitude)
+                lat = float(cleaned_latitude)
                 if -180 <= lon <= 180 and -90 <= lat <= 90:
                     exif_config['position'] = f"{lat},{lon}"
                 else:
                     self.log("ERROR", "经纬度范围无效\n\n"
-                                      "• 经度应在-180到180之间\n"
-                                      "• 纬度应在-90到90之间\n\n"
+                                      f"• 经度 {lon} 应在-180到180之间\n"
+                                      f"• 纬度 {lat} 应在-90到90之间\n\n"
                                       "请检查输入的数值是否正确")
                     return False
-            except ValueError:
+            except ValueError as e:
+                self.log("WARNING", f"尝试转换为浮点数时出错: {str(e)}")
                 coords = self.parse_dms_coordinates(latitude, longitude)
                 if coords:
                     lat_decimal, lon_decimal = coords
                     if -180 <= lon_decimal <= 180 and -90 <= lat_decimal <= 90:
                         exif_config['position'] = f"{lat_decimal},{lon_decimal}"
-                        self.log("INFO", f"成功解析度分秒坐标: 纬度={lat_decimal}, 经度={lon_decimal}")
+                        self.log("INFO", f"成功解析度分秒坐标: 经度={lon_decimal}, 纬度={lat_decimal}")
                     else:
                         self.log("ERROR", "经纬度范围无效\n\n"
                                           "• 经度应在-180到180之间\n"
@@ -343,10 +359,8 @@ class WriteExifManager(QObject):
                                           "请检查输入的数值是否正确")
                         return False
                 else:
-                    self.log("ERROR", "经纬度格式无效\n\n"
-                                      "请输入有效的数字格式，例如：\n"
-                                      "• 十进制格式: 经度116.397128, 纬度39.916527\n"
-                                      "• 度分秒格式: 经度120;23;53.34, 纬度30;6;51.51")
+                    self.log("WARNING", f"无法解析经纬度: 经度={longitude}, 纬度={latitude}")
+                    self.log("ERROR", "经纬度格式无效!请输入有效的地理坐标，支持十进制格式: 经度116.397128, 纬度39.916527 与 度分秒格式: 经度120;23;53.34, 纬度30;6;51.51")
                     return False
 
         self.save_exif_settings()
@@ -365,6 +379,10 @@ class WriteExifManager(QObject):
 
         self.log("WARNING", f"写入摘要: {operation_summary}")
 
+        # 在所有验证都通过后，才设置is_running并更新按钮状态
+        self.is_running = True
+        self.update_button_state()
+        
         self.error_messages = []
 
         self.worker = WriteExifThread(folders_dict, exif_config, target_folder)
@@ -489,6 +507,22 @@ class WriteExifManager(QObject):
                 self.set_selected_star(int(star_rating))
             except ValueError:
                 logger.warning(f"无法转换星级评分: {star_rating}")
+        
+        # 加载拍摄时间设置
+        if shoot_time_source := config_manager.get_setting("exif_shoot_time_source"):
+            try:
+                self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_source))
+            except (ValueError, TypeError):
+                logger.warning(f"无法转换拍摄时间来源: {shoot_time_source}")
+        
+        if shoot_time := config_manager.get_setting("exif_shoot_time"):
+            try:
+                from PyQt6.QtCore import QDateTime
+                date_time = QDateTime.fromString(shoot_time, "yyyy:MM:dd HH:mm:ss")
+                if date_time.isValid():
+                    self.parent.dateTimeEdit_shootTime.setDateTime(date_time)
+            except Exception as e:
+                logger.warning(f"无法加载拍摄时间: {str(e)}")
 
     def save_exif_settings(self):
         try:
@@ -504,5 +538,9 @@ class WriteExifManager(QObject):
             config_manager.update_setting("exif_camera_model", self.parent.cameraModel.currentText())
 
             config_manager.update_setting("exif_star_rating", self.selected_star)
+            
+            # 保存拍摄时间设置
+            config_manager.update_setting("exif_shoot_time_source", self.parent.shootTimeSource.currentIndex())
+            config_manager.update_setting("exif_shoot_time", self.parent.dateTimeEdit_shootTime.dateTime().toString("yyyy:MM:dd HH:mm:ss"))
         except Exception as e:
             logger.error(f"保存EXIF设置失败: {str(e)}")

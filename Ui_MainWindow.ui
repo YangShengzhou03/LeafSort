@@ -5984,49 +5984,6 @@ QDateTimeEdit:disabled {
                        </widget>
                       </item>
                       <item>
-                       <widget class="QLineEdit" name="lineEdit_EXIF_latitude">
-                        <property name="sizePolicy">
-                         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                          <horstretch>0</horstretch>
-                          <verstretch>0</verstretch>
-                         </sizepolicy>
-                        </property>
-                        <property name="styleSheet">
-                         <string notr="true">QLineEdit {
-    border: 1px solid qradialgradient(
-        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-        stop:0.66 rgba(134, 119, 253, 255),
-        stop:1 rgba(119, 111, 252, 255)
-    );
-    background: rgb(245, 249, 254);
-    padding: 4px 2px;
-    border-radius: 6px;
-    color: #333;
-    selection-background-color: rgba(134, 119, 253, 180);
-    selection-color: white;
-    font-size: 12px;
-}
-
-QLineEdit:focus {
-    border: 2px solid qradialgradient(
-        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
-        stop:0.66 rgba(134, 119, 253, 255),
-        stop:1 rgba(119, 111, 252, 255)
-    );
-    outline: none;
-}
-
-QLineEdit:disabled {
-    background: #eaeaea;
-    color: #aaa;
-}</string>
-                        </property>
-                        <property name="placeholderText">
-                         <string>请输入纬度 (如: 39.9042)</string>
-                        </property>
-                       </widget>
-                      </item>
-                      <item>
                        <widget class="QLineEdit" name="lineEdit_EXIF_longitude">
                         <property name="sizePolicy">
                          <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
@@ -6065,7 +6022,50 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>请输入经度 (如: 116.4074)</string>
+                         <string>经度 (如: 116.4074)</string>
+                        </property>
+                       </widget>
+                      </item>
+                      <item>
+                       <widget class="QLineEdit" name="lineEdit_EXIF_latitude">
+                        <property name="sizePolicy">
+                         <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                          <horstretch>0</horstretch>
+                          <verstretch>0</verstretch>
+                         </sizepolicy>
+                        </property>
+                        <property name="styleSheet">
+                         <string notr="true">QLineEdit {
+    border: 1px solid qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(134, 119, 253, 255),
+        stop:1 rgba(119, 111, 252, 255)
+    );
+    background: rgb(245, 249, 254);
+    padding: 4px 2px;
+    border-radius: 6px;
+    color: #333;
+    selection-background-color: rgba(134, 119, 253, 180);
+    selection-color: white;
+    font-size: 12px;
+}
+
+QLineEdit:focus {
+    border: 2px solid qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(134, 119, 253, 255),
+        stop:1 rgba(119, 111, 252, 255)
+    );
+    outline: none;
+}
+
+QLineEdit:disabled {
+    background: #eaeaea;
+    color: #aaa;
+}</string>
+                        </property>
+                        <property name="placeholderText">
+                         <string>纬度 (如: 39.9042)</string>
                         </property>
                        </widget>
                       </item>
