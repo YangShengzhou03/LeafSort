@@ -6,8 +6,8 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 import threading
 
-# 提高日志级别到DEBUG以便详细诊断
-logging.basicConfig(level=logging.DEBUG)
+# 确保日志级别设置为INFO，这样用户可以看到MD5值输出
+logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FileScanThread(QtCore.QThread):
@@ -339,6 +339,9 @@ class FileScanThread(QtCore.QThread):
                     logger.warning(f"跳过文件: {file_path}")
                     continue
                 
+                # 打印每个文件的md5值，使用INFO级别以便用户在终端中看到
+                logger.info(f"文件: {file_path}, MD5: {file_hash}")
+                
                 if file_hash in file_hashes:
                     file_hashes[file_hash].append(file_path)
                 else:
@@ -361,7 +364,12 @@ class FileScanThread(QtCore.QThread):
         for i, group in enumerate(duplicate_groups):
             logger.info(f"重复组 #{i+1}: 包含 {len(group)} 个文件")
             for file in group:
-                logger.debug(f"  - {file}")
+                # 重新计算MD5值并打印，确保用户能看到
+                try:
+                    file_hash = self._calculate_md5(file)
+                    logger.info(f"  文件: {file}, MD5: {file_hash}")
+                except Exception as e:
+                    logger.warning(f"  无法计算文件 {file} 的MD5值: {str(e)}")
                 # 对于每组重复文件，打印它们的大小信息用于验证
                 try:
                     file_size = os.path.getsize(file)

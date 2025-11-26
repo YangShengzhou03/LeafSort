@@ -119,10 +119,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _toggle_maximize(self):
         if self.isMaximized():
             self.showNormal()
-            self.btnMaximize.setIcon(get_resource_path('resources/img/窗口控制/还原.svg'))
+            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/还原.svg')))
         else:
             self.showMaximized()
-            self.btnMaximize.setIcon(get_resource_path('resources/img/窗口控制/还原.svg'))
+            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/还原.svg')))
 
     def closeEvent(self, event):
         event.ignore()

@@ -35,26 +35,34 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self._init_table()
     
     def _init_ui_references(self):
-        """初始化UI元素引用"""
-        # 确保所有需要的UI元素都被引用
-        self.folder_path_edit = getattr(self.parent, 'folderPathEdit', None)
-        self.duplicate_table = getattr(self.parent, 'duplicateTable', None)
-        self.progress_bar = getattr(self.parent, 'progressBar', None)
-        self.status_label = getattr(self.parent, 'statusLabel', None)
-        self.stats_label = getattr(self.parent, 'statsLabel', None)
-        self.scan_btn = getattr(self.parent, 'btnStartScan', None)
-        self.stop_scan_btn = getattr(self.parent, 'btnStopScan', None)
-        self.filter_input = getattr(self.parent, 'filterInput', None)
+        """初始化UI元素引用，更新为匹配Ui_MainWindow.py中的实际对象名"""
+        # 获取UI元素引用，使用实际的对象名
+        self.folder_path_edit = getattr(self.parent, 'inputSourceFolder', None)  # 替换为inputSourceFolder
+        self.duplicate_table = getattr(self.parent, 'duplicateFilesTableWidget', None)  # 替换为duplicateFilesTableWidget
+        self.duplicate_items_list = getattr(self.parent, 'duplicateItemsListWidget', None)  # 使用实际的duplicateItemsListWidget
+        self.progress_bar = getattr(self.parent, 'importProgressBar', None)  # 推测的进度条名称
+        self.status_label = getattr(self.parent, 'importStatus', None)  # 替换为importStatus
+        self.stats_label = getattr(self.parent, 'importStats', None)  # 推测的统计标签名称
+        self.scan_btn = getattr(self.parent, 'btnStartDeduplication', None)  # 替换为btnStartDeduplication
+        self.stop_scan_btn = getattr(self.parent, 'btnStopScanning', None)  # 推测的停止按钮名称
+        self.filter_input = getattr(self.parent, 'filterInput', None)  # 推测的过滤器输入框名称
         
-        # 如果找不到某些UI元素，记录警告
+        # 不再使用duplicate_files_table，直接使用duplicate_table
+        self.duplicate_files_table = None
+
+        # 记录未找到的UI元素
         missing_elements = []
-        for attr in ['folder_path_edit', 'duplicate_table', 'progress_bar', 'status_label', 'stats_label', 
-                     'scan_btn', 'stop_scan_btn', 'filter_input']:
+        for attr in ['folder_path_edit', 'duplicate_table', 'duplicate_items_list', 'duplicate_files_table',
+                    'progress_bar', 'status_label', 'stats_label', 'scan_btn', 'stop_scan_btn', 'filter_input']:
             if not getattr(self, attr):
                 missing_elements.append(attr)
         
         if missing_elements:
             logger.warning(f"未找到以下UI元素: {missing_elements}")
+            
+        # 连接信号
+        if self.duplicate_items_list:
+            self.duplicate_items_list.itemClicked.connect(self._on_duplicate_item_clicked)
     
     def _init_table(self):
         """初始化表格"""
@@ -89,46 +97,18 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         # 连接去重按钮
         if hasattr(self.parent, 'btnStartDeduplication'):
             self.parent.btnStartDeduplication.clicked.connect(self._on_deduplication_clicked)
+        
+        # 连接重复文件列表点击事件
+        if self.duplicate_items_list:
+            self.duplicate_items_list.itemClicked.connect(self._on_duplicate_item_clicked)
     
     def _on_deduplication_clicked(self):
-        """去重按钮点击事件处理"""
-        # 优先从folder_page获取文件夹路径
-        folder_path = "未设置"
-        
-        # 尝试从folder_page获取首页选择的文件夹路径
-        if self.folder_page and hasattr(self.folder_page, 'get_all_folders'):
-            try:
-                folder_list = self.folder_page.get_all_folders()
-                if folder_list:
-                    # 使用第一个文件夹作为默认路径
-                    folder_path = folder_list[0]
-                    logger.info(f"从首页获取到文件夹路径: {folder_path}")
-                    # 如果有folder_path_edit，同步更新它
-                    if self.folder_path_edit:
-                        self.folder_path_edit.setText(folder_path)
-                else:
-                    logger.info("首页没有选择文件夹")
-            except Exception as e:
-                logger.warning(f"从首页获取文件夹路径时出错: {str(e)}")
-        
-        # 如果folder_page没有提供有效路径，再从folder_path_edit获取
-        if folder_path == "未设置" and self.folder_path_edit:
-            folder_path = self.folder_path_edit.text() or "未设置"
-        
-        logger.info('执行去重按钮点击事件')
-        logger.info(f'当前查重配置:')
-        logger.info(f'  - 原文件夹路径: {folder_path}')
-        logger.info(f'  - 文件夹存在状态: {os.path.exists(folder_path)}')
-        logger.info(f'  - 文件夹是否为目录: {os.path.isdir(folder_path)}')
-        logger.info(f'  - 已扫描到的重复文件组数量: {len(self.duplicate_groups)}')
-        
-        # 根据情况记录更多信息
-        if self.duplicate_groups:
-            total_duplicate_files = sum(len(group) for group in self.duplicate_groups)
-            logger.info(f'  - 重复文件总数: {total_duplicate_files}')
-            logger.info(f'  - 最大重复组文件数: {max(len(group) for group in self.duplicate_groups)}')
-        
-        self._start_deduplication()
+        """去重按钮点击事件处理
+        根据UI设计，'开始查重'按钮实际上应该执行扫描操作
+        """
+        logger.info('执行开始查重按钮点击事件 - 启动扫描流程')
+        # 直接调用扫描方法，而不是去重方法
+        self._start_scan()
     
     def _browse_folder(self):
         """浏览选择文件夹"""
@@ -395,7 +375,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                     f"找到 {total_groups} 组重复文件，共 {total_duplicates} 个重复文件，可节省 {saved_space_str}"
                 )
             
-            # 填充表格
+            # 填充表格1 - duplicate_table
             if self.duplicate_table:
                 self.duplicate_table.setRowCount(0)  # 清空表格
                 row = 0
@@ -444,9 +424,44 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                             row += 1
                         except Exception as e:
                             logger.error(f"处理文件 {file_path} 时出错: {str(e)}")
+            
+            # 填充重复文件列表 - duplicate_items_list
+            if self.duplicate_items_list:
+                self.duplicate_items_list.clear()  # 清空列表
+                for group_idx, group in enumerate(duplicate_groups):
+                    try:
+                        # 只显示每组的第一个文件（作为代表文件）
+                        if group:
+                            first_file_path = group[0]
+                            file_size = os.path.getsize(first_file_path)
+                            size_str = self._format_file_size(file_size)
+                            
+                            # 获取文件名（不包含路径）
+                            file_name = os.path.basename(first_file_path)
+                            
+                            # 显示文件名和大小信息
+                            item_text = f"{file_name} ({size_str})\n{first_file_path}"
+                            
+                            list_item = QtWidgets.QListWidgetItem(item_text)
+                            list_item.setData(QtCore.Qt.ItemDataRole.UserRole, group_idx)  # 存储组索引以便后续使用
+                            self.duplicate_items_list.addItem(list_item)
+                    except Exception as e:
+                        logger.error(f"处理重复组 {group_idx + 1} 时出错: {str(e)}")
+            
+            # 初始化重复文件表格 - duplicate_table (已替换duplicate_files_table)
+            if self.duplicate_table:
+                # 表格已在上方设置，这里无需重复设置列和属性
+                # 显示提示信息
+                pass
         else:
             if self.stats_label:
                 self.stats_label.setText("没有找到重复文件")
+            
+            # 清空所有显示控件
+            if self.duplicate_table:
+                self.duplicate_table.setRowCount(0)
+            if self.duplicate_items_list:
+                self.duplicate_items_list.clear()
         
         # 更新状态标签
         if self.status_label:
@@ -457,11 +472,81 @@ class FileDeduplicationManager(QtWidgets.QWidget):
 
     def on_progress_updated(self, progress, status_text):
         """进度更新槽函数"""
-        if hasattr(self, 'progress_bar'):
+        if hasattr(self, 'progress_bar') and self.progress_bar is not None:
             self.progress_bar.setValue(progress)
-        if hasattr(self, 'status_label'):
+        if hasattr(self, 'status_label') and self.status_label is not None:
             self.status_label.setText(status_text)
-        logger.debug(f"进度更新: {progress}% - {status_text}")
+        logger.info(f"进度更新: {progress}% - {status_text}")
+    
+    def _on_duplicate_item_clicked(self, item):
+        """点击重复文件列表项时的处理函数"""
+        if not hasattr(self, 'duplicate_groups'):
+            return
+        
+        # 获取组索引
+        group_idx = item.data(QtCore.Qt.ItemDataRole.UserRole)
+        if group_idx is None or group_idx < 0 or group_idx >= len(self.duplicate_groups):
+            return
+        
+        # 获取对应的重复文件组
+        duplicate_group = self.duplicate_groups[group_idx]
+        
+        # 使用duplicate_table替代duplicate_files_table
+        if self.duplicate_table:
+            self.duplicate_table.setRowCount(0)  # 清空表格
+            
+            # 添加组标题
+            self.duplicate_table.insertRow(0)
+            title_item = QtWidgets.QTableWidgetItem(f"该文件的重复文件 (共{len(duplicate_group)}个)")
+            title_item.setForeground(QtGui.QBrush(QtGui.QColor("blue")))
+            title_item.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)  # 不可编辑
+            self.duplicate_table.setItem(0, 0, title_item)
+            self.duplicate_table.setSpan(0, 0, 1, 3)  # 调整为3列
+            
+            # 添加分隔线
+            self.duplicate_table.insertRow(1)
+            separator_item = QtWidgets.QTableWidgetItem("-")
+            separator_item.setForeground(QtGui.QBrush(QtGui.QColor("gray")))
+            separator_item.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)  # 不可编辑
+            self.duplicate_table.setItem(1, 0, separator_item)
+            self.duplicate_table.setSpan(1, 0, 1, 3)  # 调整为3列
+            
+            # 添加重复文件列表
+            for row, file_path in enumerate(duplicate_group, 2):
+                try:
+                    file_size = os.path.getsize(file_path)
+                    
+                    self.duplicate_table.insertRow(row)
+                    
+                    # 文件路径
+                    path_item = QtWidgets.QTableWidgetItem(file_path)
+                    # 高亮显示第一个文件（作为代表文件）
+                    if row == 2:
+                        path_item.setForeground(QtGui.QBrush(QtGui.QColor("green")))
+                    self.duplicate_table.setItem(row, 0, path_item)
+                    
+                    # 文件大小
+                    size_str = self._format_file_size(file_size)
+                    self.duplicate_table.setItem(row, 1, QtWidgets.QTableWidgetItem(size_str))
+                    
+                    # 添加复选框列（保持与UI一致）
+                    checkbox_widget = QtWidgets.QWidget()
+                    checkbox_layout = QtWidgets.QHBoxLayout(checkbox_widget)
+                    checkbox_layout.setContentsMargins(0, 0, 0, 0)
+                    checkbox = QtWidgets.QCheckBox()
+                    # 第一个文件默认不选中（保留），其他重复文件默认选中（删除）
+                    if row > 2:
+                        checkbox.setChecked(True)
+                    # 第一个文件的复选框禁用
+                    checkbox.setEnabled(row > 2)
+                    checkbox_layout.addWidget(checkbox)
+                    checkbox_layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+                    self.duplicate_table.setCellWidget(row, 2, checkbox_widget)
+                    
+                except Exception as e:
+                    logger.error(f"处理文件 {file_path} 时出错: {str(e)}")
+        
+        logger.info(f"显示第 {group_idx + 1} 组重复文件，共 {len(duplicate_group)} 个文件")
     
     def on_scan_completed(self, duplicate_groups):
         """扫描完成槽函数"""
@@ -501,3 +586,48 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         
         logger.error(f"发生错误: {error_message}")
         QtWidgets.QMessageBox.critical(self, "错误", error_message)
+    
+    def refresh_view(self):
+        """刷新视图，确保UI组件正确初始化"""
+        logger.info("刷新去重页面视图")
+        
+        # 重置重复文件列表
+        if self.duplicate_items_list:
+            # 清空列表，准备接收数据
+            self.duplicate_items_list.clear()
+        
+        # 确保重复文件表格被正确初始化
+        if self.duplicate_table:
+            # 设置表格列
+            self.duplicate_table.setColumnCount(3)
+            self.duplicate_table.setHorizontalHeaderLabels(["文件路径", "文件大小", "删除"])
+            
+            # 设置表格属性
+            header = self.duplicate_table.horizontalHeader()
+            header.setSectionResizeMode(0, QtWidgets.QHeaderView.ResizeMode.Stretch)
+            header.setSectionResizeMode(1, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+            header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.ResizeToContents)
+            
+            # 清空表格并设置提示信息
+            self.duplicate_table.setRowCount(1)
+            hint_item = QtWidgets.QTableWidgetItem("请点击'开始扫描'按钮查找重复文件")
+            hint_item.setFlags(QtCore.Qt.ItemFlag.NoItemFlags)  # 不可编辑
+            self.duplicate_table.setItem(0, 0, hint_item)
+            self.duplicate_table.setSpan(0, 0, 1, 3)  # 合并单元格
+        
+        # 更新状态标签，提示用户开始扫描
+        if self.status_label:
+            self.status_label.setText("请点击'开始扫描'按钮查找重复文件")
+        
+        if self.stats_label:
+            self.stats_label.setText("准备就绪")
+        
+        # 重置进度条
+        if self.progress_bar:
+            self.progress_bar.setValue(0)
+        
+        # 重置去重结果和扫描状态
+        self.duplicate_groups = []
+        
+        # 重置UI状态
+        self._set_ui_enabled(scanning=False, deduplicating=False)
