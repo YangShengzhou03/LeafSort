@@ -36,7 +36,7 @@ class FileScanThread(QtCore.QThread):
         self._stop_flag = True
         logger.info("扫描线程收到停止信号")
     
-    def _calculate_md5(self, file_path, block_size=8192*8):  # 增加块大小以提高性能
+    def _calculate_md5(self, file_path, block_size=8192*16):  # 进一步增加块大小以提高性能
         """计算文件的MD5值"""
         # 检查缓存
         with self._cache_lock:
@@ -58,6 +58,11 @@ class FileScanThread(QtCore.QThread):
             file_size = file_stat.st_size
             file_mtime = file_stat.st_mtime
             
+            # 检查文件是否过大（超过2GB）
+            if file_size > 2 * 1024 * 1024 * 1024:  # 2GB
+                logger.warning(f"文件过大，跳过MD5计算: {file_path} ({file_size} bytes)")
+                return None
+            
             # 对于空文件，直接返回固定值
             if file_size == 0:
                 empty_hash = "d41d8cd98f00b204e9800998ecf8427e"  # 空文件的MD5
@@ -70,7 +75,7 @@ class FileScanThread(QtCore.QThread):
                 return empty_hash
             
             # 对于小文件，直接读取整个文件
-            if file_size < 10 * 1024 * 1024:  # 小于10MB的文件
+            if file_size < 5 * 1024 * 1024:  # 小于5MB的文件
                 try:
                     with open(file_path, 'rb') as f:
                         content = f.read()
@@ -101,34 +106,40 @@ class FileScanThread(QtCore.QThread):
         except PermissionError:
             logger.error(f"无权限访问文件: {file_path}")
             return None
+        except OSError as e:
+            if e.errno == 22:  # 无效参数错误，通常是文件名编码问题
+                logger.warning(f"文件名编码问题，跳过文件: {file_path}")
+                return None
+            else:
+                logger.error(f"计算文件{file_path}的MD5值失败: {str(e)}")
+                return None
         except Exception as e:
             logger.error(f"计算文件{file_path}的MD5值失败: {str(e)}")
             return None
     
     def _calculate_md5_chunked(self, file_path, file_size, file_mtime, block_size):
-        """分块计算文件的MD5值"""
-        md5 = hashlib.md5()
-        processed_size = 0
-        last_progress_update = 0
-        
+        """分块计算大文件的MD5值"""
         try:
+            md5_hash = hashlib.md5()
             with open(file_path, 'rb') as f:
-                for chunk in iter(lambda: f.read(block_size), b''):
+                bytes_read = 0
+                while True:
                     if self._stop_flag:
-                        logger.debug("MD5计算已停止")
                         return None
-                    md5.update(chunk)
-                    processed_size += len(chunk)
                     
-                    # 对于大文件，提供更详细的进度信息，但限制更新频率
-                    if file_size > 100 * 1024 * 1024:  # 大于100MB的文件
-                        current_time = time.time()
-                        if current_time - last_progress_update > self._progress_update_interval:
-                            chunk_progress = int(processed_size / file_size * 100)
-                            self._safe_progress_update(-1, f"计算MD5: {os.path.basename(file_path)} ({chunk_progress}%)")
-                            last_progress_update = current_time
+                    chunk = f.read(block_size)
+                    if not chunk:
+                        break
+                    
+                    md5_hash.update(chunk)
+                    bytes_read += len(chunk)
+                    
+                    # 每读取100MB发送一次进度更新
+                    if bytes_read % (100 * 1024 * 1024) < block_size:
+                        progress = min(100, int((bytes_read / file_size) * 100))
+                        self.progress_updated.emit(progress, f"正在计算MD5: {os.path.basename(file_path)}")
             
-            file_hash = md5.hexdigest()
+            file_hash = md5_hash.hexdigest()
             
             # 更新缓存
             with self._cache_lock:
@@ -139,6 +150,12 @@ class FileScanThread(QtCore.QThread):
                 }
             
             return file_hash
+        except OSError as e:
+            if e.errno == 22:  # 无效参数错误
+                logger.warning(f"文件名编码问题，跳过文件: {file_path}")
+            else:
+                logger.error(f"分块计算文件{file_path}的MD5值失败: {str(e)}")
+            return None
         except Exception as e:
             logger.error(f"分块计算文件{file_path}的MD5值失败: {str(e)}")
             return None
@@ -151,121 +168,140 @@ class FileScanThread(QtCore.QThread):
             self._last_progress_time = current_time
     
     def run(self):
-        """运行扫描线程"""
-        logger.info(f"开始扫描文件夹: {self.folder_path}")
-        logger.info(f"当前工作目录: {os.getcwd()}")
-        logger.info(f"实际扫描路径: {os.path.abspath(self.folder_path)}")
-        logger.info(f"路径是否存在: {os.path.exists(self.folder_path)}")
-        logger.info(f"是否为目录: {os.path.isdir(self.folder_path)}")
-        if self.filters:
-            logger.info(f"使用文件过滤器: {self.filters}")
-        
-        # 初始化线程池
-        self._thread_pool = ThreadPoolExecutor(max_workers=self._max_workers)
-        
+        """线程运行函数"""
         try:
-            # 验证文件夹路径
-            if not os.path.exists(self.folder_path):
-                error_msg = f"文件夹不存在: {self.folder_path}"
-                logger.error(error_msg)
-                self.error_occurred.emit(error_msg)
-                return
+            logger.info("文件扫描线程开始运行")
+            self._stop_flag = False
             
-            if not os.path.isdir(self.folder_path):
-                error_msg = f"路径不是文件夹: {self.folder_path}"
-                logger.error(error_msg)
-                self.error_occurred.emit(error_msg)
-                return
+            # 检查文件夹有效性 - 确保folder_path是列表
+            if isinstance(self.folder_path, str):
+                folders = [self.folder_path]
+            else:
+                folders = self.folder_path
             
-            # 获取所有文件
-            all_files = self._collect_files()
-            if self._stop_flag:
-                return
+            valid_folders = []
+            for folder in folders:
+                if self._stop_flag:
+                    break
+                
+                if not os.path.exists(folder):
+                    logger.warning(f"文件夹不存在: {folder}")
+                    self.error_occurred.emit(f"文件夹不存在: {folder}")
+                    continue
+                
+                if not os.path.isdir(folder):
+                    logger.warning(f"路径不是文件夹: {folder}")
+                    self.error_occurred.emit(f"路径不是文件夹: {folder}")
+                    continue
+                
+                valid_folders.append(folder)
             
-            total_files = len(all_files)
-            logger.info(f"总共找到 {total_files} 个文件")
-            # 列出部分找到的文件用于诊断
-            if total_files > 0:
-                logger.debug(f"前10个找到的文件:")
-                for file in all_files[:10]:
-                    logger.debug(f"  - {file}")
-                if total_files > 10:
-                    logger.debug(f"  ... 等{total_files-10}个文件")
-            
-            # 如果文件数量为0，直接返回
-            if total_files == 0:
+            if not valid_folders:
+                logger.warning("没有有效的文件夹")
+                self.error_occurred.emit("没有有效的文件夹")
                 self.scan_completed.emit([])
                 return
             
-            # 计算MD5值并查找重复
+            # 初始化线程池
+            self._thread_pool = ThreadPoolExecutor(max_workers=self._max_workers)
+            
+            # 收集所有文件
+            all_files = []
+            total_files = 0
+            for folder in valid_folders:
+                if self._stop_flag:
+                    break
+                
+                # 收集文件
+                folder_files = self._collect_files(folder)
+                all_files.extend(folder_files)
+                total_files += len(folder_files)
+                
+                logger.info(f"文件夹 {folder} 中找到 {len(folder_files)} 个文件")
+                self.progress_updated.emit(10, f"已扫描文件夹: {os.path.basename(folder)}")
+            
+            if not all_files:
+                logger.warning("没有找到任何文件")
+                self.scan_completed.emit([])
+                return
+            
+            logger.info(f"总共找到 {len(all_files)} 个文件，开始查找重复项")
+            self.progress_updated.emit(30, f"开始分析 {len(all_files)} 个文件")
+            
+            # 查找重复文件
             duplicate_groups = self._find_duplicates(all_files)
             
             if self._stop_flag:
+                logger.info("扫描被用户中断")
                 return
             
-            # 完成扫描
+            logger.info(f"找到 {len(duplicate_groups)} 组重复文件")
+            self.progress_updated.emit(100, "扫描完成")
             self.scan_completed.emit(duplicate_groups)
             
         except Exception as e:
-            logger.error(f"扫描重复文件时出错: {str(e)}")
-            self.error_occurred.emit(f"扫描出错: {str(e)}")
+            logger.error(f"扫描线程运行出错: {str(e)}")
+            self.error_occurred.emit(f"扫描线程运行出错: {str(e)}")
         finally:
             # 清理线程池
-            if self._thread_pool:
+            if hasattr(self, '_thread_pool') and self._thread_pool:
                 self._thread_pool.shutdown(wait=False)
+            logger.info("文件扫描线程结束运行")
     
-    def _collect_files(self):
-        """收集所有符合条件的文件"""
-        all_files = []
+    def _collect_files(self, folder):
+        """收集指定文件夹中的所有文件"""
+        files = []
         file_count = 0
-        last_progress_update = 0
-        
-        # 预处理过滤器，提高匹配效率
-        processed_filters = []
-        for filter in self.filters:
-            if not filter.startswith('.'):
-                filter = '.' + filter
-            processed_filters.append(filter.lower())
         
         try:
-            for root, _, files in os.walk(self.folder_path):
+            for root, dirs, filenames in os.walk(folder):
                 if self._stop_flag:
-                    logger.info("扫描已停止")
-                    self.error_occurred.emit("扫描已停止")
-                    return []
+                    break
                 
-                for file in files:
-                    # 应用文件过滤器
-                    if processed_filters:
-                        file_lower = file.lower()
-                        if not any(file_lower.endswith(filter) for filter in processed_filters):
+                # 跳过系统目录和隐藏目录以提高性能
+                dirs[:] = [d for d in dirs if not d.startswith('.') and d not in ['System Volume Information', '$RECYCLE.BIN', 'RECYCLER']]
+                
+                for filename in filenames:
+                    if self._stop_flag:
+                        break
+                    
+                    # 跳过隐藏文件和系统文件
+                    if filename.startswith('.') or filename.startswith('~'):
+                        continue
+                    
+                    file_path = os.path.join(root, filename)
+                    
+                    # 检查文件过滤器
+                    if self.filters:
+                        file_ext = os.path.splitext(filename)[1].lower()
+                        if file_ext not in self.filters:
                             continue
                     
+                    # 检查文件大小
                     try:
-                        file_path = os.path.join(root, file)
-                        # 检查文件是否可访问
-                        if os.access(file_path, os.R_OK):
-                            all_files.append(file_path)
-                            file_count += 1
-                            # 定期更新进度，但限制更新频率
-                            current_time = time.time()
-                            if current_time - last_progress_update > self._progress_update_interval:
-                                self._safe_progress_update(-1, f"收集文件: 已找到 {file_count} 个文件")
-                                last_progress_update = current_time
-                    except Exception as e:
-                        logger.warning(f"无法访问文件 {os.path.join(root, file)}: {str(e)}")
-        except PermissionError:
-            logger.error(f"无权限访问文件夹: {self.folder_path}")
-            self.error_occurred.emit(f"无权限访问文件夹")
-            return []
-        except Exception as e:
-            logger.error(f"遍历文件夹时出错: {str(e)}")
-            self.error_occurred.emit(f"遍历文件夹时出错: {str(e)}")
-            return []
+                        file_size = os.path.getsize(file_path)
+                        if file_size == 0:  # 跳过空文件
+                            continue
+                        # 跳过过大的文件（超过10GB）
+                        if file_size > 10 * 1024 * 1024 * 1024:  # 10GB
+                            logger.debug(f"跳过过大文件: {file_path} ({file_size} bytes)")
+                            continue
+                    except (OSError, IOError, PermissionError) as e:
+                        logger.debug(f"无法访问文件: {file_path}, 错误: {str(e)}")
+                        continue
+                    
+                    files.append(file_path)
+                    file_count += 1
+                    
+                    # 每收集500个文件发送一次进度更新
+                    if file_count % 500 == 0:
+                        self.progress_updated.emit(5, f"已收集 {file_count} 个文件")
         
-        # 发送最终文件计数
-        self.file_count_updated.emit(file_count)
-        return all_files
+        except Exception as e:
+            logger.error(f"收集文件时出错: {str(e)}")
+        
+        logger.info(f"文件夹 {folder} 中收集到 {file_count} 个文件")
+        return files
     
     def _find_duplicates(self, all_files):
         """查找重复文件"""
