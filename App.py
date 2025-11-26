@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QCoreApplication
 from main_window import MainWindow
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',handlers=[logging.FileHandler("app.log"), logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
 
 def handle_exception(exc_type, exc_value, exc_traceback):
