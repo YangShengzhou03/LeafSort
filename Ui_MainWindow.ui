@@ -3900,7 +3900,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>530</width>
+                               <width>160</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -3932,7 +3932,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>530</width>
+                               <width>250</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -3983,7 +3983,7 @@ QComboBox:focus {
                              </property>
                              <property name="maximumSize">
                               <size>
-                               <width>530</width>
+                               <width>300</width>
                                <height>16777215</height>
                               </size>
                              </property>
@@ -4287,8 +4287,8 @@ QTextEdit:focus {
                  </item>
                 </layout>
                </widget>
-               <widget class="QWidget" name="viewerPage">
-                <layout class="QHBoxLayout" name="viewerPageLayout" stretch="1">
+               <widget class="QWidget" name="deduplicationPage">
+                <layout class="QHBoxLayout" name="viewerPageLayout" stretch="2,1">
                  <property name="spacing">
                   <number>0</number>
                  </property>
@@ -4473,11 +4473,102 @@ border-bottom-left-radius:0px;</string>
                        <property name="bottomMargin">
                         <number>0</number>
                        </property>
+                       <item>
+                        <widget class="QListWidget" name="listWidget"/>
+                       </item>
                       </layout>
                      </widget>
                     </item>
                    </layout>
                   </widget>
+                 </item>
+                 <item>
+                  <layout class="QVBoxLayout" name="verticalLayout">
+                   <item>
+                    <widget class="QTableWidget" name="tableWidget"/>
+                   </item>
+                   <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout">
+                     <property name="topMargin">
+                      <number>0</number>
+                     </property>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_2">
+                       <property name="styleSheet">
+                        <string notr="true">QToolButton {
+    color: white;
+    border: none;
+    padding: 6px 6px;
+    border-radius: 6px;
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(134, 119, 253, 255),
+        stop:1 rgba(119, 111, 252, 255)
+    );
+    font-size: 12px;
+}
+
+QToolButton:hover {
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(154, 139, 255, 255),
+        stop:1 rgba(139, 131, 254, 255)
+    );
+}
+
+QToolButton:pressed {
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(94, 79, 253, 255),
+        stop:1 rgba(79, 71, 252, 255)
+    );
+}</string>
+                       </property>
+                       <property name="text">
+                        <string>随机选择</string>
+                       </property>
+                      </widget>
+                     </item>
+                     <item>
+                      <widget class="QToolButton" name="toolButton_3">
+                       <property name="styleSheet">
+                        <string notr="true">QToolButton {
+    color: white;
+    border: none;
+    padding: 6px 6px;
+    border-radius: 6px;
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(134, 119, 253, 255),
+        stop:1 rgba(119, 111, 252, 255)
+    );
+    font-size: 12px;
+}
+
+QToolButton:hover {
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(154, 139, 255, 255),
+        stop:1 rgba(139, 131, 254, 255)
+    );
+}
+
+QToolButton:pressed {
+    background-color: qradialgradient(
+        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
+        stop:0.66 rgba(94, 79, 253, 255),
+        stop:1 rgba(79, 71, 252, 255)
+    );
+}</string>
+                       </property>
+                       <property name="text">
+                        <string>移至回收站</string>
+                       </property>
+                      </widget>
+                     </item>
+                    </layout>
+                   </item>
+                  </layout>
                  </item>
                 </layout>
                </widget>
