@@ -5,6 +5,7 @@ from Ui_MainWindow import Ui_MainWindow
 from add_folder import FolderPage
 from smart_arrange import SmartArrangeManager
 from write_exif import WriteExifManager
+from file_deduplication import FileDeduplicationManager
 from common import get_resource_path
 import logging
 
@@ -25,7 +26,8 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.folder_page = FolderPage(self)
         self.smart_arrange_page = SmartArrangeManager(self, self.folder_page)
         self.write_exif_page = WriteExifManager(self, self.folder_page)
-
+        self.deduplication_page = FileDeduplicationManager(self, self.folder_page)
+        
     def _setup_ui(self):
         self.setWindowTitle("枫叶相册")
         icon_path = get_resource_path('resources/img/icon.ico')
