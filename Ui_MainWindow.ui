@@ -4559,70 +4559,36 @@ QScrollBar::handle:vertical:hover {
                     <widget class="QTableWidget" name="duplicateFilesTableWidget">
                      <property name="styleSheet">
                       <string notr="true">QTableWidget {
-    background-color: rgba(255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.95);
     border: none;
-    border-radius: 2px;
-    gridline-color: rgba(0, 0, 0, 0.05);
+    border-radius: 0px;
+    gridline-color: rgba(0, 0, 0, 0.03);
     outline: none;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
 }
 
 QTableWidget::item {
-    padding: 8px 12px;
+    padding: 4px 8px;
     border: none;
     color: #374151;
-    font-size: 13px;
-    background-color: transparent;
-}
-
-QTableWidget::item:selected {
-    background-color: rgba(139, 92, 246, 0.1);
-    color: #6d28d9;
-    font-weight: 500;
-}
-
-QTableWidget::item:hover {
-    background-color: rgba(139, 92, 246, 0.05);
-}
-
-QHeaderView::section {
-    background-color: rgba(249, 250, 251, 0.9);
-    padding: 10px 12px;
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-    color: #4b5563;
     font-size: 12px;
-    font-weight: 600;
-    text-align: left;
+    background-color: transparent;
+    font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', sans-serif;
+    font-weight: 300;
 }
-
-QHeaderView::section:checked {
-    background-color: rgba(139, 92, 246, 0.15);
-    color: #6d28d9;
-}
-
-QHeaderView::section:hover {
-    background-color: rgba(139, 92, 246, 0.08);
-}
-
-QTableCornerButton::section {
-    background-color: rgba(249, 250, 251, 0.9);
-    border: none;
-    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-}
-
 QScrollBar:vertical {
     border: none;
     background: #f3f4f6;
-    width: 8px;
-    margin: 2px;
-    border-radius: 4px;
+    width: 6px;
+    margin: 1px;
+    border-radius: 3px;
 }
 
 QScrollBar::handle:vertical {
     background: #cbd5e1;
-    min-height: 24px;
-    border-radius: 4px;
+    min-height: 20px;
+    border-radius: 3px;
     transition: background 0.2s ease;
 }
 
@@ -4633,15 +4599,15 @@ QScrollBar::handle:vertical:hover {
 QScrollBar:horizontal {
     border: none;
     background: #f3f4f6;
-    height: 8px;
-    margin: 2px;
-    border-radius: 4px;
+    height: 6px;
+    margin: 1px;
+    border-radius: 3px;
 }
 
 QScrollBar::handle:horizontal {
     background: #cbd5e1;
-    min-width: 24px;
-    border-radius: 4px;
+    min-width: 20px;
+    border-radius: 3px;
     transition: background 0.2s ease;
 }
 

@@ -35,7 +35,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         
         # 设置表格
         self.parent.duplicateFilesTableWidget.setRowCount(0)
-        self.parent.duplicateFilesTableWidget.setColumnCount(3)  # 只保留选择、文件名、文件路径
+        self.parent.duplicateFilesTableWidget.setColumnCount(3)  # 选择、文件名、文件路径
         headers = ["选择", "文件名", "文件路径"]
         self.parent.duplicateFilesTableWidget.setHorizontalHeaderLabels(headers)
         
@@ -48,10 +48,10 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)  # 文件路径自动拉伸
         
         # 设置固定宽度列的尺寸
-        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 50)   # 选择列（从40增加到50）
+        self.parent.duplicateFilesTableWidget.setColumnWidth(0, 65)   # 选择列（增加宽度以完整显示复选框）
         
         # 设置初始宽度（用户可手动调整）
-        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 200)  # 文件名
+        self.parent.duplicateFilesTableWidget.setColumnWidth(1, 250)  # 文件名（更宽一些）
         
         # 文件路径列会自动拉伸填充剩余空间
         # 用户也可以手动调整各列宽度
@@ -133,6 +133,11 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         if duplicate_groups:
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", 
                                             f"找到 {len(duplicate_groups)} 组重复文件")
+            
+            # 自动选择第一个重复组并显示
+            self.parent.duplicateItemsListWidget.setCurrentRow(0)
+            self.on_group_selected(0)
+            logger.info("自动选择第一个重复文件组")
         else:
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", "未找到重复文件")
         
@@ -168,7 +173,8 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             layout = QtWidgets.QHBoxLayout(checkbox_widget)
             layout.addWidget(checkbox)
             layout.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
-            layout.setContentsMargins(0, 0, 0, 0)
+            # 设置适当的边距以确保复选框完全显示
+            layout.setContentsMargins(5, 3, 5, 3)
             self.parent.duplicateFilesTableWidget.setCellWidget(i, 0, checkbox_widget)
             
             # 文件名（只显示文件名，不显示完整路径）
@@ -190,15 +196,34 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         # 更新状态显示
         self._update_selection_status()
     
+    def _update_selection_status(self):
+        """更新选择状态显示"""
+        # 记录选择状态到日志
+        logger.info(f"已选择 {len(self.selected_files)} 个文件待删除")
+        
+        # 如果父窗口有状态栏，则更新状态栏信息
+        if hasattr(self.parent, 'statusBar'):
+            try:
+                status_bar = self.parent.statusBar()
+                if status_bar:
+                    status_bar.showMessage(f"已选择 {len(self.selected_files)} 个文件待删除")
+            except Exception as e:
+                # 如果更新状态栏失败，继续使用日志记录
+                logger.debug(f"无法更新状态栏: {e}")
+        
+        # 如果有专门用于显示状态的标签，也可以在这里更新
+        # 例如: if hasattr(self.parent, 'selectionStatusLabel'):
+        #         self.parent.selectionStatusLabel.setText(f"已选择 {len(self.selected_files)} 个文件")
+    
     def on_file_selection_changed(self, row, column):
         """处理文件选择变化"""
-        if column != 0 or self.current_group_index < 0:
+        if column != 0 or self.current_group_index < 0:  # 选择列是第0列
             return
         
         file_group = self.duplicate_groups[self.current_group_index]
         if row < len(file_group):
             file_path = file_group[row]
-            checkbox_widget = self.parent.duplicateFilesTableWidget.cellWidget(row, 0)
+            checkbox_widget = self.parent.duplicateFilesTableWidget.cellWidget(row, 0)  # 选择列是第0列
             checkbox = checkbox_widget.findChild(QtWidgets.QCheckBox)
             
             if checkbox.isChecked():
@@ -207,28 +232,32 @@ class FileDeduplicationManager(QtWidgets.QWidget):
                 self.selected_files.discard(file_path)
     
     def random_select(self):
-        """随机选择重复文件"""
+        """随机选择重复文件（保留一个文件不选中，其余都选中）"""
         if not self.duplicate_groups:
             QtWidgets.QMessageBox.warning(self.parent, "警告", "请先扫描重复文件")
             return
         
         self.selected_files.clear()
+        selected_count = 0
         
         for group in self.duplicate_groups:
             if len(group) > 1:
-                # 保留第一个文件，随机选择要删除的文件
+                # 随机选择一个要保留的文件
                 import random
-                files_to_delete = group[1:]
-                if files_to_delete:
-                    selected_file = random.choice(files_to_delete)
-                    self.selected_files.add(selected_file)
+                keep_file = random.choice(group)
+                
+                # 选中除了保留文件外的所有文件
+                for file_path in group:
+                    if file_path != keep_file:
+                        self.selected_files.add(file_path)
+                        selected_count += 1
         
         # 更新表格显示
         if self.current_group_index >= 0:
             self._display_group_files(self.duplicate_groups[self.current_group_index])
         
         QtWidgets.QMessageBox.information(self.parent, "随机选择", 
-                                        f"已随机选择 {len(self.selected_files)} 个文件待删除")
+                                        f"已随机选择保留每个组中的一个文件，共选择 {selected_count} 个文件待删除")
     
     def move_to_recycle_bin(self):
         """将选中的文件移动到回收站"""
