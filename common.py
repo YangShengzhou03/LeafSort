@@ -195,37 +195,65 @@ class MediaTypeDetector:
 
 class GeocodingService:
     def __init__(self):
-        self.cache_path = os.path.join("_internal", "cache_location.json")
-        self.cache = self._load_cache()
         self._ensure_internal_dir()
+        self.cache_path = os.path.join("_internal", "cache_location.json")
+        self.cookies_path = os.path.join("_internal", "cookies.json")
+        self.cache = self._load_cache()
+        # 缓存清理机制：限制缓存大小，防止内存溢出
+        self._clean_cache_if_needed()
 
     def _ensure_internal_dir(self):
+        """确保_internal目录存在"""
         internal_dir = "_internal"
-        if not os.path.exists(internal_dir):
-            os.makedirs(internal_dir)
+        try:
+            if not os.path.exists(internal_dir):
+                os.makedirs(internal_dir)
+                logger.info(f"已创建_internal目录: {os.path.abspath(internal_dir)}")
+        except Exception as e:
+            logger.error(f"创建_internal目录时出错: {str(e)}")
+
+    def _clean_cache_if_needed(self, max_entries: int = 1000):
+        """当缓存条目超过最大值时，清理最旧的缓存"""
+        if len(self.cache) > max_entries:
+            # 保留最新的max_entries个条目
+            entries_to_keep = dict(list(self.cache.items())[-max_entries:])
+            self.cache = entries_to_keep
+            logger.info(f"缓存过大，已清理至{max_entries}个条目")
+            self._save_cache()
 
     def _load_cache(self):
+        """加载缓存文件，处理各种异常情况"""
         try:
             if not os.path.exists(self.cache_path):
                 return {}
 
             if os.path.getsize(self.cache_path) == 0:
                 logger.warning(f"缓存文件 {self.cache_path} 为空，删除并重新创建")
-                os.remove(self.cache_path)
+                try:
+                    os.remove(self.cache_path)
+                except Exception as e:
+                    logger.error(f"删除空缓存文件失败: {str(e)}")
                 return {}
 
             with open(self.cache_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 if not content:
                     logger.warning(f"缓存文件 {self.cache_path} 内容为空，删除并重新创建")
-                    os.remove(self.cache_path)
+                    try:
+                        os.remove(self.cache_path)
+                    except Exception as e:
+                        logger.error(f"删除空内容缓存文件失败: {str(e)}")
                     return {}
 
                 try:
                     return json.loads(content)
                 except json.JSONDecodeError as e:
                     logger.error(f"解析缓存文件失败: {str(e)}，删除损坏的缓存文件")
-                    os.remove(self.cache_path)
+                    try:
+                        os.remove(self.cache_path)
+                        logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
+                    except Exception as remove_error:
+                        logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
                     return {}
         except Exception as e:
             logger.error(f"加载缓存时出错: {str(e)}")
@@ -233,45 +261,34 @@ class GeocodingService:
                 try:
                     os.remove(self.cache_path)
                     logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
-                except Exception:
-                    pass
+                except Exception as remove_error:
+                    logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
             return {}
 
     def _save_cache(self):
+        """保存缓存到文件，包含错误处理"""
         try:
+            self._ensure_internal_dir()  # 再次确保目录存在
             with open(self.cache_path, 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"保存缓存时出错: {str(e)}")
 
-    def _get_address_from_api(self, latitude, longitude):
-        logger.info(f"longitude: {longitude}, latitude: {latitude}")
-        headers = {'accept': '*/*', 'accept-language': 'zh-CN,zh;q=0.9',
-                   'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
-                   'user-agent': 'Mozilla/5.0'}
-        loc = f"{longitude},{latitude}"
-        url_tpl = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
-
-        def get_cookies_key():
-            internal_dir = "_internal"
-            cookies_path = os.path.join(internal_dir, "cookies.json")
-
-            # 确保_internal目录存在
-            if not os.path.exists(internal_dir):
-                os.makedirs(internal_dir)
-
-            if os.path.exists(cookies_path):
+    def _get_cookies_key(self):
+        """获取Cookies和API密钥，统一使用logger记录错误"""
+        try:
+            if os.path.exists(self.cookies_path):
                 try:
-                    with open(cookies_path, "r", encoding="utf-8") as f:
+                    with open(self.cookies_path, "r", encoding="utf-8") as f:
                         saved = json.load(f)
                         if saved.get("cookies") and saved.get("key"):
                             return saved["cookies"], saved["key"]
                 except Exception as e:
-                    print(f"读取cookies失败: {e}")
+                    logger.error(f"读取cookies失败: {str(e)}")
 
             target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT',
-                           'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909', 'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909',
-                           'tfstk']
+                          'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909', 'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909',
+                          'tfstk']
             with sync_playwright() as p:
                 browser = p.chromium.launch(headless=True)
                 page = browser.new_context().new_page()
@@ -281,32 +298,77 @@ class GeocodingService:
                 key = page.get_attribute("#code_origin", "data-jskey")
                 browser.close()
 
-            with open(cookies_path, "w", encoding="utf-8") as f:
-                json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
-            return cookies, key
-
-        def get_address(cookies, key):
-            if not cookies or not key:
-                return None
+            # 保存cookies和key
             try:
-                url = url_tpl.format(key=key, loc=loc)
-                resp = requests.get(url, headers=headers, cookies=cookies, timeout=10)
-                if resp.status_code == 200 and "formatted_address" in resp.text:
+                self._ensure_internal_dir()
+                with open(self.cookies_path, "w", encoding="utf-8") as f:
+                    json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
+            except Exception as save_error:
+                logger.error(f"保存cookies失败: {str(save_error)}")
+            
+            return cookies, key
+        except Exception as e:
+            logger.error(f"获取cookies和key时出错: {str(e)}")
+            return None, None
+
+
+
+    def _get_address_via_api(self, cookies, key, loc, headers, url_tpl):
+        """通过API获取地址，包含完整的错误处理"""
+        if not cookies or not key:
+            return None
+        try:
+            url = url_tpl.format(key=key, loc=loc)
+            resp = requests.get(url, headers=headers, cookies=cookies, timeout=10)
+            if resp.status_code == 200 and "formatted_address" in resp.text:
+                try:
                     json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
                     return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
-            except Exception as e:
-                print(f"请求失败: {e}")
+                except (ValueError, json.JSONDecodeError) as parse_error:
+                    logger.error(f"解析API响应失败: {str(parse_error)}")
+                    return None
+            else:
+                logger.warning(f"API响应异常，状态码: {resp.status_code}, 内容: {resp.text[:100]}...")
+                return None
+        except requests.exceptions.RequestException as e:
+            logger.error(f"API请求异常: {str(e)}")
+            return None
+        except Exception as e:
+            logger.error(f"获取地址时发生未知错误: {str(e)}")
             return None
 
-        cookies, key = get_cookies_key()
-        addr = get_address(cookies, key)
-        if not addr:
-            cookies, key = get_cookies_key()
-            addr = get_address(cookies, key)
-
+    def _get_address_from_api(self, latitude, longitude):
+        """从API获取地址信息，添加重试机制"""
+        logger.info(f"longitude: {longitude}, latitude: {latitude}")
+        headers = {'accept': '*/*', 'accept-language': 'zh-CN,zh;q=0.9',
+                   'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
+                   'user-agent': 'Mozilla/5.0'}
+        loc = f"{longitude},{latitude}"
+        url_tpl = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
+        
+        # 尝试获取地址，最多重试一次
+        max_retries = 1
+        retries = 0
+        addr = None
+        
+        while retries <= max_retries and addr is None:
+            cookies, key = self._get_cookies_key()
+            addr = self._get_address_via_api(cookies, key, loc, headers, url_tpl)
+            if addr is None and retries < max_retries:
+                logger.info(f"第一次尝试失败，正在重试...")
+                retries += 1
+                # 重试前清除cookies缓存，获取新的cookies
+                if os.path.exists(self.cookies_path):
+                    try:
+                        os.remove(self.cookies_path)
+                        logger.info("已清除cookies缓存，准备重新获取")
+                    except Exception as e:
+                        logger.error(f"清除cookies缓存失败: {str(e)}")
+        
         return addr or "获取失败"
 
     def get_address(self, longitude, latitude):
+        """获取地址，优先从缓存获取，缓存未命中时从API获取"""
         cache_key = f"{longitude},{latitude}"
 
         if cache_key in self.cache:
