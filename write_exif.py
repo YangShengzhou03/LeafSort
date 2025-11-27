@@ -50,6 +50,9 @@ class WriteExifManager(QObject):
         from PyQt6.QtCore import QDateTime
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
 
+        # 添加这一行来初始化shootTimeSource控件的显示状态
+        self._on_shoot_time_source_changed(self.parent.shootTimeSource.currentIndex())
+
         self.update_button_state()
         self.load_exif_settings()
 
@@ -170,7 +173,18 @@ class WriteExifManager(QObject):
             getattr(self.parent, f'btnStar{i}').clicked.connect(self.save_exif_settings)
         
         self.parent.cameraBrand.currentIndexChanged.connect(self._on_brand_changed)
+        # 添加shootTimeSource下拉框变化的连接
+        self.parent.shootTimeSource.currentIndexChanged.connect(self._on_shoot_time_source_changed)
         self.log_signal.connect(self._update_log_display)
+
+    def _on_shoot_time_source_changed(self, index):
+        """当拍摄时间源下拉框变化时，控制dateTimeEdit_shootTime的显示/隐藏"""
+        # 当选择"不写入"(0)或"从文件名"(1)时隐藏dateTimeEdit_shootTime控件
+        if index in [0, 1]:
+            self.parent.dateTimeEdit_shootTime.setVisible(False)
+        else:
+            # 当选择"指定时间"(2)时显示dateTimeEdit_shootTime控件
+            self.parent.dateTimeEdit_shootTime.setVisible(True)
 
     def update_button_state(self):
         if self.is_running:

@@ -8,6 +8,7 @@ from typing import Dict, List, Any, Optional
 logger = logging.getLogger(__name__)
 
 def _thread_safe_method(func):
+    """确保方法线程安全的装饰器"""
     def wrapper(self, *args, **kwargs):
         with self._lock:
             return func(self, *args, **kwargs)
@@ -112,8 +113,6 @@ class ConfigManager:
     @_thread_safe_method
     def has_folder(self, folder_path: str) -> bool:
         return folder_path in self.config["folders"]
-    
-
     
     def _load_location_cache(self) -> None:
         if not os.path.exists(self.cache_file):
