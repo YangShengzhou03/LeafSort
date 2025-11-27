@@ -624,11 +624,9 @@ class WriteExifThread(QThread):
             exif_dict: EXIF数据字典
             updated_fields: 更新字段列表
         """
-        # 确保基本EXIF部分存在
         if "0th" not in exif_dict:
             exif_dict["0th"] = {}
         
-        # 使用exif_config而不是直接获取属性
         field_mappings = [
             ('title', piexif.ImageIFD.ImageDescription, "标题: {}", 'utf-8'),
             ('author', 315, "作者: {}", 'utf-8'),
@@ -651,11 +649,9 @@ class WriteExifThread(QThread):
         rating = self.exif_config.get('rating')
         if rating:
             try:
-                # 确保0th部分存在
                 if "0th" not in exif_dict:
                     exif_dict["0th"] = {}
                 
-                # 将评分转换为整数并写入
                 rating_value = int(rating)
                 exif_dict["0th"][piexif.ImageIFD.Rating] = rating_value
                 updated_fields.append(f"评分: {rating}星")
@@ -669,11 +665,9 @@ class WriteExifThread(QThread):
         if not (lens_brand or lens_model):
             return
             
-        # 确保Exif部分存在
         if "Exif" not in exif_dict:
             exif_dict["Exif"] = {}
         
-        # 写入镜头品牌
         if lens_brand:
             try:
                 exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
@@ -681,7 +675,6 @@ class WriteExifThread(QThread):
             except Exception as e:
                 logger.error(f"写入HEIC镜头品牌失败: {str(e)}")
             
-        # 写入镜头型号
         if lens_model:
             try:
                 exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
@@ -1119,19 +1112,12 @@ class WriteExifThread(QThread):
         """
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        # 基础正则表达式模式集合，确保中文文件名兼容性
         patterns = [
-            # 1. 年月日时分秒连续数字格式 (20240629143847)
             r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})',
-            # 2. 年月日连续，时分秒可选 (20240629_143847 或 20240629)
             r'(\d{4})(\d{2})(\d{2})(?:[-_\.\/\s=](\d{2})(\d{2})(\d{2}))?',
-            # 6. 特殊格式处理：例如 2024-06-29-周六-143847 这种格式，单独提取日期和时间
             r'(\d{4})[-_=](\d{1,2})[-_=](\d{1,2}).*?[-_\s](\d{6})',
-            # 4. 中文混合格式，处理年_月_日_星期_时分秒 (上海2024_06_29_周六_143847留念2) - 优化版本
             r'(\d{4})[-_=](\d{1,2})[-_=](\d{1,2}).*?(\d{6})',
-            # 3. 通用分隔符的年月日，时分秒可选 (支持各种分隔符：-、_、.、/、空格、=等)
             r'(\d{4})[-_\.\/\s=](\d{1,2})[-_\.\/\s=](\d{1,2})(?:[-_\.\/\s=](\d{1,2})[-_\.\/\s=]?(\d{1,2})[-_\.\/\s=]?(\d{1,2}))?',
-            # 5. 中文年月日格式 (2024年6月29日14时38分47秒)
             r'(\d{4})年(\d{1,2})月(\d{1,2})日(?:(\d{1,2})时(\d{1,2})分(\d{1,2})秒)?'
         ]
         
@@ -1139,15 +1125,12 @@ class WriteExifThread(QThread):
             match = re.search(pattern, name_without_ext)
             if match:
                 try:
-                    # 获取位置捕获组
                     groups = match.groups()
                     
-                    # 提取年月日（所有模式的前三个捕获组）
                     year = int(groups[0])
                     month = int(groups[1])
                     day = int(groups[2])
                     
-                    # 增加日期有效性检查
                     if not (1900 <= year <= 2100 and 1 <= month <= 12):
                         continue
                     if month in [4, 6, 9, 11] and day > 30:
@@ -1159,38 +1142,35 @@ class WriteExifThread(QThread):
                     elif day > 31:
                         continue
                     
-                    # 初始化时间为0
                     hour, minute, second = 0, 0, 0
                     
-                    # 根据不同模式处理时间信息
-                    if i == 0:  # 模式1: 连续数字 (年月日时分秒)
+                    if i == 0:  # Pattern 1: Continuous digits (YYYYMMDDHHMMSS)
                         if len(groups) >= 6:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 1:  # 模式2: 年月日连续，时分秒可选
+                    elif i == 1:  # Pattern 2: Continuous date, optional time
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 2 or i == 3:  # 模式6和模式4: 特殊格式和中文混合格式，处理连续6位时间
+                    elif i == 2 or i == 3:  # Pattern 6 and 4: Special format and mixed Chinese format
                         if len(groups) >= 4 and groups[3] and len(groups[3]) == 6:
                             full_time = groups[3]
                             hour = int(full_time[0:2])
                             minute = int(full_time[2:4])
                             second = int(full_time[4:6])
-                    elif i == 4:  # 模式3: 通用分隔符
+                    elif i == 4:  # Pattern 3: Generic separators
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 5:  # 模式5: 中文年月日格式
+                    elif i == 5:  # Pattern 5: Chinese year-month-day format
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
                     
-                    # 检查时间有效性
                     if 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59:
                         return datetime(year, month, day, hour, minute, second)
                 except (ValueError, TypeError, IndexError):

@@ -46,6 +46,10 @@ class WriteExifManager(QObject):
         self.init_camera_brand_model()
         self.load_camera_lens_mapping()
 
+        # 设置 dateTimeEdit_shootTime 默认显示当前时间
+        from PyQt6.QtCore import QDateTime
+        self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
+
         self.update_button_state()
         self.load_exif_settings()
 
@@ -511,14 +515,8 @@ class WriteExifManager(QObject):
             except (ValueError, TypeError):
                 logger.warning(f"无法转换拍摄时间来源: {shoot_time_source}")
         
-        if shoot_time := config_manager.get_setting("exif_shoot_time"):
-            try:
-                from PyQt6.QtCore import QDateTime
-                date_time = QDateTime.fromString(shoot_time, "yyyy:MM:dd HH:mm:ss")
-                if date_time.isValid():
-                    self.parent.dateTimeEdit_shootTime.setDateTime(date_time)
-            except Exception as e:
-                logger.warning(f"无法加载拍摄时间: {str(e)}")
+        # 不从配置中读取拍摄时间，始终显示当前时间
+        pass
 
     def save_exif_settings(self):
         try:

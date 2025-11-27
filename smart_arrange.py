@@ -221,7 +221,7 @@ class SmartArrangeManager(QObject):
             )
 
             if reply != QMessageBox.StandardButton.Yes:
-                self.log("INFO", "操作已取消")
+                self.log("INFO", "用户将操作取消")
                 return
 
             if isinstance(self.selected_folders, str):

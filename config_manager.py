@@ -161,7 +161,7 @@ class ConfigManager:
     
     def _cleanup_expired_cache(self) -> None:
         expiry_days = self.config["cache_settings"]["cache_expiry_days"]
-        # 如果expiry_days为0，表示永不过期，不执行清理
+        
         if expiry_days <= 0:
             return
             

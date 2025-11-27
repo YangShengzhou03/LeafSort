@@ -25,7 +25,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._initialize_pages()
         self._connect_signals()
         
-        # 启动时检查版本更新
+        
         try:
             check_update()
         except Exception as e:

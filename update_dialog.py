@@ -23,7 +23,7 @@ class UpdateDialog(QDialog):
         self.ui.label_title.setText(title)
         self.ui.label_content.setText(content)
         
-        # 始终显示取消按钮，不强制更新
+        
         self.ui.pushButton_download.clicked.connect(self.download_update)
         self.ui.pushButton_cancel.clicked.connect(self.close)
     
@@ -32,7 +32,7 @@ class UpdateDialog(QDialog):
         self.close()
     
     def closeEvent(self, event):
-        # 允许用户关闭对话框
+        
         super().closeEvent(event)
 
 def check_update():
@@ -47,7 +47,7 @@ def check_update():
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         
-        # 解析返回的键值对格式
+        
         content = response.text.strip()
         info_dict = {}
         for line in content.split('\n'):
@@ -55,7 +55,7 @@ def check_update():
                 key, value = line.split(':', 1)
                 info_dict[key.strip()] = value.strip()
         
-        # 检查必要的键是否存在
+        
         if not all(key in info_dict for key in ['Latest Version', 'Download Link', 'Description']):
             raise ValueError("Invalid update information format")
         
@@ -69,7 +69,7 @@ def check_update():
             raise ValueError("Invalid version number format")
         
         if latest_version > current_version:
-            # 移除强制更新逻辑，所有更新都可选
+            
             version_text = f"LeafView v{latest_version_str}"
             dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description, version_text, False)
             dialog.exec()
@@ -78,5 +78,5 @@ def check_update():
         dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '检查更新失败',
                               '更新失败，但您的支持始终是我们前行的重要力量。未来可期，敬请放心，我们一直在努力。\n检查更新时出错了', "", False)
         dialog.ui.pushButton_download.setText("我知道了")
-        dialog.ui.pushButton_cancel.hide()  # 错误提示时可以隐藏取消按钮
+        dialog.ui.pushButton_cancel.hide()  
         dialog.exec()

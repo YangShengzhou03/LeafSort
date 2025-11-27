@@ -242,10 +242,8 @@ class FileScanThread(QtCore.QThread):
                     
                     file_path = os.path.join(root, filename)
                     
-                    if self.filters:
-                        file_ext = os.path.splitext(filename)[1].lower()
-                        if file_ext not in self.filters:
-                            continue
+                    # 不再根据文件扩展名过滤，处理所有类型的文件
+                    # 原逻辑: 如果设置了过滤器且文件扩展名不在过滤器中则跳过
                     
                     try:
                         file_size = os.path.getsize(file_path)
@@ -352,20 +350,20 @@ class FileScanThread(QtCore.QThread):
         
         duplicate_groups.sort(key=len, reverse=True)
         
-        logger.info(f"扫描完成，找到 {len(duplicate_groups)} 组重复文件")
+        logger.info(f"Scan completed, found {len(duplicate_groups)} groups of duplicate files")
         for i, group in enumerate(duplicate_groups):
-            logger.info(f"重复组 #{i+1}: 包含 {len(group)} 个文件")
+            logger.info(f"Duplicate group #{i+1}: Contains {len(group)} files")
             for file in group:
                 try:
                     file_hash = self._calculate_md5(file)
-                    logger.info(f"  文件: {file}, MD5: {file_hash}")
+                    logger.info(f"  File: {file}, MD5: {file_hash}")
                 except Exception as e:
-                    logger.warning(f"  无法计算文件 {file} 的MD5值: {str(e)}")
+                    logger.warning(f"  Unable to calculate MD5 for file {file}: {str(e)}")
                 try:
                     file_size = os.path.getsize(file)
-                    logger.debug(f"    大小: {file_size} 字节, 修改时间: {os.path.getmtime(file)}")
+                    logger.debug(f"    Size: {file_size} bytes, Modified time: {os.path.getmtime(file)}")
                 except Exception as e:
-                    logger.warning(f"获取文件信息失败 {file}: {str(e)}")
+                    logger.warning(f"Failed to get file info {file}: {str(e)}")
         
         if len(duplicate_groups) == 0 and potential_duplicates > 0:
             pass

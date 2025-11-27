@@ -4384,4 +4384,4 @@ class Ui_MainWindow(object):
         self.lineEdit_EXIF_longitude.setPlaceholderText(_translate("MainWindow", "经度 (如: 116.4074)"))
         self.lineEdit_EXIF_latitude.setPlaceholderText(_translate("MainWindow", "纬度 (如: 39.9042)"))
         self.btnStartExif.setText(_translate("MainWindow", "开始写入EXIF信息"))
-        self.lblDefault.setText(_translate("MainWindow", "就绪 - 请选择图片文件并配置EXIF参数开始处理"))
+        self.lblDefault.setText(_translate("MainWindow", "注意 - 写入EXIF为高危操作，自动将写入后的文件复制到目标文件夹中。"))

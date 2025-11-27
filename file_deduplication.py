@@ -22,7 +22,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.duplicate_groups = []
         self.current_group_index = -1
         self.selected_files = set()
-        self.filters = ['.jpg', '.jpeg', '.png', '.gif', '.bmp', '.tiff', '.webp']
+        self.filters = []  # 不再限制文件类型，处理所有文件
         
         self._setup_ui()
         self._connect_signals()

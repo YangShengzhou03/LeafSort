@@ -6248,7 +6248,7 @@ border: 1px solid rgba(134, 119, 253, 0.2);
 box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);</string>
                       </property>
                       <property name="text">
-                       <string>就绪 - 请选择图片文件并配置EXIF参数开始处理</string>
+                       <string>注意 - 写入EXIF为高危操作，自动将写入后的文件复制到目标文件夹中。</string>
                       </property>
                      </widget>
                     </item>

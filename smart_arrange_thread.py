@@ -458,7 +458,7 @@ class SmartArrangeThread(QtCore.QThread):
     def get_exif_data(self, file_path):
         exif_data = {}
         file_path_obj = Path(file_path)
-        # 确保先将suffix转换为字符串再调用lower方法
+        
         suffix = str(file_path_obj.suffix).lower()
         create_time = datetime.fromtimestamp(file_path_obj.stat().st_ctime)
         modify_time = datetime.fromtimestamp(file_path_obj.stat().st_mtime)
@@ -466,27 +466,27 @@ class SmartArrangeThread(QtCore.QThread):
         date_taken = None
         
         try:
-            # 验证文件类型，特别是对于.HEIC文件
+            
             if suffix == '.heic':
-                # 尝试验证文件是否真的是HEIC格式
+                
                 try:
-                    # 使用文件头检查或verify_file_extension函数
+                    
                     if 'verify_file_extension' in globals():
                         is_valid_ext, magic_info = verify_file_extension(file_path)
                         if not is_valid_ext and magic_info:
                             expected_ext = magic_info.get('extension', '')
                             expected_type = magic_info.get('file_type', '')
                             self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
-                            # 对于伪装成HEIC的JPG文件，尝试用JPG方式处理
+                            
                             if magic_info and magic_info.get('file_type', '').lower() == '图像' and magic_info.get('extension', '').lower() == '.jpg':
                                 date_taken = self._process_image_exif(file_path_obj, exif_data)
                             else:
-                                # 其他类型的文件使用默认时间
+                                
                                 self.log("DEBUG", f"文件实际类型与扩展名不符，使用文件系统时间")
                 except Exception as verify_error:
                     self.log("DEBUG", f"文件类型验证失败: {str(verify_error)}")
                 
-                # 如果上述验证后仍未获取date_taken，则尝试正常的HEIC处理
+                
                 if date_taken is None:
                     date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
@@ -634,7 +634,7 @@ class SmartArrangeThread(QtCore.QThread):
                 self.log("DEBUG", "HEIC文件没有EXIF数据")
                 return None
         except Exception as e:
-            # 专门处理文件格式问题
+            
             if "No 'ftyp' box" in str(e):
                 self.log("ERROR", f"{file_path.name}文件扩展名异常，可能不是真正的HEIC文件")
             else:
@@ -1152,16 +1152,16 @@ class SmartArrangeThread(QtCore.QThread):
         
     def process_single_file(self, file_path, base_folder=None):
         try:
-            # 先验证文件扩展名是否与内容匹配
-            # 确保传入字符串类型给verify_file_extension
+            
+            
             file_path_str = str(file_path)
             is_valid_ext, magic_info = verify_file_extension(file_path_str)
             if not is_valid_ext and magic_info and magic_info.get('detected', False):
-                # 获取文件扩展名
+                
                 _, actual_ext = os.path.splitext(file_path_str.lower())
                 expected_ext = magic_info.get('extension', '')
                 expected_type = magic_info.get('file_type', '')
-                # 记录ERROR日志
+                
                 self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
             
             exif_data = self.get_exif_data(file_path)
@@ -1285,7 +1285,7 @@ class SmartArrangeThread(QtCore.QThread):
             if folder_name:
                 target_path = target_path / folder_name
         
-        # 确保传递字符串类型给get_file_type
+        
         file_type = get_file_type(str(file_path))
         target_path = target_path / file_type
         
