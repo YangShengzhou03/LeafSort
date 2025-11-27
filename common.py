@@ -14,41 +14,31 @@ VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm', '.m
 AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a']
 
 MAGIC_NUMBERS = {
-    # JPG相关魔数
     b'\xff\xd8\xff': ('.jpg', '图像'),
-    # PNG相关魔数
     b'\x89\x50\x4E\x47': ('.png', '图像'),
-    # GIF相关魔数
     b'GIF8': ('.gif', '图像'),
     b'GIF9': ('.gif', '图像'),
-    # BMP相关魔数
     b'BM': ('.bmp', '图像'),
     b'\x42\x4D': ('.bmp', '图像'),
-    # 视频相关魔数
     b'RIFF': ('.avi', '视频'),
     b'ftyp': ('.mp4', '视频'),
     b'\x00\x00\x00\x1Cftyp': ('.mp4', '视频'),
     b'\x00\x00\x00\x20ftyp': ('.mp4', '视频'),
     b'\x1A\x45\xDF\xA3': ('.mkv', '视频'),
     b'\x4F\x67\x67\x53': ('.ogv', '视频'),
-    # 其他图像格式
     b'WEBP': ('.webp', '图像'),
     b'II*': ('.tiff', '图像'),
     b'MM*': ('.tiff', '图像'),
-    # HEIC/HEIF相关魔数 - 这些需要更高的优先级，因为'ftyp'可能匹配到其他文件类型
     b'ftypheic': ('.heic', '图像'),
     b'ftypheix': ('.heic', '图像'),
     b'ftypmif1': ('.heif', '图像'),
     b'ftypmsf1': ('.heif', '图像'),
-    # 文档和其他格式
     b'%PDF': ('.pdf', '文档'),
     b'PK\x03\x04': ('.zip', '压缩包'),
     b'Rar!': ('.rar', '压缩包'),
     b'7z\xBC\xAF\x27\x1C': ('.7z', '压缩包'),
-    # 音频相关魔数
     b'ID3': ('.mp3', '音乐'),
     b'\x52\x49\x46\x46': ('.wav', '音乐'),
-    # SVG相关魔数
     b'<svg': ('.svg', '图像'),
     b'<\?xml': ('.svg', '图像'),
 }
@@ -67,14 +57,6 @@ class ResourceManager:
         path = os.path.join(os.getcwd(), relative_path)
         if os.path.exists(path):
             return path
-        
-        try:
-            base_path = os.path.dirname(os.path.abspath(__file__))
-            path = os.path.join(base_path, relative_path)
-            if os.path.exists(path):
-                return path
-        except Exception as e:
-            logger.error(f"获取资源路径时出错: {str(e)}")
         
         return None
 
@@ -130,13 +112,10 @@ class FileMagicNumberDetector:
         _, actual_ext = os.path.splitext(file_path_str.lower())
         expected_ext = magic_info['extension']
         
-        # 更宽松的HEIC/HEIF检测，允许实际为JPG的文件使用HEIC扩展名
         if actual_ext in ['.heic', '.heif']:
-            # 如果检测为JPG但扩展名为HEIC，也视为有效
             if expected_ext == '.jpg':
                 logger.info(f"文件 {os.path.basename(file_path_str)} 扩展名为{actual_ext}但实为JPG，允许使用当前扩展名")
                 return True, magic_info
-            # HEIC/HEIF之间相互兼容
             return True, magic_info
         
         return actual_ext == expected_ext, magic_info
@@ -199,7 +178,6 @@ class GeocodingService:
         self.cache_path = os.path.join("_internal", "cache_location.json")
         self.cookies_path = os.path.join("_internal", "cookies.json")
         self.cache = self._load_cache()
-        # 缓存清理机制：限制缓存大小，防止内存溢出
         self._clean_cache_if_needed()
 
     def _ensure_internal_dir(self):
@@ -213,16 +191,13 @@ class GeocodingService:
             logger.error(f"创建_internal目录时出错: {str(e)}")
 
     def _clean_cache_if_needed(self, max_entries: int = 1000):
-        """当缓存条目超过最大值时，清理最旧的缓存"""
         if len(self.cache) > max_entries:
-            # 保留最新的max_entries个条目
             entries_to_keep = dict(list(self.cache.items())[-max_entries:])
             self.cache = entries_to_keep
             logger.info(f"缓存过大，已清理至{max_entries}个条目")
             self._save_cache()
 
     def _load_cache(self):
-        """加载缓存文件，处理各种异常情况"""
         try:
             if not os.path.exists(self.cache_path):
                 return {}
@@ -266,16 +241,14 @@ class GeocodingService:
             return {}
 
     def _save_cache(self):
-        """保存缓存到文件，包含错误处理"""
         try:
-            self._ensure_internal_dir()  # 再次确保目录存在
+            self._ensure_internal_dir()
             with open(self.cache_path, 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"保存缓存时出错: {str(e)}")
 
     def _get_cookies_key(self):
-        """获取Cookies和API密钥，统一使用logger记录错误"""
         try:
             if os.path.exists(self.cookies_path):
                 try:
@@ -298,7 +271,6 @@ class GeocodingService:
                 key = page.get_attribute("#code_origin", "data-jskey")
                 browser.close()
 
-            # 保存cookies和key
             try:
                 self._ensure_internal_dir()
                 with open(self.cookies_path, "w", encoding="utf-8") as f:
@@ -314,7 +286,6 @@ class GeocodingService:
 
 
     def _get_address_via_api(self, cookies, key, loc, headers, url_tpl):
-        """通过API获取地址，包含完整的错误处理"""
         if not cookies or not key:
             return None
         try:
@@ -338,7 +309,6 @@ class GeocodingService:
             return None
 
     def _get_address_from_api(self, latitude, longitude):
-        """从API获取地址信息，添加重试机制"""
         logger.info(f"longitude: {longitude}, latitude: {latitude}")
         headers = {'accept': '*/*', 'accept-language': 'zh-CN,zh;q=0.9',
                    'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
@@ -346,7 +316,6 @@ class GeocodingService:
         loc = f"{longitude},{latitude}"
         url_tpl = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
         
-        # 尝试获取地址，最多重试一次
         max_retries = 1
         retries = 0
         addr = None
@@ -357,7 +326,6 @@ class GeocodingService:
             if addr is None and retries < max_retries:
                 logger.info(f"第一次尝试失败，正在重试...")
                 retries += 1
-                # 重试前清除cookies缓存，获取新的cookies
                 if os.path.exists(self.cookies_path):
                     try:
                         os.remove(self.cookies_path)
@@ -368,7 +336,6 @@ class GeocodingService:
         return addr or "获取失败"
 
     def get_address(self, longitude, latitude):
-        """获取地址，优先从缓存获取，缓存未命中时从API获取"""
         cache_key = f"{longitude},{latitude}"
 
         if cache_key in self.cache:

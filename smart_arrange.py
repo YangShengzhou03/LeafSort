@@ -90,7 +90,6 @@ class SmartArrangeManager(QObject):
             except (TypeError, RuntimeError):
                 pass
             self.parent.btnStartSmartArrange.clicked.connect(self.toggle_SmartArrange)
-
             self.parent.btnStartSmartArrange.setEnabled(True)
         except Exception as e:
             self.log("ERROR", f"连接btnStartSmartArrange信号失败: {str(e)}")

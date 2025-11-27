@@ -30,7 +30,6 @@ class FolderPage(QtWidgets.QWidget):
             lambda: self._save_folder_path("target_folder", self.parent.inputTargetFolder.text()))
     
     def _load_saved_folders(self):
-        """从配置中加载保存的文件夹路径"""
         try:
             source_folder = config_manager.get_setting("source_folder", "")
             if source_folder and os.path.exists(source_folder):
@@ -43,13 +42,11 @@ class FolderPage(QtWidgets.QWidget):
                 self.parent.inputTargetFolder.setText(target_folder)
                 logger.info(f"已加载保存的目标文件夹: {target_folder}")
                 
-            
             self._update_import_status("")
         except Exception as e:
             logger.error(f"加载保存的文件夹路径时出错: {str(e)}")
     
     def _save_folder_path(self, setting_key, folder_path):
-        """保存文件夹路径到配置"""
         try:
             config_manager.update_setting(setting_key, folder_path)
             logger.info(f"已保存{setting_key}: {folder_path}")
@@ -77,8 +74,7 @@ class FolderPage(QtWidgets.QWidget):
 
         except Exception as e:
             logger.error(f"浏览目录时出错: {str(e)}")
-            if hasattr(line_edit, 'setText'):
-                line_edit.setText(original_path)
+            line_edit.setText(original_path)
 
     def _validate_folder_selection(self, selected_path, title, original_path, line_edit):
         source_path = self.parent.inputSourceFolder.text().strip()
@@ -90,15 +86,10 @@ class FolderPage(QtWidgets.QWidget):
             target_path = selected_path
 
         if source_path and target_path:
-            try:
-                if not self._check_folder_relationship(source_path, target_path):
-                    QtWidgets.QMessageBox.warning(self, "文件夹选择错误",
-                                                  "源文件夹和目标文件夹不能相同，也不能存在隶属关系。",
-                                                  QtWidgets.QMessageBox.StandardButton.Ok)
-                    line_edit.setText(original_path)
-                    return False
-            except Exception as e:
-                logger.error(f"检查文件夹关系时出错: {str(e)}")
+            if not self._check_folder_relationship(source_path, target_path):
+                QtWidgets.QMessageBox.warning(self, "文件夹选择错误",
+                                              "源文件夹和目标文件夹不能相同，也不能存在隶属关系。",
+                                              QtWidgets.QMessageBox.StandardButton.Ok)
                 line_edit.setText(original_path)
                 return False
 
@@ -137,53 +128,42 @@ class FolderPage(QtWidgets.QWidget):
         if not folder1 or not folder2:
             return True
 
-        try:
-            normalized_folder1 = os.path.normpath(os.path.abspath(folder1)).lower()
-            normalized_folder2 = os.path.normpath(os.path.abspath(folder2)).lower()
+        normalized_folder1 = os.path.normpath(os.path.abspath(folder1)).lower()
+        normalized_folder2 = os.path.normpath(os.path.abspath(folder2)).lower()
 
-            if normalized_folder1 == normalized_folder2:
-                logger.warning(f"文件夹相同: {normalized_folder1}")
-                return False
+        if normalized_folder1 == normalized_folder2:
+            logger.warning(f"文件夹相同: {normalized_folder1}")
+            return False
 
-            folder1_full = os.path.join(normalized_folder1, '')
-            folder2_full = os.path.join(normalized_folder2, '')
+        folder1_full = os.path.join(normalized_folder1, '')
+        folder2_full = os.path.join(normalized_folder2, '')
 
-            if folder1_full.startswith(folder2_full):
-                logger.warning(f"文件夹1包含文件夹2: {folder1_full} -> {folder2_full}")
-                return False
+        if folder1_full.startswith(folder2_full):
+            logger.warning(f"文件夹1包含文件夹2: {folder1_full} -> {folder2_full}")
+            return False
 
-            if folder2_full.startswith(folder1_full):
-                logger.warning(f"文件夹2包含文件夹1: {folder2_full} -> {folder1_full}")
-                return False
-
-        except Exception as e:
-            logger.error(f"检查文件夹关系时出错: {str(e)}")
+        if folder2_full.startswith(folder1_full):
+            logger.warning(f"文件夹2包含文件夹1: {folder2_full} -> {folder1_full}")
             return False
 
         return True
 
     def get_all_folders(self):
-        try:
-            source_path = self.parent.inputSourceFolder.text().strip()
-            if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
-                logger.info("获取源文件夹成功")
-                return [source_path]
-            elif source_path:
-                logger.warning("源文件夹不存在或不是有效目录")
-        except Exception as e:
-            logger.error(f"获取源文件夹时出错: {str(e)}")
+        source_path = self.parent.inputSourceFolder.text().strip()
+        if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
+            logger.info("获取源文件夹成功")
+            return [source_path]
+        elif source_path:
+            logger.warning("源文件夹不存在或不是有效目录")
         return []
 
     def get_target_folder(self):
-        try:
-            target_path = self.parent.inputTargetFolder.text().strip()
-            if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
-                logger.info("获取目标文件夹成功")
-                return target_path
-            elif target_path:
-                logger.warning("目标文件夹不存在或不是有效目录")
-        except Exception as e:
-            logger.error(f"获取目标文件夹时出错: {str(e)}")
+        target_path = self.parent.inputTargetFolder.text().strip()
+        if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
+            logger.info("获取目标文件夹成功")
+            return target_path
+        elif target_path:
+            logger.warning("目标文件夹不存在或不是有效目录")
         return None
 
     def get_folder_info(self, folder_path):

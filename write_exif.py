@@ -46,11 +46,8 @@ class WriteExifManager(QObject):
         self.init_camera_brand_model()
         self.load_camera_lens_mapping()
 
-        # 设置 dateTimeEdit_shootTime 默认显示当前时间
         from PyQt6.QtCore import QDateTime
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
-
-        # 添加这一行来初始化shootTimeSource控件的显示状态
         self._on_shoot_time_source_changed(self.parent.shootTimeSource.currentIndex())
 
         self.update_button_state()
@@ -193,6 +190,7 @@ class WriteExifManager(QObject):
             self.parent.btnStartExif.setText("开始写入EXIF信息")
 
     def toggle_exif_writing(self):
+        """切换EXIF写入状态"""
         if not self.folder_page:
             self.log("ERROR", "文件夹页面未初始化\n\n"
                               "请重新启动应用程序或联系技术支持")

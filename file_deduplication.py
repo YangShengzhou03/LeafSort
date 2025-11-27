@@ -22,7 +22,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.duplicate_groups = []
         self.current_group_index = -1
         self.selected_files = set()
-        self.filters = []  # 不再限制文件类型，处理所有文件
+        self.filters = []
         
         self._setup_ui()
         self._connect_signals()
@@ -42,7 +42,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         header.setSectionResizeMode(2, QtWidgets.QHeaderView.ResizeMode.Stretch)
         
         self.parent.duplicateFilesTableWidget.setColumnWidth(0, 65)
-        
         self.parent.duplicateFilesTableWidget.setColumnWidth(1, 250)
         
         self.parent.duplicateFilesTableWidget.setAlternatingRowColors(True)
@@ -163,12 +162,9 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         logger.info(f"已选择 {len(self.selected_files)} 个文件待删除")
         
         if hasattr(self.parent, 'statusBar'):
-            try:
-                status_bar = self.parent.statusBar()
-                if status_bar:
-                    status_bar.showMessage(f"已选择 {len(self.selected_files)} 个文件待删除")
-            except Exception as e:
-                logger.debug(f"无法更新状态栏: {e}")
+            status_bar = self.parent.statusBar()
+            if status_bar:
+                status_bar.showMessage(f"已选择 {len(self.selected_files)} 个文件待删除")
     
     def on_file_selection_changed(self, row, column):
         if column != 0 or self.current_group_index < 0:
