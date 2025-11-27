@@ -20,12 +20,12 @@ class UpdateDialog(QDialog):
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
-        self.ui.label_title.setText(title)
-        self.ui.label_content.setText(content)
+        self.ui.lblTitle.setText(title)
+        self.ui.lblContent.setText(content)
         
         
-        self.ui.pushButton_download.clicked.connect(self.download_update)
-        self.ui.pushButton_cancel.clicked.connect(self.close)
+        self.ui.btnDownload.clicked.connect(self.download_update)
+        self.ui.btnCancel.clicked.connect(self.close)
     
     def download_update(self):
         QDesktopServices.openUrl(QUrl(self.url))
@@ -77,6 +77,6 @@ def check_update():
     except Exception:
         dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '检查更新失败',
                               '更新失败，但您的支持始终是我们前行的重要力量。未来可期，敬请放心，我们一直在努力。\n检查更新时出错了', "", False)
-        dialog.ui.pushButton_download.setText("我知道了")
-        dialog.ui.pushButton_cancel.hide()  
+        dialog.ui.btnDownload.setText("我知道了")
+        dialog.ui.btnCancel.hide()  
         dialog.exec()
