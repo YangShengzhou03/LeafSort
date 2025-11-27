@@ -32,10 +32,10 @@ class ConfigManager:
     def _ensure_config_exists(self) -> None:
         if not self.config_file:
             default_config = self._get_default_config()
-            os.makedirs("_internal/config.json", exist_ok=True)
             try:
-                with open(self.config_file, 'w', encoding='utf-8') as f:
+                with open("_internal/config.json", 'w', encoding='utf-8') as f:
                     json.dump(default_config, f, indent=4, ensure_ascii=False)
+                logger.info(f"创建默认配置文件")
             except Exception as e:
                 logger.error(f"创建默认配置文件失败: {str(e)}")
     

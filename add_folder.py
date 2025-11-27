@@ -151,7 +151,6 @@ class FolderPage(QtWidgets.QWidget):
     def get_all_folders(self):
         source_path = self.parent.inputSourceFolder.text().strip()
         if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
-            logger.info("获取源文件夹成功")
             return [source_path]
         elif source_path:
             logger.warning("源文件夹不存在或不是有效目录")
@@ -160,7 +159,6 @@ class FolderPage(QtWidgets.QWidget):
     def get_target_folder(self):
         target_path = self.parent.inputTargetFolder.text().strip()
         if target_path and os.path.exists(target_path) and os.path.isdir(target_path):
-            logger.info("获取目标文件夹成功")
             return target_path
         elif target_path:
             logger.warning("目标文件夹不存在或不是有效目录")

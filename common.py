@@ -340,7 +340,6 @@ class GeocodingService:
 
         if cache_key in self.cache:
             cached_address = self.cache[cache_key]
-            logger.info(f"从缓存获取地址: {cached_address}")
             return cached_address
 
         logger.info(f"缓存未命中，从API获取地址: {longitude}, {latitude}")
@@ -349,7 +348,6 @@ class GeocodingService:
         if address and address != "获取失败":
             self.cache[cache_key] = address
             self._save_cache()
-            logger.info(f"已缓存地址: {address}")
 
         return address
 
