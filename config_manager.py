@@ -5,6 +5,8 @@ import threading
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
+from common import get_resource_path
+
 logger = logging.getLogger(__name__)
 
 def _thread_safe_method(func):
@@ -19,30 +21,18 @@ class ConfigManager:
     
     def __init__(self):
         self._lock = threading.RLock()
-        self.config_file = self._get_config_file_path()
+        self.config_file = get_resource_path("_internal/config.json")
         self._ensure_config_exists()
         self.config = self._load_file()
         self.location_cache = {}
-        self.cache_file = self._get_cache_file_path()
+        self.cache_file = get_resource_path("_internal/cache_location.json")
         self._load_location_cache()
         self._validate_and_migrate_config()
     
-    def _get_config_file_path(self) -> os.PathLike:
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        internal_dir = os.path.join(app_dir, '_internal')
-        os.makedirs(internal_dir, exist_ok=True)
-        return os.path.join(internal_dir, 'config.json')
-    
-    def _get_cache_file_path(self) -> os.PathLike:
-        app_dir = os.path.dirname(os.path.abspath(__file__))
-        internal_dir = os.path.join(app_dir, '_internal')
-        os.makedirs(internal_dir, exist_ok=True)
-        return os.path.join(internal_dir, 'cache_location.json')
-    
     def _ensure_config_exists(self) -> None:
-        if not os.path.exists(self.config_file):
+        if not self.config_file:
             default_config = self._get_default_config()
-            os.makedirs(os.path.dirname(self.config_file), exist_ok=True)
+            os.makedirs("_internal/config.json", exist_ok=True)
             try:
                 with open(self.config_file, 'w', encoding='utf-8') as f:
                     json.dump(default_config, f, indent=4, ensure_ascii=False)
@@ -50,7 +40,7 @@ class ConfigManager:
                 logger.error(f"创建默认配置文件失败: {str(e)}")
     
     def _load_file(self) -> Dict[str, Any]:
-        if not os.path.exists(self.config_file):
+        if not self.config_file:
             return self._get_default_config()
         
         try:
@@ -115,7 +105,7 @@ class ConfigManager:
         return folder_path in self.config["folders"]
     
     def _load_location_cache(self) -> None:
-        if not os.path.exists(self.cache_file):
+        if not self.cache_file:
             return
         
         try:
