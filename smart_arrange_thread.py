@@ -1256,9 +1256,6 @@ class SmartArrangeThread(QtCore.QThread):
                 except Exception as e:
                     logger.error(f"获取地址时发生异常: {str(e)}，使用本地地理数据: {local_location}")
                 
-                if local_location != "未知省份" and local_location != "未知省份未知城市":
-                    config_manager.cache_location(lat, lon, local_location)
-                
                 return local_location
             return "未知位置"
         elif tag == "自定义":

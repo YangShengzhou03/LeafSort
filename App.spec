@@ -5,7 +5,9 @@ a = Analysis(
     pathex=[],
     binaries=[],
     datas=[
-        ('resources', 'resources')
+        ('resources', 'resources'),
+        (r'C:\Users\YangShengzhou\AppData\Local\ms-playwright\chromium_headless_shell-1194', 
+         r'playwright\driver\package\.local-browsers\chromium_headless_shell-1194')
     ],
     hiddenimports=['numpy.core._multiarray_tests', 'numpy.core._multiarray_umath'],
     hookspath=[],
