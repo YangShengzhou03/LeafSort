@@ -76,7 +76,7 @@ def check_update():
 
     except Exception:
         dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '检查更新失败',
-                              '更新失败，但您的支持始终是我们前行的重要力量。未来可期，敬请放心，我们一直在努力。\n检查更新时出错了', "", False)
+                              '检查更新时出现错误，请稍后重试。\n感谢您的支持！', "", False)
         dialog.ui.btnDownload.setText("我知道了")
         dialog.ui.btnCancel.hide()  
         dialog.exec()
