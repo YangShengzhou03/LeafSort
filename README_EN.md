@@ -55,35 +55,33 @@ LeafView adopts a three-tier architecture design to ensure code maintainability 
 ```
 LeafView/                    # Project root directory
 ├── App.py                   # Application entry point
-├── config/                  # Configuration file directory
-│   ├── config_manager.py    # Configuration manager
-│   └── default_config.json  # Default configuration
-├── models/                  # Data models
-│   ├── image_model.py       # Image data model
-│   └── exif_model.py        # EXIF data model
-├── views/                   # View layer
-│   ├── main_window.py       # Main window
-│   ├── image_viewer.py      # Image viewer
-│   └── settings_dialog.py   # Settings dialog
-├── controllers/             # Controller layer
-│   ├── image_controller.py  # Image controller
-│   └── arrange_controller.py # Organization controller
-├── utils/                   # Utility classes
-│   ├── image_utils.py       # Image processing utilities
-│   ├── exif_utils.py        # EXIF processing utilities
-│   └── hash_utils.py        # Hash calculation utilities
-├── services/                # Service layer
-│   ├── smart_arrange.py     # Intelligent organization service
-│   ├── duplicate_detector.py # Duplicate detection service
-│   └── ocr_service.py       # OCR recognition service
-├── plugins/                 # Plugin directory
+├── main_window.py           # Main window implementation
+├── Ui_MainWindow.py         # UI interface file
+├── Ui_MainWindow.ui         # Qt designer interface file
+├── add_folder.py            # Folder management functionality
+├── smart_arrange.py         # Smart arrangement service
+├── smart_arrange_thread.py  # Smart arrangement thread
+├── write_exif.py            # EXIF editing functionality
+├── write_exif_thread.py     # EXIF editing thread
+├── file_deduplication.py    # File deduplication functionality
+├── file_deduplication_thread.py # File deduplication thread
+├── common.py                # Common functions
+├── config_manager.py        # Configuration manager
+├── update_dialog.py         # Update dialog
+├── UI_UpdateDialog.py       # Update dialog UI
+├── UI_UpdateDialog.ui       # Qt designer interface file
+├── _internal/               # Internal configuration directory
+│   ├── cache_location.json  # Cache location configuration
+│   └── config.json          # Main configuration file
 ├── resources/               # Resource files
-│   ├── icons/               # Icon resources
-│   ├── styles/              # Style files
-│   └── img/                 # Image resources
-├── tests/                   # Test files
+│   ├── cv2_date/            # OpenCV related files
+│   ├── exiftool/            # EXIF tool
+│   ├── img/                 # Image resources
+│   ├── json/                # JSON data files
+│   └── stylesheet/          # Stylesheet files
 ├── requirements.txt         # Dependency list
-└── README.md                # Project description
+├── README.md                # Project description (Chinese)
+└── README_EN.md             # Project description (English)
 ```
 
 ## 🚀 Installation and Deployment
@@ -120,13 +118,7 @@ You can download pre-compiled executable files for your platform from the [GitHu
 
 ```bash
 # Windows
-pyinstaller -w -F --icon=resources/icons/app_icon.ico App.py
-
-# macOS
-pyinstaller -w -F --icon=resources/icons/app_icon.icns App.py
-
-# Linux
-pyinstaller -w -F --icon=resources/icons/app_icon.png App.py
+pyinstaller -w -F --icon=resources/img/icon.ico App.py
 ```
 
 ## 💡 User Guide
@@ -175,49 +167,11 @@ Operation steps:
 3. Select the recognition language (multilingual support)
 4. Wait for recognition to complete, view or copy the recognition results
 
-## 🔌 Plugin System
 
-LeafView provides a flexible plugin system that supports custom feature extensions.
-
-### Plugin Development
-
-Plugins need to inherit from the `LeafViewPlugin` base class and implement the necessary interfaces:
-
-```python
-class MyPlugin(LeafViewPlugin):
-    def __init__(self, main_window):
-        super().__init__(main_window)
-        self.plugin_name = "My Plugin"
-        self.plugin_version = "1.0.0"
-        self.plugin_description = "Plugin description"
-        self.plugin_author = "Author"
-    
-    def initialize(self):
-        super().initialize()
-        # Plugin initialization logic
-    
-    def get_menu_items(self):
-        return [
-            ("Plugin Menu", "Menu Item", self.on_menu_clicked)
-        ]
-```
 
 ## ⚙️ Advanced Features
 
-### Custom Organization Rules
 
-Support for custom organization rules based on regular expressions, EXIF metadata, and GPS locations:
-
-```python
-# Example: Date-based organization rule
-class DateArrangeRule(BaseArrangeRule):
-    def match(self, file_info):
-        return 'DateTimeOriginal' in file_info.get('exif', {})
-    
-    def get_target_path(self, file_info, base_dir):
-        date_str = file_info['exif']['DateTimeOriginal'].split()[0].replace(':', '/')
-        return os.path.join(base_dir, date_str, os.path.basename(file_info['path']))
-```
 
 ### Cloud Storage Integration
 

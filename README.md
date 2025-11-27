@@ -55,35 +55,33 @@ LeafView采用三层架构设计，确保代码的可维护性和扩展性：
 ```
 LeafView/                    # 项目根目录
 ├── App.py                   # 应用程序入口
-├── config/                  # 配置文件目录
-│   ├── config_manager.py    # 配置管理器
-│   └── default_config.json  # 默认配置
-├── models/                  # 数据模型
-│   ├── image_model.py       # 图片数据模型
-│   └── exif_model.py        # EXIF数据模型
-├── views/                   # 视图层
-│   ├── main_window.py       # 主窗口
-│   ├── image_viewer.py      # 图片查看器
-│   └── settings_dialog.py   # 设置对话框
-├── controllers/             # 控制器层
-│   ├── image_controller.py  # 图片控制器
-│   └── arrange_controller.py # 整理控制器
-├── utils/                   # 工具类
-│   ├── image_utils.py       # 图像处理工具
-│   ├── exif_utils.py        # EXIF处理工具
-│   └── hash_utils.py        # 哈希计算工具
-├── services/                # 服务层
-│   ├── smart_arrange.py     # 智能整理服务
-│   ├── duplicate_detector.py # 重复检测服务
-│   └── ocr_service.py       # OCR识别服务
-├── plugins/                 # 插件目录
+├── main_window.py           # 主窗口实现
+├── Ui_MainWindow.py         # UI界面文件
+├── Ui_MainWindow.ui         # Qt设计器界面文件
+├── add_folder.py            # 文件夹管理功能
+├── smart_arrange.py         # 智能整理服务
+├── smart_arrange_thread.py  # 智能整理线程
+├── write_exif.py            # EXIF编辑功能
+├── write_exif_thread.py     # EXIF编辑线程
+├── file_deduplication.py    # 文件去重功能
+├── file_deduplication_thread.py # 文件去重线程
+├── common.py                # 通用函数
+├── config_manager.py        # 配置管理器
+├── update_dialog.py         # 更新对话框
+├── UI_UpdateDialog.py       # 更新对话框UI
+├── UI_UpdateDialog.ui       # Qt设计器界面文件
+├── _internal/               # 内部配置目录
+│   ├── cache_location.json  # 缓存位置配置
+│   └── config.json          # 主配置文件
 ├── resources/               # 资源文件
-│   ├── icons/               # 图标资源
-│   ├── styles/              # 样式文件
-│   └── img/                 # 图片资源
-├── tests/                   # 测试文件
+│   ├── cv2_date/            # OpenCV相关文件
+│   ├── exiftool/            # EXIF工具
+│   ├── img/                 # 图片资源
+│   ├── json/                # JSON数据文件
+│   └── stylesheet/          # 样式表文件
 ├── requirements.txt         # 依赖列表
-└── README.md                # 项目说明
+├── README.md                # 项目说明（中文）
+└── README_EN.md             # 项目说明（英文）
 ```
 
 ## 🚀 安装部署
@@ -120,13 +118,7 @@ LeafView/                    # 项目根目录
 
 ```bash
 # Windows
-pyinstaller -w -F --icon=resources/icons/app_icon.ico App.py
-
-# macOS
-pyinstaller -w -F --icon=resources/icons/app_icon.icns App.py
-
-# Linux
-pyinstaller -w -F --icon=resources/icons/app_icon.png App.py
+pyinstaller -w -F --icon=resources/img/icon.ico App.py
 ```
 
 ## 💡 使用指南
@@ -175,49 +167,11 @@ pyinstaller -w -F --icon=resources/icons/app_icon.png App.py
 3. 选择识别语言（支持多语言）
 4. 等待识别完成，查看或复制识别结果
 
-## 🔌 插件系统
 
-LeafView提供灵活的插件系统，支持自定义功能扩展。
-
-### 插件开发
-
-插件需继承`LeafViewPlugin`基类并实现必要的接口：
-
-```python
-class MyPlugin(LeafViewPlugin):
-    def __init__(self, main_window):
-        super().__init__(main_window)
-        self.plugin_name = "我的插件"
-        self.plugin_version = "1.0.0"
-        self.plugin_description = "插件描述"
-        self.plugin_author = "作者"
-    
-    def initialize(self):
-        super().initialize()
-        # 插件初始化逻辑
-    
-    def get_menu_items(self):
-        return [
-            ("插件菜单", "菜单项", self.on_menu_clicked)
-        ]
-```
 
 ## ⚙️ 高级功能
 
-### 自定义整理规则
 
-支持基于正则表达式、EXIF元数据和GPS位置的自定义整理规则：
-
-```python
-# 示例：基于日期的整理规则
-class DateArrangeRule(BaseArrangeRule):
-    def match(self, file_info):
-        return 'DateTimeOriginal' in file_info.get('exif', {})
-    
-    def get_target_path(self, file_info, base_dir):
-        date_str = file_info['exif']['DateTimeOriginal'].split()[0].replace(':', '/')
-        return os.path.join(base_dir, date_str, os.path.basename(file_info['path']))
-```
 
 ### 云存储集成
 
