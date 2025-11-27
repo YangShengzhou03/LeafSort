@@ -715,6 +715,7 @@ class Ui_MainWindow(object):
 "transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
 "backdrop-filter: blur(8px);\n"
 "box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);")
+        self.inputSourceFolder.setReadOnly(True)
         self.inputSourceFolder.setObjectName("inputSourceFolder")
         self.layoutSourceFolder.addWidget(self.inputSourceFolder)
         self.btnBrowseSource = QtWidgets.QPushButton(parent=self.frameSourceFolderGroup)
@@ -817,6 +818,7 @@ class Ui_MainWindow(object):
 "transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
 "backdrop-filter: blur(8px);\n"
 "box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);")
+        self.inputTargetFolder.setReadOnly(True)
         self.inputTargetFolder.setObjectName("inputTargetFolder")
         self.layoutTargetFolder.addWidget(self.inputTargetFolder)
         self.btnBrowseTarget = QtWidgets.QPushButton(parent=self.frameTargetFolderGroup)

@@ -1196,6 +1196,9 @@ transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 backdrop-filter: blur(8px);
 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
                          </property>
+                         <property name="readOnly">
+                          <bool>true</bool>
+                         </property>
                          <property name="placeholderText">
                           <string>请选择源文件夹路径</string>
                          </property>
@@ -1338,6 +1341,9 @@ selection-color: #1f2937;
 transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
 backdrop-filter: blur(8px);
 box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
+                         </property>
+                         <property name="readOnly">
+                          <bool>true</bool>
                          </property>
                          <property name="placeholderText">
                           <string>请选择目标文件夹路径</string>

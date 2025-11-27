@@ -1119,10 +1119,22 @@ class WriteExifThread(QThread):
         """
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
+        # 更通用的正则表达式模式集合，支持各种格式和分隔符
         patterns = [
-            r'^(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?:[-_]?(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
-            r'^(?P<year>\d{4})[-/](?P<month>\d{2})[-/](?P<day>\d{2})(?:[-_](?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
-            r'(?P<year>\d{4})[-年\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-月\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[-日号\\.\/\s]?(?:[^0-9]*?)?(?P<hour>[0-2]?\d)?(?P<minute>[0-5]?\d)?(?P<second>[0-5]?\d)?'
+            # 1. 年月日时分秒连续数字格式 (20240629143847)
+            r'(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})',
+            # 2. 年月日连续，时分秒可选 (20240629_143847 或 20240629)
+            r'(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?:[-_\\.\/\s]?(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
+            # 3. 通用分隔符的年月日，时分秒可选 (支持各种分隔符：-、_、.、/、空格等)
+            r'(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?(?P<hour>[0-2]?\d)(?P<minute>[0-5]?\d)(?P<second>[0-5]?\d))?',
+            # 4. 带中文前缀和文本的格式，时间为连续6位数字 (上海2024_06_29_周六_143847留念2)
+            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<full_time>\d{6})',
+            # 5. 增强版带中文的格式，支持更多分隔符和中文文本位置
+            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<hour>[0-2]?\d)[-_\\.\/\s]?(?P<minute>[0-5]?\d)[-_\\.\/\s]?(?P<second>[0-5]?\d)',
+            # 6. 支持中文年月日格式 (2024年6月29日14时38分47秒)
+            r'(?P<year>\d{4})年(?P<month>1[0-2]|0?[1-9])月(?P<day>3[01]|[12]\d|0?[1-9])日(?:(?P<hour>[0-2]?\d)时(?P<minute>[0-5]?\d)分(?P<second>[0-5]?\d)秒)?',
+            # 7. 通用混合格式，修复分隔符多变问题，支持任意位置的中文文本
+            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[-_\\.\/\s]+(?:[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<hour>[0-2]?\d)(?P<minute>[0-5]?\d)(?P<second>[0-5]?\d)'
         ]
         
         for pattern in patterns:
@@ -1136,19 +1148,42 @@ class WriteExifThread(QThread):
                         'day': int(groups['day'])
                     }
                     
-                    if not (1900 <= kwargs['year'] <= 2100 and 1 <= kwargs['month'] <= 12 and 1 <= kwargs['day'] <= 31):
+                    # 增加日期有效性检查，确保月份和日期在有效范围内
+                    if not (1900 <= kwargs['year'] <= 2100 and 1 <= kwargs['month'] <= 12):
+                        continue
+                    # 检查日期是否在有效范围内
+                    if kwargs['month'] in [4, 6, 9, 11] and kwargs['day'] > 30:
+                        continue
+                    if kwargs['month'] == 2:
+                        # 闰年判断
+                        is_leap = (kwargs['year'] % 4 == 0 and kwargs['year'] % 100 != 0) or (kwargs['year'] % 400 == 0)
+                        if kwargs['day'] > (29 if is_leap else 28):
+                            continue
+                    elif kwargs['day'] > 31:
                         continue
                     
-                    if groups.get('hour'):
+                    # 处理连续的6位时间数字
+                    if groups.get('full_time'):
+                        full_time = groups['full_time']
+                        if len(full_time) == 6:
+                            kwargs['hour'] = int(full_time[0:2])
+                            kwargs['minute'] = int(full_time[2:4])
+                            kwargs['second'] = int(full_time[4:6])
+                        else:
+                            # 默认为0时0分0秒
+                            kwargs['hour'] = 0
+                            kwargs['minute'] = 0
+                            kwargs['second'] = 0
+                    # 处理单独的时分秒
+                    elif groups.get('hour'):
                         kwargs['hour'] = int(groups['hour'])
-                        if groups.get('minute'):
-                            kwargs['minute'] = int(groups['minute'])
-                            if groups.get('second'):
-                                kwargs['second'] = int(groups['second'])
+                        kwargs['minute'] = int(groups.get('minute', '0'))
+                        kwargs['second'] = int(groups.get('second', '0'))
                     else:
-                        kwargs['hour'] = kwargs.get('hour', 0)
-                        kwargs['minute'] = kwargs.get('minute', 0)
-                        kwargs['second'] = kwargs.get('second', 0)
+                        # 默认为0时0分0秒
+                        kwargs['hour'] = 0
+                        kwargs['minute'] = 0
+                        kwargs['second'] = 0
                     
                     return datetime(**kwargs)
                 except (ValueError, TypeError):
