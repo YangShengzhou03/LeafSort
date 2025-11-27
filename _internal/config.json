@@ -1,6 +1,6 @@
 {
     "version": "1.1",
-    "last_modified": "2025-11-27T11:09:36.144271",
+    "last_modified": "2025-11-27T11:20:58.984283",
     "folders": [],
     "settings": {
         "thumbnail_size": 200,
@@ -25,25 +25,14 @@
             "height": 580
         },
         "location_cache_tolerance": 0.027,
-        "exif_title": "标题123",
-        "exif_author": "作者123",
-        "exif_subject": "主题123",
-        "exif_copyright": "版权123",
-        "exif_latitude": "28.735708‌",
-        "exif_longitude": "115.838244",
-        "exif_camera_brand": "Xiaomi",
-        "exif_camera_model": "REDMI K80 Ultra",
-        "exif_star_rating": 3,
-        "exif_shoot_time_source": 1,
-        "exif_shoot_time": "2009:01:01 00:00:00",
-        "source_folder": "D:/待分类/新建文件夹",
-        "target_folder": "D:/待分类/新建文件夹 (2)"
+        "source_folder": "D:/复制目标",
+        "target_folder": "D:/待分类"
     },
     "api_limits": {
         "gaode": {
             "daily_calls": 0,
             "max_daily_calls": 100,
-            "last_reset_date": "2025-11-25",
+            "last_reset_date": "2025-11-27",
             "last_call_time": null
         }
     },

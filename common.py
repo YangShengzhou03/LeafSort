@@ -1,10 +1,10 @@
 import json
 import logging
 import os
-from datetime import datetime
-from typing import Dict, Tuple, Optional, List
+from typing import Dict, Tuple, Optional
 
 import requests
+from playwright.sync_api import sync_playwright
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,33 +14,43 @@ VIDEO_EXTENSIONS = ['.mp4', '.avi', '.mov', '.wmv', '.flv', '.mkv', '.webm', '.m
 AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a']
 
 MAGIC_NUMBERS = {
+    # JPG相关魔数
     b'\xff\xd8\xff': ('.jpg', '图像'),
+    # PNG相关魔数
     b'\x89\x50\x4E\x47': ('.png', '图像'),
+    # GIF相关魔数
     b'GIF8': ('.gif', '图像'),
+    b'GIF9': ('.gif', '图像'),
+    # BMP相关魔数
     b'BM': ('.bmp', '图像'),
+    b'\x42\x4D': ('.bmp', '图像'),
+    # 视频相关魔数
     b'RIFF': ('.avi', '视频'),
+    b'ftyp': ('.mp4', '视频'),
+    b'\x00\x00\x00\x1Cftyp': ('.mp4', '视频'),
+    b'\x00\x00\x00\x20ftyp': ('.mp4', '视频'),
+    b'\x1A\x45\xDF\xA3': ('.mkv', '视频'),
+    b'\x4F\x67\x67\x53': ('.ogv', '视频'),
+    # 其他图像格式
     b'WEBP': ('.webp', '图像'),
     b'II*': ('.tiff', '图像'),
     b'MM*': ('.tiff', '图像'),
-    b'ftyp': ('.mp4', '视频'),
+    # HEIC/HEIF相关魔数 - 这些需要更高的优先级，因为'ftyp'可能匹配到其他文件类型
     b'ftypheic': ('.heic', '图像'),
     b'ftypheix': ('.heic', '图像'),
     b'ftypmif1': ('.heif', '图像'),
     b'ftypmsf1': ('.heif', '图像'),
+    # 文档和其他格式
     b'%PDF': ('.pdf', '文档'),
     b'PK\x03\x04': ('.zip', '压缩包'),
     b'Rar!': ('.rar', '压缩包'),
     b'7z\xBC\xAF\x27\x1C': ('.7z', '压缩包'),
+    # 音频相关魔数
     b'ID3': ('.mp3', '音乐'),
-    b'\x1A\x45\xDF\xA3': ('.mkv', '视频'),
-    b'\x4F\x67\x67\x53': ('.ogv', '视频'),
     b'\x52\x49\x46\x46': ('.wav', '音乐'),
-    b'\x42\x4D': ('.bmp', '图像'),
-    b'GIF9': ('.gif', '图像'),
+    # SVG相关魔数
     b'<svg': ('.svg', '图像'),
     b'<\?xml': ('.svg', '图像'),
-    b'\x00\x00\x00\x1Cftyp': ('.mp4', '视频'),
-    b'\x00\x00\x00\x20ftyp': ('.mp4', '视频'),
 }
 
 class ResourceManager:
@@ -118,10 +128,15 @@ class FileMagicNumberDetector:
             return True, magic_info
         
         _, actual_ext = os.path.splitext(file_path_str.lower())
-        
         expected_ext = magic_info['extension']
         
-        if expected_ext in ['.heic', '.heif'] and actual_ext in ['.heic', '.heif']:
+        # 更宽松的HEIC/HEIF检测，允许实际为JPG的文件使用HEIC扩展名
+        if actual_ext in ['.heic', '.heif']:
+            # 如果检测为JPG但扩展名为HEIC，也视为有效
+            if expected_ext == '.jpg':
+                logger.info(f"文件 {os.path.basename(file_path_str)} 扩展名为{actual_ext}但实为JPG，允许使用当前扩展名")
+                return True, magic_info
+            # HEIC/HEIF之间相互兼容
             return True, magic_info
         
         return actual_ext == expected_ext, magic_info
@@ -177,68 +192,137 @@ class MediaTypeDetector:
         else:
             return {"valid": False, "type": None}
 
+
 class GeocodingService:
     def __init__(self):
-        self.cache_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "geocode_cache.json")
+        self.cache_path = os.path.join("_internal", "cache_location.json")
         self.cache = self._load_cache()
-        self.api_key = "e7df358a84f7d1879443f48a33e65b87"
-        self.api_url = "https://restapi.amap.com/v3/geocode/regeo"
-    
+        self._ensure_internal_dir()
+
+    def _ensure_internal_dir(self):
+        internal_dir = "_internal"
+        if not os.path.exists(internal_dir):
+            os.makedirs(internal_dir)
+
     def _load_cache(self):
         try:
-            if os.path.exists(self.cache_file):
-                with open(self.cache_file, 'r', encoding='utf-8') as f:
-                    return json.load(f)
+            if not os.path.exists(self.cache_path):
+                return {}
+
+            if os.path.getsize(self.cache_path) == 0:
+                logger.warning(f"缓存文件 {self.cache_path} 为空，删除并重新创建")
+                os.remove(self.cache_path)
+                return {}
+
+            with open(self.cache_path, 'r', encoding='utf-8') as f:
+                content = f.read().strip()
+                if not content:
+                    logger.warning(f"缓存文件 {self.cache_path} 内容为空，删除并重新创建")
+                    os.remove(self.cache_path)
+                    return {}
+
+                try:
+                    return json.loads(content)
+                except json.JSONDecodeError as e:
+                    logger.error(f"解析缓存文件失败: {str(e)}，删除损坏的缓存文件")
+                    os.remove(self.cache_path)
+                    return {}
         except Exception as e:
-            logger.error(f"加载地理编码缓存时出错: {str(e)}")
-        return {"data": {}, "timestamp": datetime.now().isoformat()}
-    
+            logger.error(f"加载缓存时出错: {str(e)}")
+            if os.path.exists(self.cache_path):
+                try:
+                    os.remove(self.cache_path)
+                    logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
+                except Exception:
+                    pass
+            return {}
+
     def _save_cache(self):
         try:
-            self.cache["timestamp"] = datetime.now().isoformat()
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
+            with open(self.cache_path, 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
-            logger.error(f"保存地理编码缓存时出错: {str(e)}")
-    
-    def _clean_cache(self):
-        try:
-            cache_time = datetime.fromisoformat(self.cache.get("timestamp", datetime.now().isoformat()))
-            if (datetime.now() - cache_time).days > 7:
-                self.cache = {"data": {}, "timestamp": datetime.now().isoformat()}
-                self._save_cache()
-        except Exception as e:
-            logger.error(f"清理地理编码缓存时出错: {str(e)}")
-    
+            logger.error(f"保存缓存时出错: {str(e)}")
+
+    def _get_address_from_api(self, latitude, longitude):
+        logger.info(f"longitude: {longitude}, latitude: {latitude}")
+        headers = {'accept': '*/*', 'accept-language': 'zh-CN,zh;q=0.9',
+                   'referer': 'https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding',
+                   'user-agent': 'Mozilla/5.0'}
+        loc = f"{longitude},{latitude}"
+        url_tpl = 'https://developer.amap.com/AMapService/v3/geocode/regeo?key={key}&s=rsv3&language=zh_cn&location={loc}&radius=1000&callback=jsonp_765657_&platform=JS&logversion=2.0&appname=https%3A%2F%2Fdeveloper.amap.com%2Fdemo%2Fjavascript-api%2Fexample%2Fgeocoder%2Fregeocoding&csid=123456&sdkversion=1.4.27'
+
+        def get_cookies_key():
+            internal_dir = "_internal"
+            cookies_path = os.path.join(internal_dir, "cookies.json")
+
+            # 确保_internal目录存在
+            if not os.path.exists(internal_dir):
+                os.makedirs(internal_dir)
+
+            if os.path.exists(cookies_path):
+                try:
+                    with open(cookies_path, "r", encoding="utf-8") as f:
+                        saved = json.load(f)
+                        if saved.get("cookies") and saved.get("key"):
+                            return saved["cookies"], saved["key"]
+                except Exception as e:
+                    print(f"读取cookies失败: {e}")
+
+            target_keys = ['cna', 'passport_login', 'xlly_s', 'HMACCOUNT',
+                           'Hm_lvt_c8ac07c199b1c09a848aaab761f9f909', 'Hm_lpvt_c8ac07c199b1c09a848aaab761f9f909',
+                           'tfstk']
+            with sync_playwright() as p:
+                browser = p.chromium.launch(headless=True)
+                page = browser.new_context().new_page()
+                page.goto("https://developer.amap.com/demo/javascript-api/example/geocoder/regeocoding")
+                page.wait_for_timeout(3000)
+                cookies = {c['name']: c['value'] for c in page.context.cookies() if c['name'] in target_keys}
+                key = page.get_attribute("#code_origin", "data-jskey")
+                browser.close()
+
+            with open(cookies_path, "w", encoding="utf-8") as f:
+                json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
+            return cookies, key
+
+        def get_address(cookies, key):
+            if not cookies or not key:
+                return None
+            try:
+                url = url_tpl.format(key=key, loc=loc)
+                resp = requests.get(url, headers=headers, cookies=cookies, timeout=10)
+                if resp.status_code == 200 and "formatted_address" in resp.text:
+                    json_str = resp.text[resp.text.index('(') + 1:resp.text.rindex(')')]
+                    return json.loads(json_str).get("regeocode", {}).get("formatted_address", "")
+            except Exception as e:
+                print(f"请求失败: {e}")
+            return None
+
+        cookies, key = get_cookies_key()
+        addr = get_address(cookies, key)
+        if not addr:
+            cookies, key = get_cookies_key()
+            addr = get_address(cookies, key)
+
+        return addr or "获取失败"
+
     def get_address(self, longitude, latitude):
-        try:
-            cache_key = f"{longitude},{latitude}"
-            
-            self._clean_cache()
-            if cache_key in self.cache["data"]:
-                return self.cache["data"][cache_key]
-            
-            params = {
-                "key": self.api_key,
-                "location": f"{longitude},{latitude}",
-                "extensions": "base",
-                "batch": "false"
-            }
-            
-            response = requests.get(self.api_url, params=params, timeout=10)
-            if response.status_code == 200:
-                data = response.json()
-                if data.get("status") == "1":
-                    formatted_address = data.get("regeocode", {}).get("formatted_address", "")
-                    if formatted_address:
-                        self.cache["data"][cache_key] = formatted_address
-                        self._save_cache()
-                        return formatted_address
-            
-        except Exception as e:
-            logger.error(f"获取地址信息时出错: {str(e)}")
-        
-        return ""
+        cache_key = f"{longitude},{latitude}"
+
+        if cache_key in self.cache:
+            cached_address = self.cache[cache_key]
+            logger.info(f"从缓存获取地址: {cached_address}")
+            return cached_address
+
+        logger.info(f"缓存未命中，从API获取地址: {longitude}, {latitude}")
+        address = self._get_address_from_api(longitude, latitude)
+
+        if address and address != "获取失败":
+            self.cache[cache_key] = address
+            self._save_cache()
+            logger.info(f"已缓存地址: {address}")
+
+        return address
 
 _resource_manager = ResourceManager()
 _media_detector = MediaTypeDetector()
