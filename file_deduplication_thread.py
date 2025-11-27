@@ -1,10 +1,10 @@
 import os
 import hashlib
 import logging
-from PyQt6 import QtCore
 import time
-from concurrent.futures import ThreadPoolExecutor
 import threading
+from concurrent.futures import ThreadPoolExecutor
+from PyQt6 import QtCore
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)

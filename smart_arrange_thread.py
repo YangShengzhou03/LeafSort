@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta, timezone
 import json
 import os
 import logging
@@ -6,13 +5,14 @@ import threading
 import shutil
 import io
 import subprocess
+from datetime import datetime, timedelta, timezone
 from pathlib import Path
 from typing import List, Dict, Any, Optional
-from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
+from PyQt6 import QtCore
+from PIL import Image
 import exifread
 import pillow_heif
-from PIL import Image
-from PyQt6 import QtCore
+from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
 from config_manager import config_manager
 
 logger = logging.getLogger(__name__)

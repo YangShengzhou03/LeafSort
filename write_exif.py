@@ -2,7 +2,7 @@ import json
 import logging
 import os
 from datetime import datetime
-from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize
+from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize, QDateTime
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QMessageBox
 from common import get_resource_path
@@ -46,7 +46,6 @@ class WriteExifManager(QObject):
         self.init_camera_brand_model()
         self.load_camera_lens_mapping()
 
-        from PyQt6.QtCore import QDateTime
         self.parent.dateTimeEdit_shootTime.setDateTime(QDateTime.currentDateTime())
         self._on_shoot_time_source_changed(self.parent.shootTimeSource.currentIndex())
 
@@ -56,8 +55,7 @@ class WriteExifManager(QObject):
         self.log("INFO", "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
 
     def load_camera_lens_mapping(self):
-        data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                 'resources', 'json', 'camera_lens_mapping.json')
+        data_path = get_resource_path('resources/json/camera_lens_mapping.json')
         if os.path.exists(data_path):
             try:
                 with open(data_path, 'r', encoding='utf-8') as f:
@@ -146,8 +144,7 @@ class WriteExifManager(QObject):
 
     def _load_camera_data(self):
         try:
-            data_path = os.path.join(os.path.dirname(os.path.abspath(__file__)),
-                                     'resources', 'json', 'camera_brand_model.json')
+            data_path = get_resource_path('resources/json/camera_brand_model.json')
             if os.path.exists(data_path):
                 with open(data_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
