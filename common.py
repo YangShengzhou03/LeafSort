@@ -175,8 +175,8 @@ class MediaTypeDetector:
 class GeocodingService:
     def __init__(self):
         self._ensure_internal_dir()
-        self.cache_path = os.path.join("_internal", "cache_location.json")
-        self.cookies_path = os.path.join("_internal", "cookies.json")
+        self.cache_path = get_resource_path("_internal/cache_location.json")
+        self.cookies_path = get_resource_path("_internal/cookies.json")
         self.cache = self._load_cache()
         self._clean_cache_if_needed()
 
@@ -199,18 +199,10 @@ class GeocodingService:
 
     def _load_cache(self):
         try:
-            if not os.path.exists(self.cache_path):
+            if not self.cache_path:
                 return {}
 
-            if os.path.getsize(self.cache_path) == 0:
-                logger.warning(f"缓存文件 {self.cache_path} 为空，删除并重新创建")
-                try:
-                    os.remove(self.cache_path)
-                except Exception as e:
-                    logger.error(f"删除空缓存文件失败: {str(e)}")
-                return {}
-
-            with open(self.cache_path, 'r', encoding='utf-8') as f:
+            with open("_internal/cache_location.json", 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 if not content:
                     logger.warning(f"缓存文件 {self.cache_path} 内容为空，删除并重新创建")
@@ -225,16 +217,16 @@ class GeocodingService:
                 except json.JSONDecodeError as e:
                     logger.error(f"解析缓存文件失败: {str(e)}，删除损坏的缓存文件")
                     try:
-                        os.remove(self.cache_path)
+                        os.remove("_internal/cache_location.json")
                         logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
                     except Exception as remove_error:
                         logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
                     return {}
         except Exception as e:
             logger.error(f"加载缓存时出错: {str(e)}")
-            if os.path.exists(self.cache_path):
+            if self.cache_path:
                 try:
-                    os.remove(self.cache_path)
+                    os.remove("_internal/cache_location.json")
                     logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
                 except Exception as remove_error:
                     logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
@@ -243,16 +235,16 @@ class GeocodingService:
     def _save_cache(self):
         try:
             self._ensure_internal_dir()
-            with open(self.cache_path, 'w', encoding='utf-8') as f:
+            with open("_internal/cache_location.json", 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"保存缓存时出错: {str(e)}")
 
     def _get_cookies_key(self):
         try:
-            if os.path.exists(self.cookies_path):
+            if self.cookies_path:
                 try:
-                    with open(self.cookies_path, "r", encoding="utf-8") as f:
+                    with open("_internal/cookies.json", "r", encoding="utf-8") as f:
                         saved = json.load(f)
                         if saved.get("cookies") and saved.get("key"):
                             return saved["cookies"], saved["key"]
@@ -273,7 +265,7 @@ class GeocodingService:
 
             try:
                 self._ensure_internal_dir()
-                with open(self.cookies_path, "w", encoding="utf-8") as f:
+                with open("_internal/cookies.json", "w", encoding="utf-8") as f:
                     json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
             except Exception as save_error:
                 logger.error(f"保存cookies失败: {str(save_error)}")
@@ -326,9 +318,9 @@ class GeocodingService:
             if addr is None and retries < max_retries:
                 logger.info(f"第一次尝试失败，正在重试...")
                 retries += 1
-                if os.path.exists(self.cookies_path):
+                if self.cookies_path:
                     try:
-                        os.remove(self.cookies_path)
+                        os.remove("_internal/cookies.json")
                         logger.info("已清除cookies缓存，准备重新获取")
                     except Exception as e:
                         logger.error(f"清除cookies缓存失败: {str(e)}")

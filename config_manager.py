@@ -32,6 +32,7 @@ class ConfigManager:
     def _ensure_config_exists(self) -> None:
         if not self.config_file:
             default_config = self._get_default_config()
+            os.makedirs("_internal", exist_ok=True)
             try:
                 with open("_internal/config.json", 'w', encoding='utf-8') as f:
                     json.dump(default_config, f, indent=4, ensure_ascii=False)
@@ -44,7 +45,7 @@ class ConfigManager:
             return self._get_default_config()
         
         try:
-            with open(self.config_file, 'r', encoding='utf-8') as f:
+            with open("_internal/config.json", 'r', encoding='utf-8') as f:
                 return json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             logger.error(f"加载配置文件失败: {str(e)}")
@@ -53,7 +54,7 @@ class ConfigManager:
     def _save_file_no_lock(self) -> bool:
         self.config["last_modified"] = datetime.now().isoformat()
         try:
-            with open(self.config_file, 'w', encoding='utf-8') as f:
+            with open("_internal/config.json", 'w', encoding='utf-8') as f:
                 json.dump(self.config, f, indent=4, ensure_ascii=False)
             return True
         except Exception as e:
@@ -109,7 +110,7 @@ class ConfigManager:
             return
         
         try:
-            with open(self.cache_file, 'r', encoding='utf-8') as f:
+            with open("_internal/cache_location.json", 'r', encoding='utf-8') as f:
                 self.location_cache = json.load(f)
         except (json.JSONDecodeError, IOError) as e:
             logger.error(f"加载位置缓存失败: {str(e)}")
@@ -118,7 +119,7 @@ class ConfigManager:
     def _save_location_cache_no_lock(self) -> bool:
         self._cleanup_expired_cache()
         try:
-            with open(self.cache_file, 'w', encoding='utf-8') as f:
+            with open("_internal/cache_location.json", 'w', encoding='utf-8') as f:
                 json.dump(self.location_cache, f, indent=4, ensure_ascii=False)
             return True
         except Exception as e:
@@ -354,9 +355,9 @@ class ConfigManager:
         self.location_cache.clear()
         save_result = self.save_location_cache()
         
-        if os.path.exists(self.cache_file):
+        if self.cache_file:
             try:
-                os.remove(self.cache_file)
+                os.remove("_internal/cache_location.json")
             except Exception as e:
                 logger.error(f"清理缓存文件时出错: {str(e)}")
                 return False
