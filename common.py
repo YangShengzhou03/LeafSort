@@ -181,12 +181,10 @@ class GeocodingService:
         self._clean_cache_if_needed()
 
     def _ensure_internal_dir(self):
-        """确保_internal目录存在"""
-        internal_dir = "_internal"
         try:
-            if not os.path.exists(internal_dir):
-                os.makedirs(internal_dir)
-                logger.info(f"已创建_internal目录: {os.path.abspath(internal_dir)}")
+            if not get_resource_path("_internal"):
+                os.makedirs("_internal")
+                logger.info(f"已创建_internal目录")
         except Exception as e:
             logger.error(f"创建_internal目录时出错: {str(e)}")
 
