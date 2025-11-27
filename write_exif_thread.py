@@ -1119,74 +1119,79 @@ class WriteExifThread(QThread):
         """
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
-        # 更通用的正则表达式模式集合，支持各种格式和分隔符
+        # 基础正则表达式模式集合，确保中文文件名兼容性
         patterns = [
             # 1. 年月日时分秒连续数字格式 (20240629143847)
-            r'(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2})',
+            r'(\d{4})(\d{2})(\d{2})(\d{2})(\d{2})(\d{2})',
             # 2. 年月日连续，时分秒可选 (20240629_143847 或 20240629)
-            r'(?P<year>\d{4})(?P<month>\d{2})(?P<day>\d{2})(?:[-_\\.\/\s]?(?P<hour>\d{2})(?P<minute>\d{2})(?P<second>\d{2}))?',
+            r'(\d{4})(\d{2})(\d{2})(?:[-_\.\/\s](\d{2})(\d{2})(\d{2}))?',
             # 3. 通用分隔符的年月日，时分秒可选 (支持各种分隔符：-、_、.、/、空格等)
-            r'(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?(?P<hour>[0-2]?\d)(?P<minute>[0-5]?\d)(?P<second>[0-5]?\d))?',
-            # 4. 带中文前缀和文本的格式，时间为连续6位数字 (上海2024_06_29_周六_143847留念2)
-            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<full_time>\d{6})',
-            # 5. 增强版带中文的格式，支持更多分隔符和中文文本位置
-            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])(?:[-_\\.\/\s]?[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<hour>[0-2]?\d)[-_\\.\/\s]?(?P<minute>[0-5]?\d)[-_\\.\/\s]?(?P<second>[0-5]?\d)',
-            # 6. 支持中文年月日格式 (2024年6月29日14时38分47秒)
-            r'(?P<year>\d{4})年(?P<month>1[0-2]|0?[1-9])月(?P<day>3[01]|[12]\d|0?[1-9])日(?:(?P<hour>[0-2]?\d)时(?P<minute>[0-5]?\d)分(?P<second>[0-5]?\d)秒)?',
-            # 7. 通用混合格式，修复分隔符多变问题，支持任意位置的中文文本
-            r'(?:[^\\d]*)(?P<year>\d{4})[-_\\.\/\s]?(?P<month>1[0-2]|0?[1-9])[-_\\.\/\s]?(?P<day>3[01]|[12]\d|0?[1-9])[-_\\.\/\s]+(?:[\u4e00-\u9fa5]*[-_\\.\/\s]?)+(?P<hour>[0-2]?\d)(?P<minute>[0-5]?\d)(?P<second>[0-5]?\d)'
+            r'(\d{4})[-_\.\/\s](\d{1,2})[-_\.\/\s](\d{1,2})(?:[-_\.\/\s](\d{1,2})[-_\.\/\s]?(\d{1,2})[-_\.\/\s]?(\d{1,2}))?',
+            # 4. 中文混合格式，处理年_月_日_星期_时分秒 (上海2024_06_29_周六_143847留念2)
+            r'(\d{4})[_-](\d{1,2})[_-](\d{1,2}).*?(\d{6})',
+            # 5. 中文年月日格式 (2024年6月29日14时38分47秒)
+            r'(\d{4})年(\d{1,2})月(\d{1,2})日(?:(\d{1,2})时(\d{1,2})分(\d{1,2})秒)?'
         ]
         
-        for pattern in patterns:
+        for i, pattern in enumerate(patterns):
             match = re.search(pattern, name_without_ext)
             if match:
-                groups = match.groupdict()
                 try:
-                    kwargs = {
-                        'year': int(groups['year']),
-                        'month': int(groups['month']),
-                        'day': int(groups['day'])
-                    }
+                    # 获取位置捕获组
+                    groups = match.groups()
                     
-                    # 增加日期有效性检查，确保月份和日期在有效范围内
-                    if not (1900 <= kwargs['year'] <= 2100 and 1 <= kwargs['month'] <= 12):
+                    # 提取年月日（所有模式的前三个捕获组）
+                    year = int(groups[0])
+                    month = int(groups[1])
+                    day = int(groups[2])
+                    
+                    # 增加日期有效性检查
+                    if not (1900 <= year <= 2100 and 1 <= month <= 12):
                         continue
-                    # 检查日期是否在有效范围内
-                    if kwargs['month'] in [4, 6, 9, 11] and kwargs['day'] > 30:
+                    if month in [4, 6, 9, 11] and day > 30:
                         continue
-                    if kwargs['month'] == 2:
-                        # 闰年判断
-                        is_leap = (kwargs['year'] % 4 == 0 and kwargs['year'] % 100 != 0) or (kwargs['year'] % 400 == 0)
-                        if kwargs['day'] > (29 if is_leap else 28):
+                    if month == 2:
+                        is_leap = (year % 4 == 0 and year % 100 != 0) or (year % 400 == 0)
+                        if day > (29 if is_leap else 28):
                             continue
-                    elif kwargs['day'] > 31:
+                    elif day > 31:
                         continue
                     
-                    # 处理连续的6位时间数字
-                    if groups.get('full_time'):
-                        full_time = groups['full_time']
-                        if len(full_time) == 6:
-                            kwargs['hour'] = int(full_time[0:2])
-                            kwargs['minute'] = int(full_time[2:4])
-                            kwargs['second'] = int(full_time[4:6])
-                        else:
-                            # 默认为0时0分0秒
-                            kwargs['hour'] = 0
-                            kwargs['minute'] = 0
-                            kwargs['second'] = 0
-                    # 处理单独的时分秒
-                    elif groups.get('hour'):
-                        kwargs['hour'] = int(groups['hour'])
-                        kwargs['minute'] = int(groups.get('minute', '0'))
-                        kwargs['second'] = int(groups.get('second', '0'))
-                    else:
-                        # 默认为0时0分0秒
-                        kwargs['hour'] = 0
-                        kwargs['minute'] = 0
-                        kwargs['second'] = 0
+                    # 初始化时间为0
+                    hour, minute, second = 0, 0, 0
                     
-                    return datetime(**kwargs)
-                except (ValueError, TypeError):
+                    # 根据不同模式处理时间信息
+                    if i == 0:  # 模式1: 连续数字 (年月日时分秒)
+                        if len(groups) >= 6:
+                            hour = int(groups[3])
+                            minute = int(groups[4])
+                            second = int(groups[5])
+                    elif i == 1:  # 模式2: 年月日连续，时分秒可选
+                        if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
+                            hour = int(groups[3])
+                            minute = int(groups[4])
+                            second = int(groups[5])
+                    elif i == 2:  # 模式3: 通用分隔符
+                        if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
+                            hour = int(groups[3])
+                            minute = int(groups[4])
+                            second = int(groups[5])
+                    elif i == 3:  # 模式4: 中文混合格式，处理连续6位时间
+                        if len(groups) >= 4 and groups[3] and len(groups[3]) == 6:
+                            full_time = groups[3]
+                            hour = int(full_time[0:2])
+                            minute = int(full_time[2:4])
+                            second = int(full_time[4:6])
+                    elif i == 4:  # 模式5: 中文年月日格式
+                        if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
+                            hour = int(groups[3])
+                            minute = int(groups[4])
+                            second = int(groups[5])
+                    
+                    # 检查时间有效性
+                    if 0 <= hour <= 23 and 0 <= minute <= 59 and 0 <= second <= 59:
+                        return datetime(year, month, day, hour, minute, second)
+                except (ValueError, TypeError, IndexError):
                     continue
         
         return None

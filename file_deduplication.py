@@ -207,7 +207,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             self._display_group_files(self.duplicate_groups[self.current_group_index])
         
         QtWidgets.QMessageBox.information(self.parent, "随机选择", 
-                                        f"已随机选择保留每个组中的一个文件，共选择 {selected_count} 个文件待删除")
+                                        f"已随机保留每组中一个文件，共选择 {selected_count} 个重复文件")
     
     def move_to_recycle_bin(self):
         if not self.selected_files:

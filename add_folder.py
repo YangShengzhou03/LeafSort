@@ -2,6 +2,7 @@ import os
 import logging
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, Qt
+from config_manager import config_manager
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -14,10 +15,61 @@ class FolderPage(QtWidgets.QWidget):
         super().__init__(parent)
         self.parent = parent
 
+        # 加载保存的文件夹路径
+        self._load_saved_folders()
+
         self.parent.btnBrowseSource.clicked.connect(
             lambda: self._browse_directory("选择源文件夹", self.parent.inputSourceFolder))
         self.parent.btnBrowseTarget.clicked.connect(
             lambda: self._browse_directory("选择目标文件夹", self.parent.inputTargetFolder))
+        
+        # 监听输入框文本变化，保存文件夹路径
+        self.parent.inputSourceFolder.textChanged.connect(
+            lambda: self._save_folder_path("source_folder", self.parent.inputSourceFolder.text()))
+        self.parent.inputTargetFolder.textChanged.connect(
+            lambda: self._save_folder_path("target_folder", self.parent.inputTargetFolder.text()))
+    
+    def _load_saved_folders(self):
+        """从配置中加载保存的文件夹路径"""
+        try:
+            source_folder = config_manager.get_setting("source_folder", "")
+            if source_folder and os.path.exists(source_folder):
+                self.parent.inputSourceFolder.setText(source_folder)
+                logger.info(f"已加载保存的源文件夹: {source_folder}")
+                self._update_folder_info_display(source_folder)
+            
+            target_folder = config_manager.get_setting("target_folder", "")
+            if target_folder and os.path.exists(target_folder):
+                self.parent.inputTargetFolder.setText(target_folder)
+                logger.info(f"已加载保存的目标文件夹: {target_folder}")
+                
+            # 更新导入状态
+            self._update_import_status()
+        except Exception as e:
+            logger.error(f"加载保存的文件夹路径时出错: {str(e)}")
+    
+    def _save_folder_path(self, setting_key, folder_path):
+        """保存文件夹路径到配置"""
+        try:
+            config_manager.update_setting(setting_key, folder_path)
+            logger.info(f"已保存{setting_key}: {folder_path}")
+        except Exception as e:
+            logger.error(f"保存{setting_key}时出错: {str(e)}")
+    
+    def _update_import_status(self):
+        """更新导入状态（无标题参数版本）"""
+        try:
+            source_path = self.parent.inputSourceFolder.text().strip()
+            target_path = self.parent.inputTargetFolder.text().strip()
+            
+            if source_path and target_path:
+                self.parent.importStatus.setText("文件夹导入完成")
+            elif source_path:
+                self.parent.importStatus.setText("源文件夹已选择")
+            elif target_path:
+                self.parent.importStatus.setText("目标文件夹已选择")
+        except Exception as e:
+            logger.error(f"更新导入状态时出错: {str(e)}")
 
     def _browse_directory(self, title, line_edit):
         original_path = line_edit.text()

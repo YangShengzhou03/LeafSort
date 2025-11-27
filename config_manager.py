@@ -313,7 +313,9 @@ class ConfigManager:
                 "last_opened_folder": '',
                 "window_position": {'x': 100, 'y': 100},
                 "window_size": {'width': 942, 'height': 580},
-                "location_cache_tolerance": 0.027
+                "location_cache_tolerance": 0.027,
+                "source_folder": '',
+                "target_folder": ''
             },
             "api_limits": {
                 "gaode": {

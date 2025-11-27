@@ -1,6 +1,6 @@
 {
     "version": "1.1",
-    "last_modified": "2025-11-27T10:20:14.527357",
+    "last_modified": "2025-11-27T10:35:47.489618",
     "folders": [],
     "settings": {
         "thumbnail_size": 200,
@@ -35,7 +35,9 @@
         "exif_camera_model": "REDMI K80 Ultra",
         "exif_star_rating": 3,
         "exif_shoot_time_source": 1,
-        "exif_shoot_time": "2009:01:01 00:00:00"
+        "exif_shoot_time": "2009:01:01 00:00:00",
+        "source_folder": "D:/iPad照片",
+        "target_folder": "D:/待分类"
     },
     "api_limits": {
         "gaode": {
