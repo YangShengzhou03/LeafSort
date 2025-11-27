@@ -44,7 +44,7 @@ class FolderPage(QtWidgets.QWidget):
                 logger.info(f"已加载保存的目标文件夹: {target_folder}")
                 
             
-            self._update_import_status()
+            self._update_import_status("")
         except Exception as e:
             logger.error(f"加载保存的文件夹路径时出错: {str(e)}")
     
@@ -73,7 +73,7 @@ class FolderPage(QtWidgets.QWidget):
             if title == "选择源文件夹":
                 self._update_folder_info_display(selected_path)
 
-            self._update_import_status()
+            self._update_import_status(title)
 
         except Exception as e:
             logger.error(f"浏览目录时出错: {str(e)}")
