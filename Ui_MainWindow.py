@@ -4255,7 +4255,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "LeafSort - 媒体管理工具"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "LeafSort（轻羽媒体整理）"))
         self.btnHome.setText(_translate("MainWindow", "LeafSort"))
         __sortingEnabled = self.listNavigationMenu.isSortingEnabled()
         self.listNavigationMenu.setSortingEnabled(False)

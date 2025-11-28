@@ -51,7 +51,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         icon_path = get_resource_path('resources/img/icon.ico')
         if icon_path:
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
-        self.tray_icon.setToolTip("轻羽媒体整理")
+        self.tray_icon.setToolTip("LeafSort")
         tray_menu = QtWidgets.QMenu()
         action_show = QtGui.QAction("显示窗口", self)
         action_show.triggered.connect(self._show_window)
@@ -97,12 +97,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _hide_to_tray(self):
         self.hide()
         self.tray_icon.show()
-        # 显示系统通知
         self.tray_icon.showMessage(
-            "轻羽媒体整理",
+            "LeafSort",
             "应用已最小化到系统托盘",
             QtWidgets.QSystemTrayIcon.MessageIcon.Information,
-            3000  # 通知显示3秒
+            3000
         )
 
     def _show_window(self):
@@ -129,18 +128,14 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/还原.svg')))
 
     def changeEvent(self, event):
-        # 捕获窗口状态变化事件
         if event.type() == QtCore.QEvent.Type.WindowStateChange:
-            # 当窗口从正常状态变为最小化状态时
             if self.isMinimized():
-                # 隐藏窗口，最小化到托盘
                 self.hide()
-                # 显示系统通知
                 self.tray_icon.showMessage(
-                    "轻羽媒体整理",
+                    "LeafSort",
                     "应用已最小化到系统托盘",
                     QtWidgets.QSystemTrayIcon.MessageIcon.Information,
-                    3000  # 通知显示3秒
+                    3000
                 )
         super().changeEvent(event)
     

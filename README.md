@@ -1,5 +1,5 @@
 <div align="center">
-  <h1>🍁 LeafSort - 枫叶相册</h1>
+  <h1>🍁 LeafSort（轻羽媒体整理）</h1>
   <p>高效、智能的图片管理工具</p>
   
   <p>

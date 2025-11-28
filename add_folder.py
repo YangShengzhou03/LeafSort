@@ -198,7 +198,7 @@ class FolderPage(QtWidgets.QWidget):
 
         info_lines.extend(["", "-" * 20 + "注意！会递归遍历处理子文件夹" + "-" * 20, "顶层内容统计",
                            f"顶层文件数量：{file_count}       顶层文件夹数量：{directory_count}       总计：{total_items}",
-                           "-" * 75, " LeafSort © 2025 Yangshengzhou.All Rights Reserved "])
+                           "-" * 75, " LeafSort（轻羽媒体整理） © 2025 Yangshengzhou.All Rights Reserved "])
 
         return '\n'.join(info_lines)
 
