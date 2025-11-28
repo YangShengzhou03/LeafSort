@@ -11,7 +11,7 @@
    </rect>
   </property>
   <property name="windowTitle">
-   <string>LeafView - 媒体管理工具</string>
+   <string>LeafSort - 媒体管理工具</string>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QGridLayout" name="layoutMainGrid">
@@ -150,7 +150,7 @@ border-radius: 12px;
 }</string>
                </property>
                <property name="text">
-                <string>LeafView</string>
+                <string>LeafSort</string>
                </property>
               </widget>
              </item>
@@ -5693,7 +5693,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>©2024 LeafView</string>
+                         <string>©2024 LeafSort</string>
                         </property>
                        </widget>
                       </item>

@@ -202,7 +202,7 @@ class SmartArrangeThread(QtCore.QThread):
 
                 self.log("DEBUG", "="*40)
                 self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
-                self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
+                self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
                 self.progress_signal.emit(100)
             else:
                 self.log("WARNING", "您已经取消了整理文件的操作")

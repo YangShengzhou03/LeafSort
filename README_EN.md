@@ -1,18 +1,15 @@
 <div align="center">
-  <h1>🍁 LeafView - Maple Leaf Photo Gallery</h1>
+  <h1>🍁 LeafSort - Maple Leaf Photo Gallery</h1>
   <p>Efficient and intelligent image management tool</p>
   
   <p>
-    <a href="https://github.com/YangShengzhou03/LeafView/stargazers">
-      <img src="https://img.shields.io/github/stars/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=ffd33d&labelColor=000000" alt="GitHub Stars">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/forks">
-      <img src="https://img.shields.io/github/forks/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=green&labelColor=000000" alt="GitHub Forks">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/issues">
-      <img src="https://img.shields.io/github/issues/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=purple&labelColor=000000" alt="GitHub Issues">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/blob/main/LICENSE">
+    <a href="https://github.com/YangShengzhou03/LeafSort/stargazers">
+<img src="https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=ffd33d&labelColor=000000" alt="GitHub Stars">
+<a href="https://github.com/YangShengzhou03/LeafSort/forks">
+<img src="https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=green&labelColor=000000" alt="GitHub Forks">
+<a href="https://github.com/YangShengzhou03/LeafSort/issues">
+<img src="https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=purple&labelColor=000000" alt="GitHub Issues">
+<a href="https://github.com/YangShengzhou03/LeafSort/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=open-source-initiative&color=blue&labelColor=000000" alt="MIT License">
     </a>
   </p>
@@ -20,7 +17,7 @@
 
 ## 📋 Project Introduction
 
-LeafView is a powerful image management tool focused on efficiently managing, intelligently organizing, and batch processing various image files.
+LeafSort is a powerful image management tool focused on efficiently managing, intelligently organizing, and batch processing various image files.
 
 ### ✨ Core Features
 
@@ -44,7 +41,7 @@ LeafView is a powerful image management tool focused on efficiently managing, in
 
 ### Architecture Design
 
-LeafView adopts a three-tier architecture design to ensure code maintainability and scalability:
+LeafSort adopts a three-tier architecture design to ensure code maintainability and scalability:
 
 1. **User Interface Layer**: Modern GUI interface built on PyQt6
 2. **Business Logic Layer**: Handles core business logic and feature implementation
@@ -53,7 +50,7 @@ LeafView adopts a three-tier architecture design to ensure code maintainability 
 ## 📁 Project Structure
 
 ```
-LeafView/                    # Project root directory
+LeafSort/                    # Project root directory
 ├── App.py                   # Application entry point
 ├── main_window.py           # Main window implementation
 ├── Ui_MainWindow.py         # UI interface file
@@ -96,8 +93,8 @@ LeafView/                    # Project root directory
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/YangShengzhou03/LeafView.git
-   cd LeafView
+   git clone https://github.com/YangShengzhou03/LeafSort.git
+cd LeafSort
    ```
 
 2. Install dependencies
@@ -112,7 +109,7 @@ LeafView/                    # Project root directory
 
 ### Pre-compiled Version
 
-You can download pre-compiled executable files for your platform from the [GitHub Releases](https://github.com/YangShengzhou03/LeafView/releases) page.
+You can download pre-compiled executable files for your platform from the [GitHub Releases](https://github.com/YangShengzhou03/LeafSort/releases) page.
 
 ### Packaging as Executable
 
@@ -218,8 +215,8 @@ Supports integration with cloud storage services such as AWS S3, Alibaba Cloud O
 
 - **Author**: YangShengzhou03
 - **GitHub**: [https://github.com/YangShengzhou03](https://github.com/YangShengzhou03)
-- **Issue Feedback**: [GitHub Issues](https://github.com/YangShengzhou03/LeafView/issues)
-- **Discussion Area**: [GitHub Discussions](https://github.com/YangShengzhou03/LeafView/discussions)
+- **Issue Feedback**: [GitHub Issues](https://github.com/YangShengzhou03/LeafSort/issues)
+- **Discussion Area**: [GitHub Discussions](https://github.com/YangShengzhou03/LeafSort/discussions)
 
 ## 📄 License
 

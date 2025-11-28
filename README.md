@@ -1,18 +1,15 @@
 <div align="center">
-  <h1>🍁 LeafView - 枫叶相册</h1>
+  <h1>🍁 LeafSort - 枫叶相册</h1>
   <p>高效、智能的图片管理工具</p>
   
   <p>
-    <a href="https://github.com/YangShengzhou03/LeafView/stargazers">
-      <img src="https://img.shields.io/github/stars/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=ffd33d&labelColor=000000" alt="GitHub Stars">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/forks">
-      <img src="https://img.shields.io/github/forks/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=green&labelColor=000000" alt="GitHub Forks">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/issues">
-      <img src="https://img.shields.io/github/issues/YangShengzhou03/LeafView?style=for-the-badge&logo=github&color=purple&labelColor=000000" alt="GitHub Issues">
-    </a>
-    <a href="https://github.com/YangShengzhou03/LeafView/blob/main/LICENSE">
+    <a href="https://github.com/YangShengzhou03/LeafSort/stargazers">
+<img src="https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=ffd33d&labelColor=000000" alt="GitHub Stars">
+<a href="https://github.com/YangShengzhou03/LeafSort/forks">
+<img src="https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=green&labelColor=000000" alt="GitHub Forks">
+<a href="https://github.com/YangShengzhou03/LeafSort/issues">
+<img src="https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github&color=purple&labelColor=000000" alt="GitHub Issues">
+<a href="https://github.com/YangShengzhou03/LeafSort/blob/main/LICENSE">
       <img src="https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge&logo=open-source-initiative&color=blue&labelColor=000000" alt="MIT License">
     </a>
   </p>
@@ -20,7 +17,7 @@
 
 ## 📋 项目简介
 
-LeafView是一款功能强大的图片管理工具，专注于高效管理、智能整理和批量处理各类图片文件。
+LeafSort是一款功能强大的图片管理工具，专注于高效管理、智能整理和批量处理各类图片文件。
 
 ### ✨ 核心功能
 
@@ -44,7 +41,7 @@ LeafView是一款功能强大的图片管理工具，专注于高效管理、智
 
 ### 架构设计
 
-LeafView采用三层架构设计，确保代码的可维护性和扩展性：
+LeafSort采用三层架构设计，确保代码的可维护性和扩展性：
 
 1. **用户界面层**：基于PyQt6构建的现代化GUI界面
 2. **业务逻辑层**：处理核心业务逻辑和功能实现
@@ -53,7 +50,7 @@ LeafView采用三层架构设计，确保代码的可维护性和扩展性：
 ## 📁 项目结构
 
 ```
-LeafView/                    # 项目根目录
+LeafSort/                    # 项目根目录
 ├── App.py                   # 应用程序入口
 ├── main_window.py           # 主窗口实现
 ├── Ui_MainWindow.py         # UI界面文件
@@ -96,8 +93,8 @@ LeafView/                    # 项目根目录
 
 1. 克隆仓库
    ```bash
-   git clone https://github.com/YangShengzhou03/LeafView.git
-   cd LeafView
+   git clone https://github.com/YangShengzhou03/LeafSort.git
+cd LeafSort
    ```
 
 2. 安装依赖
@@ -112,7 +109,7 @@ LeafView/                    # 项目根目录
 
 ### 预编译版本
 
-可在[GitHub Releases](https://github.com/YangShengzhou03/LeafView/releases)页面下载对应平台的预编译可执行文件。
+可在[GitHub Releases](https://github.com/YangShengzhou03/LeafSort/releases)页面下载对应平台的预编译可执行文件。
 
 ### 打包为可执行文件
 
@@ -218,8 +215,8 @@ pyinstaller -w -F --icon=resources/img/icon.ico App.py
 
 - **作者**: YangShengzhou03
 - **GitHub**: [https://github.com/YangShengzhou03](https://github.com/YangShengzhou03)
-- **问题反馈**: [GitHub Issues](https://github.com/YangShengzhou03/LeafView/issues)
-- **讨论区**: [GitHub Discussions](https://github.com/YangShengzhou03/LeafView/discussions)
+- **问题反馈**: [GitHub Issues](https://github.com/YangShengzhou03/LeafSort/issues)
+- **讨论区**: [GitHub Discussions](https://github.com/YangShengzhou03/LeafSort/discussions)
 
 ## 📄 许可证
 

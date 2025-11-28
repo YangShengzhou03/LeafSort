@@ -361,13 +361,13 @@ def get_address_from_coordinates(longitude, latitude):
 def get_common_app_data_path():
     if os.name == 'nt':
         app_data_path = os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming')
-        return os.path.join(app_data_path, 'LeafView')
+        return os.path.join(app_data_path, 'LeafSort')
     elif os.name == 'posix':
         config_path = os.path.join(os.path.expanduser('~'), '.config')
-        return os.path.join(config_path, 'leafview')
+        return os.path.join(config_path, 'leafsort')
     else:
         app_support_path = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support')
-        return os.path.join(app_support_path, 'LeafView')
+        return os.path.join(app_support_path, 'LeafSort')
 
 def get_file_magic_info(file_path):
     return _file_magic_detector.get_file_magic_info(file_path)

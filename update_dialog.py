@@ -67,7 +67,7 @@ def check_update():
             raise ValueError("Invalid version number format")
         
         if latest_version > current_version:
-            version_text = f"LeafView v{latest_version_str}"
+            version_text = f"LeafSort v{latest_version_str}"
             dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description, version_text, False)
             dialog.exec()
 

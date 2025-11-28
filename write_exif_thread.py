@@ -135,7 +135,7 @@ class WriteExifThread(QThread):
     def _log_completion_summary(self, success_count, error_count, total_files):
         self.log("DEBUG", "="*40)
         self.log("DEBUG", f"文件写入完成：成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
-        self.log("DEBUG", "="*3+"LeafView © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
+        self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
 
     def _collect_image_paths(self):
         image_extensions = ('.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.mov', '.mp4', '.avi', '.mkv')

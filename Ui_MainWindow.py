@@ -7,7 +7,6 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
-from common import get_resource_path
 
 
 class Ui_MainWindow(object):
@@ -224,22 +223,22 @@ class Ui_MainWindow(object):
         self.listNavigationMenu.setObjectName("listNavigationMenu")
         item = QtWidgets.QListWidgetItem()
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/媒体导入.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(QtGui.QPixmap("resources/img/list/媒体导入.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/智能整理.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon1.addPixmap(QtGui.QPixmap("resources/img/list/智能整理.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon1)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/文件去重.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon2.addPixmap(QtGui.QPixmap("resources/img/list/文件去重.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon2)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/属性写入.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon3.addPixmap(QtGui.QPixmap("resources/img/list/属性写入.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon3)
         self.listNavigationMenu.addItem(item)
         self.layoutSidebarContent.addWidget(self.listNavigationMenu)
@@ -311,7 +310,7 @@ class Ui_MainWindow(object):
         self.widgetVipBadge.setMinimumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setMaximumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.widgetVipBadge.setStyleSheet("image: url('resources/img/头标/头标-银色标准会员.svg');\n"
+        self.widgetVipBadge.setStyleSheet("image: url(resources/img/头标/头标-银色标准会员.svg);\n"
 "background-color: rgba(0, 0, 0,0);\n"
 "border-radius:12px;\n"
 "padding: 4px;\n"
@@ -360,7 +359,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnGithub.setText("")
         icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/github.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon4.addPixmap(QtGui.QPixmap("resources/img/窗口控制/github.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnGithub.setIcon(icon4)
         self.btnGithub.setIconSize(QtCore.QSize(18, 18))
         self.btnGithub.setObjectName("btnGithub")
@@ -399,7 +398,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnSettings.setText("")
         icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/设置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon5.addPixmap(QtGui.QPixmap("resources/img/窗口控制/设置.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnSettings.setIcon(icon5)
         self.btnSettings.setIconSize(QtCore.QSize(18, 18))
         self.btnSettings.setObjectName("btnSettings")
@@ -437,7 +436,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnMinimize.setText("")
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/最小化.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon6.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最小化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMinimize.setIcon(icon6)
         self.btnMinimize.setIconSize(QtCore.QSize(12, 12))
         self.btnMinimize.setObjectName("btnMinimize")
@@ -475,7 +474,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnMaximize.setText("")
         icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/最大化.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon7.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最大化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMaximize.setIcon(icon7)
         self.btnMaximize.setIconSize(QtCore.QSize(12, 12))
         self.btnMaximize.setObjectName("btnMaximize")
@@ -513,7 +512,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnClose.setText("")
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/关闭.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon8.addPixmap(QtGui.QPixmap("resources/img/窗口控制/关闭.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnClose.setIcon(icon8)
         self.btnClose.setIconSize(QtCore.QSize(12, 12))
         self.btnClose.setObjectName("btnClose")
@@ -2041,7 +2040,7 @@ class Ui_MainWindow(object):
 "  transform: translateY(2px);\n"
 "}")
         icon9 = QtGui.QIcon()
-        icon9.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_2/位置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon9.addPixmap(QtGui.QPixmap("resources/img/page_2/位置.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnAddressTag.setIcon(icon9)
         self.btnAddressTag.setObjectName("btnAddressTag")
         self.layoutTagsInput.addWidget(self.btnAddressTag)
@@ -3165,11 +3164,11 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar1.setText("")
         icon10 = QtGui.QIcon()
-        icon10.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_4/星级_暗.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon10.addPixmap(QtGui.QPixmap("resources/img/page_4/星级_暗.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnStar1.setIcon(icon10)
         self.btnStar1.setIconSize(QtCore.QSize(20, 20))
         self.btnStar1.setObjectName("btnStar1")
@@ -3184,7 +3183,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar2.setText("")
         self.btnStar2.setIcon(icon10)
@@ -3201,7 +3200,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar3.setText("")
         self.btnStar3.setIcon(icon10)
@@ -3218,7 +3217,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar4.setText("")
         self.btnStar4.setIcon(icon10)
@@ -3235,7 +3234,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar5.setText("")
         self.btnStar5.setIcon(icon10)
@@ -4256,8 +4255,8 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "LeafView - 媒体管理工具"))
-        self.btnHome.setText(_translate("MainWindow", "LeafView"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "LeafSort - 媒体管理工具"))
+        self.btnHome.setText(_translate("MainWindow", "LeafSort"))
         __sortingEnabled = self.listNavigationMenu.isSortingEnabled()
         self.listNavigationMenu.setSortingEnabled(False)
         item = self.listNavigationMenu.item(0)
@@ -4375,7 +4374,7 @@ class Ui_MainWindow(object):
         self.theme.setText(_translate("MainWindow", "主题"))
         self.themeLineEdit.setPlaceholderText(_translate("MainWindow", "请输入图像主题"))
         self.copyright.setText(_translate("MainWindow", "版权"))
-        self.copyrightLineEdit.setPlaceholderText(_translate("MainWindow", "©2024 LeafView"))
+        self.copyrightLineEdit.setPlaceholderText(_translate("MainWindow", "©2024 LeafSort"))
         self.shootTime.setText(_translate("MainWindow", "拍摄时间"))
         self.shootTimeSource.setItemText(0, _translate("MainWindow", "不写入"))
         self.shootTimeSource.setItemText(1, _translate("MainWindow", "从文件名"))

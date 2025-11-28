@@ -7,17 +7,13 @@ from typing import Dict, List, Any, Optional
 
 from common import get_resource_path
 
-# 获取应用程序数据目录作为配置存储位置
 def get_app_data_path():
-    # 优先使用LOCALAPPDATA环境变量
     local_app_data = os.environ.get('LOCALAPPDATA')
     if local_app_data:
-        # 在用户的AppData\Local目录下创建应用程序特定的文件夹
-        app_data_path = os.path.join(local_app_data, 'LeafView')
+        app_data_path = os.path.join(local_app_data, 'LeafSort')
         os.makedirs(app_data_path, exist_ok=True)
         return app_data_path
     
-    # 回退到当前目录
     return os.path.dirname(os.path.abspath(__file__))
 
 logger = logging.getLogger(__name__)
