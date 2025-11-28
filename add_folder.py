@@ -1,4 +1,4 @@
-import os1
+import os
 import logging
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, Qt
