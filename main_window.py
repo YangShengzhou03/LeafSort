@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deduplication_page = FileDeduplicationManager(self, self.folder_page)
 
     def _setup_ui(self):
-        self.setWindowTitle("轻羽媒体整理")
+        self.setWindowTitle("LeafSort（轻羽媒体整理）")
         icon_path = get_resource_path('resources/img/icon.ico')
         if icon_path:
             self.setWindowIcon(QtGui.QIcon(icon_path))
@@ -51,7 +51,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         icon_path = get_resource_path('resources/img/icon.ico')
         if icon_path:
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
-        self.tray_icon.setToolTip("LeafSort")
+        self.tray_icon.setToolTip("LeafSort（轻羽媒体整理）")
         tray_menu = QtWidgets.QMenu()
         action_show = QtGui.QAction("显示窗口", self)
         action_show.triggered.connect(self._show_window)
