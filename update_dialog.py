@@ -47,14 +47,12 @@ def check_update():
         response = requests.get(url, timeout=5)
         response.raise_for_status()
         
-        
         content = response.text.strip()
         info_dict = {}
         for line in content.split('\n'):
             if ':' in line:
                 key, value = line.split(':', 1)
                 info_dict[key.strip()] = value.strip()
-        
         
         if not all(key in info_dict for key in ['Latest Version', 'Download Link', 'Description']):
             raise ValueError("Invalid update information format")
@@ -69,14 +67,13 @@ def check_update():
             raise ValueError("Invalid version number format")
         
         if latest_version > current_version:
-            
             version_text = f"LeafView v{latest_version_str}"
             dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description, version_text, False)
             dialog.exec()
 
-    except Exception:
-        dialog = UpdateDialog('https://blog.csdn.net/Yang_shengzhou', '检查更新失败',
-                              '检查更新时出现错误，请稍后重试。\n感谢您的支持！', "", False)
-        dialog.ui.btnDownload.setText("我知道了")
-        dialog.ui.btnCancel.hide()  
-        dialog.exec()
+    except requests.exceptions.RequestException as e:
+        # 网络异常时静默处理，只记录日志
+        logger.info(f"网络错误，无法检查更新: {str(e)}")
+    except Exception as e:
+        # 其他异常可以考虑是否显示弹窗
+        logger.error(f"检查更新时出错: {str(e)}")
