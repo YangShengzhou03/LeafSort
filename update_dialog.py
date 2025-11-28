@@ -36,7 +36,7 @@ class UpdateDialog(QDialog):
         super().closeEvent(event)
 
 def check_update():
-    url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafView/versionInfo'
+    url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafSort/versionInfo'
     try:
         from main_window import version as current_version
         logger.info(f"当前应用版本: {current_version}")
