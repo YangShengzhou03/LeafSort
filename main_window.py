@@ -97,6 +97,13 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _hide_to_tray(self):
         self.hide()
         self.tray_icon.show()
+        # 显示系统通知
+        self.tray_icon.showMessage(
+            "枫叶相册",
+            "应用已最小化到系统托盘",
+            QtWidgets.QSystemTrayIcon.MessageIcon.Information,
+            3000  # 通知显示3秒
+        )
 
     def _show_window(self):
         self.show()
@@ -121,6 +128,22 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.showMaximized()
             self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/还原.svg')))
 
+    def changeEvent(self, event):
+        # 捕获窗口状态变化事件
+        if event.type() == QtCore.QEvent.Type.WindowStateChange:
+            # 当窗口从正常状态变为最小化状态时
+            if self.isMinimized():
+                # 隐藏窗口，最小化到托盘
+                self.hide()
+                # 显示系统通知
+                self.tray_icon.showMessage(
+                    "枫叶相册",
+                    "应用已最小化到系统托盘",
+                    QtWidgets.QSystemTrayIcon.MessageIcon.Information,
+                    3000  # 通知显示3秒
+                )
+        super().changeEvent(event)
+    
     def closeEvent(self, event):
         event.ignore()
         self._hide_to_tray()

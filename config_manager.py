@@ -30,7 +30,6 @@ class ConfigManager:
     
     def __init__(self):
         self._lock = threading.RLock()
-        # 使用应用程序数据目录而不是相对路径
         self.app_data_path = get_app_data_path()
         self.internal_dir = os.path.join(self.app_data_path, '_internal')
         os.makedirs(self.internal_dir, exist_ok=True)
