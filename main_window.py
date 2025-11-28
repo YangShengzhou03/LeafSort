@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deduplication_page = FileDeduplicationManager(self, self.folder_page)
 
     def _setup_ui(self):
-        self.setWindowTitle("枫叶相册")
+        self.setWindowTitle("轻羽媒体整理")
         icon_path = get_resource_path('resources/img/icon.ico')
         if icon_path:
             self.setWindowIcon(QtGui.QIcon(icon_path))
@@ -51,7 +51,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         icon_path = get_resource_path('resources/img/icon.ico')
         if icon_path:
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
-        self.tray_icon.setToolTip("枫叶相册")
+        self.tray_icon.setToolTip("轻羽媒体整理")
         tray_menu = QtWidgets.QMenu()
         action_show = QtGui.QAction("显示窗口", self)
         action_show.triggered.connect(self._show_window)
@@ -99,7 +99,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
         # 显示系统通知
         self.tray_icon.showMessage(
-            "枫叶相册",
+            "轻羽媒体整理",
             "应用已最小化到系统托盘",
             QtWidgets.QSystemTrayIcon.MessageIcon.Information,
             3000  # 通知显示3秒
@@ -137,7 +137,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self.hide()
                 # 显示系统通知
                 self.tray_icon.showMessage(
-                    "枫叶相册",
+                    "轻羽媒体整理",
                     "应用已最小化到系统托盘",
                     QtWidgets.QSystemTrayIcon.MessageIcon.Information,
                     3000  # 通知显示3秒
