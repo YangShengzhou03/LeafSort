@@ -1266,8 +1266,6 @@ class SmartArrangeThread(QtCore.QThread):
                 if cached_address and cached_address != "未知位置":
                     logger.info(f"缓存命中! 坐标({lat},{lon})使用缓存地址: {cached_address}")
                     return cached_address
-                else:
-                    logger.info(f"缓存未命中，尝试获取坐标({lat},{lon})的地址")
                 
                 province, city = self.get_city_and_province(lat, lon)
                 local_location = f"{province}{city}" if city != "未知城市" else province

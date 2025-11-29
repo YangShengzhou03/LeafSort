@@ -5,8 +5,6 @@ import threading
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
-from common import get_resource_path
-
 def get_app_data_path():
     local_app_data = os.environ.get('LOCALAPPDATA')
     if local_app_data:
@@ -119,7 +117,6 @@ class ConfigManager:
         return folder_path in self.config["folders"]
     
     def _load_location_cache(self) -> None:
-        # 加载位置缓存
         try:
             if os.path.exists(self.cache_file):
                 with open(self.cache_file, 'r', encoding='utf-8') as f:
@@ -369,7 +366,7 @@ class ConfigManager:
         
         if self.cache_file:
             try:
-                os.remove("_internal/cache_location.json")
+                os.remove(self.cache_file)
             except Exception as e:
                 logger.error(f"清理缓存文件时出错: {str(e)}")
                 return False

@@ -174,19 +174,11 @@ class MediaTypeDetector:
 
 class GeocodingService:
     def __init__(self):
-        self._ensure_internal_dir()
-        self.cache_path = get_resource_path("_internal/cache_location.json")
-        self.cookies_path = get_resource_path("_internal/cookies.json")
+        self.internal_dir = get_internal_dir()
+        self.cache_path = os.path.join(self.internal_dir, "cache_location.json")
+        self.cookies_path = os.path.join(self.internal_dir, "cookies.json")
         self.cache = self._load_cache()
         self._clean_cache_if_needed()
-
-    def _ensure_internal_dir(self):
-        try:
-            if not get_resource_path("_internal"):
-                os.makedirs("_internal")
-                logger.info(f"已创建_internal目录")
-        except Exception as e:
-            logger.error(f"创建_internal目录时出错: {str(e)}")
 
     def _clean_cache_if_needed(self, max_entries: int = 1000):
         if len(self.cache) > max_entries:
@@ -197,10 +189,10 @@ class GeocodingService:
 
     def _load_cache(self):
         try:
-            if not self.cache_path:
+            if not os.path.exists(self.cache_path):
                 return {}
 
-            with open("_internal/cache_location.json", 'r', encoding='utf-8') as f:
+            with open(self.cache_path, 'r', encoding='utf-8') as f:
                 content = f.read().strip()
                 if not content:
                     logger.warning(f"缓存文件 {self.cache_path} 内容为空，删除并重新创建")
@@ -215,16 +207,16 @@ class GeocodingService:
                 except json.JSONDecodeError as e:
                     logger.error(f"解析缓存文件失败: {str(e)}，删除损坏的缓存文件")
                     try:
-                        os.remove("_internal/cache_location.json")
+                        os.remove(self.cache_path)
                         logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
                     except Exception as remove_error:
                         logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
                     return {}
         except Exception as e:
             logger.error(f"加载缓存时出错: {str(e)}")
-            if self.cache_path:
+            if os.path.exists(self.cache_path):
                 try:
-                    os.remove("_internal/cache_location.json")
+                    os.remove(self.cache_path)
                     logger.info(f"已删除损坏的缓存文件: {self.cache_path}")
                 except Exception as remove_error:
                     logger.error(f"删除损坏的缓存文件失败: {str(remove_error)}")
@@ -232,17 +224,16 @@ class GeocodingService:
 
     def _save_cache(self):
         try:
-            self._ensure_internal_dir()
-            with open("_internal/cache_location.json", 'w', encoding='utf-8') as f:
+            with open(self.cache_path, 'w', encoding='utf-8') as f:
                 json.dump(self.cache, f, ensure_ascii=False, indent=2)
         except Exception as e:
             logger.error(f"保存缓存时出错: {str(e)}")
 
     def _get_cookies_key(self):
         try:
-            if self.cookies_path:
+            if os.path.exists(self.cookies_path):
                 try:
-                    with open("_internal/cookies.json", "r", encoding="utf-8") as f:
+                    with open(self.cookies_path, "r", encoding="utf-8") as f:
                         saved = json.load(f)
                         if saved.get("cookies") and saved.get("key"):
                             return saved["cookies"], saved["key"]
@@ -262,8 +253,7 @@ class GeocodingService:
                 browser.close()
 
             try:
-                self._ensure_internal_dir()
-                with open("_internal/cookies.json", "w", encoding="utf-8") as f:
+                with open(self.cookies_path, "w", encoding="utf-8") as f:
                     json.dump({"cookies": cookies, "key": key}, f, ensure_ascii=False)
             except Exception as save_error:
                 logger.error(f"保存cookies失败: {str(save_error)}")
@@ -360,7 +350,7 @@ def get_address_from_coordinates(longitude, latitude):
 
 def get_common_app_data_path():
     if os.name == 'nt':
-        app_data_path = os.path.join(os.path.expanduser('~'), 'AppData', 'Roaming')
+        app_data_path = os.path.join(os.path.expanduser('~'), 'AppData', 'Local')
         return os.path.join(app_data_path, 'LeafSort')
     elif os.name == 'posix':
         config_path = os.path.join(os.path.expanduser('~'), '.config')
@@ -368,6 +358,13 @@ def get_common_app_data_path():
     else:
         app_support_path = os.path.join(os.path.expanduser('~'), 'Library', 'Application Support')
         return os.path.join(app_support_path, 'LeafSort')
+
+
+def get_internal_dir():
+    app_data_path = get_common_app_data_path()
+    internal_dir = os.path.join(app_data_path, '_internal')
+    os.makedirs(internal_dir, exist_ok=True)
+    return internal_dir
 
 def get_file_magic_info(file_path):
     return _file_magic_detector.get_file_magic_info(file_path)

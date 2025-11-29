@@ -150,3 +150,7 @@ $RECYCLE.BIN/
 
 # Linux
 *~
+
+# Internal config files
+_internal/
+_internal/*.json
