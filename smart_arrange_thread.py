@@ -718,63 +718,84 @@ class SmartArrangeThread(QtCore.QThread):
         return date_taken
 
     def _process_mov_exif(self, file_path, exif_data):
+        # 获取视频元数据
         video_metadata = self._get_video_metadata(file_path)
         if not video_metadata:
+            self.log("ERROR", f"MOV文件 {file_path.name} 无法获取元数据")
             return None
             
         date_taken = None
         
+        # 优化的日期时间提取逻辑
         date_keys = [
-            'Create Date', 'Creation Date', 'DateTimeOriginal',
-            'Media Create Date', 'Date/Time Original', 'Date/Time Created'
+            'Create Date', 'Creation Date', 'DateTime Original',
+            'Media Create Date', 'Track Create Date', 
+            'Date/Time Original', 'Date Time Original',
+            'Creation Time', 'Created', 'Creation Date (Windows)',
+            'Modify Date', 'Last Modified Date'
         ]
         
         for key in date_keys:
             if key in video_metadata:
-                date_str = video_metadata[key]
-                if '+' in date_str or '-' in date_str[-5:]:
-                    date_taken = self.parse_datetime(date_str)
-                else:
-                    try:
-                        dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
-                        utc_dt = dt.replace(tzinfo=timezone.utc)
-                        date_taken = utc_dt.astimezone().replace(tzinfo=None)
-                    except ValueError:
+                date_str = video_metadata[key].strip().strip('"\'')
+                
+                if date_str:
+                    # 尝试多种日期格式
+                    if '+' in date_str or '-' in date_str[-5:]:
                         date_taken = self.parse_datetime(date_str)
+                    else:
+                        # 尝试标准EXIF格式
+                        try:
+                            dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+                            date_taken = dt.replace(tzinfo=None)
+                        except ValueError:
+                            try:
+                                # 尝试其他常见格式
+                                dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
+                                date_taken = dt
+                            except ValueError:
+                                try:
+                                    # 尝试带毫秒的格式
+                                    dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
+                                    date_taken = dt
+                                except ValueError:
+                                    date_taken = self.parse_datetime(date_str)
                 
                 if date_taken:
                     break
         
+        # 相机制造商信息
         make_keys = [
-            'Make', 'Camera Make', 'Manufacturer', 'Camera Manufacturer'
+            'Make', 'Camera Make', 'Manufacturer', 'Camera Manufacturer',
+            'Producer', 'Software', 'Application'
         ]
         
         for key in make_keys:
             if key in video_metadata:
-                make_value = video_metadata[key]
-                if make_value:
-                    if isinstance(make_value, str):
-                        make_value = make_value.strip().strip('"\'')
+                make_value = video_metadata[key].strip().strip('"\'')
+                if make_value and make_value.lower() not in ['', 'none', 'null', 'unknown']:
                     exif_data['Make'] = make_value
-                    if not date_taken:
-                        date_taken = make_value
-                break
+                    break
         
+        # 相机型号信息
         model_keys = [
-            'Model', 'Camera Model', 'Device Model', 'Product Name'
+            'Model', 'Camera Model', 'Device Model', 'Product Name',
+            'Model Name', 'Camera Model Name', 'Product Model'
         ]
         
         for key in model_keys:
             if key in video_metadata:
-                model_value = video_metadata[key]
-                if model_value:
+                model_value = video_metadata[key].strip().strip('"\'')
+                if model_value and model_value.lower() not in ['', 'none', 'null', 'unknown']:
                     exif_data['Model'] = model_value
-                break
+                    break
         
+        # GPS位置信息
         gps_found = False
         for key, value in video_metadata.items():
-            if 'gps' in key.lower() or 'location' in key.lower():
+            if 'gps' in key.lower() or 'location' in key.lower() or 'position' in key.lower():
                 gps_found = True
+                
                 if 'Coordinates' in key or 'Position' in key:
                     lat, lon = self._parse_combined_coordinates(value)
                     if lat is not None and lon is not None:
@@ -787,12 +808,7 @@ class SmartArrangeThread(QtCore.QThread):
                     lon = self._parse_dms_coordinate(value)
                     if lon is not None:
                         exif_data['GPS GPSLongitude'] = lon
-        
-        if gps_found and ('GPS GPSLatitude' not in exif_data or 'GPS GPSLongitude' not in exif_data):
-            lat = exif_data.get('GPS GPSLatitude')
-            lon = exif_data.get('GPS GPSLongitude')
-            if lat is not None and lon is not None:
-                self.log("DEBUG", f"GPS坐标: 纬度={lat}, 经度={lon}")
+            
         return date_taken
 
     def _determine_best_datetime(self, date_taken, create_time, modify_time):
@@ -875,7 +891,6 @@ class SmartArrangeThread(QtCore.QThread):
     def _get_video_metadata(self, file_path, timeout=30):
         try:
             if not os.path.exists(file_path):
-                self.log("DEBUG", f"文件不存在: {file_path}")
                 return None
                 
             exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
@@ -883,42 +898,91 @@ class SmartArrangeThread(QtCore.QThread):
                 exiftool_path = os.path.join(os.path.dirname(__file__), 'resources', 'exiftool', 'exiftool.exe')
             
             if not exiftool_path or not os.path.exists(exiftool_path):
-                self.log("DEBUG", "exiftool工具不存在，无法读取视频元数据")
                 return None
                 
             file_path_normalized = str(file_path).replace('\\', '/')
-            cmd = [exiftool_path, "-fast", file_path_normalized]
-
+            
+            # 首先尝试标准参数
+            metadata = {}
+            cmd = [exiftool_path, "-s", "-n", file_path_normalized]
+            
             result = subprocess.run(
                 cmd,
                 capture_output=True,
-                text=True,
                 timeout=timeout,
-                shell=False,
-                encoding='utf-8'
+                shell=False
             )
 
             if result.returncode != 0:
-                error_msg = result.stderr if result.stderr else "未知错误"
-                self.log("DEBUG", f"exiftool执行失败: {error_msg}")
-                return None
+                # 尝试无参数
+                cmd = [exiftool_path, file_path_normalized]
+                result = subprocess.run(
+                    cmd,
+                    capture_output=True,
+                    timeout=timeout,
+                    shell=False
+                )
+                if result.returncode != 0:
+                    return None
 
             if not result.stdout:
-                self.log("DEBUG", f"exiftool未返回任何数据: {file_path}")
                 return None
 
-            metadata = {}
-            for line in result.stdout.split('\n'):
+            # 使用UTF-8解码，这是Windows命令行工具的默认编码
+            try:
+                stdout_text = result.stdout.decode('utf-8', errors='ignore')
+            except Exception as e:
+                return None
+            
+            # 解析输出，查找包含冒号的行
+            lines_processed = 0
+            for line in stdout_text.split('\n'):
+                line = line.strip()
+                # 跳过分隔符和其他非数据行
+                if not line or line.startswith('=') or 'ExifTool' in line:
+                    continue
+                    
                 if ':' in line:
-                    key, value = line.split(':', 1)
-                    metadata[key.strip()] = value.strip()
-
-            return metadata
+                    # 查找第一个冒号
+                    colon_index = line.find(':')
+                    key = line[:colon_index].strip()
+                    value = line[colon_index+1:].strip()
+                    
+                    # 跳过空值
+                    if not key or not value or value.lower() in ['', 'none', 'null']:
+                        continue
+                    
+                    # 移除引号
+                    if value.startswith('"') and value.endswith('"'):
+                        value = value[1:-1]
+                    
+                    metadata[key] = value
+                    lines_processed += 1
+                    
+                    # 限制字段数量避免过多噪音
+                    if lines_processed > 100:
+                        break
+            
+            # 如果没有解析到数据，但原始输出存在，尝试更宽松的解析
+            if not metadata and stdout_text.strip():
+                for line in stdout_text.split('\n'):
+                    line = line.strip()
+                    if ':' in line and not line.startswith('='):
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            key = parts[0].strip()
+                            value = parts[1].strip()
+                            if key and value:
+                                if value.startswith('"') and value.endswith('"'):
+                                    value = value[1:-1]
+                                metadata[key] = value
+            
+            return metadata if metadata else None
 
         except subprocess.TimeoutExpired:
-            self.log("DEBUG", f"读取文件元数据超时: {file_path}")
+            pass
         except Exception as e:
-            self.log("DEBUG", f"读取文件元数据出错: {str(e)}")
+            pass
         return None
 
     def parse_exif_datetime(self, tags):
