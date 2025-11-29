@@ -184,7 +184,6 @@ class SmartArrangeThread(QtCore.QThread):
             if not self._stop_flag:
                 try:
                     self.process_renaming()
-                    success_count = len(self.files_to_rename) - fail_count
                 except Exception as e:
                     self.log("ERROR", f"给文件重命名时出错了: {str(e)}")
                     fail_count += 1
@@ -196,6 +195,11 @@ class SmartArrangeThread(QtCore.QThread):
                         self.log("WARNING", f"删除空文件夹时出错了: {str(e)}")
 
                 self.progress_signal.emit(100)
+                
+                success_count = len(self.files_to_rename) - fail_count
+                self.log("DEBUG", "="*40) 
+                self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件") 
+                self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
             else:
                 self.log("WARNING", "您已经取消了整理文件的操作")
                 
@@ -453,17 +457,15 @@ class SmartArrangeThread(QtCore.QThread):
                                 
                                 self.log("DEBUG", f"文件实际类型与扩展名不符，使用文件系统时间")
                 except Exception as verify_error:
-                    self.log("DEBUG", f"文件类型验证失败: {str(verify_error)}")
+                    self.log("ERROR", f"文件类型验证失败: {str(verify_error)}")
                 
                 
                 if date_taken is None:
                     date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
-                if date_taken:
-                    self.log("INFO", f"{file_path.name} - 拍摄时间: {date_taken}")
-                else:
-                    self.log("INFO", f"{file_path.name} - 无法从EXIF读取拍摄时间")
+                if not date_taken:
+                    self.log("ERROR", f"{file_path.name} - 无法从EXIF读取拍摄时间")
             elif suffix == '.png':
                 date_taken = self._process_png_exif(file_path_obj)
             elif suffix == '.mov':
@@ -473,19 +475,16 @@ class SmartArrangeThread(QtCore.QThread):
             elif suffix in ('.arw', '.cr2', '.cr3', '.dng', '.nef', '.orf', '.raf', '.sr2', '.tif', '.tiff', '.rw2', '.pef', '.nrw'):
                 date_taken = self._process_raw_exif(file_path_obj, exif_data)
             else:
-                self.log("DEBUG", f"不支持的文件类型或无EXIF数据: {suffix}")
+                self.log("ERROR", f"不支持的文件类型或无EXIF数据: {suffix}")
 
             time_info = []
             if date_taken:
                 time_info.append(f"拍摄时间: {date_taken}")
             time_info.append(f"创建时间: {create_time}")
             time_info.append(f"修改时间: {modify_time}")
-            self.log("INFO", f"{file_path.name} - 时间源: {', '.join(time_info)}")
             
             final_datetime = self._determine_best_datetime(date_taken, create_time, modify_time)
             exif_data['DateTime'] = final_datetime
-            
-            self.log("INFO", f"{file_path.name} - 最终使用时间: {final_datetime}")
                 
         except Exception as e:
             self.log("DEBUG", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
@@ -497,56 +496,7 @@ class SmartArrangeThread(QtCore.QThread):
             with open(file_path, 'rb') as f:
                 tags = exifread.process_file(f, details=False)
             
-            self.log("INFO", f"{file_path.name} - 开始分析所有EXIF元数据")
-            
-            time_tags = []
-            for tag in tags:
-                tag_str = str(tag)
-                tag_value = str(tags[tag])
-                if any(keyword in tag_str.lower() for keyword in ['date', 'time', 'datetime']):
-                    time_tags.append(f"{tag_str}: {tag_value}")
-            
-            if time_tags:
-                self.log("INFO", f"{file_path.name} - 所有时间相关EXIF标签:")
-                for time_tag in time_tags:
-                    self.log("INFO", f"  {time_tag}")
-            else:
-                self.log("INFO", f"{file_path.name} - 未找到时间相关的EXIF标签")
-            
-
-            gps_tags = []
-            camera_tags = []
-            other_tags = []
-            
-            for tag in tags:
-                tag_str = str(tag)
-                tag_value = str(tags[tag])
-                if 'gps' in tag_str.lower():
-                    gps_tags.append(f"{tag_str}: {tag_value}")
-                elif any(keyword in tag_str.lower() for keyword in ['camera', 'make', 'model', 'lens', 'focal', 'exposure', 'aperture', 'iso']):
-                    camera_tags.append(f"{tag_str}: {tag_value}")
-                else:
-                    other_tags.append(f"{tag_str}: {tag_value}")
-            
-            if camera_tags:
-                self.log("INFO", f"{file_path.name} - 相机相关EXIF标签:")
-                for cam_tag in camera_tags[:10]:
-                    self.log("INFO", f"  {cam_tag}")
-            
-            if gps_tags:
-                self.log("INFO", f"{file_path.name} - GPS相关EXIF标签:")
-                for gps_tag in gps_tags:
-                    self.log("INFO", f"  {gps_tag}")
-            
-            if other_tags:
-                self.log("INFO", f"{file_path.name} - 其他EXIF标签（前10个）:")
-                for other_tag in other_tags[:10]:
-                    self.log("INFO", f"  {other_tag}")
-                if len(other_tags) > 10:
-                    self.log("INFO", f"  ... 还有{len(other_tags) - 10}个标签未显示")
-            
             date_taken = self.parse_exif_datetime(tags)
-            self.log("INFO", f"{file_path.name} - 解析到的拍摄时间: {date_taken}")
             
             self._extract_gps_and_camera_info(tags, exif_data)
             
@@ -556,15 +506,12 @@ class SmartArrangeThread(QtCore.QThread):
             return None
 
     def _process_raw_exif(self, file_path, exif_data):
-        
         if not os.path.exists(file_path):
-            self.log("DEBUG", f"文件不存在: {file_path}")
             return None
         
         exiftool_path = os.path.join(os.path.dirname(__file__), "resources", "exiftool", "exiftool.exe")
         
         if not os.path.exists(exiftool_path):
-            self.log("DEBUG", "exiftool工具不存在，无法读取RAW格式文件EXIF信息")
             return None
         
         try:
@@ -572,8 +519,6 @@ class SmartArrangeThread(QtCore.QThread):
             result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
             
             if result.returncode != 0:
-                error_msg = result.stderr.decode('utf-8', errors='ignore') if result.stderr else "未知错误"
-                self.log("DEBUG", f"读取 {file_path} 的EXIF数据失败: {error_msg}")
                 return None
             
             exif_data_str = result.stdout.decode('utf-8', errors='ignore')
@@ -584,11 +529,7 @@ class SmartArrangeThread(QtCore.QThread):
             
             return date_taken
                 
-        except subprocess.TimeoutExpired:
-            self.log("DEBUG", "读取EXIF数据超时")
-            return None
-        except Exception as e:
-            self.log("DEBUG", f"读取EXIF数据时出错: {str(e)}")
+        except (subprocess.TimeoutExpired, Exception):
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
@@ -726,7 +667,6 @@ class SmartArrangeThread(QtCore.QThread):
                         date_taken = self.parse_datetime(date_str)
                 if date_taken:
                     date_taken = date_taken + timedelta(hours=8)
-                    self.log("INFO", f"MP4文件时间已调整为UTC+8: {date_taken}")
                     break
         
         make_keys = [
@@ -856,55 +796,29 @@ class SmartArrangeThread(QtCore.QThread):
         return date_taken
 
     def _determine_best_datetime(self, date_taken, create_time, modify_time):
-        self.log("INFO", f"时间选择 - 所有可用时间源:")
-        self.log("INFO", f"  拍摄时间: {date_taken}")
-        self.log("INFO", f"  创建时间: {create_time}")
-        self.log("INFO", f"  修改时间: {modify_time}")
-        
         if self.time_derive == "拍摄日期":
             if date_taken:
-                self.log("INFO", f"时间选择 - 按照设置使用拍摄日期: {date_taken}")
                 return date_taken.strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                self.log("INFO", f"时间选择 - 无法获取拍摄时间，使用最早时间")
                 
         elif self.time_derive == "创建时间":
             if create_time:
-                self.log("INFO", f"时间选择 - 按照设置使用创建时间: {create_time}")
                 return create_time.strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                self.log("INFO", f"时间选择 - 无法获取创建时间，使用最早时间")
                 
         elif self.time_derive == "修改时间":
             if modify_time:
-                self.log("INFO", f"时间选择 - 按照设置使用修改时间: {modify_time}")
                 return modify_time.strftime('%Y-%m-%d %H:%M:%S')
-            else:
-                self.log("INFO", f"时间选择 - 无法获取修改时间，使用最早时间")
                 
         if self.time_derive == "最早时间" or self.time_derive not in ["拍摄日期", "创建时间", "修改时间"]:
             times = [t for t in [date_taken, create_time, modify_time] if t is not None]
             if times:
                 selected_time = min(times)
-                time_sources = []
-                if date_taken and date_taken == selected_time:
-                    time_sources.append("拍摄日期")
-                if create_time and create_time == selected_time:
-                    time_sources.append("创建时间")
-                if modify_time and modify_time == selected_time:
-                    time_sources.append("修改时间")
-                
-                self.log("INFO", f"时间选择 - 使用最早时间: {selected_time} (来源: {', '.join(time_sources)})")
                 return selected_time.strftime('%Y-%m-%d %H:%M:%S')
             
         available_times = [t for t in [date_taken, create_time, modify_time] if t is not None]
         if available_times:
             fallback_time = available_times[0]
-            fallback_source = "拍摄日期" if fallback_time == date_taken else "创建时间" if fallback_time == create_time else "修改时间"
-            self.log("INFO", f"时间选择 - 无有效时间用于首选逻辑，使用{fallback_source}: {fallback_time}")
             return fallback_time.strftime('%Y-%m-%d %H:%M:%S')
             
-        self.log("WARNING", f"时间选择 - 所有时间源都不可用，尝试使用修改时间")
         try:
             return modify_time.strftime('%Y-%m-%d %H:%M:%S') if modify_time else ""
         except:
@@ -1009,9 +923,6 @@ class SmartArrangeThread(QtCore.QThread):
 
     def parse_exif_datetime(self, tags):
         try:
-            all_tags = [str(tag) for tag in tags]
-            self.log("INFO", f"可用的EXIF标签总数: {len(all_tags)}")
-            
             time_tags_priority = [
                 'EXIF DateTimeOriginal',
                 'Image DateTime',
@@ -1025,80 +936,46 @@ class SmartArrangeThread(QtCore.QThread):
                 'GPS GPSDateTime'
             ]
             
-            available_time_tags = []
-            for tag in tags:
-                tag_str = str(tag)
-                if any(keyword in tag_str.lower() for keyword in ['date', 'time']):
-                    tag_value = str(tags[tag])
-                    available_time_tags.append(f"{tag_str}: {tag_value}")
-                    if 'datetimeoriginal' in tag_str.lower():
-                        self.log("INFO", f"发现DateTimeOriginal标签: {tag_str} = {tag_value}")
-            
-            if available_time_tags:
-                self.log("INFO", f"找到时间相关EXIF标签: {len(available_time_tags)}个")
-                for tag_info in available_time_tags[:5]:
-                    self.log("INFO", f"  {tag_info}")
-            else:
-                self.log("INFO", "未找到任何时间相关的EXIF标签")
-            
-            case_insensitive_tags = {str(tag).lower(): str(tag) for tag in tags}
-            
-            important_time_keywords = ['datetimeoriginal', 'datetime', 'date', 'time']
-            
             for tag_name in time_tags_priority:
                 if tag_name in tags:
                     datetime_str = str(tags[tag_name])
                     if datetime_str and datetime_str != 'None':
-                        self.log("INFO", f"尝试解析优先级标签 {tag_name}: {datetime_str}")
-                        
                         parsed_dt = self.parse_datetime(datetime_str)
                         if parsed_dt:
-                            self.log("INFO", f"成功解析标签 {tag_name} 为时间: {parsed_dt}")
                             return parsed_dt
-                        else:
-                            self.log("INFO", f"parse_datetime无法解析标签 {tag_name}: {datetime_str}")
+            
+            case_insensitive_tags = {str(tag).lower(): str(tag) for tag in tags}
+            important_time_keywords = ['datetimeoriginal', 'datetime', 'date', 'time']
             
             for lower_tag, original_tag in case_insensitive_tags.items():
                 if any(keyword in lower_tag for keyword in important_time_keywords):
                     if original_tag not in time_tags_priority:
                         datetime_str = str(tags[original_tag])
                         if datetime_str and datetime_str != 'None':
-                            self.log("INFO", f"尝试解析关键词匹配标签 {original_tag}: {datetime_str}")
                             parsed_dt = self.parse_datetime(datetime_str)
                             if parsed_dt:
-                                self.log("INFO", f"成功解析标签 {original_tag} 为时间: {parsed_dt}")
                                 return parsed_dt
-                            else:
-                                self.log("INFO", f"parse_datetime无法解析标签 {original_tag}: {datetime_str}")
-            
+                            
             for tag in tags:
                 tag_name = str(tag)
                 if tag_name not in time_tags_priority:
                     datetime_str = str(tags[tag])
                     if datetime_str and datetime_str != 'None':
                         if any(char.isdigit() for char in datetime_str) and ('/' in datetime_str or '-' in datetime_str or ':' in datetime_str):
-                            self.log("INFO", f"尝试解析其他可能的时间标签 {tag_name}: {datetime_str}")
                             parsed_dt = self.parse_datetime(datetime_str)
                             if parsed_dt:
-                                self.log("INFO", f"成功解析标签 {tag_name} 为时间: {parsed_dt}")
                                 return parsed_dt
-            
-            self.log("INFO", "所有时间标签解析失败")
             
         except Exception as e:
             self.log("ERROR", f"解析EXIF时间时出错: {str(e)}")
-            import traceback
-            self.log("ERROR", f"错误堆栈: {traceback.format_exc()}")
             
         return None
 
     def parse_datetime(self, datetime_str):
         if not datetime_str:
-            self.log("INFO", "parse_datetime: 空时间字符串")
             return None
             
         datetime_str = str(datetime_str).strip()
-        self.log("INFO", f"parse_datetime: 开始解析时间字符串: '{datetime_str}'")
         
         if datetime_str and (datetime_str.startswith('0x') or datetime_str.startswith('b"') or datetime_str.startswith('b\'')):
             try:
@@ -1106,9 +983,8 @@ class SmartArrangeThread(QtCore.QThread):
                     datetime_str = bytes.fromhex(datetime_str[2:]).decode('utf-8', errors='ignore').strip()
                 elif datetime_str.startswith('b"') or datetime_str.startswith('b\''):
                     datetime_str = datetime_str[2:-1].strip()
-                self.log("INFO", f"parse_datetime: 修复特殊格式后: '{datetime_str}'")
             except Exception as e:
-                self.log("INFO", f"parse_datetime: 尝试修复格式时出错: {str(e)}")
+                return None
         
         formats_with_timezone = [
             '%Y:%m:%d %H:%M:%S%z',
@@ -1151,10 +1027,8 @@ class SmartArrangeThread(QtCore.QThread):
                 if dt.tzinfo is not None:
                     dt = dt.astimezone()
                     result = dt.replace(tzinfo=None)
-                    self.log("INFO", f"parse_datetime: 成功使用格式 '{fmt}' 解析带时区时间: {result}")
                     return result
                 result = dt
-                self.log("INFO", f"parse_datetime: 成功使用格式 '{fmt}' 解析时间: {result}")
                 return result
             except ValueError:
                 continue
@@ -1162,7 +1036,6 @@ class SmartArrangeThread(QtCore.QThread):
         for fmt in formats_without_timezone:
             try:
                 dt = datetime.strptime(datetime_str, fmt)
-                self.log("INFO", f"parse_datetime: 成功使用格式 '{fmt}' 解析时间: {dt}")
                 return dt
             except ValueError:
                 continue
@@ -1170,18 +1043,15 @@ class SmartArrangeThread(QtCore.QThread):
         try:
             cleaned_str = ''.join(c for c in datetime_str if c.isdigit() or c in ':-/.T ')
             if cleaned_str != datetime_str:
-                self.log("INFO", f"parse_datetime: 清理后尝试解析: '{cleaned_str}'")
                 for fmt in formats_without_timezone + formats_with_timezone:
                     try:
                         dt = datetime.strptime(cleaned_str, fmt)
-                        self.log("INFO", f"parse_datetime: 成功使用清理后的字符串和格式 '{fmt}' 解析时间: {dt}")
                         return dt
                     except ValueError:
                         continue
         except Exception as e:
-            self.log("INFO", f"parse_datetime: 宽松解析尝试失败: {str(e)}")
+            pass
         
-        self.log("INFO", f"parse_datetime: 无法解析时间字符串: '{datetime_str}'，所有格式尝试均失败")
         return None
 
     def parse_gps_coordinates(self, gps_info):
