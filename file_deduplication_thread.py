@@ -241,10 +241,7 @@ class FileScanThread(QtCore.QThread):
                         continue
                     
                     file_path = os.path.join(root, filename)
-                    
-                    # 不再根据文件扩展名过滤，处理所有类型的文件
-                    # 原逻辑: 如果设置了过滤器且文件扩展名不在过滤器中则跳过
-                    
+                                        
                     try:
                         file_size = os.path.getsize(file_path)
                         if file_size == 0:

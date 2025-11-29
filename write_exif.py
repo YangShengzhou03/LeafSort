@@ -167,17 +167,13 @@ class WriteExifManager(QObject):
             getattr(self.parent, f'btnStar{i}').clicked.connect(self.save_exif_settings)
         
         self.parent.cameraBrand.currentIndexChanged.connect(self._on_brand_changed)
-        # 添加shootTimeSource下拉框变化的连接
         self.parent.shootTimeSource.currentIndexChanged.connect(self._on_shoot_time_source_changed)
         self.log_signal.connect(self._update_log_display)
 
     def _on_shoot_time_source_changed(self, index):
-        """当拍摄时间源下拉框变化时，控制dateTimeEdit_shootTime的显示/隐藏"""
-        # 当选择"不写入"(0)或"从文件名"(1)时隐藏dateTimeEdit_shootTime控件
         if index in [0, 1]:
             self.parent.dateTimeEdit_shootTime.setVisible(False)
         else:
-            # 当选择"指定时间"(2)时显示dateTimeEdit_shootTime控件
             self.parent.dateTimeEdit_shootTime.setVisible(True)
 
     def update_button_state(self):
@@ -187,7 +183,6 @@ class WriteExifManager(QObject):
             self.parent.btnStartExif.setText("开始写入EXIF信息")
 
     def toggle_exif_writing(self):
-        """切换EXIF写入状态"""
         if not self.folder_page:
             self.log("ERROR", "文件夹页面未初始化\n\n"
                               "请重新启动应用程序或联系技术支持")
@@ -434,13 +429,6 @@ class WriteExifManager(QObject):
 
     def log(self, level, message):
         try:
-            if not isinstance(level, str) or not isinstance(message, str):
-                raise TypeError("日志级别和消息必须是字符串类型")
-            
-            valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
-            if level not in valid_levels:
-                level = 'INFO'
-            
             current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
             log_message = f"[{current_time}] {level}: {message}"
             
@@ -524,7 +512,6 @@ class WriteExifManager(QObject):
             except (ValueError, TypeError):
                 logger.warning(f"无法转换拍摄时间来源: {shoot_time_source}")
         
-        # 不从配置中读取拍摄时间，始终显示当前时间
         pass
 
     def save_exif_settings(self):

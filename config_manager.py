@@ -17,7 +17,6 @@ def get_app_data_path():
 logger = logging.getLogger(__name__)
 
 def _thread_safe_method(func):
-    """确保方法线程安全的装饰器"""
     def wrapper(self, *args, **kwargs):
         with self._lock:
             return func(self, *args, **kwargs)
@@ -41,10 +40,10 @@ class ConfigManager:
         self._validate_and_migrate_config()
     
     def _ensure_config_exists(self) -> None:
-        # 确保_internal目录存在
+
         os.makedirs(self.internal_dir, exist_ok=True)
         
-        # 如果配置文件不存在，创建默认配置
+
         if not os.path.exists(self.config_file):
             default_config = self._get_default_config()
             try:

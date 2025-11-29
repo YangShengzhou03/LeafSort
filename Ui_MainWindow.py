@@ -8,8 +8,6 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from common import get_resource_path
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -312,14 +310,14 @@ class Ui_MainWindow(object):
         self.widgetVipBadge.setMinimumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setMaximumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.widgetVipBadge.setStyleSheet("image: url('resources/img/窗口控制/microsoft.svg');\n"
-"background-color: rgba(0, 0, 0,0);\n"
-"border-radius:12px;\n"
-"padding: 4px;\n"
-"transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
-"image-rendering: smooth;\n"
+        self.widgetVipBadge.setStyleSheet("QWidget {\n"
+"    image: url(resources/img/窗口控制/microsoft.svg);\n"
+"    background-color: rgba(0, 0, 0,0);\n"
+"    border-radius:12px;\n"
+"    padding: 4px;\n"
+"    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    image-rendering: smooth;\n"
 "}\n"
-"\n"
 "QWidget:hover {\n"
 "    transform: scale(1.05);\n"
 "    background-color: rgba(139, 92, 246, 0.1);\n"
@@ -4257,7 +4255,7 @@ class Ui_MainWindow(object):
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
-        MainWindow.setWindowTitle(_translate("MainWindow", "LeafSort（轻羽媒体整理）"))
+        MainWindow.setWindowTitle(_translate("MainWindow", "LeafSort - 媒体管理工具"))
         self.btnHome.setText(_translate("MainWindow", "LeafSort"))
         __sortingEnabled = self.listNavigationMenu.isSortingEnabled()
         self.listNavigationMenu.setSortingEnabled(False)

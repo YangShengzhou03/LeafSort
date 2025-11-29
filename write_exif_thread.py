@@ -598,15 +598,7 @@ class WriteExifThread(QThread):
                     logger.debug("处理PIL EXIF标签 %s 失败: %s", tag_id, str(e))
     
     def _update_heic_exif_fields(self, exif_dict, image_path):
-        """更新HEIF文件的EXIF字段
-        
-        Args:
-            exif_dict: EXIF数据字典
-            image_path: 图像文件路径
-            
-        Returns:
-            list: 更新的字段列表
-        """
+
         updated_fields = []
         
         self._update_heic_basic_fields(exif_dict, updated_fields)
@@ -618,12 +610,7 @@ class WriteExifThread(QThread):
         return updated_fields
     
     def _update_heic_basic_fields(self, exif_dict, updated_fields):
-        """更新HEIF文件的基本EXIF字段
-        
-        Args:
-            exif_dict: EXIF数据字典
-            updated_fields: 更新字段列表
-        """
+
         if "0th" not in exif_dict:
             exif_dict["0th"] = {}
         
@@ -730,7 +717,7 @@ class WriteExifThread(QThread):
                     pass
     
     def _process_heic_format(self, image_path):
-        """处理HEIF格式图像文件"""
+
         if not PILLOW_HEIF_AVAILABLE:
             self.log("ERROR", f"处理 {os.path.basename(image_path)} 需要 pillow-heif")
             return
@@ -815,7 +802,7 @@ class WriteExifThread(QThread):
         updated_fields.append(f"GPS坐标: {abs(self.lat):.6f}°{'N' if self.lat >= 0 else 'S'}, {abs(self.lon):.6f}°{'E' if self.lon >= 0 else 'W'}")
     
     def _add_time_to_command(self, cmd_parts, updated_fields, original_file_path, shoot_time):
-        """向命令中添加时间信息"""
+
         if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(original_file_path)
             if date_from_filename:
@@ -833,7 +820,7 @@ class WriteExifThread(QThread):
                 self.log("ERROR", f"拍摄时间格式无效: {shoot_time}，请使用 YYYY:MM:DD HH:MM:SS 格式")
     
     def _add_time_fields(self, cmd_parts, datetime_obj):
-        """添加时间相关的字段到命令中"""
+
         local_time = datetime_obj
         utc_time = local_time - timedelta(hours=8)
         actual_write_time = utc_time.strftime("%Y:%m:%d %H:%M:%S")
@@ -846,7 +833,7 @@ class WriteExifThread(QThread):
         ])
     
     def _cleanup_temp_resources(self, temp_file_path, temp_dir, original_file_path, current_path):
-        """清理临时资源"""
+
         if temp_file_path and os.path.exists(temp_file_path) and original_file_path != current_path:
             try:
                 shutil.copy2(temp_file_path, original_file_path)
@@ -862,7 +849,7 @@ class WriteExifThread(QThread):
                 self.log("WARNING", f"无法删除临时目录: {str(e)}")
     
     def _process_video_with_exiftool(self, image_path):
-        """使用exiftool处理视频文件的EXIF数据"""
+
         if not os.path.exists(image_path):
             self.log("ERROR", f"文件不存在: {image_path}")
             return False
@@ -920,14 +907,7 @@ class WriteExifThread(QThread):
         return exiftool_path
     
     def _prepare_raw_exif_data(self, image_path):
-        """准备RAW文件的EXIF数据
-        
-        Args:
-            image_path: 要处理的文件路径
-            
-        Returns:
-            tuple: (exif_data字典, updated_fields列表)
-        """
+
         exif_data = {}
         updated_fields = []
         
@@ -940,13 +920,7 @@ class WriteExifThread(QThread):
         return exif_data, updated_fields
     
     def _prepare_raw_shoot_time(self, exif_data, updated_fields, image_path):
-        """准备RAW文件的拍摄时间数据
-        
-        Args:
-            exif_data: EXIF数据字典
-            updated_fields: 更新字段列表
-            image_path: 文件路径
-        """
+
         shoot_time = self.exif_config.get('shoot_time', 0)
         if shoot_time != 0:
             if shoot_time == 1:
@@ -964,23 +938,13 @@ class WriteExifThread(QThread):
                     self.log.emit("ERROR", f"拍摄时间格式无效: {shoot_time}")
     
     def _add_time_fields_to_data(self, exif_data, time_str):
-        """向EXIF数据添加时间相关字段
-        
-        Args:
-            exif_data: EXIF数据字典
-            time_str: 时间字符串
-        """
+
         exif_data['DateTimeOriginal'] = time_str
         exif_data['CreateDate'] = time_str
         exif_data['ModifyDate'] = time_str
     
     def _prepare_raw_basic_fields(self, exif_data, updated_fields):
-        """准备RAW文件的基本EXIF字段
-        
-        Args:
-            exif_data: EXIF数据字典
-            updated_fields: 更新字段列表
-        """
+
         field_mappings = [
             ('title', 'ImageDescription', '标题: {}'),
             ('author', 'Artist', '作者: {}'),
@@ -998,26 +962,14 @@ class WriteExifThread(QThread):
                 updated_fields.append(format_str.format(attr_value))
     
     def _prepare_raw_gps_data(self, exif_data, updated_fields):
-        """准备RAW文件的GPS数据
-        
-        Args:
-            exif_data: EXIF数据字典
-            updated_fields: 更新字段列表
-        """
+
         if self.lat is not None and self.lon is not None:
             exif_data['GPSLatitude'] = self.lat
             exif_data['GPSLongitude'] = self.lon
             updated_fields.append(f"GPS坐标: {self.lat:.6f}, {self.lon:.6f}")
     
     def _execute_exiftool_command(self, exiftool_path, exif_data, image_path, updated_fields):
-        """执行exiftool命令更新元数据
-        
-        Args:
-            exiftool_path: exiftool可执行文件路径
-            exif_data: 要更新的EXIF数据字典
-            image_path: 目标文件路径
-            updated_fields: 更新字段列表
-        """
+
         commands = self._build_exiftool_commands(exif_data)
         cmd = [exiftool_path, "-overwrite_original"] + commands + [image_path]
         
@@ -1048,9 +1000,7 @@ class WriteExifThread(QThread):
         return commands
 
     def stop(self):
-        """
-        请求停止线程
-        """
+
         self.requestInterruption()
         self.log("INFO", "正在取消操作...")
         if self.isRunning():
@@ -1101,15 +1051,7 @@ class WriteExifThread(QThread):
         return gps_dict
 
     def get_date_from_filename(self, image_path):
-        """
-        从文件名提取日期时间信息
-        
-        Args:
-            image_path: 图像文件路径
-            
-        Returns:
-            datetime: 提取的日期时间对象，失败返回None
-        """
+
         name_without_ext = os.path.splitext(os.path.basename(image_path))[0]
         
         patterns = [
@@ -1144,28 +1086,28 @@ class WriteExifThread(QThread):
                     
                     hour, minute, second = 0, 0, 0
                     
-                    if i == 0:  # Pattern 1: Continuous digits (YYYYMMDDHHMMSS)
+                    if i == 0:
                         if len(groups) >= 6:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 1:  # Pattern 2: Continuous date, optional time
+                    elif i == 1:
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 2 or i == 3:  # Pattern 6 and 4: Special format and mixed Chinese format
+                    elif i == 2 or i == 3:
                         if len(groups) >= 4 and groups[3] and len(groups[3]) == 6:
                             full_time = groups[3]
                             hour = int(full_time[0:2])
                             minute = int(full_time[2:4])
                             second = int(full_time[4:6])
-                    elif i == 4:  # Pattern 3: Generic separators
+                    elif i == 4:
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])
                             second = int(groups[5])
-                    elif i == 5:  # Pattern 5: Chinese year-month-day format
+                    elif i == 5:
                         if len(groups) >= 6 and groups[3] and groups[4] and groups[5]:
                             hour = int(groups[3])
                             minute = int(groups[4])

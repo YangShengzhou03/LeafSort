@@ -72,8 +72,6 @@ def check_update():
             dialog.exec()
 
     except requests.exceptions.RequestException as e:
-        # 网络异常时静默处理，只记录日志
         logger.info(f"网络错误，无法检查更新: {str(e)}")
     except Exception as e:
-        # 其他异常可以考虑是否显示弹窗
         logger.error(f"检查更新时出错: {str(e)}")
