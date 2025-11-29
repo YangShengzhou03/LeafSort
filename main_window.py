@@ -143,7 +143,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._hide_to_tray()
 
     def _open_github(self):
-        url = QtCore.QUrl("https://gitee.com/Yangshengzhou/leaf-view")
+        url = QtCore.QUrl("https://gitee.com/Yangshengzhou/leaf-sort")
         if not QtGui.QDesktopServices.openUrl(url):
             QtWidgets.QMessageBox.information(self, "信息",
                                               "无法打开GitHub页面，请手动访问")
