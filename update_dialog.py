@@ -41,7 +41,7 @@ def check_update():
         from main_window import version as current_version
         logger.info(f"当前应用版本: {current_version}")
     except ImportError:
-        current_version = 2.0
+        current_version = 2.02
     
     try:
         response = requests.get(url, timeout=5)

@@ -30,7 +30,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 def main():
     try:
         QCoreApplication.setApplicationName("LeafSort（轻羽媒体整理）")
-        QCoreApplication.setApplicationVersion("1.0.0")
+        QCoreApplication.setApplicationVersion("2.0.2")
         try:
             sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
