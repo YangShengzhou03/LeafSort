@@ -71,7 +71,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
 
     def _connect_signals(self):
-        self.btnMinimize.clicked.connect(self.showMinimized)
+        self.btnMinimize.clicked.connect(self._hide_to_tray)
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         self.btnGithub.clicked.connect(self._open_github)
