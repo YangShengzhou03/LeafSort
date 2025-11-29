@@ -355,18 +355,14 @@ class FileDeduplicateThread(QtCore.QThread):
     def stop(self):
         self._stop_flag = True
     
-    def run(self):
-        logger.info(f"开始执行去重操作，共有 {len(self.delete_list)} 个文件待删除")
-        
+    def run(self):        
         try:
             total_deleted = 0
             total_files = 0
             failed_deletions = 0
             
             total_to_process = len(self.delete_list) if self.delete_list else sum(len(group) - 1 for group in self.duplicate_groups)
-            
-            logger.info(f"总共需要处理 {total_to_process} 个文件")
-            
+                        
             if self.delete_list:
                 for i, file_path in enumerate(self.delete_list):
                     if self._stop_flag:
@@ -382,7 +378,6 @@ class FileDeduplicateThread(QtCore.QThread):
                         if os.path.exists(file_path):
                             os.remove(file_path)
                             total_deleted += 1
-                            logger.info(f"已删除重复文件: {file_path}")
                         else:
                             logger.warning(f"文件不存在: {file_path}")
                             failed_deletions += 1
@@ -409,12 +404,10 @@ class FileDeduplicateThread(QtCore.QThread):
                         try:
                             progress = int((total_files / total_to_process) * 100)
                             file_name = os.path.basename(file_path)
-                            self.progress_updated.emit(progress, f"正在删除: {file_name}")
                             
                             if os.path.exists(file_path):
                                 os.remove(file_path)
                                 total_deleted += 1
-                                logger.info(f"已删除重复文件: {file_path}")
                             else:
                                 logger.warning(f"文件不存在: {file_path}")
                                 failed_deletions += 1
