@@ -164,7 +164,6 @@ class SmartArrangeThread(QtCore.QThread):
 
             for folder_info in self.folders:
                 if self._stop_flag:
-                    self.log("WARNING", "您已经取消了整理文件的操作")
                     break
                 if self.destination_root:
                     destination_path = Path(self.destination_root).resolve()
@@ -198,7 +197,6 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 success_count = len(self.files_to_rename) - fail_count
                 
-                # 添加文件整理完成的DEBUG日志
                 self.log("DEBUG", "="*40)
                 self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
                 self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
@@ -374,7 +372,6 @@ class SmartArrangeThread(QtCore.QThread):
     
     def stop(self):
         self._stop_flag = True
-        self.log("INFO", "正在停止智能整理操作...")
 
     def _recursive_delete_empty_folders(self, folder_path, source_folders):
         deleted_count = 0

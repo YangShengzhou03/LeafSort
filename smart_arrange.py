@@ -258,6 +258,11 @@ class SmartArrangeManager(QObject):
 
             operation_type = self.parent.fileOperation.currentIndex()
 
+            directory_structure = "/".join(SmartArrange_structure) if SmartArrange_structure else "不分类"
+            filename_structure = " + ".join([part['tag'] for part in file_name_parts]) if file_name_parts else "无"
+            
+            self.log("WARNING", f"目录：{directory_structure}，文件名：{filename_structure}")
+            self.log("INFO", f"整理已开始")
             self.parent.btnStartSmartArrange.setText("停止整理")
 
             try:
@@ -303,14 +308,11 @@ class SmartArrangeManager(QObject):
                 self.log("ERROR", f"{str(e)}")
                 self.parent.btnStartSmartArrange.setText("开始整理")
                 self.parent.btnStartSmartArrange.setEnabled(True)
-                # 保持进度条在100%显示完成状态，而不是重置为0
-                # self.update_progress_bar(0)
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
         self.parent.btnStartSmartArrange.setText("开始整理")
         self.parent.btnStartSmartArrange.setEnabled(True)
-        self.update_progress_bar(0)
         self.SmartArrange_thread = None
 
     def handle_combobox_selection(self, level, index):
