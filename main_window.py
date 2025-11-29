@@ -86,6 +86,15 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def mouseMoveEvent(self, event):
         if (event.buttons() == Qt.MouseButton.LeftButton and
                 not self._drag_position.isNull()):
+            if self.isMaximized():
+                self.showNormal()
+                self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/最大化.svg')))
+                screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
+                window_rect = self.frameGeometry()
+                center_point = screen.center()
+                window_rect.moveCenter(center_point)
+                self.move(window_rect.topLeft())
+                self._drag_position = event.globalPosition().toPoint() - self.frameGeometry().topLeft()
             self.move(event.globalPosition().toPoint() - self._drag_position)
             event.accept()
 
