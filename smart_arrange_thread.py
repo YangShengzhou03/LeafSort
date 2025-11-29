@@ -197,9 +197,12 @@ class SmartArrangeThread(QtCore.QThread):
                 self.progress_signal.emit(100)
                 
                 success_count = len(self.files_to_rename) - fail_count
-                self.log("DEBUG", "="*40) 
-                self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件") 
+                
+                # 添加文件整理完成的DEBUG日志
+                self.log("DEBUG", "="*40)
+                self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
                 self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
+
             else:
                 self.log("WARNING", "您已经取消了整理文件的操作")
                 
@@ -487,7 +490,7 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data['DateTime'] = final_datetime
                 
         except Exception as e:
-            self.log("DEBUG", f"获取 {file_path} 的EXIF数据时出错: {str(e)}")
+
             exif_data['DateTime'] = create_time.strftime('%Y-%m-%d %H:%M:%S')
         return exif_data
 
@@ -499,7 +502,7 @@ class SmartArrangeThread(QtCore.QThread):
             date_taken = self.parse_exif_datetime(tags)
             
             self._extract_gps_and_camera_info(tags, exif_data)
-            
+              
             return date_taken
         except Exception as e:
             self.log("ERROR", f"{file_path.name} - 处理EXIF数据时出错: {str(e)}")
@@ -625,7 +628,7 @@ class SmartArrangeThread(QtCore.QThread):
                 self._extract_gps_and_camera_info(tags, exif_data)
                 return date_taken
             else:
-                self.log("DEBUG", "HEIC文件没有EXIF数据")
+    
                 return None
         except Exception as e:
             
@@ -644,33 +647,54 @@ class SmartArrangeThread(QtCore.QThread):
 
     def _process_mp4_exif(self, file_path, exif_data):
         video_metadata = self._get_video_metadata(file_path)
+        
         if not video_metadata:
             return None
             
         date_taken = None
         date_keys = [
-            'Create Date', 'Creation Date', 'Media Create Date', 'Date/Time Original',
-            'Track Create Date', 'Creation Date (Windows)', 'Modify Date'
+            'DateTimeOriginal', 'Date/Time Original', 'Date Time Original',
+            'CreateDate', 'Create Date', 'Creation Date', 
+            'TrackCreateDate', 'Track Create Date', 'MediaCreateDate', 'Media Create Date',
+            'ModifyDate', 'Modify Date',
+            'FileModifyDate', 'FileModify Date', 'File Modify Date', 'Creation Date (Windows)'
         ]
         
+        selected_time_field = None
         for key in date_keys:
             if key in video_metadata:
                 date_str = video_metadata[key]
-                if '+' in date_str or '-' in date_str[-5:]:
-                    date_taken = self.parse_datetime(date_str)
-                else:
-                    try:
-                        dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S%z')
-                        utc_dt = dt.replace(tzinfo=timezone.utc)
-                        date_taken = utc_dt.astimezone().replace(tzinfo=None)
-                    except ValueError:
+                
+                if date_str == '0000:00:00 00:00:00' or not date_str or date_str.strip() == '':
+                    continue
+                
+                try:
+                    if '+' in date_str or '-' in str(date_str)[-5:]:
                         date_taken = self.parse_datetime(date_str)
-                if date_taken:
-                    date_taken = date_taken + timedelta(hours=8)
-                    break
+                        if date_taken:
+                            selected_time_field = key
+                            break
+                    else:
+                        try:
+                            dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
+                            if 'Create' in key or 'Media' in key:
+                                date_taken = dt + timedelta(hours=8)
+                            else:
+                                date_taken = dt
+                            selected_time_field = key
+                            break
+                        except ValueError:
+                            date_taken = self.parse_datetime(date_str)
+                            if date_taken:
+                                selected_time_field = key
+                                break
+                except Exception:
+                    continue
         
         make_keys = [
-            'Make', 'Camera Make', 'Manufacturer', 'Camera Manufacturer'
+            'Make', 'Camera Make', 'Manufacturer', 'Camera Manufacturer',
+            'AndroidMake',
+            'CompressorVersion', 'CanonFirmwareVersion', 'CameraType'
         ]
         
         for key in make_keys:
@@ -679,11 +703,24 @@ class SmartArrangeThread(QtCore.QThread):
                 if make_value:
                     if isinstance(make_value, str):
                         make_value = make_value.strip().strip('"\'')
+                        if key == 'CompressorVersion' and 'Canon' in make_value:
+                            make_value = 'Canon'
+                        elif key == 'CanonFirmwareVersion':
+                            make_value = 'Canon'
+                        elif key == 'CameraType' and 'Canon' in make_value:
+                            make_value = 'Canon'
                     exif_data['Make'] = make_value
                 break
         
+        if 'Make' not in exif_data:
+            app_info = self._detect_app_from_metadata(video_metadata)
+            if app_info:
+                exif_data['Make'] = app_info
+        
         model_keys = [
-            'Model', 'Camera Model', 'Device Model', 'Product Name'
+            'Model', 'Camera Model', 'Device Model', 'Product Name',
+            'AndroidModel',
+            'CanonImageType', 'CanonModelID', 'LensType'
         ]
         
         for key in model_keys:
@@ -692,13 +729,31 @@ class SmartArrangeThread(QtCore.QThread):
                 if model_value:
                     if isinstance(model_value, str):
                         model_value = model_value.strip().strip('"\'')
+                        if key == 'CanonImageType':
+                            if ':' in model_value:
+                                model_value = model_value.split(':')[1].strip()
+                        elif key == 'CanonModelID':
+                            model_mapping = {
+                                '1042': 'Canon EOS M50',
+                            }
+                            model_value = model_mapping.get(model_value, f'Canon Camera {model_value}')
+                        elif key == 'LensType':
+                            if model_value != '0':
+                                model_value = f'Canon Lens {model_value}'
                     exif_data['Model'] = model_value
                 break
         
+        if 'Model' not in exif_data:
+            device_info = self._detect_device_from_metadata(video_metadata)
+            if device_info:
+                exif_data['Model'] = device_info
+        
         gps_found = False
+        
         for key, value in video_metadata.items():
             if 'gps' in key.lower() or 'location' in key.lower():
                 gps_found = True
+                
                 if 'Coordinates' in key or 'Position' in key:
                     lat, lon = self._parse_combined_coordinates(value)
                     if lat is not None and lon is not None:
@@ -712,13 +767,9 @@ class SmartArrangeThread(QtCore.QThread):
                     if lon is not None:
                         exif_data['GPS GPSLongitude'] = lon
         
-        if gps_found and ('GPS GPSLatitude' not in exif_data or 'GPS GPSLongitude' not in exif_data):
-            lat = exif_data.get('GPS GPSLatitude')
-            lon = exif_data.get('GPS GPSLongitude')
         return date_taken
 
     def _process_mov_exif(self, file_path, exif_data):
-        # 获取视频元数据
         video_metadata = self._get_video_metadata(file_path)
         if not video_metadata:
             self.log("ERROR", f"MOV文件 {file_path.name} 无法获取元数据")
@@ -726,7 +777,6 @@ class SmartArrangeThread(QtCore.QThread):
             
         date_taken = None
         
-        # 优化的日期时间提取逻辑
         date_keys = [
             'Create Date', 'Creation Date', 'DateTime Original',
             'Media Create Date', 'Track Create Date', 
@@ -740,22 +790,18 @@ class SmartArrangeThread(QtCore.QThread):
                 date_str = video_metadata[key].strip().strip('"\'')
                 
                 if date_str:
-                    # 尝试多种日期格式
                     if '+' in date_str or '-' in date_str[-5:]:
                         date_taken = self.parse_datetime(date_str)
                     else:
-                        # 尝试标准EXIF格式
                         try:
                             dt = datetime.strptime(date_str, '%Y:%m:%d %H:%M:%S')
                             date_taken = dt.replace(tzinfo=None)
                         except ValueError:
                             try:
-                                # 尝试其他常见格式
                                 dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S')
                                 date_taken = dt
                             except ValueError:
                                 try:
-                                    # 尝试带毫秒的格式
                                     dt = datetime.strptime(date_str, '%Y-%m-%d %H:%M:%S.%f')
                                     date_taken = dt
                                 except ValueError:
@@ -764,7 +810,6 @@ class SmartArrangeThread(QtCore.QThread):
                 if date_taken:
                     break
         
-        # 相机制造商信息
         make_keys = [
             'Make', 'Camera Make', 'Manufacturer', 'Camera Manufacturer',
             'Producer', 'Software', 'Application'
@@ -777,7 +822,6 @@ class SmartArrangeThread(QtCore.QThread):
                     exif_data['Make'] = make_value
                     break
         
-        # 相机型号信息
         model_keys = [
             'Model', 'Camera Model', 'Device Model', 'Product Name',
             'Model Name', 'Camera Model Name', 'Product Model'
@@ -790,7 +834,6 @@ class SmartArrangeThread(QtCore.QThread):
                     exif_data['Model'] = model_value
                     break
         
-        # GPS位置信息
         gps_found = False
         for key, value in video_metadata.items():
             if 'gps' in key.lower() or 'location' in key.lower() or 'position' in key.lower():
@@ -902,7 +945,6 @@ class SmartArrangeThread(QtCore.QThread):
                 
             file_path_normalized = str(file_path).replace('\\', '/')
             
-            # 首先尝试标准参数
             metadata = {}
             cmd = [exiftool_path, "-s", "-n", file_path_normalized]
             
@@ -914,7 +956,6 @@ class SmartArrangeThread(QtCore.QThread):
             )
 
             if result.returncode != 0:
-                # 尝试无参数
                 cmd = [exiftool_path, file_path_normalized]
                 result = subprocess.run(
                     cmd,
@@ -928,42 +969,34 @@ class SmartArrangeThread(QtCore.QThread):
             if not result.stdout:
                 return None
 
-            # 使用UTF-8解码，这是Windows命令行工具的默认编码
             try:
                 stdout_text = result.stdout.decode('utf-8', errors='ignore')
             except Exception as e:
                 return None
             
-            # 解析输出，查找包含冒号的行
             lines_processed = 0
             for line in stdout_text.split('\n'):
                 line = line.strip()
-                # 跳过分隔符和其他非数据行
                 if not line or line.startswith('=') or 'ExifTool' in line:
                     continue
                     
                 if ':' in line:
-                    # 查找第一个冒号
                     colon_index = line.find(':')
                     key = line[:colon_index].strip()
                     value = line[colon_index+1:].strip()
                     
-                    # 跳过空值
                     if not key or not value or value.lower() in ['', 'none', 'null']:
                         continue
                     
-                    # 移除引号
                     if value.startswith('"') and value.endswith('"'):
                         value = value[1:-1]
                     
                     metadata[key] = value
                     lines_processed += 1
                     
-                    # 限制字段数量避免过多噪音
                     if lines_processed > 100:
                         break
             
-            # 如果没有解析到数据，但原始输出存在，尝试更宽松的解析
             if not metadata and stdout_text.strip():
                 for line in stdout_text.split('\n'):
                     line = line.strip()
@@ -983,6 +1016,82 @@ class SmartArrangeThread(QtCore.QThread):
             pass
         except Exception as e:
             pass
+        return None
+
+    def _detect_app_from_metadata(self, metadata):
+        app_fields = [
+            'Encoder', 'Software', 'Tool', 'Application',
+            'Producer', 'CreationTool', 'Generator'
+        ]
+        
+        for field in app_fields:
+            if field in metadata:
+                value = metadata[field]
+                if value:
+
+                    if 'bytevehwavc' in value.lower():
+                        return 'ByteDance'
+                    elif 'douyin' in value.lower() or 'tiktok' in value.lower():
+                        return 'ByteDance'
+                    elif 'instagram' in value.lower():
+                        return 'Instagram'
+                    elif 'wechat' in value.lower() or 'weixin' in value.lower():
+                        return 'WeChat'
+                    elif 'snapchat' in value.lower():
+                        return 'Snapchat'
+                    elif 'videoeditor' in value.lower():
+                        return 'VideoEditor'
+                    else:
+                        return value.strip().strip('"\'')
+        
+        # 检查LvMetaInfo字段中的应用信息
+        if 'LvMetaInfo' in metadata:
+            try:
+                import json
+                info_str = metadata['LvMetaInfo']
+                if isinstance(info_str, str) and info_str.startswith('{"'):
+                    info_data = json.loads(info_str)
+                    if 'source_type' in info_data:
+                        source_type = info_data['source_type']
+                        if 'douyin' in source_type:
+                            return 'ByteDance'
+            except:
+                pass
+        
+        return None
+
+    def _detect_device_from_metadata(self, metadata):
+        device_fields = [
+            'Model', 'Device Model', 'Product Name', 'Product',
+            'Hardware', 'Platform', 'System'
+        ]
+        
+        for field in device_fields:
+            if field in metadata:
+                value = metadata[field]
+                if value and value not in ['', 'unknown', 'none']:
+                    return value.strip().strip('"\'')
+        
+
+        if 'LvMetaInfo' in metadata:
+            try:
+                import json
+                info_str = metadata['LvMetaInfo']
+                if isinstance(info_str, str) and info_str.startswith('{"'):
+                    info_data = json.loads(info_str)
+                    if 'data' in info_data:
+                        data = info_data['data']
+                        if 'os' in data:
+                            os_info = data['os']
+                            if os_info == 'android':
+                                return 'Android Device'
+                            elif os_info == 'ios':
+                                return 'iOS Device'
+                            else:
+                                return f"{os_info.title()} Device"
+            except:
+                pass
+        
         return None
 
     def parse_exif_datetime(self, tags):
@@ -1019,7 +1128,7 @@ class SmartArrangeThread(QtCore.QThread):
                             parsed_dt = self.parse_datetime(datetime_str)
                             if parsed_dt:
                                 return parsed_dt
-                            
+            
             for tag in tags:
                 tag_name = str(tag)
                 if tag_name not in time_tags_priority:
@@ -1136,15 +1245,29 @@ class SmartArrangeThread(QtCore.QThread):
     
     def _parse_combined_coordinates(self, coords_str):
         try:
-            parts = coords_str.split(',')
-            if len(parts) == 2:
-                lat_str = parts[0].strip()
-                lon_str = parts[1].strip()
-                
-                lat = self._parse_dms_coordinate(lat_str)
-                lon = self._parse_dms_coordinate(lon_str)
-                
-                return lat, lon
+
+            if ',' in coords_str:
+                parts = coords_str.split(',')
+                if len(parts) == 2:
+                    lat_str = parts[0].strip()
+                    lon_str = parts[1].strip()
+                    
+                    lat = self._parse_dms_coordinate(lat_str)
+                    lon = self._parse_dms_coordinate(lon_str)
+                    
+                    return lat, lon
+            
+
+            elif ' ' in coords_str:
+                parts = coords_str.split()
+                if len(parts) == 2:
+                    lat_str = parts[0].strip()
+                    lon_str = parts[1].strip()
+                    
+                    lat = self._parse_dms_coordinate(lat_str)
+                    lon = self._parse_dms_coordinate(lon_str)
+                    
+                    return lat, lon
         except Exception:
             pass
             
@@ -1155,6 +1278,10 @@ class SmartArrangeThread(QtCore.QThread):
             return None
             
         try:
+            # 首先尝试直接作为十进制度数解析
+            coord_str = str(coord_str).strip()
+            
+            # 清理可能的字符
             direction = None
             for dir_char in ['N', 'S', 'E', 'W']:
                 if dir_char in coord_str:
@@ -1162,11 +1289,21 @@ class SmartArrangeThread(QtCore.QThread):
                     break
             
             clean_str = coord_str
-            for char in ['N', 'S', 'E', 'W']:
+            for char in ['N', 'S', 'E', 'W', 'deg', '°', "'", '"']:
                 clean_str = clean_str.replace(char, '')
             
-            clean_str = clean_str.replace('deg', '°').replace('°', ' ').replace("'", ' ').replace('"', ' ')
+            clean_str = clean_str.strip()
             
+
+            try:
+                decimal = float(clean_str)
+                if direction in ['S', 'W']:
+                    decimal = -decimal
+                return decimal
+            except ValueError:
+                pass
+            
+
             parts = [p for p in clean_str.split() if p.strip()]
             degrees = minutes = seconds = 0.0
             
