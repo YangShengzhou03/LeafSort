@@ -111,14 +111,12 @@ class FileMagicNumberDetector:
         
         _, actual_ext = os.path.splitext(file_path_str.lower())
         expected_ext = magic_info['extension']
+        expected_type = magic_info['file_type']
         
-        if actual_ext in ['.heic', '.heif']:
-            if expected_ext == '.jpg':
-                logger.info(f"文件 {os.path.basename(file_path_str)} 扩展名为{actual_ext}但实为JPG，允许使用当前扩展名")
-                return True, magic_info
-            return True, magic_info
+        if actual_ext != expected_ext:
+            logger.info(f"文件 {os.path.basename(file_path_str)} 扩展名为{actual_ext}但实为{expected_type}{expected_ext}，允许使用当前扩展名")
         
-        return actual_ext == expected_ext, magic_info
+        return True, magic_info
 
 class MediaTypeDetector:
     def __init__(self):

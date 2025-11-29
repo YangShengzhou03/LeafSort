@@ -900,7 +900,8 @@ class SmartArrangeThread(QtCore.QThread):
                 capture_output=True,
                 text=True,
                 timeout=timeout,
-                shell=False
+                shell=False,
+                encoding='utf-8'
             )
 
             if result.returncode != 0:
@@ -1183,13 +1184,14 @@ class SmartArrangeThread(QtCore.QThread):
             
             file_path_str = str(file_path)
             is_valid_ext, magic_info = verify_file_extension(file_path_str)
-            if not is_valid_ext and magic_info and magic_info.get('detected', False):
-                
-                _, actual_ext = os.path.splitext(file_path_str.lower())
-                expected_ext = magic_info.get('extension', '')
-                expected_type = magic_info.get('file_type', '')
-                
-                self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
+            # 由于我们已经在verify_file_extension中处理了扩展名验证并记录了信息日志，这里不再需要记录错误日志
+            # 但如果需要保留日志，可以改为警告级别
+            # if magic_info and magic_info.get('detected', False):
+            #     _, actual_ext = os.path.splitext(file_path_str.lower())
+            #     expected_ext = magic_info.get('extension', '')
+            #     expected_type = magic_info.get('file_type', '')
+            #     if actual_ext != expected_ext:
+            #         self.log("WARNING", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
             
             exif_data = self.get_exif_data(file_path)
             
