@@ -367,13 +367,7 @@ class SmartArrangeManager(QObject):
 
         operation_mode = "复制" if self.parent.fileOperation.currentIndex() == 0 else "移动"
 
-        if self.destination_root:
-            display_path = str(self.destination_root)
-            if len(display_path) > 20:
-                display_path = f"{display_path[:8]}...{display_path[-6:]}"
-            self.parent.copyRoute.setText(f"{operation_mode}到: {display_path} ({operation_type})")
-        else:
-            self.parent.copyRoute.setText(f"{operation_mode}文件 ({operation_type})")
+        self.parent.copyRoute.setText(f"{operation_mode}文件 ({operation_type})")
 
     def set_combo_box_states(self):
         self.parent.comboClassificationLevel1.setEnabled(True)
