@@ -303,6 +303,8 @@ class SmartArrangeManager(QObject):
                 self.log("ERROR", f"{str(e)}")
                 self.parent.btnStartSmartArrange.setText("开始整理")
                 self.parent.btnStartSmartArrange.setEnabled(True)
+                # 保持进度条在100%显示完成状态，而不是重置为0
+                # self.update_progress_bar(0)
                 self.SmartArrange_thread = None
 
     def on_thread_finished(self):
