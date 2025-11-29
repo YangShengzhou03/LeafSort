@@ -312,7 +312,7 @@ class Ui_MainWindow(object):
         self.widgetVipBadge.setMinimumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setMaximumSize(QtCore.QSize(100, 36))
         self.widgetVipBadge.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.widgetVipBadge.setStyleSheet(f"image: url({get_resource_path('resources/img/窗口控制/microsoft.svg')});\n"
+        self.widgetVipBadge.setStyleSheet("image: url('resources/img/窗口控制/microsoft.svg');\n"
 "background-color: rgba(0, 0, 0,0);\n"
 "border-radius:12px;\n"
 "padding: 4px;\n"

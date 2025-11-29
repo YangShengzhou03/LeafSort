@@ -22,7 +22,7 @@ exe = EXE(
     a.scripts,
     [],
     exclude_binaries=True,
-    name='LeafView',
+    name='LeafSort',
     debug=False,
     bootloader_ignore_signals=False,
     strip=False,
@@ -33,7 +33,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    version='LeafView_version_info.txt',
+    version='LeafSort_version_info.txt',
     icon='resources\\img\\icon.ico',
     optimize=0
 )
