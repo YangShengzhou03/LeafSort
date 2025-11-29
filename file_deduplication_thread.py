@@ -30,6 +30,9 @@ class FileScanThread(QtCore.QThread):
     
     def stop(self):
         self._stop_flag = True
+        
+        if self._thread_pool:
+            self._thread_pool.shutdown(wait=False)
     
     def _calculate_md5(self, file_path, block_size=8192*16):
         with self._cache_lock:
@@ -39,7 +42,6 @@ class FileScanThread(QtCore.QThread):
                     current_stat = os.stat(file_path)
                     if (current_stat.st_size == file_info['size'] and 
                         abs(current_stat.st_mtime - file_info['mtime']) < 0.1):
-                        logger.debug(f"从缓存获取MD5: {file_path} -> {file_info['hash']}")
                         return file_info['hash']
                 except Exception as e:
                     logger.warning(f"检查文件缓存状态失败: {str(e)}")
@@ -83,7 +85,6 @@ class FileScanThread(QtCore.QThread):
                     'mtime': file_mtime
                 }
             
-            logger.debug(f"计算文件MD5成功: {file_path} -> {file_hash}")
             return file_hash
         except FileNotFoundError:
             logger.error(f"文件不存在: {file_path}")
@@ -150,7 +151,6 @@ class FileScanThread(QtCore.QThread):
     
     def run(self):
         try:
-            logger.info("文件扫描线程开始运行")
             self._stop_flag = False
             
             if isinstance(self.folder_path, str):
@@ -193,7 +193,6 @@ class FileScanThread(QtCore.QThread):
                 all_files.extend(folder_files)
                 total_files += len(folder_files)
                 
-                logger.info(f"文件夹 {folder} 中找到 {len(folder_files)} 个文件")
                 self.progress_updated.emit(10, f"已扫描文件夹: {os.path.basename(folder)}")
             
             if not all_files:
@@ -201,16 +200,13 @@ class FileScanThread(QtCore.QThread):
                 self.scan_completed.emit([])
                 return
             
-            logger.info(f"总共找到 {len(all_files)} 个文件，开始查找重复项")
             self.progress_updated.emit(30, f"开始分析 {len(all_files)} 个文件")
             
             duplicate_groups = self._find_duplicates(all_files)
             
             if self._stop_flag:
-                logger.info("扫描被用户中断")
                 return
             
-            logger.info(f"找到 {len(duplicate_groups)} 组重复文件")
             self.progress_updated.emit(100, "扫描完成")
             self.scan_completed.emit(duplicate_groups)
             
@@ -220,7 +216,6 @@ class FileScanThread(QtCore.QThread):
         finally:
             if hasattr(self, '_thread_pool') and self._thread_pool:
                 self._thread_pool.shutdown(wait=False)
-            logger.info("文件扫描线程结束运行")
     
     def _collect_files(self, folder):
         files = []
@@ -247,10 +242,8 @@ class FileScanThread(QtCore.QThread):
                         if file_size == 0:
                             continue
                         if file_size > 10 * 1024 * 1024 * 1024:
-                            logger.debug(f"跳过过大文件: {file_path} ({file_size} bytes)")
                             continue
                     except (OSError, IOError, PermissionError) as e:
-                        logger.debug(f"无法访问文件: {file_path}, 错误: {str(e)}")
                         continue
                     
                     files.append(file_path)
@@ -262,7 +255,6 @@ class FileScanThread(QtCore.QThread):
         except Exception as e:
             logger.error(f"收集文件时出错: {str(e)}")
         
-        logger.info(f"文件夹 {folder} 中收集到 {file_count} 个文件")
         return files
     
     def _find_duplicates(self, all_files):
@@ -278,10 +270,8 @@ class FileScanThread(QtCore.QThread):
             
             try:
                 file_size = os.path.getsize(file_path)
-                logger.debug(f"文件: {file_path}, 大小: {file_size} 字节")
                 if file_size in size_groups:
                     size_groups[file_size].append(file_path)
-                    logger.debug(f"发现相同大小文件组: 大小={file_size}, 文件数={len(size_groups[file_size])}")
                 else:
                     size_groups[file_size] = [file_path]
             except Exception as e:
@@ -295,22 +285,20 @@ class FileScanThread(QtCore.QThread):
                 single_files += 1
             else:
                 potential_duplicates += len(files)
-                logger.info(f"潜在重复组: 大小={size} 字节, 包含文件数={len(files)}")
-                for file in files:
-                    logger.debug(f"  - {file}")
-        logger.info(f"文件大小分析完成: 单文件组={single_files}, 多文件组={len(size_groups)-single_files}, 潜在重复文件={potential_duplicates}")
+        
+        if potential_duplicates > 0:
+            self.progress_updated.emit(40, f"文件大小分析完成: 总文件组={len(size_groups)}, 潜在重复文件={potential_duplicates}")
         
         filtered_files = []
         for size, files in size_groups.items():
             if len(files) > 1:
                 filtered_files.extend(files)
         
-        logger.info(f"优化后需要计算MD5的文件数: {len(filtered_files)} (总文件数: {total_files})")
+        self.progress_updated.emit(50, f"优化后需要计算MD5的文件数: {len(filtered_files)} (总文件数: {total_files})")
         
         total_filtered = len(filtered_files)
         for i, file_path in enumerate(filtered_files):
             if self._stop_flag:
-                logger.info("扫描已停止")
                 self.error_occurred.emit("扫描已停止")
                 return []
             
@@ -327,10 +315,7 @@ class FileScanThread(QtCore.QThread):
                 
                 if file_hash is None:
                     skipped_files += 1
-                    logger.warning(f"跳过文件: {file_path}")
                     continue
-                
-                logger.info(f"文件: {file_path}, MD5: {file_hash}")
                 
                 if file_hash in file_hashes:
                     file_hashes[file_hash].append(file_path)
@@ -347,21 +332,6 @@ class FileScanThread(QtCore.QThread):
         
         duplicate_groups.sort(key=len, reverse=True)
         
-        logger.info(f"Scan completed, found {len(duplicate_groups)} groups of duplicate files")
-        for i, group in enumerate(duplicate_groups):
-            logger.info(f"Duplicate group #{i+1}: Contains {len(group)} files")
-            for file in group:
-                try:
-                    file_hash = self._calculate_md5(file)
-                    logger.info(f"  File: {file}, MD5: {file_hash}")
-                except Exception as e:
-                    logger.warning(f"  Unable to calculate MD5 for file {file}: {str(e)}")
-                try:
-                    file_size = os.path.getsize(file)
-                    logger.debug(f"    Size: {file_size} bytes, Modified time: {os.path.getmtime(file)}")
-                except Exception as e:
-                    logger.warning(f"Failed to get file info {file}: {str(e)}")
-        
         if len(duplicate_groups) == 0 and potential_duplicates > 0:
             pass
         
@@ -369,11 +339,7 @@ class FileScanThread(QtCore.QThread):
     
     def stop(self):
         self._stop_flag = True
-        logger.info("扫描线程收到停止信号")
-        
-        if self._thread_pool:
-            self._thread_pool.shutdown(wait=False)
-
+    
 class FileDeduplicateThread(QtCore.QThread):
     
     progress_updated = QtCore.pyqtSignal(int, str)

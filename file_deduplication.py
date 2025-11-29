@@ -85,7 +85,8 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.scan_thread.error_occurred.connect(self.on_scan_error)
         self.scan_thread.start()
         
-        logger.info(f"开始扫描文件夹: {folders}")
+        if folders:
+            logger.info(f"开始扫描文件夹: {folders}")
     
     def on_scan_progress(self, progress, status_text):
         self.parent.contrastProgressBar.setValue(progress)
@@ -104,15 +105,16 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         
         if duplicate_groups:
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", 
-                                            f"找到 {len(duplicate_groups)} 组重复文件")
+                                            f"找到 {len(duplicate_groups)} 组重复文件，您可以在左侧列表中查看详情")
             
             self.parent.duplicateItemsListWidget.setCurrentRow(0)
             self.on_group_selected(0)
-            logger.info("自动选择第一个重复文件组")
         else:
-            QtWidgets.QMessageBox.information(self.parent, "扫描完成", "未找到重复文件")
+            QtWidgets.QMessageBox.information(self.parent, "扫描完成", "未找到重复文件，每一个文件都是独一无二的")
         
-        logger.info(f"扫描完成，找到 {len(duplicate_groups)} 组重复文件")
+        self.parent.btnStartDeduplication.setEnabled(True)
+        self.parent.btnStartDeduplication.setText("开始查重")
+        self.parent.contrastProgressBar.setValue(100)
     
     def on_scan_error(self, error_message):
         self.parent.btnStartDeduplication.setEnabled(True)
@@ -159,8 +161,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self._update_selection_status()
     
     def _update_selection_status(self):
-        logger.info(f"已选择 {len(self.selected_files)} 个文件待删除")
-        
         if hasattr(self.parent, 'statusBar'):
             status_bar = self.parent.statusBar()
             if status_bar:
