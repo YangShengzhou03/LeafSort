@@ -71,7 +71,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
 
     def _connect_signals(self):
-        self.btnMinimize.clicked.connect(self._hide_to_tray)
+        self.btnMinimize.clicked.connect(self.showMinimized)
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         self.btnGithub.clicked.connect(self._open_github)
@@ -128,14 +128,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.Type.WindowStateChange:
-            if self.isMinimized():
-                self.hide()
-                self.tray_icon.showMessage(
-                    "LeafSort",
-                    "应用已最小化到系统托盘",
-                    QtWidgets.QSystemTrayIcon.MessageIcon.Information,
-                    3000
-                )
+            pass
         super().changeEvent(event)
     
     def closeEvent(self, event):
