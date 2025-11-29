@@ -235,16 +235,6 @@ class ConfigManager:
         self.config["settings"][key] = value
         return self._save_file_no_lock()
     
-    @_thread_safe_method
-    def update_settings(self, settings_dict: Dict[str, Any]) -> bool:
-        changes_made = False
-        for key, value in settings_dict.items():
-            if self._validate_setting(key, value):
-                if self.config["settings"].get(key) != value:
-                    self.config["settings"][key] = value
-                    changes_made = True
-        
-        return self._save_file_no_lock() if changes_made else True
     
     @_thread_safe_method
     def get_setting(self, key: str, default: Any = None) -> Any:
@@ -258,20 +248,7 @@ class ConfigManager:
         return self.config["settings"].copy()
     
     @_thread_safe_method
-    def reset_settings(self, keys: List[str] = None) -> bool:
-        default_config = self._get_default_config()
-        changes_made = False
-        
-        if keys:
-            for key in keys:
-                if key in default_config["settings"]:
-                    self.config["settings"][key] = default_config["settings"][key]
-                    changes_made = True
-        else:
-            self.config["settings"] = default_config["settings"].copy()
-            changes_made = True
-        
-        return self._save_file_no_lock() if changes_made else True
+
     
     def _validate_setting(self, key: str, value: Any) -> bool:
         validation_rules = {
@@ -353,10 +330,14 @@ class ConfigManager:
     
     @_thread_safe_method
     def get_remaining_daily_calls(self) -> int:
-        self._check_and_reset_daily_limit()
-        current_calls = self.config["api_limits"]["gaode"]["daily_calls"]
-        max_calls = self.config["api_limits"]["gaode"]["max_daily_calls"]
-        return max_calls - current_calls
+        """获取剩余的API调用次数"""
+        try:
+            with self._lock:
+                self._check_and_reset_daily_limit()
+                return max(0, 365 - self.config["daily_api_calls"])
+        except Exception as e:
+            logger.error(f"获取剩余API调用次数时发生异常: {str(e)}")
+            return 0
     
     @_thread_safe_method
     def clear_cache(self):

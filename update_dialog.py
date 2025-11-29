@@ -16,7 +16,7 @@ class UpdateDialog(QDialog):
         self.ui = Ui_UpdateDialog()
         self.ui.setupUi(self)
         self.url = url
-        self.setWindowTitle("枫叶通知 - 更新提示")
+        self.setWindowTitle("轻羽媒体整理通知 - 更新提示")
         self.setWindowIcon(QtGui.QIcon(get_resource_path('resources/img/icon.ico')))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)

@@ -406,19 +406,44 @@ class SmartArrangeThread(QtCore.QThread):
         if folder_path in source_folders:
             return True
             
-        windows_system_dirs = [
-            Path(os.environ.get('WINDIR', 'C:\Windows')),
-            Path(os.environ.get('SYSTEMROOT', 'C:\Windows')),
-            Path(os.environ.get('ProgramFiles', 'C:\Program Files')),
-            Path(os.environ.get('ProgramFiles(x86)', 'C:\Program Files (x86)')),
-            Path(os.path.expanduser('~')),
-            Path('C:\\')
-        ]
+        # 获取系统关键目录
+        windows_system_dirs = []
         
+        # 添加Windows系统目录（如果存在）
+        windir = os.environ.get('WINDIR', '')
+        if windir:
+            windows_system_dirs.append(Path(windir))
+            
+        systemroot = os.environ.get('SYSTEMROOT', '')
+        if systemroot:
+            windows_system_dirs.append(Path(systemroot))
+            
+        # 添加Program Files目录（如果存在）
+        programfiles = os.environ.get('ProgramFiles', '')
+        if programfiles:
+            windows_system_dirs.append(Path(programfiles))
+            
+        programfiles_x86 = os.environ.get('ProgramFiles(x86)', '')
+        if programfiles_x86:
+            windows_system_dirs.append(Path(programfiles_x86))
+            
+        # 添加用户主目录
+        home_dir = Path.home()
+        if home_dir:
+            windows_system_dirs.append(home_dir)
+            
+        # 添加系统根目录（通常是C:）
+        if Path('C:/').exists():
+            windows_system_dirs.append(Path('C:/'))
+            
         folder_path = folder_path.resolve()
         for system_dir in windows_system_dirs:
-            if system_dir and folder_path.is_relative_to(system_dir):
-                return True
+            try:
+                if system_dir and folder_path.is_relative_to(system_dir):
+                    return True
+            except (ValueError, OSError):
+                # 处理路径验证错误
+                continue
                 
         return False
 

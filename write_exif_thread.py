@@ -1023,19 +1023,21 @@ class WriteExifThread(QThread):
             return str(decimal)
 
     def _create_gps_data(self, lat, lon):
-        def decimal_to_piexif_dms(decimal):
-            degrees = int(abs(decimal))
-            minutes_decimal = (abs(decimal) - degrees) * 60
-            minutes = int(minutes_decimal)
-            seconds = (minutes_decimal - minutes) * 60
-            return [(degrees, 1), (minutes, 1), (int(seconds * 100), 100)]
-        
         gps_dict = {}
         
-        gps_dict[piexif.GPSIFD.GPSLatitude] = decimal_to_piexif_dms(abs(lat))
+        # 直接计算GPS坐标，减少函数调用
+        lat_deg = int(abs(lat))
+        lat_min_decimal = (abs(lat) - lat_deg) * 60
+        lat_min = int(lat_min_decimal)
+        lat_sec = int((lat_min_decimal - lat_min) * 100)
+        gps_dict[piexif.GPSIFD.GPSLatitude] = [(lat_deg, 1), (lat_min, 1), (lat_sec, 100)]
         gps_dict[piexif.GPSIFD.GPSLatitudeRef] = b'N' if lat >= 0 else b'S'
         
-        gps_dict[piexif.GPSIFD.GPSLongitude] = decimal_to_piexif_dms(abs(lon))
+        lon_deg = int(abs(lon))
+        lon_min_decimal = (abs(lon) - lon_deg) * 60
+        lon_min = int(lon_min_decimal)
+        lon_sec = int((lon_min_decimal - lon_min) * 100)
+        gps_dict[piexif.GPSIFD.GPSLongitude] = [(lon_deg, 1), (lon_min, 1), (lon_sec, 100)]
         gps_dict[piexif.GPSIFD.GPSLongitudeRef] = b'E' if lon >= 0 else b'W'
         
         current_time = datetime.now()

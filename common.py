@@ -169,7 +169,6 @@ class MediaTypeDetector:
         else:
             return {"valid": False, "type": None}
 
-
 class GeocodingService:
     def __init__(self):
         self.internal_dir = get_internal_dir()
