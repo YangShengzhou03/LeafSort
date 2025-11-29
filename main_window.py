@@ -25,7 +25,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self._initialize_pages()
         self._connect_signals()
         
-        
         try:
             check_update()
         except Exception as e:

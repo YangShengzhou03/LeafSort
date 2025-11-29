@@ -105,8 +105,8 @@ class SmartArrangeManager(QObject):
                     if target_folder and self.validate_destination(target_folder):
                         self.destination_root = target_folder
                         return True
-                except Exception as e:
-                    self.log("WARNING", f"从folder_page获取目标文件夹失败: {str(e)}")
+                except Exception:
+                    pass
 
             folder = QFileDialog.getExistingDirectory(
                 self.parent,
@@ -115,7 +115,6 @@ class SmartArrangeManager(QObject):
             )
 
             if not folder:
-                self.log("WARNING", "未选择目标文件夹")
                 return False
 
             if self.validate_destination(folder):
@@ -123,8 +122,7 @@ class SmartArrangeManager(QObject):
                 return True
 
             return False
-        except Exception as e:
-            self.log("ERROR", f"选择目标文件夹时出错: {str(e)}")
+        except Exception:
             return False
 
     def validate_destination(self, destination: str) -> bool:
@@ -139,16 +137,13 @@ class SmartArrangeManager(QObject):
                 if reply == QMessageBox.StandardButton.Yes:
                     try:
                         os.makedirs(destination, exist_ok=True)
-                        self.log("INFO", f"已创建目标文件夹: {destination}")
                     except Exception as e:
-                        self.log("ERROR", f"创建目标文件夹失败: {str(e)}")
                         QMessageBox.critical(self.parent, "错误", f"创建目标文件夹失败: {str(e)}")
                         return False
                 else:
                     return False
 
             if not os.access(destination, os.W_OK):
-                self.log("ERROR", f"目标文件夹没有写入权限: {destination}")
                 QMessageBox.critical(self.parent, "错误", "目标文件夹没有写入权限！")
                 return False
 
@@ -156,8 +151,7 @@ class SmartArrangeManager(QObject):
             if len(display_path) > 20:
                 display_path = f"{display_path[:8]}...{display_path[-6:]}"
             return True
-        except Exception as e:
-            self.log("ERROR", f"验证目标文件夹时出错: {str(e)}")
+        except Exception:
             return False
 
     def toggle_SmartArrange(self):
@@ -267,6 +261,15 @@ class SmartArrangeManager(QObject):
             self.parent.btnStartSmartArrange.setText("停止整理")
 
             try:
+                time_source_index = self.parent.timeSource1.currentIndex()
+                time_source_map = {
+                    0: "最早时间",
+                    1: "拍摄日期",
+                    2: "创建时间",
+                    3: "修改时间"
+                }
+                time_derive = time_source_map.get(time_source_index, "最早时间")
+                
                 self.SmartArrange_thread = SmartArrangeThread(
                     parent=self,
                     folders=self.selected_folders,
@@ -274,7 +277,7 @@ class SmartArrangeManager(QObject):
                     file_name_structure=file_name_parts,
                     destination_root=self.destination_root,
                     separator=separator,
-                    time_derive="文件创建时间",
+                    time_derive=time_derive,
                     operation_type=operation_type
                 )
 

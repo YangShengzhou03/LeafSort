@@ -497,7 +497,7 @@ class SmartArrangeThread(QtCore.QThread):
                 date_taken = self._process_mov_exif(file_path_obj, exif_data)
             elif suffix == '.mp4':
                 date_taken = self._process_mp4_exif(file_path_obj, exif_data)
-            elif suffix in ('.arw', '.cr2', '.dng', '.nef', '.orf', '.raf', '.sr2', '.tif', '.tiff'):
+            elif suffix in ('.arw', '.cr2', '.cr3', '.dng', '.nef', '.orf', '.raf', '.sr2', '.tif', '.tiff', '.rw2', '.pef', '.nrw'):
                 date_taken = self._process_raw_exif(file_path_obj, exif_data)
             else:
                 self.log("DEBUG", f"不支持的文件类型或无EXIF数据: {suffix}")
@@ -556,42 +556,62 @@ class SmartArrangeThread(QtCore.QThread):
             return None
     
     def _parse_raw_datetime(self, exif_data_str):
-        """从RAW格式的EXIF数据中解析拍摄时间"""
         date_patterns = [
             'Date/Time Original',
             'Create Date', 
             'Modify Date',
             'DateTimeOriginal',
-            'Creation Date'
+            'Creation Date',
+            'DateTime',
+            'Date Taken',
+            'GPS Date/Time',
+            'DateTimeCreated',
+            'DateTimeDigitized',
+            'Digital Creation Date',
+            'Timestamp'
         ]
+        
+        found_dates = []
         
         for line in exif_data_str.split('\n'):
             for pattern in date_patterns:
-                if pattern in line:
+                if pattern in line and ':' in line:
                     try:
                         date_str = line.split(':', 1)[1].strip()
                         date_taken = self.parse_datetime(date_str)
                         if date_taken:
-                            return date_taken
+                            if pattern in ['Date/Time Original', 'DateTimeOriginal']:
+                                return date_taken
+                            found_dates.append((date_taken, pattern))
                     except (ValueError, IndexError):
                         continue
+        
+        if found_dates:
+            for date, pattern in found_dates:
+                if 'Create' in pattern:
+                    return date
+            return found_dates[0][0]
+        
         return None
     
     def _extract_raw_metadata(self, exif_data_str, exif_data):
         """从RAW格式的EXIF数据中提取相机和GPS信息"""
         for line in exif_data_str.split('\n'):
-            if 'Make' in line and ':' in line:
+            # 精确匹配相机品牌，避免匹配到其他包含'Make'的字段
+            if 'Make' in line and ':' in line and not 'Lens Make' in line and not 'GPS Make' in line:
                 try:
                     make_value = line.split(':', 1)[1].strip()
                     exif_data['Make'] = make_value
                 except (ValueError, IndexError):
                     pass
-            elif 'Model' in line and ':' in line:
+            # 精确匹配相机型号，避免匹配到镜头型号或其他包含'Model'的字段
+            elif 'Camera Model' in line and ':' in line or 'Model' in line and ':' in line and not 'Lens Model' in line and not 'GPS Model' in line:
                 try:
                     model_value = line.split(':', 1)[1].strip()
                     exif_data['Model'] = model_value
                 except (ValueError, IndexError):
                     pass
+            # 专门处理镜头型号
             elif 'Lens Model' in line and ':' in line:
                 try:
                     lens_model = line.split(':', 1)[1].strip()
@@ -938,12 +958,16 @@ class SmartArrangeThread(QtCore.QThread):
         if not datetime_str:
             return None
             
+        # 扩展时区格式支持
         formats_with_timezone = [
             '%Y:%m:%d %H:%M:%S%z',
             '%Y-%m-%d %H:%M:%S%z',
             '%Y/%m/%d %H:%M:%S%z',
+            '%Y-%m-%dT%H:%M:%S%z',
+            '%Y/%m/%dT%H:%M:%S%z',
         ]
         
+        # 扩展无时区格式支持，增加CR3文件可能使用的特殊格式
         formats_without_timezone = [
             '%Y:%m:%d %H:%M:%S',
             '%Y-%m-%d %H:%M:%S', 
@@ -951,7 +975,13 @@ class SmartArrangeThread(QtCore.QThread):
             '%Y%m%d%H%M%S',
             '%Y-%m-%d',
             '%Y/%m/%d',
-            '%Y%m%d'
+            '%Y%m%d',
+            # 增加更多CR3文件可能使用的格式
+            '%Y-%m-%dT%H:%M:%S',
+            '%Y/%m/%dT%H:%M:%S',
+            '%m/%d/%Y %H:%M:%S',
+            '%d/%m/%Y %H:%M:%S',
+            '%Y.%m.%d %H:%M:%S',
         ]
         
         for fmt in formats_with_timezone:
@@ -967,11 +997,8 @@ class SmartArrangeThread(QtCore.QThread):
         for fmt in formats_without_timezone:
             try:
                 dt = datetime.strptime(datetime_str, fmt)
-                if fmt in ['%Y:%m:%d %H:%M:%S', '%Y-%m-%d %H:%M:%S', '%Y/%m/%d %H:%M:%S']:
-                    utc_dt = dt.replace(tzinfo=timezone.utc)
-                    local_dt = utc_dt.astimezone()
-                    return local_dt.replace(tzinfo=None)
-                
+                # 移除错误的UTC假设，直接返回原始时间
+                # 之前的代码错误地将本地时间当作UTC时间处理，导致在中国时区(UTC+8)下时间加了8小时
                 return dt
             except ValueError:
                 continue
