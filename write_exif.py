@@ -401,7 +401,6 @@ class WriteExifManager(QObject):
             self.worker.wait(1000)
             if self.worker.isRunning():
                 self.worker.terminate()
-            self.log("INFO", "已取消操作")
         self.is_running = False
         self.update_button_state()
         return False

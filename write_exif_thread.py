@@ -50,6 +50,23 @@ class WriteExifThread(QThread):
                 logger.error(error_msg)
             except:
                 pass
+    
+    def _decode_subprocess_output(self, output_data):
+        """安全地解码subprocess输出，避免UnicodeDecodeError"""
+        if not output_data:
+            return ""
+        
+        # 尝试多种编码方式
+        encodings = ['utf-8', 'gbk', 'latin1', 'cp1252']
+        
+        for encoding in encodings:
+            try:
+                return output_data.decode(encoding, errors='replace')
+            except (UnicodeDecodeError, AttributeError):
+                continue
+        
+        # 如果所有编码都失败，返回空字符串
+        return ""
             
     def __init__(self, folders_dict, exif_config=None, target_folder=None):
         super().__init__()
@@ -223,7 +240,7 @@ class WriteExifThread(QThread):
                 return 'failed'
             
             file_ext = os.path.splitext(image_path)[1].lower()
-            logger.debug("处理文件: %s, 扩展名: %s", target_path, file_ext)
+
             
             format_handler = self._get_format_handler(file_ext)
             if format_handler:
@@ -670,7 +687,7 @@ class WriteExifThread(QThread):
             try:
                 os.remove(temp_path)
             except OSError as e:
-                logger.debug("清理临时文件失败: %s", str(e))
+                pass
     
     def _load_heic_exif_data(self, heif_file, image, image_path):
         exif_dict = {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
@@ -681,9 +698,10 @@ class WriteExifThread(QThread):
                     heif_exif = piexif.load(heif_file.exif)
                     exif_dict.update(heif_exif)
             except AttributeError as e:
-                logger.debug("HEIF文件缺少exif属性: %s", str(e))
+                pass
+        
         except (IOError, ValueError) as e:
-            logger.debug("加载HEIF EXIF数据失败: %s", str(e))
+            pass
         
         self._load_pil_exif_data(image, exif_dict)
         
@@ -692,7 +710,7 @@ class WriteExifThread(QThread):
                 info_exif = piexif.load(image.info['exif'])
                 exif_dict.update(info_exif)
         except (KeyError, ValueError, TypeError) as e:
-            logger.debug("从image.info加载EXIF失败: %s", str(e))
+            pass
         
         try:
             with Image.open(image_path) as img:
@@ -703,7 +721,7 @@ class WriteExifThread(QThread):
                 if pil_exif:
                     self._load_pil_exif_data_to_dict(pil_exif, exif_dict)
         except (IOError, OSError, ValueError) as e:
-            logger.debug("再次打开文件加载EXIF失败: %s", str(e))
+            pass
         
         return exif_dict
     
@@ -716,7 +734,7 @@ class WriteExifThread(QThread):
             if pil_exif:
                 self._load_pil_exif_data_to_dict(pil_exif, exif_dict)
         except (IOError, OSError, ValueError, TypeError) as e:
-            logger.debug("加载PIL EXIF数据失败: %s", str(e))
+            pass
     
     def _load_pil_exif_data_to_dict(self, pil_exif, exif_dict):
         tag_mapping = {
@@ -737,8 +755,8 @@ class WriteExifThread(QThread):
                 try:
                     exif_dict[section][piexif_tag] = pil_exif[tag_id]
                 except (KeyError, ValueError, TypeError) as e:
-                    logger.debug("处理PIL EXIF标签 %s 失败: %s", tag_id, str(e))
-    
+                    pass
+        
     def _update_heic_exif_fields(self, exif_dict, image_path):
 
         updated_fields = []
@@ -772,7 +790,7 @@ class WriteExifThread(QThread):
                     exif_dict["0th"][ifd_key] = value.encode(encoding)
                     updated_fields.append(format_str.format(value))
                 except Exception as e:
-                    logger.error(f"写入HEIC字段 {config_key} 失败: {str(e)}")
+                    self.log("ERROR", f"写入HEIC字段 {config_key} 失败: {str(e)}")
     
     def _update_heic_rating(self, exif_dict, updated_fields):
         rating = self.exif_config.get('rating')
@@ -785,7 +803,7 @@ class WriteExifThread(QThread):
                 exif_dict["0th"][piexif.ImageIFD.Rating] = rating_value
                 updated_fields.append(f"评分: {rating}星")
             except (ValueError, TypeError) as e:
-                logger.error(f"写入HEIC评分失败: {str(e)}")
+                self.log("ERROR", f"写入HEIC评分失败: {str(e)}")
     
     def _update_heic_lens_info(self, exif_dict, updated_fields):
         lens_brand = self.exif_config.get('lens_brand')
@@ -802,14 +820,14 @@ class WriteExifThread(QThread):
                 exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
                 updated_fields.append(f"镜头品牌: {lens_brand}")
             except Exception as e:
-                logger.error(f"写入HEIC镜头品牌失败: {str(e)}")
+                self.log("ERROR", f"写入HEIC镜头品牌失败: {str(e)}")
             
         if lens_model:
             try:
                 exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
                 updated_fields.append(f"镜头型号: {lens_model}")
             except Exception as e:
-                logger.error(f"写入HEIC镜头型号失败: {str(e)}")
+                self.log("ERROR", f"写入HEIC镜头型号失败: {str(e)}")
     
     def _update_heic_shoot_time(self, exif_dict, updated_fields, image_path):
         shoot_time = self.exif_config.get('shoot_time', 0)
@@ -830,7 +848,6 @@ class WriteExifThread(QThread):
                 exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = shoot_time.encode('utf-8')
                 updated_fields.append(f"拍摄时间: {shoot_time}")
             else:
-                logger.warning("拍摄时间格式无效: %s", shoot_time)
                 self.log("WARNING", f"拍摄时间格式无效: {shoot_time}")
     
     def _update_heic_gps_data(self, exif_dict, updated_fields):
@@ -1122,7 +1139,7 @@ class WriteExifThread(QThread):
             result = subprocess.run(cmd_parts, capture_output=True, text=False, shell=False, check=False)
             
             if result.returncode != 0:
-                error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
+                error_msg = self._decode_subprocess_output(result.stderr) if result.stderr else "未知错误"
                 
                 if "Can't currently write RIFF AVI files" in error_msg or "RIFF AVI files" in error_msg:
                     self.log("WARNING", f"文件 {os.path.basename(original_file_path)} 是RIFF格式的AVI文件，"
@@ -1246,7 +1263,7 @@ class WriteExifThread(QThread):
                 else:
                     self.log("WARNING", f"未对 {os.path.basename(image_path)} 进行任何更改")
             else:
-                error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
+                error_msg = self._decode_subprocess_output(result.stderr) if result.stderr else "未知错误"
                 self.log("ERROR", f"写入 {os.path.basename(image_path)} 失败: {error_msg}")
                 
         except subprocess.TimeoutExpired:
