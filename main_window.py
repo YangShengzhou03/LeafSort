@@ -53,9 +53,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
         self.tray_icon.setToolTip("LeafSort")
         tray_menu = QtWidgets.QMenu()
-        action_show = QtGui.QAction("Show Window", self)
+        action_show = QtGui.QAction("显示窗口", self)
         action_show.triggered.connect(self._show_window)
-        action_exit = QtGui.QAction("Exit", self)
+        action_exit = QtGui.QAction("退出应用", self)
         action_exit.triggered.connect(self._exit_app)
         tray_menu.addAction(action_show)
         tray_menu.addSeparator()
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
         self.tray_icon.showMessage(
             "LeafSort",
-            "Application minimized to system tray",
+            "应用在后台继续运行",
             QtWidgets.QSystemTrayIcon.MessageIcon.Information,
             3000
         )
