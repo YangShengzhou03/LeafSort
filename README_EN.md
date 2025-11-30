@@ -129,33 +129,137 @@ pyinstaller -w -F --icon=resources/img/icon.ico App.py
 
 ### Intelligent Organization
 
-The intelligent organization feature supports the following classification methods:
+The intelligent organization feature supports the following classification methods and file formats:
 
-- **By Time**: Year/Month/Day hierarchical structure
-- **By Location**: Automatic classification based on GPS information
-- **By Device**: Classification by camera model, phone brand
-- **By Type**: Classification by image format or content type
-- **Custom Rules**: Supports custom organization rules based on regular expressions
+#### 📁 Supported File Formats
+- **Image Formats**: `.jpg`, `.jpeg`, `.png`, `.bmp`, `.gif`, `.webp`, `.tiff`, `.heic`, `.heif`, `.svg`
+- **Video Formats**: `.mp4`, `.avi`, `.mov`, `.wmv`, `.flv`, `.mkv`, `.webm`, `.m4v`, `.3gp`
+- **Audio Formats**: `.mp3`, `.wav`, `.flac`, `.aac`, `.ogg`, `.wma`, `.m4a`
 
-Operation steps:
-1. Select the images you want to organize
+#### 📊 Classification Methods and Extracted Information
+
+**By Time**:
+- Reads EXIF `DateTimeOriginal` field
+- Supports Year/Month/Day hierarchical structure
+- Example: `2024/01/15_filename.jpg`
+
+**By Location**:
+- Based on GPS coordinates for geocoding
+- Supports automatic province/city recognition
+- Example: `Beijing/Chaoyang_filename.jpg`
+
+**By Device**:
+- **Camera Brand**: Reads EXIF `Make` field (camera brand, phone brand)
+- **Camera Model**: Reads EXIF `Model` field (specific device model)
+- Supports mainstream camera and phone brand recognition
+- Example: `Apple/iPhone_15_Pro_filename.jpg`
+
+**By File Type**:
+- Uses file extension for classification
+- Example: `JPEG/PNG/HEIC/filename.jpg`
+
+**Multi-level Classification**:
+- Supports up to 4-level classification combinations
+- Customizable separators (-, _, space, none, etc.)
+- Example: `2024/Apple/iPhone_15_Pro/JPEG/filename.jpg`
+
+#### ⚙️ Operation Steps
+1. Select images or folders to organize
 2. Click the "Intelligent Organization" button
-3. Choose the organization method and target location
-4. Click "Start Organization" to execute the operation
+3. Choose target folder path
+4. Configure classification rules (supports multi-level combinations)
+5. Click "Start Organization" to execute the operation
 
 ### Duplicate Detection
 
-1. Select the folder or image set you want to deduplicate
-2. Click the "Find Duplicates" button
-3. Set the similarity threshold (0-100%)
-4. View duplicate results and choose to keep or delete
+The deduplication feature can intelligently identify and remove duplicate files, supporting:
+
+#### 📋 Supported Formats and Detection Method
+- **Supported Formats**: All image formats including `.jpg`, `.jpeg`, `.png`, `.bmp`, `.gif`, `.webp`, `.tiff`, `.heic`, `.heif`, `.svg`
+- **Algorithm**: Perceptual Hash (pHash) algorithm for perceptual similarity comparison
+- **Smart Recognition**: Automatically detects screenshots, similar photos with minor differences, and variations taken in burst mode
+- **Content-Based Detection**: Considers image content, color distribution, and visual features
+
+#### ⚙️ Operation Steps
+1. Select the folder containing files to scan
+2. Click "Duplicate Detection" button
+3. Configure detection parameters:
+   - **Similarity Threshold**: Adjust from 1-100 (default 90)
+   - **Detection Method**: Choose from file hash, perceptual hash, or combined detection
+   - **Include Subdirectories**: Option to scan subfolders
+4. Click "Start Detection" to execute the operation
+5. Review detected duplicate groups:
+   - **Auto-grouping**: Automatically groups similar files by similarity
+   - **Preview Comparison**: Side-by-side comparison of duplicate files
+   - **Smart Selection**: Automatically selects lower quality duplicates for deletion
+6. Select files to delete or move to trash
+
+#### 🗑️ Duplicate File Handling Features
+- **Batch Operations**: Select multiple duplicate groups for simultaneous processing
+- **Safe Deletion**: Option to move to recycle bin instead of permanent deletion
+- **Preview Before Deletion**: Visual confirmation before removing files
+- **Keep Original**: Preserves the highest quality or earliest created file
 
 ### EXIF Editing
 
-1. Select the image you want to edit
+#### 📝 Supported File Formats and Editable Properties
+
+**JPEG/PNG/WebP Formats**:
+- **Title** (Title/ImageDescription)
+- **Author** (Artist/Creator)
+- **Rating** (Rating) - 1-5 star rating system
+- **Capture Time** (DateTimeOriginal) - Supports custom time source
+- **Device Information** (Make/Model) - Supports mainstream camera and phone brands
+- **Lens Information** (LensModel/LensMake) - Automatic matching based on device
+- **Geographic Location** (GPS related tags) - Supports latitude/longitude writing
+- **Copyright Information** (Copyright)
+- **Keywords/Tags** (XPKeywords, etc.)
+
+**HEIC/HEIF Formats**:
+- **Title and Description** (partial support)
+- **Author Information** (limited support)
+- **Rating** (partial device support)
+- **Capture Time**
+- **Device Information**
+- *Note: Some property support may be limited depending on device compatibility*
+
+**Video Formats (MOV/MP4/AVI/MKV)**:
+- **Title** (Title)
+- **Author/Creator** (Author/Creator)
+- **Rating** (limited support)
+- **Capture Time**
+- **Basic Device Information**
+- *Note: Video metadata support is relatively simple, mainly for basic identification*
+
+**RAW Formats (CR2/CR3/NEF/ARW/ORF/DNG/RAF)**:
+- **Title** (Title)
+- **Author Information**
+- **Rating** (limited by format specifications)
+- **Capture Time**
+- **Partial Device Information**
+- *Note: RAW format metadata writing is restricted by camera manufacturer format limitations*
+
+#### 🔧 Device Information Database
+Built-in rich device information database, supporting:
+- **Camera Brands**: Canon, Nikon, Sony, Fujifilm, Leica, Panasonic, Olympus, Pentax, Sigma, etc.
+- **Phone Brands**: Apple, Xiaomi, Huawei, OPPO, vivo, OnePlus, Samsung, Google, etc.
+- **Automatic Lens Matching**: Automatically matches corresponding lens information based on camera model
+
+#### ⚙️ Operation Steps
+1. Select the images you want to edit
 2. Click the "Edit EXIF" button
-3. Modify the metadata you want to update (such as title, author, rating, etc.)
-4. Click "Save" to apply the changes
+3. Configure editing options:
+   - **Time Setting**: Use file time/EXIF time/custom time
+   - **Device Information**: Select camera brand and model (automatic lens matching)
+   - **Rating Setting**: 1-5 star rating
+   - **Basic Information**: Title, author, copyright, etc.
+4. Click "Start Writing EXIF Information" to apply modifications
+
+#### ⚠️ Important Reminders
+- **Irreversible Operation**: EXIF writing cannot be undone once completed, recommend backing up original files first
+- **Format Compatibility**: Different formats have varying levels of EXIF support with compatibility differences
+- **HEIC Support**: Requires additional decoder support (pillow-heif library)
+- **Geographic Information**: Requires images to contain GPS data to retrieve and set location informationchanges
 
 ### Text Recognition
 
