@@ -21,6 +21,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self._drag_position = QPoint()
         self.tray_icon = None
+        self._exit_requested = False  # 添加退出标志
         self._setup_ui()
         self._initialize_pages()
         self._connect_signals()
@@ -117,7 +118,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.raise_()
 
     def _exit_app(self):
-        self.tray_icon.hide()
+        self._exit_requested = True
         QtWidgets.QApplication.quit()
 
     def _handle_tray_activation(self, reason):
@@ -141,8 +142,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         super().changeEvent(event)
     
     def closeEvent(self, event):
-        event.ignore()
-        self._hide_to_tray()
+        if self._exit_requested:
+            event.accept()
+        else:
+            event.ignore()
+            self._hide_to_tray()
 
     def _open_github(self):
         url = QtCore.QUrl("https://gitee.com/Yangshengzhou/leaf-sort")
