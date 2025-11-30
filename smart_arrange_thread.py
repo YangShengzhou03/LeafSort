@@ -974,7 +974,8 @@ class SmartArrangeThread(QtCore.QThread):
                 cmd,
                 capture_output=True,
                 timeout=timeout,
-                shell=False
+                shell=False,
+                creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
             )
 
             if result.returncode != 0:
@@ -983,7 +984,8 @@ class SmartArrangeThread(QtCore.QThread):
                     cmd,
                     capture_output=True,
                     timeout=timeout,
-                    shell=False
+                    shell=False,
+                    creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0
                 )
                 if result.returncode != 0:
                     return None

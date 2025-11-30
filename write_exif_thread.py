@@ -446,7 +446,7 @@ class WriteExifThread(QThread):
                 return True
             
             check_cmd = [exiftool_path, '-all', '-s', image_path]
-            result = subprocess.run(check_cmd, capture_output=True, text=False, timeout=10)
+            result = subprocess.run(check_cmd, capture_output=True, text=False, timeout=10, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 stdout_str = self._decode_subprocess_output(result.stdout)
@@ -486,7 +486,7 @@ class WriteExifThread(QThread):
                 image_path
             ]
             
-            result = subprocess.run(init_cmd, capture_output=True, text=False, timeout=30)
+            result = subprocess.run(init_cmd, capture_output=True, text=False, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 logger.info("基础EXIF信息初始化成功")
@@ -503,7 +503,7 @@ class WriteExifThread(QThread):
     def _write_lens_info_with_exiftool(self, image_path):
         """使用ExifTool写入完整的镜头信息以确保Windows属性显示"""
         if not (self._exiftool_lens_data.get('lens_brand') or self._exiftool_lens_data.get('lens_model')):
-            return True  # 没有镜头数据，跳过
+            return True
         
         try:
             exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
@@ -514,18 +514,17 @@ class WriteExifThread(QThread):
             lens_brand = self._exiftool_lens_data.get('lens_brand', '')
             lens_model = self._exiftool_lens_data.get('lens_model', '')
             
-            # 构建ExifTool命令 - 写入完整的镜头信息
             cmd = [
                 exiftool_path,
                 f'-LensManufacturer={lens_brand}',
                 f'-LensModel={lens_model}',
-                f'-LensMake={lens_brand}',  # 兼容性标签
+                f'-LensMake={lens_brand}',
                 f'-LensSpecification="{lens_brand} {lens_model}"',
                 '-overwrite_original',
                 image_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 logger.info("使用ExifTool写入镜头信息成功: %s %s", lens_brand, lens_model)
