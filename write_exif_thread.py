@@ -57,6 +57,11 @@ class WriteExifThread(QThread):
         self.exif_config = exif_config or {}
         self.target_folder = target_folder or os.path.expanduser("~/Desktop/Processed_Images")
         self.lat, self.lon = None, None
+        
+        # 镜头信息处理标记
+        self._requires_exiftool_lens_update = False
+        self._exiftool_lens_data = {}
+        
         position = self.exif_config.get('position', '')
         if position and ',' in position:
             try:
@@ -336,6 +341,14 @@ class WriteExifThread(QThread):
         try:
             self._ensure_exif_sections(exif_dict)
             
+            # 检查EXIF支持情况
+            if not self._check_exif_support(image_path):
+                logger.warning("EXIF检查失败，尝试继续处理")
+            
+            # 重置镜头信息处理标记
+            self._requires_exiftool_lens_update = False
+            self._exiftool_lens_data = {}
+            
             self._update_basic_fields(exif_dict, updated_fields)
             
             self._update_special_fields(exif_dict, image_path, updated_fields)
@@ -380,27 +393,148 @@ class WriteExifThread(QThread):
                 except Exception as e:
                     logger.error(f"写入基本字段 {config_key} 失败: {str(e)}")
         
-        if "Exif" not in exif_dict:
-            exif_dict["Exif"] = {}
-        
+        # 处理镜头信息 - 集成完整的镜头信息写入逻辑
+        self._update_lens_information(exif_dict, updated_fields)
+    
+    def _update_lens_information(self, exif_dict, updated_fields):
+        """更新镜头信息，支持多个标签写入以确保Windows属性显示"""
         lens_brand = self.exif_config.get('lens_brand')
-        if lens_brand:
-            try:
+        lens_model = self.exif_config.get('lens_model')
+        
+        if not lens_brand and not lens_model:
+            return
+        
+        try:
+            # 先使用 piexif 写入基础镜头信息（兼容性）
+            if "Exif" not in exif_dict:
+                exif_dict["Exif"] = {}
+            
+            # 写入 LensMake 和 LensModel（piexif兼容的标签）
+            if lens_brand:
                 exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
                 updated_fields.append(f"镜头品牌: {lens_brand}")
                 logger.debug(f"成功写入镜头品牌: {lens_brand}")
-            except Exception as e:
-                logger.error(f"写入镜头品牌失败: {str(e)}")
-        
-        lens_model = self.exif_config.get('lens_model')
-        if lens_model:
-            try:
+            
+            if lens_model:
                 exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
                 updated_fields.append(f"镜头型号: {lens_model}")
                 logger.debug(f"成功写入镜头型号: {lens_model}")
-            except Exception as e:
-                logger.error(f"写入镜头型号失败: {str(e)}")
+            
+            # 标记需要使用 ExifTool 写入额外标签
+            self._requires_exiftool_lens_update = True
+            self._exiftool_lens_data = {
+                'lens_brand': lens_brand,
+                'lens_model': lens_model
+            }
+            
+        except Exception as e:
+            logger.error(f"写入基础镜头信息失败: {str(e)}")
+            self.log("ERROR", f"写入镜头信息失败: {str(e)}")
     
+    def _check_exif_support(self, image_path):
+        """检查文件EXIF支持情况"""
+        try:
+            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            if not os.path.exists(exiftool_path):
+                logger.warning("ExifTool 路径不存在，跳过EXIF检查")
+                return True
+            
+            check_cmd = [exiftool_path, '-all', '-s', image_path]
+            result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                exif_count = len([line for line in result.stdout.split('\n') 
+                                if line.strip() and not line.startswith('=')])
+                
+                if exif_count == 0:
+                    logger.info("文件没有EXIF数据，将初始化基础信息")
+                    return self._initialize_basic_exif(image_path)
+                return True
+            else:
+                logger.warning(f"无法读取EXIF信息: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.warning("EXIF检查超时")
+            return True
+        except Exception as e:
+            logger.error(f"检查EXIF支持时出错: {str(e)}")
+            return True
+    
+    def _initialize_basic_exif(self, image_path):
+        """初始化基础EXIF信息"""
+        try:
+            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            if not os.path.exists(exiftool_path):
+                logger.warning("ExifTool 不存在，无法初始化EXIF")
+                return False
+            
+            # 写入基础EXIF信息
+            init_cmd = [
+                exiftool_path,
+                '-DateTimeOriginal=2023:01:01 12:00:00',
+                '-Model=LeafSort Processed',
+                '-Make=LeafSort',
+                '-overwrite_original',
+                image_path
+            ]
+            
+            result = subprocess.run(init_cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                logger.info("基础EXIF信息初始化成功")
+                return True
+            else:
+                logger.error(f"初始化EXIF失败: {result.stderr}")
+                return False
+                
+        except Exception as e:
+            logger.error(f"初始化基础EXIF时出错: {str(e)}")
+            return False
+    
+    def _write_lens_info_with_exiftool(self, image_path):
+        """使用ExifTool写入完整的镜头信息以确保Windows属性显示"""
+        if not (self._exiftool_lens_data.get('lens_brand') or self._exiftool_lens_data.get('lens_model')):
+            return True  # 没有镜头数据，跳过
+        
+        try:
+            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            if not os.path.exists(exiftool_path):
+                logger.warning("ExifTool 路径不存在，跳过ExifTool镜头信息写入")
+                return False
+            
+            lens_brand = self._exiftool_lens_data.get('lens_brand', '')
+            lens_model = self._exiftool_lens_data.get('lens_model', '')
+            
+            # 构建ExifTool命令 - 写入完整的镜头信息
+            cmd = [
+                exiftool_path,
+                f'-LensManufacturer={lens_brand}',
+                f'-LensModel={lens_model}',
+                f'-LensMake={lens_brand}',  # 兼容性标签
+                f'-LensSpecification="{lens_brand} {lens_model}"',
+                '-overwrite_original',
+                image_path
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            
+            if result.returncode == 0:
+                logger.info("使用ExifTool写入镜头信息成功: %s %s", lens_brand, lens_model)
+                return True
+            else:
+                logger.warning("使用ExifTool写入镜头信息失败: %s", result.stderr)
+                self.log("WARNING", f"ExifTool写入镜头信息失败: {result.stderr}")
+                return False
+                
+        except subprocess.TimeoutExpired:
+            logger.warning("ExifTool写入镜头信息超时")
+            return False
+        except Exception as e:
+            logger.error("使用ExifTool写入镜头信息时出错: %s", str(e))
+            self.log("ERROR", f"ExifTool写入镜头信息时出错: {str(e)}")
+            return False
+
     def _update_special_fields(self, exif_dict, image_path, updated_fields):
         shoot_time = self.exif_config.get('shoot_time', 0)
         if shoot_time != 0:
@@ -425,6 +559,16 @@ class WriteExifThread(QThread):
             piexif.insert(exif_bytes, image_path)
             logger.info("成功写入EXIF数据到 %s", image_path)
             self.log("INFO", f"写入并复制 {os.path.basename(image_path)}")
+            
+            # 使用ExifTool写入额外镜头信息
+            if hasattr(self, '_requires_exiftool_lens_update') and self._requires_exiftool_lens_update:
+                success = self._write_lens_info_with_exiftool(image_path)
+                if success:
+                    updated_fields.append("镜头信息(ExifTool)")
+                    self.log("INFO", "使用ExifTool写入完整镜头信息成功")
+                else:
+                    self.log("WARNING", "使用ExifTool写入镜头信息失败")
+            
         except (IOError, ValueError, OSError) as e:
             logger.error("写入EXIF数据失败 %s: %s", image_path, str(e))
             self.log("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
