@@ -420,6 +420,7 @@ class WriteExifThread(QThread):
     
     def _save_exif_data(self, image_path, exif_dict, updated_fields):
         try:
+            self._clean_exif_for_heic(exif_dict)
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, image_path)
             logger.info("成功写入EXIF数据到 %s", image_path)
@@ -716,6 +717,7 @@ class WriteExifThread(QThread):
     def _save_heic_data(self, image, image_path, exif_dict, updated_fields):
         temp_path = image_path + ".tmp"
         try:
+            self._clean_exif_for_heic(exif_dict)
             exif_bytes = piexif.dump(exif_dict)
             image.save(temp_path, format="HEIF", exif=exif_bytes)
             os.replace(temp_path, image_path)
@@ -728,6 +730,80 @@ class WriteExifThread(QThread):
                     os.remove(temp_path)
                 except OSError:
                     pass
+
+    def _clean_exif_for_heic(self, exif_dict):
+        if not exif_dict:
+            return
+        
+        valid_sections = ["0th", "Exif", "GPS", "1st", "thumbnail"]
+        
+        for section in list(exif_dict.keys()):
+            if section not in valid_sections:
+                logger.debug("移除不支持的EXIF节: %s", section)
+                exif_dict.pop(section, None)
+                continue
+                
+            if isinstance(exif_dict[section], dict):
+                for tag, value in list(exif_dict[section].items()):
+                    if not self._is_valid_exif_tag(section, tag, value):
+                        logger.debug("移除无效EXIF标签: %s.%s", section, tag)
+                        exif_dict[section].pop(tag, None)
+                        
+    def _is_valid_exif_tag(self, section, tag, value):
+        try:
+            if section == "0th":
+                known_tags = [
+                    piexif.ImageIFD.ImageDescription, piexif.ImageIFD.Make, piexif.ImageIFD.Model,
+                    piexif.ImageIFD.DateTime, piexif.ImageIFD.Artist, piexif.ImageIFD.Copyright,
+                    piexif.ImageIFD.XPTitle, piexif.ImageIFD.XPComment, piexif.ImageIFD.XPAuthor,
+                    piexif.ImageIFD.XPKeywords, piexif.ImageIFD.XPSubject, piexif.ImageIFD.Rating,
+                    315, 270, 271, 272, 306, 33432, 40093, 40094, 40095, 40096, 40097, 40098
+                ]
+            elif section == "Exif":
+                known_tags = [
+                    piexif.ExifIFD.DateTimeOriginal, piexif.ExifIFD.DateTimeDigitized,
+                    piexif.ExifIFD.FNumber, piexif.ExifIFD.ExposureTime, piexif.ExifIFD.Flash,
+                    piexif.ExifIFD.FocalLength, piexif.ExifIFD.ISOSpeedRatings, piexif.ExifIFD.PixelXDimension,
+                    piexif.ExifIFD.PixelYDimension, piexif.ExifIFD.UserComment, piexif.ExifIFD.LensMake,
+                    piexif.ExifIFD.LensModel, piexif.ExifIFD.LensSpecification, piexif.ExifIFD.BodySerialNumber,
+                    piexif.ExifIFD.LensSerialNumber, piexif.ExifIFD.ShutterSpeedValue, piexif.ExifIFD.ApertureValue,
+                    piexif.ExifIFD.BrightnessValue, piexif.ExifIFD.ExposureBiasValue, piexif.ExifIFD.MaxApertureValue,
+                    piexif.ExifIFD.SubjectDistance, piexif.ExifIFD.MeteringMode, piexif.ExifIFD.LightSource,
+                    piexif.ExifIFD.FlashEnergy, piexif.ExifIFD.SubjectArea, piexif.ExifIFD.ExposureMode,
+                    piexif.ExifIFD.WhiteBalance, piexif.ExifIFD.DigitalZoomRatio, piexif.ExifIFD.FocalLengthIn35mmFilm,
+                    piexif.ExifIFD.SceneCaptureType, piexif.ExifIFD.GainControl, piexif.ExifIFD.Contrast,
+                    piexif.ExifIFD.Saturation, piexif.ExifIFD.Sharpness, piexif.ExifIFD.DeviceSettingDescription,
+                    piexif.ExifIFD.SubjectDistanceRange, piexif.ExifIFD.ImageUniqueID,
+                    36867, 36868, 37377, 37378, 37379, 37380, 37381, 37382, 37383, 37384, 37385, 37386, 37387, 37388, 37389, 37390, 37391, 37392, 37393, 37394, 37395, 37396, 37397, 41483, 41484, 41486, 41487, 41488, 41492, 41493, 41494, 41985, 41986, 41987, 41988, 41989, 41990, 41991, 41992, 41993, 41994, 41995, 41996, 42016, 42017, 42032, 42033, 42034, 42035, 42036, 42037, 42080, 42081, 42082, 42083, 42085, 42086, 42087, 42088, 42089, 42090, 42091, 42092, 42093, 42094, 42095, 42096, 42097, 42098, 42099
+                ]
+            elif section == "GPS":
+                known_tags = [
+                    piexif.GPSIFD.GPSVersionID, piexif.GPSIFD.GPSLatitudeRef, piexif.GPSIFD.GPSLatitude,
+                    piexif.GPSIFD.GPSLongitudeRef, piexif.GPSIFD.GPSLongitude, piexif.GPSIFD.GPSAltitudeRef,
+                    piexif.GPSIFD.GPSAltitude, piexif.GPSIFD.GPSTimeStamp, piexif.GPSIFD.GPSSatellites,
+                    piexif.GPSIFD.GPSStatus, piexif.GPSIFD.GPSMeasureMode, piexif.GPSIFD.GPSDOP,
+                    piexif.GPSIFD.GPSSpeedRef, piexif.GPSIFD.GPSSpeed, piexif.GPSIFD.GPSTrackRef,
+                    piexif.GPSIFD.GPSTrack, piexif.GPSIFD.GPSImgDirectionRef, piexif.GPSIFD.GPSImgDirection,
+                    piexif.GPSIFD.GPSMapDatum, piexif.GPSIFD.GPSDestLatitudeRef, piexif.GPSIFD.GPSDestLatitude,
+                    piexif.GPSIFD.GPSDestLongitudeRef, piexif.GPSIFD.GPSDestLongitude, piexif.GPSIFD.GPSDestBearingRef,
+                    piexif.GPSIFD.GPSDestBearing, piexif.GPSIFD.GPSDestDistanceRef, piexif.GPSIFD.GPSDestDistance,
+                    piexif.GPSIFD.GPSProcessingMethod, piexif.GPSIFD.GPSAreaInformation, piexif.GPSIFD.GPSDateStamp,
+                    piexif.GPSIFD.GPSDifferential, piexif.GPSIFD.GPSHPositioningError,
+                    0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31
+                ]
+            else:
+                return False
+                
+            if tag not in known_tags:
+                return False
+                
+            if value is None or value == "":
+                return False
+                
+            return True
+            
+        except (AttributeError, KeyError, TypeError):
+            return False
     
     def _process_heic_format(self, image_path):
 
@@ -736,6 +812,10 @@ class WriteExifThread(QThread):
             return
         
         try:
+            if not self._validate_heic_file(image_path):
+                self.log("WARNING", f"文件 {os.path.basename(image_path)} 不是有效的HEIC格式，跳过处理")
+                return
+                
             register_heif_opener()
             heif_file = open_heif(image_path)
             
@@ -755,6 +835,36 @@ class WriteExifThread(QThread):
                 
         except (IOError, OSError, ValueError, TypeError, ImportError) as e:
             self.log("ERROR", f"处理 {os.path.basename(image_path)} 时出错: {str(e)}")
+
+    def _validate_heic_file(self, image_path):
+        try:
+            with open(image_path, 'rb') as f:
+                header = f.read(12)
+                
+            if len(header) < 12:
+                return False
+                
+            if header[:4] != b'ftyp':
+                return False
+                
+            valid_brand_types = [
+                b'mif1', b'mif2', b'mif3', b'heic', b'heix', b'hevc', 
+                b'hevx', b'hev1', b'hev2', b'hev3', b'hev4', b'hev5', b'hev6',
+                b'hev7', b'hev8', b'hev9', b'hev1', b'hev2', b'hev3', b'hev4', b'hev5'
+            ]
+            
+            brand = header[4:8]
+            if brand in valid_brand_types:
+                return True
+                
+            version_brand = header[8:12]
+            if version_brand[1:4] in [b'heic', b'heix', b'hevc']:
+                return True
+                
+            return False
+            
+        except (IOError, OSError):
+            return False
 
     def _process_video_format(self, image_path):
         file_ext = os.path.splitext(image_path)[1].lower()
