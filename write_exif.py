@@ -190,7 +190,6 @@ class WriteExifManager(QObject):
 
         thread_running = bool(self.worker and self.worker.isRunning())
         if thread_running:
-            self.log("INFO", "正在停止操作")
             self.parent.btnStartExif.setText("正在停止...")
             try:
                 self.stop_exif_writing()
