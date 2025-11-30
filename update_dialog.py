@@ -1,10 +1,11 @@
-import requests
-import sys
 import logging
-from PyQt6.QtGui import QDesktopServices
-from PyQt6.QtWidgets import QDialog
+
+import requests
 from PyQt6 import QtCore, QtGui
 from PyQt6.QtCore import QUrl
+from PyQt6.QtGui import QDesktopServices
+from PyQt6.QtWidgets import QDialog
+
 from UI_UpdateDialog import Ui_UpdateDialog
 from common import get_resource_path
 

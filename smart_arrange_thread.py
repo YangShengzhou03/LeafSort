@@ -12,7 +12,7 @@ from PIL import Image
 import exifread
 import pillow_heif
 from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
-from config_manager import config_manager
+from config_manager import config_manager, logger
 
 IMAGE_EXTENSIONS = (
     '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
