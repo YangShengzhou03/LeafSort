@@ -51,9 +51,7 @@ class ResourceManager:
     def get_resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
         
-        # Handle _internal/resources path by checking resources directly
         if relative_path.startswith('_internal/resources/'):
-            # Remove _internal/ prefix and check in resources/ directly
             resource_path = relative_path.replace('_internal/', '', 1)
             path = os.path.join(base_path, resource_path)
             if os.path.exists(path):
@@ -63,7 +61,6 @@ class ResourceManager:
             if os.path.exists(path):
                 return path
         else:
-            # Handle normal paths
             path = os.path.join(base_path, relative_path)
             if os.path.exists(path):
                 return path
@@ -113,7 +110,7 @@ class FileMagicNumberDetector:
             }
             
         except Exception as e:
-            logger.error(f"检测文件魔数时出错: {str(e)}")
+            logger.error(f"Error detecting file magic number: {str(e)}")
             return None
     
     def verify_file_extension(self, file_path) -> Tuple[bool, Optional[Dict[str, str]]]:

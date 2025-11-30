@@ -21,7 +21,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.setupUi(self)
         self._drag_position = QPoint()
         self.tray_icon = None
-        self._exit_requested = False  # 添加退出标志
+        self._exit_requested = False
         self._setup_ui()
         self._initialize_pages()
         self._connect_signals()
@@ -29,7 +29,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         try:
             check_update()
         except Exception as e:
-            logger.error(f"检查更新时出错: {str(e)}")
+            logger.error(f"Error checking for updates: {str(e)}")
 
     def _initialize_pages(self):
         self.folder_page = FolderPage(self)
@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.deduplication_page = FileDeduplicationManager(self, self.folder_page)
 
     def _setup_ui(self):
-        self.setWindowTitle("LeafSort（轻羽媒体整理）")
+        self.setWindowTitle("LeafSort")
         icon_path = get_resource_path('_internal/resources/img/icon.ico')
         if icon_path:
             self.setWindowIcon(QtGui.QIcon(icon_path))
@@ -51,11 +51,11 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         icon_path = get_resource_path('_internal/resources/img/icon.ico')
         if icon_path:
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
-        self.tray_icon.setToolTip("LeafSort（轻羽媒体整理）")
+        self.tray_icon.setToolTip("LeafSort")
         tray_menu = QtWidgets.QMenu()
-        action_show = QtGui.QAction("显示窗口", self)
+        action_show = QtGui.QAction("Show Window", self)
         action_show.triggered.connect(self._show_window)
-        action_exit = QtGui.QAction("退出", self)
+        action_exit = QtGui.QAction("Exit", self)
         action_exit.triggered.connect(self._exit_app)
         tray_menu.addAction(action_show)
         tray_menu.addSeparator()
@@ -66,7 +66,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 with open(css_path, 'r', encoding='utf-8') as f:
                     tray_menu.setStyleSheet(f.read())
             except Exception as e:
-                logger.error(f"读取菜单样式表出错: {str(e)}")
+                logger.error(f"Error reading menu stylesheet: {str(e)}")
         self.tray_icon.setContextMenu(tray_menu)
         self.tray_icon.activated.connect(self._handle_tray_activation)
         self.tray_icon.show()
@@ -109,7 +109,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
         self.tray_icon.showMessage(
             "LeafSort",
-            "应用已最小化到系统托盘",
+            "Application minimized to system tray",
             QtWidgets.QSystemTrayIcon.MessageIcon.Information,
             3000
         )

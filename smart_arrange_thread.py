@@ -406,10 +406,8 @@ class SmartArrangeThread(QtCore.QThread):
         if folder_path in source_folders:
             return True
             
-        # 获取系统关键目录
         windows_system_dirs = []
         
-        # 添加Windows系统目录（如果存在）
         windir = os.environ.get('WINDIR', '')
         if windir:
             windows_system_dirs.append(Path(windir))
@@ -418,7 +416,6 @@ class SmartArrangeThread(QtCore.QThread):
         if systemroot:
             windows_system_dirs.append(Path(systemroot))
             
-        # 添加Program Files目录（如果存在）
         programfiles = os.environ.get('ProgramFiles', '')
         if programfiles:
             windows_system_dirs.append(Path(programfiles))
@@ -427,23 +424,18 @@ class SmartArrangeThread(QtCore.QThread):
         if programfiles_x86:
             windows_system_dirs.append(Path(programfiles_x86))
             
-        # 添加用户主目录
         home_dir = Path.home()
         if home_dir:
             windows_system_dirs.append(home_dir)
             
-        # 添加系统根目录（通常是C:）
         if Path('C:/').exists():
             windows_system_dirs.append(Path('C:/'))
             
         folder_path = folder_path.resolve()
         for system_dir in windows_system_dirs:
-            try:
-                if system_dir and folder_path.is_relative_to(system_dir):
-                    return True
-            except (ValueError, OSError):
-                # 处理路径验证错误
-                continue
+            if system_dir and folder_path.is_relative_to(system_dir):
+                return True
+            continue
                 
         return False
 
@@ -1068,19 +1060,18 @@ class SmartArrangeThread(QtCore.QThread):
                     else:
                         return value.strip().strip('"\'')
         
-        # 检查LvMetaInfo字段中的应用信息
-        if 'LvMetaInfo' in metadata:
-            try:
-                import json
-                info_str = metadata['LvMetaInfo']
-                if isinstance(info_str, str) and info_str.startswith('{"'):
-                    info_data = json.loads(info_str)
-                    if 'source_type' in info_data:
-                        source_type = info_data['source_type']
-                        if 'douyin' in source_type:
-                            return 'ByteDance'
-            except:
-                pass
+                if 'LvMetaInfo' in metadata:
+                    try:
+                        import json
+                        info_str = metadata['LvMetaInfo']
+                        if isinstance(info_str, str) and info_str.startswith('{"'):
+                            info_data = json.loads(info_str)
+                            if 'source_type' in info_data:
+                                source_type = info_data['source_type']
+                                if 'douyin' in source_type:
+                                    return 'ByteDance'
+                    except:
+                        pass
         
         return None
 
@@ -1302,10 +1293,8 @@ class SmartArrangeThread(QtCore.QThread):
             return None
             
         try:
-            # 首先尝试直接作为十进制度数解析
             coord_str = str(coord_str).strip()
             
-            # 清理可能的字符
             direction = None
             for dir_char in ['N', 'S', 'E', 'W']:
                 if dir_char in coord_str:

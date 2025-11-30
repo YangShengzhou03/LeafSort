@@ -53,11 +53,9 @@ class WriteExifThread(QThread):
                 pass
     
     def _decode_subprocess_output(self, output_data):
-        """安全地解码subprocess输出，避免UnicodeDecodeError"""
         if not output_data:
             return ""
         
-        # 尝试多种编码方式
         encodings = ['utf-8', 'gbk', 'latin1', 'cp1252']
         
         for encoding in encodings:
@@ -66,7 +64,6 @@ class WriteExifThread(QThread):
             except (UnicodeDecodeError, AttributeError):
                 continue
         
-        # 如果所有编码都失败，返回空字符串
         return ""
             
     def __init__(self, folders_dict, exif_config=None, target_folder=None):
@@ -86,7 +83,7 @@ class WriteExifThread(QThread):
                 if not (-90 <= self.lat <= 90) or not (-180 <= self.lon <= 180):
                     self.lat, self.lon = None, None
             except ValueError as e:
-                self.log("ERROR", f"解析坐标值失败: {str(e)}")
+                self.log("ERROR", f"Failed to parse coordinate values: {str(e)}")
                 self.lat, self.lon = None, None
 
     def run(self):
@@ -146,7 +143,7 @@ class WriteExifThread(QThread):
                 if result == 'success':
                     success_count += 1
                 elif result == 'skipped':
-                    error_count += 1  # 跳过的算失败
+                    error_count += 1
                 elif result == 'failed':
                     error_count += 1
             except (IOError, ValueError, TypeError, TimeoutError) as e:
@@ -324,8 +321,8 @@ class WriteExifThread(QThread):
             return
             
         if not os.access(image_path, os.W_OK):
-            error_msg = f"文件不可写: {os.path.basename(image_path)}"
-            logger.error("文件不可写: %s", image_path)
+            error_msg = f"File not writable: {os.path.basename(image_path)}"
+            logger.error("File not writable: %s", image_path)
             self.log("ERROR", error_msg)
             return
         
@@ -442,7 +439,7 @@ class WriteExifThread(QThread):
         try:
             exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
-                logger.warning("ExifTool 路径不存在，跳过EXIF检查")
+                logger.warning("ExifTool path not found, skipping EXIF check")
                 return True
             
             check_cmd = [exiftool_path, '-all', '-s', image_path]
@@ -455,7 +452,7 @@ class WriteExifThread(QThread):
                                     if line.strip() and not line.startswith('=')])
                     
                     if exif_count == 0:
-                        logger.info("文件没有EXIF数据，将初始化基础信息")
+                        logger.info("File has no EXIF data, will initialize basic information")
                         return self._initialize_basic_exif(image_path)
                     return True
             else:
@@ -467,14 +464,14 @@ class WriteExifThread(QThread):
             logger.warning("EXIF检查超时")
             return True
         except Exception as e:
-            logger.error(f"检查EXIF支持时出错: {str(e)}")
+            logger.error(f"Error checking EXIF support: {str(e)}")
             return True
     
     def _initialize_basic_exif(self, image_path):
         try:
             exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
-                logger.warning("ExifTool 不存在，无法初始化EXIF")
+                logger.warning("ExifTool not found, cannot initialize EXIF")
                 return False
             
             init_cmd = [
@@ -489,15 +486,15 @@ class WriteExifThread(QThread):
             result = subprocess.run(init_cmd, capture_output=True, text=False, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
-                logger.info("基础EXIF信息初始化成功")
+                logger.info("Basic EXIF information initialized successfully")
                 return True
             else:
                 stderr_str = self._decode_subprocess_output(result.stderr)
-                logger.error(f"初始化EXIF失败: {stderr_str}")
+                logger.error(f"EXIF initialization failed: {stderr_str}")
                 return False
                 
         except Exception as e:
-            logger.error(f"初始化基础EXIF时出错: {str(e)}")
+            logger.error(f"Error initializing basic EXIF: {str(e)}")
             return False
     
     def _write_lens_info_with_exiftool(self, image_path):

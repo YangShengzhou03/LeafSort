@@ -330,13 +330,12 @@ class ConfigManager:
     
     @_thread_safe_method
     def get_remaining_daily_calls(self) -> int:
-        """获取剩余的API调用次数"""
         try:
             with self._lock:
                 self._check_and_reset_daily_limit()
                 return max(0, 365 - self.config["daily_api_calls"])
         except Exception as e:
-            logger.error(f"获取剩余API调用次数时发生异常: {str(e)}")
+            logger.error(f"Error getting remaining API calls: {str(e)}")
             return 0
     
     @_thread_safe_method
