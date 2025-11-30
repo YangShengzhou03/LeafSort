@@ -445,18 +445,21 @@ class WriteExifThread(QThread):
                 return True
             
             check_cmd = [exiftool_path, '-all', '-s', image_path]
-            result = subprocess.run(check_cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(check_cmd, capture_output=True, text=False, timeout=10)
             
             if result.returncode == 0:
-                exif_count = len([line for line in result.stdout.split('\n') 
-                                if line.strip() and not line.startswith('=')])
-                
-                if exif_count == 0:
-                    logger.info("文件没有EXIF数据，将初始化基础信息")
-                    return self._initialize_basic_exif(image_path)
-                return True
+                stdout_str = self._decode_subprocess_output(result.stdout)
+                if stdout_str:
+                    exif_count = len([line for line in stdout_str.split('\n') 
+                                    if line.strip() and not line.startswith('=')])
+                    
+                    if exif_count == 0:
+                        logger.info("文件没有EXIF数据，将初始化基础信息")
+                        return self._initialize_basic_exif(image_path)
+                    return True
             else:
-                logger.warning(f"无法读取EXIF信息: {result.stderr}")
+                stderr_str = self._decode_subprocess_output(result.stderr)
+                logger.warning(f"无法读取EXIF信息: {stderr_str}")
                 return False
                 
         except subprocess.TimeoutExpired:
@@ -482,13 +485,14 @@ class WriteExifThread(QThread):
                 image_path
             ]
             
-            result = subprocess.run(init_cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(init_cmd, capture_output=True, text=False, timeout=30)
             
             if result.returncode == 0:
                 logger.info("基础EXIF信息初始化成功")
                 return True
             else:
-                logger.error(f"初始化EXIF失败: {result.stderr}")
+                stderr_str = self._decode_subprocess_output(result.stderr)
+                logger.error(f"初始化EXIF失败: {stderr_str}")
                 return False
                 
         except Exception as e:
@@ -520,14 +524,15 @@ class WriteExifThread(QThread):
                 image_path
             ]
             
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
             
             if result.returncode == 0:
                 logger.info("使用ExifTool写入镜头信息成功: %s %s", lens_brand, lens_model)
                 return True
             else:
-                logger.warning("使用ExifTool写入镜头信息失败: %s", result.stderr)
-                self.log("WARNING", f"ExifTool写入镜头信息失败: {result.stderr}")
+                stderr_str = self._decode_subprocess_output(result.stderr)
+                logger.warning("使用ExifTool写入镜头信息失败: %s", stderr_str)
+                self.log("WARNING", f"ExifTool写入镜头信息失败: {stderr_str}")
                 return False
                 
         except subprocess.TimeoutExpired:
@@ -560,7 +565,6 @@ class WriteExifThread(QThread):
             self._clean_exif_for_heic(exif_dict)
             exif_bytes = piexif.dump(exif_dict)
             piexif.insert(exif_bytes, image_path)
-            logger.info("成功写入EXIF数据到 %s", image_path)
             self.log("INFO", f"写入并复制 {os.path.basename(image_path)}")
             
             if hasattr(self, '_requires_exiftool_lens_update') and self._requires_exiftool_lens_update:
@@ -1283,7 +1287,7 @@ class WriteExifThread(QThread):
     def stop(self):
 
         self.requestInterruption()
-        self.log("INFO", "正在取消操作...")
+        self.log("WARNING", "正在取消写入EXIF数据操作...")
         if self.isRunning():
             self.wait(1000)
 
