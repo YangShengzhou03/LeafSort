@@ -58,7 +58,6 @@ class WriteExifThread(QThread):
         self.target_folder = target_folder or os.path.expanduser("~/Desktop/Processed_Images")
         self.lat, self.lon = None, None
         
-        # 镜头信息处理标记
         self._requires_exiftool_lens_update = False
         self._exiftool_lens_data = {}
         
@@ -171,7 +170,6 @@ class WriteExifThread(QThread):
                     except (IOError, OSError) as e:
                         self.log("ERROR", f"读取文件夹失败: {str(e)}")
         
-        logger.info("共收集到图像文件")
         return image_paths
     
     def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
@@ -341,11 +339,9 @@ class WriteExifThread(QThread):
         try:
             self._ensure_exif_sections(exif_dict)
             
-            # 检查EXIF支持情况
             if not self._check_exif_support(image_path):
                 logger.warning("EXIF检查失败，尝试继续处理")
             
-            # 重置镜头信息处理标记
             self._requires_exiftool_lens_update = False
             self._exiftool_lens_data = {}
             
@@ -393,11 +389,9 @@ class WriteExifThread(QThread):
                 except Exception as e:
                     logger.error(f"写入基本字段 {config_key} 失败: {str(e)}")
         
-        # 处理镜头信息 - 集成完整的镜头信息写入逻辑
         self._update_lens_information(exif_dict, updated_fields)
     
     def _update_lens_information(self, exif_dict, updated_fields):
-        """更新镜头信息，支持多个标签写入以确保Windows属性显示"""
         lens_brand = self.exif_config.get('lens_brand')
         lens_model = self.exif_config.get('lens_model')
         
@@ -405,22 +399,17 @@ class WriteExifThread(QThread):
             return
         
         try:
-            # 先使用 piexif 写入基础镜头信息（兼容性）
             if "Exif" not in exif_dict:
                 exif_dict["Exif"] = {}
             
-            # 写入 LensMake 和 LensModel（piexif兼容的标签）
             if lens_brand:
                 exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
                 updated_fields.append(f"镜头品牌: {lens_brand}")
-                logger.debug(f"成功写入镜头品牌: {lens_brand}")
             
             if lens_model:
                 exif_dict["Exif"][piexif.ExifIFD.LensModel] = lens_model.encode('utf-8')
                 updated_fields.append(f"镜头型号: {lens_model}")
-                logger.debug(f"成功写入镜头型号: {lens_model}")
             
-            # 标记需要使用 ExifTool 写入额外标签
             self._requires_exiftool_lens_update = True
             self._exiftool_lens_data = {
                 'lens_brand': lens_brand,
@@ -432,7 +421,6 @@ class WriteExifThread(QThread):
             self.log("ERROR", f"写入镜头信息失败: {str(e)}")
     
     def _check_exif_support(self, image_path):
-        """检查文件EXIF支持情况"""
         try:
             exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
@@ -462,14 +450,12 @@ class WriteExifThread(QThread):
             return True
     
     def _initialize_basic_exif(self, image_path):
-        """初始化基础EXIF信息"""
         try:
             exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
                 logger.warning("ExifTool 不存在，无法初始化EXIF")
                 return False
             
-            # 写入基础EXIF信息
             init_cmd = [
                 exiftool_path,
                 '-DateTimeOriginal=2023:01:01 12:00:00',
@@ -560,12 +546,10 @@ class WriteExifThread(QThread):
             logger.info("成功写入EXIF数据到 %s", image_path)
             self.log("INFO", f"写入并复制 {os.path.basename(image_path)}")
             
-            # 使用ExifTool写入额外镜头信息
             if hasattr(self, '_requires_exiftool_lens_update') and self._requires_exiftool_lens_update:
                 success = self._write_lens_info_with_exiftool(image_path)
                 if success:
                     updated_fields.append("镜头信息(ExifTool)")
-                    self.log("INFO", "使用ExifTool写入完整镜头信息成功")
                 else:
                     self.log("WARNING", "使用ExifTool写入镜头信息失败")
             
@@ -883,14 +867,12 @@ class WriteExifThread(QThread):
         
         for section in list(exif_dict.keys()):
             if section not in valid_sections:
-                logger.debug("移除不支持的EXIF节: %s", section)
                 exif_dict.pop(section, None)
                 continue
                 
             if isinstance(exif_dict[section], dict):
                 for tag, value in list(exif_dict[section].items()):
                     if not self._is_valid_exif_tag(section, tag, value):
-                        logger.debug("移除无效EXIF标签: %s.%s", section, tag)
                         exif_dict[section].pop(tag, None)
                         
     def _is_valid_exif_tag(self, section, tag, value):
@@ -950,7 +932,6 @@ class WriteExifThread(QThread):
             return False
     
     def _process_heic_format(self, image_path):
-
         if not PILLOW_HEIF_AVAILABLE:
             self.log("ERROR", f"处理 {os.path.basename(image_path)} 需要 pillow-heif")
             return
@@ -1190,24 +1171,20 @@ class WriteExifThread(QThread):
         if not os.path.exists(exiftool_path):
             self.log.emit("ERROR", "exiftool工具不存在，无法处理RAW格式文件")
             return None
-            
+        
         return exiftool_path
     
     def _prepare_raw_exif_data(self, image_path):
-
         exif_data = {}
         updated_fields = []
         
         self._prepare_raw_shoot_time(exif_data, updated_fields, image_path)
-        
         self._prepare_raw_basic_fields(exif_data, updated_fields)
-        
         self._prepare_raw_gps_data(exif_data, updated_fields)
         
         return exif_data, updated_fields
     
     def _prepare_raw_shoot_time(self, exif_data, updated_fields, image_path):
-
         shoot_time = self.exif_config.get('shoot_time', 0)
         if shoot_time != 0:
             if shoot_time == 1:
