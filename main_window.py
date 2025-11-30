@@ -76,6 +76,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         self.btnGithub.clicked.connect(self._open_github)
+        self.btnBadge.clicked.connect(self._open_microsoft)
 
     def mousePressEvent(self, event):
         if (event.button() == Qt.MouseButton.LeftButton and
@@ -153,3 +154,9 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not QtGui.QDesktopServices.openUrl(url):
             QtWidgets.QMessageBox.information(self, "信息",
                                               "无法打开GitHub页面，请手动访问")
+
+    def _open_microsoft(self):
+        url = QtCore.QUrl("https://apps.microsoft.com/detail/9p3mkv4xslj8?hl=zh&gl=CN&ocid=pdpshare")
+        if not QtGui.QDesktopServices.openUrl(url):
+            QtWidgets.QMessageBox.information(self, "信息",
+                                              "无法打开Microsoft页面，请手动访问")

@@ -8,8 +8,6 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from common import get_resource_path
-
 
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
@@ -225,22 +223,22 @@ class Ui_MainWindow(object):
         self.listNavigationMenu.setObjectName("listNavigationMenu")
         item = QtWidgets.QListWidgetItem()
         icon = QtGui.QIcon()
-        icon.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/list/媒体导入.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon.addPixmap(QtGui.QPixmap("resources/img/list/媒体导入.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon1 = QtGui.QIcon()
-        icon1.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/list/智能整理.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon1.addPixmap(QtGui.QPixmap("resources/img/list/智能整理.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon1)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon2 = QtGui.QIcon()
-        icon2.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/list/文件去重.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon2.addPixmap(QtGui.QPixmap("resources/img/list/文件去重.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon2)
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/list/属性写入.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon3.addPixmap(QtGui.QPixmap("resources/img/list/属性写入.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon3)
         self.listNavigationMenu.addItem(item)
         self.layoutSidebarContent.addWidget(self.listNavigationMenu)
@@ -302,31 +300,45 @@ class Ui_MainWindow(object):
         self.layoutHeaderBar.setObjectName("layoutHeaderBar")
         spacerItem = QtWidgets.QSpacerItem(40, 20, QtWidgets.QSizePolicy.Policy.Expanding, QtWidgets.QSizePolicy.Policy.Minimum)
         self.layoutHeaderBar.addItem(spacerItem)
-        self.widgetVipBadge = QtWidgets.QWidget(parent=self.frameAppHeaderBar)
-        self.widgetVipBadge.setEnabled(True)
-        sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Policy.Preferred, QtWidgets.QSizePolicy.Policy.Preferred)
-        sizePolicy.setHorizontalStretch(0)
-        sizePolicy.setVerticalStretch(0)
-        sizePolicy.setHeightForWidth(self.widgetVipBadge.sizePolicy().hasHeightForWidth())
-        self.widgetVipBadge.setSizePolicy(sizePolicy)
-        self.widgetVipBadge.setMinimumSize(QtCore.QSize(100, 36))
-        self.widgetVipBadge.setMaximumSize(QtCore.QSize(100, 36))
-        self.widgetVipBadge.setCursor(QtGui.QCursor(QtCore.Qt.CursorShape.PointingHandCursor))
-        self.widgetVipBadge.setStyleSheet("QWidget {\n"
-"    image: url(_internal/resources/img/窗口控制/microsoft.svg);\n"
-"    background-color: rgba(0, 0, 0,0);\n"
-"    border-radius:12px;\n"
-"    padding: 4px;\n"
-"    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);\n"
-"    image-rendering: smooth;\n"
+        self.btnBadge = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
+        self.btnBadge.setMinimumSize(QtCore.QSize(100, 36))
+        self.btnBadge.setMaximumSize(QtCore.QSize(100, 36))
+        self.btnBadge.setStyleSheet("QToolButton {\n"
+"    border: none;\n"
+"    padding: 8px;\n"
+"    border-radius: 8px;\n"
+"    background: rgba(255, 255, 255, 0);\n"
+"    transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);\n"
+"    color: #374151;\n"
 "}\n"
-"QWidget:hover {\n"
-"    transform: scale(1.05);\n"
-"    background-color: rgba(139, 92, 246, 0.1);\n"
+"\n"
+"QToolButton:hover {\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 40),\n"
+"        stop:1 rgba(255, 255, 255, 20)\n"
+"    );\n"
+"    border: 1px solid rgba(255, 255, 255, 50);\n"
+"    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(-1px);\n"
 "}\n"
-"")
-        self.widgetVipBadge.setObjectName("widgetVipBadge")
-        self.layoutHeaderBar.addWidget(self.widgetVipBadge)
+"\n"
+"QToolButton:pressed {\n"
+"    background: qlineargradient(\n"
+"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
+"        stop:0 rgba(255, 255, 255, 70),\n"
+"        stop:1 rgba(255, 255, 255, 40)\n"
+"    );\n"
+"    box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.15);\n"
+"    transform: translateY(0);\n"
+"}")
+        self.btnBadge.setText("")
+        icon4 = QtGui.QIcon()
+        icon4.addPixmap(QtGui.QPixmap("resources/img/窗口控制/microsoft.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnBadge.setIcon(icon4)
+        self.btnBadge.setIconSize(QtCore.QSize(100, 36))
+        self.btnBadge.setObjectName("btnBadge")
+        self.layoutHeaderBar.addWidget(self.btnBadge)
         self.btnGithub = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
         self.btnGithub.setMinimumSize(QtCore.QSize(36, 36))
         self.btnGithub.setMaximumSize(QtCore.QSize(36, 36))
@@ -360,51 +372,12 @@ class Ui_MainWindow(object):
 "    transform: translateY(0);\n"
 "}")
         self.btnGithub.setText("")
-        icon4 = QtGui.QIcon()
-        icon4.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/窗口控制/github.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnGithub.setIcon(icon4)
+        icon5 = QtGui.QIcon()
+        icon5.addPixmap(QtGui.QPixmap("resources/img/窗口控制/github.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnGithub.setIcon(icon5)
         self.btnGithub.setIconSize(QtCore.QSize(18, 18))
         self.btnGithub.setObjectName("btnGithub")
         self.layoutHeaderBar.addWidget(self.btnGithub)
-        self.btnSettings = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
-        self.btnSettings.setMinimumSize(QtCore.QSize(36, 36))
-        self.btnSettings.setMaximumSize(QtCore.QSize(36, 36))
-        self.btnSettings.setStyleSheet("QToolButton {\n"
-"    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
-"    background: rgba(255, 255, 255, 0);\n"
-"    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
-"    color: #374151;\n"
-"}\n"
-"\n"
-"QToolButton:hover {\n"
-"    background: qlineargradient(\n"
-"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 30),\n"
-"        stop:1 rgba(255, 255, 255, 10)\n"
-"    );\n"
-"    border: 1px solid rgba(255, 255, 255, 40);\n"
-"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
-"    transform: translateY(-1px);\n"
-"}\n"
-"\n"
-"QToolButton:pressed {\n"
-"    background: qlineargradient(\n"
-"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 60),\n"
-"        stop:1 rgba(255, 255, 255, 30)\n"
-"    );\n"
-"    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);\n"
-"    transform: translateY(0);\n"
-"}")
-        self.btnSettings.setText("")
-        icon5 = QtGui.QIcon()
-        icon5.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/窗口控制/设置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnSettings.setIcon(icon5)
-        self.btnSettings.setIconSize(QtCore.QSize(18, 18))
-        self.btnSettings.setObjectName("btnSettings")
-        self.layoutHeaderBar.addWidget(self.btnSettings)
         self.btnMinimize = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
         self.btnMinimize.setMinimumSize(QtCore.QSize(36, 36))
         self.btnMinimize.setMaximumSize(QtCore.QSize(36, 36))
@@ -438,7 +411,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnMinimize.setText("")
         icon6 = QtGui.QIcon()
-        icon6.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/窗口控制/最小化.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon6.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最小化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMinimize.setIcon(icon6)
         self.btnMinimize.setIconSize(QtCore.QSize(12, 12))
         self.btnMinimize.setObjectName("btnMinimize")
@@ -476,7 +449,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnMaximize.setText("")
         icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/窗口控制/最大化.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon7.addPixmap(QtGui.QPixmap("resources/img/窗口控制/最大化.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnMaximize.setIcon(icon7)
         self.btnMaximize.setIconSize(QtCore.QSize(12, 12))
         self.btnMaximize.setObjectName("btnMaximize")
@@ -514,7 +487,7 @@ class Ui_MainWindow(object):
 "}")
         self.btnClose.setText("")
         icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/窗口控制/关闭.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon8.addPixmap(QtGui.QPixmap("resources/img/窗口控制/关闭.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnClose.setIcon(icon8)
         self.btnClose.setIconSize(QtCore.QSize(12, 12))
         self.btnClose.setObjectName("btnClose")
@@ -2042,7 +2015,7 @@ class Ui_MainWindow(object):
 "  transform: translateY(2px);\n"
 "}")
         icon9 = QtGui.QIcon()
-        icon9.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/page_2/位置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon9.addPixmap(QtGui.QPixmap("resources/img/page_2/位置.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnAddressTag.setIcon(icon9)
         self.btnAddressTag.setObjectName("btnAddressTag")
         self.layoutTagsInput.addWidget(self.btnAddressTag)
@@ -3166,11 +3139,11 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("_internal/resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar1.setText("")
         icon10 = QtGui.QIcon()
-        icon10.addPixmap(QtGui.QPixmap(get_resource_path("_internal/resources/img/page_4/星级_暗.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon10.addPixmap(QtGui.QPixmap("resources/img/page_4/星级_暗.svg"), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         self.btnStar1.setIcon(icon10)
         self.btnStar1.setIconSize(QtCore.QSize(20, 20))
         self.btnStar1.setObjectName("btnStar1")
@@ -3185,7 +3158,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("_internal/resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar2.setText("")
         self.btnStar2.setIcon(icon10)
@@ -3202,7 +3175,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("_internal/resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar3.setText("")
         self.btnStar3.setIcon(icon10)
@@ -3219,7 +3192,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("_internal/resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar4.setText("")
         self.btnStar4.setIcon(icon10)
@@ -3236,7 +3209,7 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("_internal/resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar5.setText("")
         self.btnStar5.setIcon(icon10)
