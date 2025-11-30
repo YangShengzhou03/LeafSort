@@ -1,14 +1,15 @@
+import logging
 import os
 import re
-import time
-import logging
-import subprocess
 import shutil
+import subprocess
 import tempfile
 from datetime import datetime, timedelta
-from PyQt6.QtCore import QThread, pyqtSignal
-from PIL import Image, PngImagePlugin
+
 import piexif
+from PIL import Image, PngImagePlugin
+from PyQt6.QtCore import QThread, pyqtSignal
+
 from common import get_resource_path
 
 logger = logging.getLogger(__name__)

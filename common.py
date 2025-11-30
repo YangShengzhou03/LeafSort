@@ -50,13 +50,27 @@ class ResourceManager:
     @staticmethod
     def get_resource_path(relative_path):
         base_path = os.path.dirname(os.path.abspath(__file__))
-        path = os.path.join(base_path, relative_path)
-        if os.path.exists(path):
-            return path
         
-        path = os.path.join(os.getcwd(), relative_path)
-        if os.path.exists(path):
-            return path
+        # Handle _internal/resources path by checking resources directly
+        if relative_path.startswith('_internal/resources/'):
+            # Remove _internal/ prefix and check in resources/ directly
+            resource_path = relative_path.replace('_internal/', '', 1)
+            path = os.path.join(base_path, resource_path)
+            if os.path.exists(path):
+                return path
+            
+            path = os.path.join(os.getcwd(), resource_path)
+            if os.path.exists(path):
+                return path
+        else:
+            # Handle normal paths
+            path = os.path.join(base_path, relative_path)
+            if os.path.exists(path):
+                return path
+            
+            path = os.path.join(os.getcwd(), relative_path)
+            if os.path.exists(path):
+                return path
         
         return None
 
