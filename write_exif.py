@@ -34,7 +34,7 @@ class WriteExifManager(QObject):
         for i in range(1, 6):
             btn = getattr(self.parent, f'btnStar{i}')
             icon = QIcon()
-            icon.addPixmap(QPixmap(get_resource_path('resources/img/page_4/星级_暗.svg')), QIcon.Mode.Normal, QIcon.State.Off)
+            icon.addPixmap(QPixmap(get_resource_path('_internal/resources/img/page_4/星级_暗.svg')), QIcon.Mode.Normal, QIcon.State.Off)
             btn.setIcon(icon)
             btn.setIconSize(QSize(20, 20))
             btn.setStyleSheet("border: none; padding: 0")
@@ -55,7 +55,7 @@ class WriteExifManager(QObject):
         self.log("INFO", "欢迎使用图像属性写入，不写入项留空即可。文件一旦写入无法还原。")
 
     def load_camera_lens_mapping(self):
-        data_path = get_resource_path('resources/json/camera_lens_mapping.json')
+        data_path = get_resource_path('_internal/resources/json/camera_lens_mapping.json')
         if os.path.exists(data_path):
             try:
                 with open(data_path, 'r', encoding='utf-8') as f:
@@ -144,7 +144,7 @@ class WriteExifManager(QObject):
 
     def _load_camera_data(self):
         try:
-            data_path = get_resource_path('resources/json/camera_brand_model.json')
+            data_path = get_resource_path('_internal/resources/json/camera_brand_model.json')
             if os.path.exists(data_path):
                 with open(data_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
@@ -234,7 +234,7 @@ class WriteExifManager(QObject):
         for i, btn in enumerate(self.star_buttons, 1):
             icon = QIcon()
             icon_path = '星级_亮.svg' if i <= count else '星级_暗.svg'
-            icon.addPixmap(QPixmap(get_resource_path(f'resources/img/page_4/{icon_path}')), QIcon.Mode.Normal, QIcon.State.Off)
+            icon.addPixmap(QPixmap(get_resource_path(f'_internal/resources/img/page_4/{icon_path}')), QIcon.Mode.Normal, QIcon.State.Off)
             btn.setIcon(icon)
             btn.setIconSize(QSize(20, 20))
 

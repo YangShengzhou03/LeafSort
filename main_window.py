@@ -38,7 +38,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _setup_ui(self):
         self.setWindowTitle("LeafSort（轻羽媒体整理）")
-        icon_path = get_resource_path('resources/img/icon.ico')
+        icon_path = get_resource_path('_internal/resources/img/icon.ico')
         if icon_path:
             self.setWindowIcon(QtGui.QIcon(icon_path))
         self.setWindowFlags(QtCore.Qt.WindowType.FramelessWindowHint)
@@ -47,7 +47,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _setup_system_tray(self):
         self.tray_icon = QtWidgets.QSystemTrayIcon(self)
-        icon_path = get_resource_path('resources/img/icon.ico')
+        icon_path = get_resource_path('_internal/resources/img/icon.ico')
         if icon_path:
             self.tray_icon.setIcon(QtGui.QIcon(icon_path))
         self.tray_icon.setToolTip("LeafSort（轻羽媒体整理）")
@@ -59,7 +59,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         tray_menu.addAction(action_show)
         tray_menu.addSeparator()
         tray_menu.addAction(action_exit)
-        css_path = get_resource_path('resources/stylesheet/menu.setStyleSheet.css')
+        css_path = get_resource_path('_internal/resources/stylesheet/menu.setStyleSheet.css')
         if css_path and os.path.exists(css_path):
             try:
                 with open(css_path, 'r', encoding='utf-8') as f:
@@ -88,7 +88,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 not self._drag_position.isNull()):
             if self.isMaximized():
                 self.showNormal()
-                self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/最大化.svg')))
+                self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/最大化.svg')))
                 screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
                 window_rect = self.frameGeometry()
                 center_point = screen.center()
@@ -130,10 +130,10 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
     def _toggle_maximize(self):
         if self.isMaximized():
             self.showNormal()
-            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/最大化.svg')))
+            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/最大化.svg')))
         else:
             self.showMaximized()
-            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('resources/img/窗口控制/还原.svg')))
+            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/还原.svg')))
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.Type.WindowStateChange:

@@ -262,7 +262,7 @@ class SmartArrangeManager(QObject):
             filename_structure = " + ".join([part['tag'] for part in file_name_parts]) if file_name_parts else "无"
             
             self.log("WARNING", f"目录：{directory_structure}，文件名：{filename_structure}")
-            self.log("INFO", f"整理已开始")
+            self.log("INFO", f"整理已经开始啦，目标文件夹为：{self.destination_root}")
             self.parent.btnStartSmartArrange.setText("停止整理")
 
             try:

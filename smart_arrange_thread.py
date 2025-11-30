@@ -134,14 +134,14 @@ class SmartArrangeThread(QtCore.QThread):
 
     def load_geographic_data(self):
         try:
-            city_file_path = get_resource_path('resources/json/City_Reverse_Geocode.json')
+            city_file_path = get_resource_path('_internal/resources/json/City_Reverse_Geocode.json')
             if os.path.exists(city_file_path):
                 with open(city_file_path, 'r', encoding='utf-8') as f:
                     self.city_data = json.load(f)
             else:
                 self.log("WARNING", f"城市地理数据文件不存在: {city_file_path}")
                 
-            province_file_path = get_resource_path('resources/json/Province_Reverse_Geocode.json')
+            province_file_path = get_resource_path('_internal/resources/json/Province_Reverse_Geocode.json')
             if os.path.exists(province_file_path):
                 with open(province_file_path, 'r', encoding='utf-8') as f:
                     self.province_data = json.load(f)
@@ -958,7 +958,7 @@ class SmartArrangeThread(QtCore.QThread):
             if not os.path.exists(file_path):
                 return None
                 
-            exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
+            exiftool_path = get_resource_path('_internal/resources/exiftool/exiftool.exe')
             if not exiftool_path:
                 exiftool_path = os.path.join(os.path.dirname(__file__), 'resources', 'exiftool', 'exiftool.exe')
             

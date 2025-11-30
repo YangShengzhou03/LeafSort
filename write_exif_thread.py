@@ -439,7 +439,7 @@ class WriteExifThread(QThread):
     
     def _check_exif_support(self, image_path):
         try:
-            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
                 logger.warning("ExifTool 路径不存在，跳过EXIF检查")
                 return True
@@ -471,7 +471,7 @@ class WriteExifThread(QThread):
     
     def _initialize_basic_exif(self, image_path):
         try:
-            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
                 logger.warning("ExifTool 不存在，无法初始化EXIF")
                 return False
@@ -505,7 +505,7 @@ class WriteExifThread(QThread):
             return True  # 没有镜头数据，跳过
         
         try:
-            exiftool_path = get_resource_path('resources\\exiftool\\exiftool.exe')
+            exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
             if not os.path.exists(exiftool_path):
                 logger.warning("ExifTool 路径不存在，跳过ExifTool镜头信息写入")
                 return False
@@ -1046,7 +1046,7 @@ class WriteExifThread(QThread):
         return image_path, original_file_path, temp_file_path, temp_dir
     
     def _prepare_exiftool_command(self, original_file_path):
-        exiftool_path = get_resource_path('resources/exiftool/exiftool.exe')
+        exiftool_path = get_resource_path('_internal/resources/exiftool/exiftool.exe')
         cmd_parts = [exiftool_path, "-overwrite_original"]
         updated_fields = []
         
