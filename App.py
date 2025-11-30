@@ -6,8 +6,10 @@ from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QCoreApplication
 from main_window import MainWindow
 
-logging.basicConfig(level=logging.INFO,format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',handlers=[logging.StreamHandler()])
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
+                    handlers=[logging.StreamHandler()])
 logger = logging.getLogger(__name__)
+
 
 def handle_exception(exc_type, exc_value, exc_traceback):
     if issubclass(exc_type, KeyboardInterrupt):
@@ -26,6 +28,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
         msg.setInformativeText(f"{exc_type.__name__}: {exc_value}")
         msg.setDetailedText(error_message)
         msg.exec()
+
 
 def main():
     try:
@@ -48,6 +51,7 @@ def main():
         traceback.print_exc()
         QMessageBox.critical(None, "致命错误", f"应用程序启动失败: {str(e)}")
         sys.exit(1)
+
 
 if __name__ == "__main__":
     sys.excepthook = handle_exception

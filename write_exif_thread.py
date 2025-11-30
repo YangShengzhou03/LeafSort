@@ -120,8 +120,13 @@ class WriteExifThread(QThread):
                 break
                 
             try:
-                self.process_image(path)
-                success_count += 1
+                result = self.process_image(path)
+                if result == 'success':
+                    success_count += 1
+                elif result == 'skipped':
+                    error_count += 1  # 跳过的算失败
+                elif result == 'failed':
+                    error_count += 1
             except (IOError, ValueError, TypeError, TimeoutError) as e:
                 self.log("ERROR", f"处理文件 {os.path.basename(path)} 时出错: {str(e)}")
                 error_count += 1
@@ -205,28 +210,36 @@ class WriteExifThread(QThread):
         try:
             if self.isInterruptionRequested():
                 self.log("WARNING", f"处理被取消: {os.path.basename(image_path)}")
-                return
+                return 'failed'
             
             if not self._validate_file(image_path):
-                return
+                return 'failed'
             
             target_path = self._copy_to_target(image_path)
             if not target_path:
-                return
+                return 'failed'
             
             file_ext = os.path.splitext(image_path)[1].lower()
             logger.debug("处理文件: %s, 扩展名: %s", target_path, file_ext)
             
             format_handler = self._get_format_handler(file_ext)
             if format_handler:
-                format_handler(target_path)
+                format_handler_result = format_handler(target_path)
+                if format_handler_result == 'skipped':
+                    return 'skipped'
+                elif format_handler_result == 'failed':
+                    return 'failed'
+                else:
+                    return 'success'
             else:
                 logger.warning("不支持的文件格式: %s", file_ext)
                 self.log("WARNING", f"不支持的文件格式: {file_ext}")
+                return 'skipped'
 
         except (IOError, ValueError, TypeError, OSError) as e:
             logger.error("处理文件 %s 时出错: %s", image_path, str(e))
             self._handle_processing_error(image_path, e)
+            return 'failed'
     
     def _validate_file(self, image_path):
         if not os.path.exists(image_path):
@@ -746,10 +759,20 @@ class WriteExifThread(QThread):
     def _process_video_format(self, image_path):
         file_ext = os.path.splitext(image_path)[1].lower()
         
+        if file_ext == '.avi':
+            if self._is_riff_avi(image_path):
+                self.log("WARNING", f"文件 {os.path.basename(image_path)} 是RIFF格式的AVI文件，"
+                                   "不支持EXIF信息写入。")
+                return 'skipped'
+            else:
+                self.log("INFO", f"正在处理非RIFF格式的AVI文件: {os.path.basename(image_path)}")
+        
         if file_ext in ('.mov', '.mp4', '.avi', '.mkv'):
-            self._process_video_with_exiftool(image_path)
+            result = self._process_video_with_exiftool(image_path)
+            return 'success' if result else 'failed'
         else:
             self.log("WARNING", f"不支持的视频格式: {file_ext}")
+            return 'skipped'
     
     def _handle_non_ascii_path(self, image_path):
         temp_file_path = None
@@ -865,6 +888,16 @@ class WriteExifThread(QThread):
             
             if result.returncode != 0:
                 error_msg = result.stderr.decode('utf-8', errors='replace') if result.stderr else "未知错误"
+                
+                if "Can't currently write RIFF AVI files" in error_msg or "RIFF AVI files" in error_msg:
+                    self.log("WARNING", f"文件 {os.path.basename(original_file_path)} 是RIFF格式的AVI文件，"
+                                       "不支持EXIF信息写入。")
+                    return False
+                
+                if "FileName encoding must be specified" in error_msg:
+                    self.log("WARNING", f"文件名包含非ASCII字符，建议重命名文件后重试: {os.path.basename(original_file_path)}")
+                    return False
+                
                 self.log("ERROR", f"写入EXIF数据失败: {error_msg}")
                 return False
 
@@ -1006,6 +1039,26 @@ class WriteExifThread(QThread):
         if self.isRunning():
             self.wait(1000)
 
+    def _is_riff_avi(self, file_path):
+        try:
+            with open(file_path, 'rb') as f:
+                header = f.read(12)
+                if len(header) < 12:
+                    return False
+                
+                if header[:4] == b'RIFF' and header[8:12] == b'AVI ':
+                    return True
+                
+                if header[:4] == b'RIFF' and header[8:12] != b'AVI ':
+                    riff_type = header[8:]
+                    return any(marker in riff_type for marker in [b'AVIX', b'AVI '])
+                
+                return False
+                
+        except (IOError, OSError) as e:
+            self.log("DEBUG", f"检测AVI格式时出错 {os.path.basename(file_path)}: {str(e)}")
+            return False
+
     def decimal_to_dms(self, decimal):
         try:
             decimal = abs(decimal)
@@ -1025,7 +1078,6 @@ class WriteExifThread(QThread):
     def _create_gps_data(self, lat, lon):
         gps_dict = {}
         
-        # 直接计算GPS坐标，减少函数调用
         lat_deg = int(abs(lat))
         lat_min_decimal = (abs(lat) - lat_deg) * 60
         lat_min = int(lat_min_decimal)
