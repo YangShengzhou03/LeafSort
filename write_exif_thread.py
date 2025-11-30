@@ -29,7 +29,7 @@ class WriteExifThread(QThread):
     def log(self, level, message):
         try:
             if not isinstance(level, str) or not isinstance(message, str):
-                raise TypeError("日志级别和消息必须是字符串类型")
+                raise TypeError("Log level and message must be string types")
             
             valid_levels = {'DEBUG', 'INFO', 'WARNING', 'ERROR', 'CRITICAL'}
             if level not in valid_levels:
@@ -47,7 +47,7 @@ class WriteExifThread(QThread):
             self.log_signal.emit(level, message)
         except Exception as e:
             try:
-                error_msg = f"日志记录失败: {str(e)}"
+                error_msg = f"Failed to record log: {str(e)}"
                 logger.error(error_msg)
             except:
                 pass
@@ -342,7 +342,7 @@ class WriteExifThread(QThread):
                 return None
             return piexif.load(image_path)
         except (IOError, OSError, ValueError, TypeError) as e:
-            logger.warning("加载EXIF数据失败 %s: %s，将创建新的EXIF数据", image_path, str(e))
+            logger.warning("Failed to load EXIF data %s: %s, will create new EXIF data", image_path, str(e))
             return {"0th": {}, "Exif": {}, "GPS": {}, "1st": {}, "thumbnail": None}
     
     def _update_exif_fields(self, exif_dict, image_path):
@@ -355,7 +355,7 @@ class WriteExifThread(QThread):
             self._ensure_exif_sections(exif_dict)
             
             if not self._check_exif_support(image_path):
-                logger.warning("EXIF检查失败，尝试继续处理")
+                logger.warning("EXIF check failed, attempting to continue processing")
             
             self._requires_exiftool_lens_update = False
             self._exiftool_lens_data = {}
@@ -367,8 +367,8 @@ class WriteExifThread(QThread):
             return self._check_update_result(updated_fields, image_path)
             
         except (IOError, ValueError, OSError) as e:
-            error_msg = f"处理EXIF数据时出错 {os.path.basename(image_path)}: {str(e)}"
-            logger.error("处理EXIF数据时出错 %s: %s", image_path, str(e))
+            error_msg = f"Error processing EXIF data {os.path.basename(image_path)}: {str(e)}"
+            logger.error("Error processing EXIF data %s: %s", image_path, str(e))
             self.log_signal.emit("ERROR", error_msg)
             return []
     
@@ -402,7 +402,7 @@ class WriteExifThread(QThread):
                     exif_dict[section][tag] = processed_value
                     updated_fields.append(format_str.format(value))
                 except Exception as e:
-                    logger.error(f"写入基本字段 {config_key} 失败: {str(e)}")
+                    logger.error(f"Failed to write basic field {config_key}: {str(e)}")
         
         self._update_lens_information(exif_dict, updated_fields)
     
@@ -432,8 +432,8 @@ class WriteExifThread(QThread):
             }
             
         except Exception as e:
-            logger.error(f"写入基础镜头信息失败: {str(e)}")
-            self.log("ERROR", f"写入镜头信息失败: {str(e)}")
+            logger.error(f"Failed to write basic lens information: {str(e)}")
+            self.log("ERROR", f"Failed to write lens information: {str(e)}")
     
     def _check_exif_support(self, image_path):
         try:
@@ -457,11 +457,11 @@ class WriteExifThread(QThread):
                     return True
             else:
                 stderr_str = self._decode_subprocess_output(result.stderr)
-                logger.warning(f"无法读取EXIF信息: {stderr_str}")
+                logger.warning(f"Unable to read EXIF information: {stderr_str}")
                 return False
                 
         except subprocess.TimeoutExpired:
-            logger.warning("EXIF检查超时")
+            logger.warning("EXIF check timeout")
             return True
         except Exception as e:
             logger.error(f"Error checking EXIF support: {str(e)}")
