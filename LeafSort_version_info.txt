@@ -1,0 +1,36 @@
+VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=(2, 0, 2, 0),
+    prodvers=(2, 0, 2, 0),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x4,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+  ),
+  kids=[
+    StringFileInfo(
+      [
+        StringTable(
+          '040904B0',
+          [
+            StringStruct('CompanyName', 'Yangshengzhou'),
+            StringStruct('FileDescription', 'LeafSort'),
+            StringStruct('FileVersion', '2.0.2.0'),
+            StringStruct('InternalName', 'LeafSort'),
+            StringStruct('LegalCopyright', 'Copyright © 2025 YangShengzhou 版权所有'),
+            StringStruct('OriginalFilename', 'LeafSort.exe'),
+            StringStruct('ProductName', 'LeafSort'),
+            StringStruct('ProductVersion', '2.0.2.0')
+          ]
+        )
+      ]
+    ),
+    VarFileInfo(
+      [
+        VarStruct('Translation', [2052, 1200])
+      ]
+    )
+  ]
+)
