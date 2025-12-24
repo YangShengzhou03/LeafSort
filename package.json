@@ -1,0 +1,110 @@
+{
+  "name": "leaf-view",
+  "version": "0.1.0",
+  "private": true,
+  "description": "LeafView - 您的专属相册管家，高效本地相册管理工具",
+  "main": "electron/main.js",
+  "homepage": "./",
+  "scripts": {
+    "electron:dev": "concurrently \"npm run serve\" \"wait-on http://localhost:8080 && electron .\"",
+    "serve": "vue-cli-service serve",
+    "clean": "rimraf dist dist_electron"
+  },
+  "dependencies": {
+    "@element-plus/icons-vue": "^2.3.2",
+    "@tensorflow-models/mobilenet": "^2.1.1",
+    "@tensorflow/tfjs": "^4.22.0",
+    "core-js": "^3.8.3",
+    "element-plus": "^2.13.0",
+    "vue": "^3.2.13",
+    "vue-lazyload": "^3.0.0",
+    "vue-router": "^4.6.4"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.12.16",
+    "@babel/eslint-parser": "^7.12.16",
+    "@vue/cli-plugin-babel": "~5.0.0",
+    "@vue/cli-plugin-eslint": "~5.0.0",
+    "@vue/cli-service": "~5.0.0",
+    "concurrently": "^9.2.1",
+    "electron": "^39.2.7",
+    "electron-builder": "^26.0.12",
+    "eslint": "^7.32.0",
+    "eslint-plugin-vue": "^8.0.3",
+    "rimraf": "^6.0.1",
+    "wait-on": "^9.0.3"
+  },
+  "eslintConfig": {
+    "root": true,
+    "env": {
+      "node": true,
+      "browser": true
+    },
+    "extends": [
+      "plugin:vue/vue3-essential",
+      "eslint:recommended"
+    ],
+    "parserOptions": {
+      "parser": "@babel/eslint-parser",
+      "ecmaVersion": 2020
+    },
+    "rules": {
+      "vue/script-setup-uses-vars": "error",
+      "vue/no-unused-vars": "error",
+      "vue/no-mutating-props": "error",
+      "vue/component-definition-name-casing": [
+        "error",
+        "PascalCase"
+      ],
+      "no-console": "warn",
+      "no-debugger": "error",
+      "indent": [
+        "error",
+        2
+      ],
+      "quotes": [
+        "error",
+        "single"
+      ],
+      "semi": [
+        "error",
+        "never"
+      ]
+    }
+  },
+  "browserslist": [
+    "> 1%",
+    "last 2 versions",
+    "not dead",
+    "not ie 11"
+  ],
+  "build": {
+    "appId": "com.leafview.app",
+    "productName": "LeafView",
+    "directories": {
+      "output": "dist_electron"
+    },
+    "files": [
+      "dist/**/*",
+      "electron/**/*",
+      "node_modules/**/*"
+    ],
+    "win": {
+      "target": [
+        {
+          "target": "nsis",
+          "arch": [
+            "x64"
+          ]
+        }
+      ],
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
+  }
+}
