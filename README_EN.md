@@ -34,10 +34,9 @@ LeafSort is a powerful image management tool focused on efficiently managing, in
 
 - **Programming Language**: Python 3.11+
 - **GUI Framework**: PyQt6 6.5.0+
-- **Image Processing**: Pillow 11.3.0+
-
-- **Metadata Processing**: piexif, exiftool
-- **Other Dependencies**: numpy, scikit-image, opencv-python
+- **Image Processing**: Pillow 11.3.0+, scikit-image, opencv-python
+- **Metadata Processing**: piexif, exifread, exiftool
+- **Other Dependencies**: numpy, pillow-heif, playwright, requests
 
 ### Architecture Design
 
@@ -338,7 +337,7 @@ SOFTWARE.
 
 ## Update Log
 
-### v1.0.0 (2024-XX-XX)
+### v2.0.2 (2024-12-25)
 
 #### New Features
 - Initial version release

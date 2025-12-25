@@ -453,20 +453,34 @@ class WriteExifManager(QObject):
         self.update_button_state()
 
         if self.error_messages:
+            message = f"写入操作完成，但是有 {len(self.error_messages)} 个错误！"
             QMessageBox.information(
                 self.parent,
                 "操作完成",
-                f"写入操作完成，但是有 {len(self.error_messages)} 个错误！\n\n"
-                "您可以在原文件夹中查看更新后的文件。"
+                f"{message}\n\n您可以在原文件夹中查看更新后的文件。"
             )
+            # 显示托盘通知
+            if hasattr(self.parent, 'show_tray_notification'):
+                self.parent.show_tray_notification(
+                    "EXIF写入完成",
+                    message,
+                    QtWidgets.QSystemTrayIcon.MessageIcon.Warning
+                )
         else:
+            message = "EXIF信息写入操作已成功完成！"
             QMessageBox.information(
                 self.parent,
                 "操作完成",
-                "EXIF信息写入操作已完成！\n\n"
-                "所有选定的图片文件已成功更新EXIF信息。\n\n"
+                f"{message}\n\n所有选定的图片文件已成功更新EXIF信息。\n\n"
                 "您可以在原文件夹中查看更新后的文件。"
             )
+            # 显示托盘通知
+            if hasattr(self.parent, 'show_tray_notification'):
+                self.parent.show_tray_notification(
+                    "EXIF写入完成",
+                    message,
+                    QtWidgets.QSystemTrayIcon.MessageIcon.Information
+                )
 
     def load_exif_settings(self):
         if title := config_manager.get_setting("exif_title"):

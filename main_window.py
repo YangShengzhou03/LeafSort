@@ -160,3 +160,12 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         if not QtGui.QDesktopServices.openUrl(url):
             QtWidgets.QMessageBox.information(self, "信息",
                                               "无法打开Microsoft页面，请手动访问")
+
+    def show_tray_notification(self, title: str, message: str, icon: QtWidgets.QSystemTrayIcon.MessageIcon = QtWidgets.QSystemTrayIcon.MessageIcon.Information, timeout: int = 3000):
+        if self.tray_icon and self.tray_icon.isSystemTrayAvailable():
+            try:
+                self.tray_icon.showMessage(title, message, icon, timeout)
+            except Exception as e:
+                logger.error(f"显示托盘通知失败: {str(e)}")
+        else:
+            QtWidgets.QMessageBox.information(self, title, message)

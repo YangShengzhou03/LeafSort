@@ -104,12 +104,25 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.parent.contrastProgressBar.setValue(100)
         
         if duplicate_groups:
+            message = f"找到 {len(duplicate_groups)} 组重复文件"
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", 
-                                            f"找到 {len(duplicate_groups)} 组重复文件，您可以在左侧列表中查看详情")
+                                            f"{message}，您可以在左侧列表中查看详情")
+            if hasattr(self.parent, 'show_tray_notification'):
+                self.parent.show_tray_notification(
+                    "重复文件扫描完成",
+                    message,
+                    QtWidgets.QSystemTrayIcon.MessageIcon.Information
+                )
+        else:
+            if hasattr(self.parent, 'show_tray_notification'):
+                self.parent.show_tray_notification(
+                    "重复文件扫描完成",
+                    "未找到重复文件",
+                    QtWidgets.QSystemTrayIcon.MessageIcon.Information
+                )
             
             self.parent.duplicateItemsListWidget.setCurrentRow(0)
             self.on_group_selected(0)
-        else:
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", "未找到重复文件，每一个文件都是独一无二的")
         
         self.parent.btnStartDeduplication.setEnabled(True)
@@ -227,8 +240,16 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.parent.contrastProgressBar.setValue(progress)
     
     def on_deduplicate_completed(self, deleted_count, total_count):
-        QtWidgets.QMessageBox.information(self.parent, "去重完成", 
-                                        f"成功删除 {deleted_count} 个重复文件")
+        message = f"成功删除 {deleted_count} 个重复文件"
+        QtWidgets.QMessageBox.information(self.parent, "去重完成", message)
+        
+        # 显示托盘通知
+        if hasattr(self.parent, 'show_tray_notification'):
+            self.parent.show_tray_notification(
+                "重复文件清理完成",
+                message,
+                QtWidgets.QSystemTrayIcon.MessageIcon.Information
+            )
         
         self.start_scan()
     

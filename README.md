@@ -37,10 +37,9 @@ LeafSort是一款功能强大的图片管理工具，专注于高效管理、智
 
 - **开发语言**: Python 3.11+
 - **GUI框架**: PyQt6 6.5.0+
-- **图像处理**: Pillow 11.3.0+
-
-- **元数据处理**: piexif, exiftool
-- **其他依赖**: numpy, scikit-image, opencv-python
+- **图像处理**: Pillow 11.3.0+, scikit-image, opencv-python
+- **元数据处理**: piexif, exifread, exiftool
+- **其他依赖**: numpy, pillow-heif, playwright, requests
 
 ### 架构设计
 
@@ -358,7 +357,7 @@ SOFTWARE.
 
 ## 更新日志
 
-### v1.0.0 (2024-XX-XX)
+### v2.0.2 (2024-12-25)
 
 #### 新增功能
 

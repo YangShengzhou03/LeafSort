@@ -314,6 +314,13 @@ class SmartArrangeManager(QObject):
         self.parent.btnStartSmartArrange.setText("开始整理")
         self.parent.btnStartSmartArrange.setEnabled(True)
         self.SmartArrange_thread = None
+        
+        if hasattr(self.parent, 'show_tray_notification'):
+            self.parent.show_tray_notification(
+                "智能整理完成",
+                "文件整理已完成",
+                QtWidgets.QSystemTrayIcon.MessageIcon.Information
+            )
 
     def handle_combobox_selection(self, level, index):
         self.update_combobox_state(level)
