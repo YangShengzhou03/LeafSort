@@ -38,11 +38,8 @@ class UpdateDialog(QDialog):
 
 def check_update():
     url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafSort/versionInfo'
-    try:
-        from main_window import version as current_version
-        logger.info(f"当前应用版本: {current_version}")
-    except ImportError:
-        current_version = 2.02
+    current_version = 2.02
+    logger.info(f"当前应用版本: {current_version}")
     
     try:
         response = requests.get(url, timeout=5)

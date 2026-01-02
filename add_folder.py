@@ -1,7 +1,7 @@
 import os
 import logging
 from PyQt6 import QtWidgets
-from PyQt6.QtCore import pyqtSignal, Qt
+from PyQt6.QtCore import Qt
 from config_manager import config_manager
 
 logging.basicConfig(level=logging.INFO)
@@ -9,8 +9,6 @@ logger = logging.getLogger(__name__)
 
 
 class FolderPage(QtWidgets.QWidget):
-    folders_changed = pyqtSignal(list)
-
     def __init__(self, parent):
         super().__init__(parent)
         self.parent = parent

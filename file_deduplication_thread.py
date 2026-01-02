@@ -14,7 +14,6 @@ class FileScanThread(QtCore.QThread):
     progress_updated = QtCore.pyqtSignal(int, str)
     scan_completed = QtCore.pyqtSignal(list)
     error_occurred = QtCore.pyqtSignal(str)
-    file_count_updated = QtCore.pyqtSignal(int)
     
     def __init__(self, folder_path, filters=None):
         super().__init__()

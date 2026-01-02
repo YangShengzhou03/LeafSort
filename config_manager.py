@@ -329,16 +329,6 @@ class ConfigManager:
         self._save_file_no_lock()
     
     @_thread_safe_method
-    def get_remaining_daily_calls(self) -> int:
-        try:
-            with self._lock:
-                self._check_and_reset_daily_limit()
-                return max(0, 365 - self.config["daily_api_calls"])
-        except Exception as e:
-            logger.error(f"Error getting remaining API calls: {str(e)}")
-            return 0
-    
-    @_thread_safe_method
     def clear_cache(self):
         self.location_cache.clear()
         save_result = self.save_location_cache()
