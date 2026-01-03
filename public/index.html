@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+
+    <title>LeafSort - 专属相册管家</title>
+    <style>
+      * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        height: 100%;
+      }
+    </style>
+    <script>
+      (function() {
+        const THEME_STORAGE_KEY = 'leafsort_theme';
+        const DEFAULT_THEME = 'dark';
+        const savedTheme = localStorage.getItem(THEME_STORAGE_KEY) || DEFAULT_THEME;
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        document.documentElement.classList.add(savedTheme);
+      })();
+    </script>
+  </head>
+  <body>
+    <noscript>
+      <strong>很抱歉，LeafSort需要启用JavaScript才能正常工作。请启用它继续。</strong>
+    </noscript>
+    <div id="app"></div>
+  </body>
+</html>

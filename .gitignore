@@ -1,0 +1,18 @@
+.DS_Store
+node_modules
+/dist
+dist-electron
+
+local.env
+*.local
+.vscode
+.idea
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
+
+#Electron-builder output
+/dist_electron
+/electron-out
