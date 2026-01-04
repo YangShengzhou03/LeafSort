@@ -1,22 +1,5 @@
 <template>
   <div class="smart-arrange-page">
-    <div class="page-header">
-      <div class="header-title">
-        <h2>智能整理</h2>
-        <p class="header-desc">根据照片的EXIF信息自动整理到指定目录结构中</p>
-      </div>
-      <div class="header-actions">
-        <el-button type="primary" @click="selectSourceFolder">
-          <el-icon><FolderOpened /></el-icon>
-          选择照片文件夹
-        </el-button>
-        <el-button @click="selectTargetFolder">
-          <el-icon><Upload /></el-icon>
-          选择输出文件夹
-        </el-button>
-      </div>
-    </div>
-
     <div class="content-section">
       <div class="folder-info">
         <div class="info-card">
@@ -117,7 +100,7 @@
 <script setup>
 import { ref, computed } from 'vue'
 import { notify } from '@/utils'
-import { FolderOpened, Upload, Close, Folder, Picture } from '@element-plus/icons-vue'
+import { FolderOpened, Close, Folder, Picture } from '@element-plus/icons-vue'
 
 const sourceFolder = ref('')
 const targetFolder = ref('')
@@ -201,14 +184,6 @@ const removeTag = (index) => {
 
 const clearAllTags = () => {
   selectedTags.value = []
-}
-
-const selectSourceFolder = () => {
-  notify.info('选择照片文件夹功能开发中')
-}
-
-const selectTargetFolder = () => {
-  notify.info('选择输出文件夹功能开发中')
 }
 
 const startArrange = () => {
