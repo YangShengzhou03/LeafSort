@@ -11,7 +11,7 @@ from PyQt6 import QtCore
 from PIL import Image
 import exifread
 import pillow_heif
-from common import get_address_from_coordinates, get_resource_path, get_file_type, verify_file_extension
+from common import get_resource_path, get_file_type
 from config_manager import config_manager, logger
 
 IMAGE_EXTENSIONS = (
@@ -66,10 +66,11 @@ class SmartArrangeThread(QtCore.QThread):
         self._stop_flag = False
         self.total_files = 0
         self.processed_files = 0
+        self.success_count = 0
+        self.fail_count = 0
         self.city_data = {'features': []}
         self.province_data = {'features': []}
         self.log_signal = parent.log_signal if parent and hasattr(parent, 'log_signal') else self.log_signal
-        self.files_to_rename = []
         
         self.load_geographic_data()
 
@@ -158,8 +159,6 @@ class SmartArrangeThread(QtCore.QThread):
             self.load_geographic_data()
             self.calculate_total_files()
             
-            success_count = 0
-            fail_count = 0
             self.processed_files = 0
 
             for folder_info in self.folders:
@@ -178,15 +177,8 @@ class SmartArrangeThread(QtCore.QThread):
                         self.process_folder_with_classification(folder_info)
                 except Exception as e:
                     self.log("ERROR", f"处理文件夹 {folder_info['path']} 时出错了: {str(e)}")
-                    fail_count += 1
             
             if not self._stop_flag:
-                try:
-                    self.process_renaming()
-                except Exception as e:
-                    self.log("ERROR", f"给文件重命名时出错了: {str(e)}")
-                    fail_count += 1
-                
                 if not self.destination_root:
                     try:
                         self.delete_empty_folders()
@@ -195,10 +187,8 @@ class SmartArrangeThread(QtCore.QThread):
 
                 self.progress_signal.emit(100)
                 
-                success_count = len(self.files_to_rename) - fail_count
-                
                 self.log("DEBUG", "="*40)
-                self.log("DEBUG", f"文件整理完成：成功处理 {success_count} 个文件，失败 {fail_count} 个文件")
+                self.log("DEBUG", f"文件整理完成：成功处理 {self.success_count} 个文件，失败 {self.fail_count} 个文件")
                 self.log("DEBUG", "="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
 
             else:
@@ -223,8 +213,8 @@ class SmartArrangeThread(QtCore.QThread):
                         self.process_single_file(full_file_path, base_folder=folder_path)
                     self.processed_files += 1
                     if self.total_files > 0:
-                        percent_complete = int((self.processed_files / self.total_files) * 80)
-                        self.progress_signal.emit(percent_complete)
+                        percent_complete = int((self.processed_files / self.total_files) * 100)
+                        self.progress_signal.emit(min(percent_complete, 99))
         else:
             for file in os.listdir(folder_path):
                 if self._stop_flag:
@@ -238,66 +228,18 @@ class SmartArrangeThread(QtCore.QThread):
                         self.process_single_file(full_file_path)
                     self.processed_files += 1
                     if self.total_files > 0:
-                        percent_complete = int((self.processed_files / self.total_files) * 80)
-                        self.progress_signal.emit(percent_complete)
+                        percent_complete = int((self.processed_files / self.total_files) * 100)
+                        self.progress_signal.emit(min(percent_complete, 99))
 
 
-    
     def _truncate_filename(self, filename, max_length=50):
         if len(filename) <= max_length:
             return filename
         return filename[:max_length - 3] + "..."
-        
-    def process_renaming(self):
-        file_count = {}
-        total_rename_files = len(self.files_to_rename)
-        renamed_files = 0
-        
-        for file_info in self.files_to_rename:
-            if self._stop_flag:
-                self.log("WARNING", "文件重命名操作被用户中断")
-                break
-            
-            old_path = Path(file_info['old_path'])
-            new_path = Path(file_info['new_path'])
-            
-            new_path.parent.mkdir(parents=True, exist_ok=True)
-            
-            base_name = new_path.stem
-            ext = new_path.suffix
-            counter = 1
-            unique_path = new_path
-            
-            while unique_path.exists():
-                unique_path = new_path.parent / f"{base_name}_{counter}{ext}"
-                counter += 1
-            
-            try:
-                
-                old_name = os.path.basename(old_path)
-                new_name = os.path.basename(unique_path)
-                truncated_old_name = self._truncate_filename(old_name)
-                truncated_new_name = self._truncate_filename(new_name)
-                
-                if self.operation_type == 0 or not self.destination_root:
-                    shutil.copy2(old_path, unique_path)
-                else:
-                    shutil.move(old_path, unique_path)
-                
-                renamed_files += 1
-                if total_rename_files > 0:
-                    rename_progress = int((renamed_files / total_rename_files) * 20)
-                    total_progress = 80 + rename_progress
-                    self.progress_signal.emit(min(total_progress, 99))
-                
-            except Exception as e:
-                filename = os.path.basename(old_path)
-                self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
 
     def organize_without_classification(self, folder_path):
         folder_path = Path(folder_path)
         
-        file_count = 0
         for root, dirs, files in os.walk(folder_path):
             if self._stop_flag:
                 self.log("WARNING", "文件提取操作被用户中断")
@@ -319,28 +261,19 @@ class SmartArrangeThread(QtCore.QThread):
                     try:
                         if self.destination_root:
                             shutil.copy2(file_path, target_path)
-                            old_name = os.path.basename(file_path)
-                            new_name = os.path.basename(target_path)
-                            truncated_old_name = self._truncate_filename(old_name)
-                            truncated_new_name = self._truncate_filename(new_name)
                         else:
                             shutil.move(file_path, target_path)
-                            old_name = os.path.basename(file_path)
-                            new_name = os.path.basename(target_path)
-                            truncated_old_name = self._truncate_filename(old_name)
-                            truncated_new_name = self._truncate_filename(new_name)
                         
-                        file_count += 1
+                        self.success_count += 1
                         
                         self.processed_files += 1
                         if self.total_files > 0:
-                            percent_complete = int((self.processed_files / self.total_files) * 80)
-                            self.progress_signal.emit(percent_complete)
+                            percent_complete = int((self.processed_files / self.total_files) * 100)
+                            self.progress_signal.emit(min(percent_complete, 99))
                     except Exception as e:
                         filename = os.path.basename(file_path)
                         self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
-        
-        operation_type = "复制" if self.destination_root else "移动"
+                        self.fail_count += 1
 
     def delete_empty_folders(self):
         deleted_count = 0
@@ -446,6 +379,9 @@ class SmartArrangeThread(QtCore.QThread):
             self.log_signal.emit(level, log_message)
     
     def get_exif_data(self, file_path):
+        if self._stop_flag:
+            return {}
+        
         exif_data = {}
         file_path_obj = Path(file_path)
         
@@ -456,29 +392,8 @@ class SmartArrangeThread(QtCore.QThread):
         date_taken = None
         
         try:
-            
             if suffix == '.heic':
-                
-                try:
-                    
-                    if 'verify_file_extension' in globals():
-                        is_valid_ext, magic_info = verify_file_extension(file_path)
-                        if not is_valid_ext and magic_info:
-                            expected_ext = magic_info.get('extension', '')
-                            expected_type = magic_info.get('file_type', '')
-                            self.log("ERROR", f"{file_path.name}文件扩展名异常，真实文件类型是{expected_type}{expected_ext}")
-                            
-                            if magic_info and magic_info.get('file_type', '').lower() == '图像' and magic_info.get('extension', '').lower() == '.jpg':
-                                date_taken = self._process_image_exif(file_path_obj, exif_data)
-                            else:
-                                
-                                self.log("DEBUG", f"文件实际类型与扩展名不符，使用文件系统时间")
-                except Exception as verify_error:
-                    self.log("ERROR", f"文件类型验证失败: {str(verify_error)}")
-                
-                
-                if date_taken is None:
-                    date_taken = self._process_heic_exif(file_path_obj, exif_data)
+                date_taken = self._process_heic_exif(file_path_obj, exif_data)
             elif suffix in ('.jpg', '.jpeg', '.tiff', '.tif'):
                 date_taken = self._process_image_exif(file_path_obj, exif_data)
                 if not date_taken:
@@ -504,7 +419,6 @@ class SmartArrangeThread(QtCore.QThread):
             exif_data['DateTime'] = final_datetime
                 
         except Exception as e:
-
             exif_data['DateTime'] = create_time.strftime('%Y-%m-%d %H:%M:%S')
         return exif_data
 
@@ -523,6 +437,9 @@ class SmartArrangeThread(QtCore.QThread):
             return None
 
     def _process_raw_exif(self, file_path, exif_data):
+        if self._stop_flag:
+            return None
+        
         if not os.path.exists(file_path):
             return None
         
@@ -946,6 +863,9 @@ class SmartArrangeThread(QtCore.QThread):
         })
 
     def _get_video_metadata(self, file_path, timeout=30):
+        if self._stop_flag:
+            return None
+        
         try:
             if not os.path.exists(file_path):
                 return None
@@ -1443,7 +1363,6 @@ class SmartArrangeThread(QtCore.QThread):
     def process_single_file(self, file_path, base_folder=None):
         try:
             file_path_str = str(file_path)
-            is_valid_ext, magic_info = verify_file_extension(file_path_str)
             exif_data = self.get_exif_data(file_path)
             
             file_time = None
@@ -1464,13 +1383,38 @@ class SmartArrangeThread(QtCore.QThread):
             
             full_target_path = target_path / new_file_name_with_ext
             
-            self.files_to_rename.append({
-                'old_path': str(file_path),
-                'new_path': str(full_target_path)
-            })
+            full_target_path.parent.mkdir(parents=True, exist_ok=True)
+            
+            base_name = full_target_path.stem
+            ext = full_target_path.suffix
+            counter = 1
+            unique_path = full_target_path
+            
+            while unique_path.exists():
+                unique_path = full_target_path.parent / f"{base_name}_{counter}{ext}"
+                counter += 1
+            
+            try:
+                old_name = os.path.basename(file_path)
+                new_name = os.path.basename(unique_path)
+                truncated_old_name = self._truncate_filename(old_name)
+                truncated_new_name = self._truncate_filename(new_name)
+                
+                if self.operation_type == 0 or not self.destination_root:
+                    shutil.copy2(file_path, unique_path)
+                else:
+                    shutil.move(file_path, unique_path)
+                
+                self.success_count += 1
+                
+            except Exception as e:
+                filename = os.path.basename(file_path)
+                self.log("ERROR", f"处理文件时出错: {filename}, 错误: {str(e)}")
+                self.fail_count += 1
             
         except Exception as e:
             self.log("ERROR", f"处理文件 {file_path} 时出错: {str(e)}")
+            self.fail_count += 1
 
     def get_file_name_part(self, tag, file_path, file_time, original_name, exif_data=None):
         if isinstance(tag, dict) and 'tag' in tag and 'content' in tag:
@@ -1514,25 +1458,8 @@ class SmartArrangeThread(QtCore.QThread):
                 lat = float(exif_data['GPS GPSLatitude'])
                 lon = float(exif_data['GPS GPSLongitude'])
                 
-                tolerance = config_manager.config.get('settings', {}).get('location_cache_tolerance', 0.027)
-                cached_address = config_manager.get_cached_location_with_tolerance(lat, lon, tolerance)
-                if cached_address and cached_address != "未知位置":
-                    logger.info(f"缓存命中! 坐标({lat},{lon})使用缓存地址: {cached_address}")
-                    return cached_address
-                
                 province, city = self.get_city_and_province(lat, lon)
                 local_location = f"{province}{city}" if city != "未知城市" else province
-                
-                try:
-                    address = get_address_from_coordinates(lat, lon)
-                    if address and address != "未知位置":
-                        logger.info(f"网络请求成功，正在缓存坐标({lat},{lon})的地址: {address}")
-                        config_manager.cache_location(lat, lon, address)
-                        return address
-                    else:
-                        logger.info(f"网络请求失败或未获取到有效地址，使用本地地理数据: {local_location}")
-                except Exception as e:
-                    logger.error(f"获取地址时发生异常: {str(e)}，使用本地地理数据: {local_location}")
                 
                 return local_location
             return "未知位置"

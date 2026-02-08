@@ -2,6 +2,7 @@ from datetime import datetime
 import logging
 import os
 
+from PyQt6 import QtWidgets
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QFileDialog, QInputDialog
 
@@ -158,10 +159,11 @@ class SmartArrangeManager(QObject):
         thread_running = bool(self.SmartArrange_thread and self.SmartArrange_thread.isRunning())
         if thread_running:
             self.log("INFO", "正在停止操作")
-            self.parent.btnStartSmartArrange.setText("正在停止...")
+            self.parent.btnStartSmartArrange.setText("正在停止")
             try:
                 self.SmartArrange_thread.stop()
-                self.log("DEBUG", "停止操作被调用")
+                self.log("DEBUG", "用户停止了操作")
+                self.parent.btnStartSmartArrange.setText("开始整理")
             except Exception as e:
                 self.log("ERROR", f"停止线程时出错: {str(e)}")
                 self.parent.btnStartSmartArrange.setText("开始整理")

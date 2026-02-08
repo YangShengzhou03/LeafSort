@@ -61,7 +61,7 @@ LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，�
 
 ### 地理编码
 
-自动使用高德地图 API 将 GPS 坐标转换为地址信息。软件缓存地理编码结果，避免重复调用 API，支持批量处理相同位置的文件，提高处理效率。如果 API 调用失败，使用离线地理数据作为备用方案。
+使用离线地理数据将 GPS 坐标转换为地址信息。软件缓存地理编码结果，避免重复处理，支持批量处理相同位置的文件，提高处理效率。
 
 支持反向地理编码，将经纬度坐标转换为省、市、区等地址信息。支持批量处理，可以一次性处理多个文件的 GPS 信息。支持自定义地址格式，包括省、市、区、街道等不同层级。
 
@@ -77,14 +77,10 @@ LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，�
 - **Python**: 3.11+ 
 - **PyQt6**: 6.5.0+ (GUI 框架)
 - **Pillow**: 11.3.0+ (图像处理)
-- **opencv-python**: 4.8.0+ (计算机视觉)
-- **scikit-image**: 0.24.0+ (图像处理)
-- **numpy**: 1.24.0+ (数值计算)
 - **piexif**: 1.1.3+ (EXIF 处理)
 - **exifread**: 3.0.0+ (EXIF 读取)
 - **pillow-heif**: 0.16.0+ (HEIC/HEIF 支持)
 - **requests**: 2.31.0+ (HTTP 请求)
-- **playwright**: 1.40.0+ (浏览器自动化)
 
 #### 生产环境
 - **操作系统**: Windows 10/11
@@ -100,7 +96,7 @@ Python 3.11+ 是软件开发的基础环境，PyQt6 6.5.0+ 框架要求 Python 3
 PyQt6 6.5.0+ 是软件开发的基础 GUI 框架，用于构建现代化的用户界面。安装 PyQt6 后，可以通过运行 `pip list` 命令检查 PyQt6 是否正确安装。PyQt6 支持 Windows、macOS、Linux 等多个平台。
 
 #### 依赖库配置
-项目依赖多个第三方库，包括图像处理库（Pillow、opencv-python、scikit-image）、EXIF 处理库（piexif、exifread）、HTTP 请求库（requests）、浏览器自动化库（playwright）等。安装依赖库后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
+项目依赖多个第三方库，包括图像处理库（Pillow）、EXIF 处理库（piexif、exifread）、HTTP 请求库（requests）等。安装依赖库后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
 
 ## 安装部署
 
@@ -127,14 +123,7 @@ pip install -r requirements.txt
 
 requirements.txt 文件列出了项目依赖的所有第三方库及其版本要求。运行该命令会自动下载并安装所有依赖库。安装完成后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
 
-### 4. 安装 Playwright 浏览器
-```bash
-playwright install chromium
-```
-
-Playwright 用于浏览器自动化，需要安装 Chromium 浏览器。运行该命令会自动下载并安装 Chromium 浏览器及其依赖。安装完成后，Playwright 可以自动启动 Chromium 浏览器并执行自动化操作。
-
-### 5. 运行应用
+### 4. 运行应用
 ```bash
 python App.py
 ```
@@ -167,7 +156,9 @@ python App.py
 
 ### 地理编码
 
-软件自动将图像 GPS 坐标转换为地址信息。使用高德地图 API 进行反向地理编码，支持缓存地理编码结果，避免重复调用 API。如果 API 调用失败，使用离线地理数据作为备用方案。
+软件自动将图像 GPS 坐标转换为地址信息。使用离线地理数据进行反向地理编码，支持缓存地理编码结果，避免重复处理。
+
+支持反向地理编码，将经纬度坐标转换为省、市、区等地址信息。支持批量处理，可以一次性处理多个文件的 GPS 信息。支持自定义地址格式，包括省、市、区、街道等不同层级。
 
 ## 技术架构
 
@@ -186,8 +177,8 @@ python App.py
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   图形界面       │    │   核心功能       │    │   外部服务       │
 │                 │    │                 │    │                 │
-│  主窗口         │    │  智能整理       │    │  高德地图 API    │
-│  文件夹管理     │    │  EXIF 编辑      │    │  Playwright      │
+│  主窗口         │    │  智能整理       │    │  ExifTool       │
+│  文件夹管理     │    │  EXIF 编辑      │    │                 │
 │  进度显示       │    │  文件去重       │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
@@ -199,14 +190,10 @@ python App.py
 | Python | 3.11+ | 编程语言 |
 | PyQt6 | 6.5.0+ | GUI 框架 |
 | Pillow | 11.3.0+ | 图像处理 |
-| opencv-python | 4.8.0+ | 计算机视觉 |
-| scikit-image | 0.24.0+ | 图像处理 |
-| numpy | 1.24.0+ | 数值计算 |
 | piexif | 1.1.3+ | EXIF 处理 |
 | exifread | 3.0.0+ | EXIF 读取 |
 | pillow-heif | 0.16.0+ | HEIC/HEIF 支持 |
 | requests | 2.31.0+ | HTTP 请求 |
-| playwright | 1.40.0+ | 浏览器自动化 |
 
 ### 项目结构
 
@@ -242,14 +229,11 @@ LeafSort/
 │   ├── cert2spc.exe                # 证书转换工具
 │   └── certmgr.exe                 # 证书管理工具
 └── resources/                      # 资源文件
-    ├── cv2_date/                   # OpenCV 相关文件
-    │   └── haarcascade_frontalface_alt2.xml  # 人脸检测模型
     ├── exiftool/                   # EXIF 工具
     │   ├── exiftool.exe            # EXIF 工具可执行文件
     │   ├── exiftool(-k).exe        # EXIF 工具（保持窗口）
     │   └── exiftool_files/         # EXIF 工具依赖文件
     ├── img/                        # 图像资源
-    │   ├── activity/               # 活动相关图标
     │   ├── list/                   # 列表图标
     │   ├── page_0/                 # 页面 0 图标
     │   ├── page_1/                 # 页面 1 图标
@@ -281,8 +265,8 @@ LeafSort/
 - **write_exif_thread.py**: EXIF 写入工作线程，在独立线程中执行 EXIF 写入任务
 - **file_deduplication.py**: 文件去重业务逻辑管理器，管理文件去重 UI 交互
 - **file_deduplication_thread.py**: 文件去重工作线程，扫描文件并计算 MD5，删除重复文件
-- **common.py**: 通用工具库，提供资源路径管理、文件类型检测、媒体类型检测、地理编码服务等功能
-- **config_manager.py**: 配置管理器，线程安全的配置读写操作，管理地理编码缓存和 API 调用限流
+- **common.py**: 通用工具库，提供资源路径管理、文件类型检测、媒体类型检测等功能
+- **config_manager.py**: 配置管理器，线程安全的配置读写操作
 - **update_dialog.py**: 更新检查对话框，检查 GitHub 上的最新版本
 
 ### 线程模型
@@ -297,17 +281,64 @@ LeafSort/
 
 ### 错误处理
 
-使用 try-except 捕获异常，记录详细的错误信息，并向用户显示友好的错误消息。当关键操作失败时，提供恢复建议。对于文件操作错误：如果文件不存在，跳过并记录；如果权限不足，记录错误并继续处理其他文件；如果文件损坏，记录错误并跳过。对于 EXIF 读取错误：如果不支持格式，使用文件系统时间；如果数据损坏，记录警告并使用默认值；如果字段缺失，使用空值或默认值。对于网络请求错误：如果 API 调用失败，使用缓存数据；如果 Cookie 过期，重新获取 Cookie；如果超时，重试 3 次后放弃。
+所有可能抛出异常的操作都应该使用 try-except 块进行捕获和处理。异常信息应该记录到日志中，并在必要时向用户显示友好的错误提示。对于关键操作失败，应该提供重试机制或回滚机制。
 
-### 性能优化
+### 日志记录
 
-软件使用缓存机制提高性能，包括缩略图缓存、元数据缓存、地理编码缓存、文件哈希缓存。使用线程池并发计算 MD5，同时处理多个文件，最大线程数限制为 CPU 核心数。分块读取大文件，避免一次性加载，及时释放未使用的资源，限制缓存大小防止内存溢出。在文件去重时，先按大小分组，跳过空文件和超大文件，跳过系统文件夹和隐藏文件。
+使用 Python 标准库 logging 进行日志记录。日志级别分为 DEBUG、INFO、WARNING、ERROR、CRITICAL 五个级别。DEBUG 级别用于详细的调试信息，INFO 级别用于一般信息，WARNING 级别用于警告信息，ERROR 级别用于错误信息，CRITICAL 级别用于严重错误信息。
+
+### 测试建议
+
+在开发新功能时，应该编写单元测试和集成测试。测试应该覆盖正常流程和异常流程。测试数据应该使用模拟数据，避免使用真实用户数据。
 
 ## 许可证
 
-本项目采用 MIT 许可证，详见 license.txt 文件。
+本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
+
+## 贡献指南
+
+欢迎提交 Issue 和 Pull Request。提交 Issue 时，请详细描述问题现象、复现步骤、期望结果等信息。提交 Pull Request 时，请确保代码符合项目的代码规范，并通过所有测试。
 
 ## 联系方式
 
-GitHub: https://github.com/YangShengzhou03/LeafSort
-Microsoft Store: https://apps.microsoft.com/detail/9p3mkv4xslj8
+- **GitHub**: https://github.com/YangShengzhou03/LeafSort
+- **Gitee**: https://gitee.com/Yangshengzhou/leaf-sort
+- **Microsoft Store**: https://apps.microsoft.com/detail/9p3mkv4xslj8
+
+## 更新日志
+
+### v2.0.2 (2025-02-08)
+- 优化文件处理逻辑，改为边处理边移动/复制，提升性能
+- 优化内存使用，减少记录的数据量
+- 修复停止按钮响应慢的问题
+- 移除未使用的依赖包和资源文件
+- 修复 smart_arrange.py 中的 QtWidgets 导入错误
+
+### v2.0.1 (2025-01-15)
+- 修复地理编码功能
+- 优化文件去重算法
+- 改进用户界面响应速度
+
+### v2.0.0 (2025-01-01)
+- 初始版本发布
+- 支持智能整理功能
+- 支持 EXIF 编辑功能
+- 支持文件去重功能
+- 支持地理编码功能
+
+## 致谢
+
+感谢所有为本项目做出贡献的开发者和用户。特别感谢以下开源项目：
+
+- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) - Python GUI 框架
+- [Pillow](https://python-pillow.org/) - Python 图像处理库
+- [piexif](https://github.com/hMatoba/Piexif) - EXIF 处理库
+- [exifread](https://github.com/ianare/exifread) - EXIF 读取库
+- [pillow-heif](https://github.com/bigcat88/pillow_heif) - HEIC/HEIF 支持库
+- [ExifTool](https://exiftool.org/) - EXIF 工具
+
+---
+
+<div align="center">
+  <p>Made with ❤️ by Yangshengzhou</p>
+</div>
