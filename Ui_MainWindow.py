@@ -7,6 +7,7 @@
 
 
 from PyQt6 import QtCore, QtGui, QtWidgets
+
 from common import get_resource_path
 
 
@@ -150,7 +151,7 @@ class Ui_MainWindow(object):
 "    background-color: transparent;\n"
 "    padding: 12px 16px;\n"
 "    margin: 3px 0;\n"
-"    border-radius: 8px;\n"
+"    border-radius: 6px;\n"
 "    color: #4b5563;\n"
 "    font-size: 14px;\n"
 "    border: 1px solid transparent;\n"
@@ -239,7 +240,7 @@ class Ui_MainWindow(object):
         self.listNavigationMenu.addItem(item)
         item = QtWidgets.QListWidgetItem()
         icon3 = QtGui.QIcon()
-        icon3.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/属性写入.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        icon3.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/list/属性写入.svg")      ), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
         item.setIcon(icon3)
         self.listNavigationMenu.addItem(item)
         self.layoutSidebarContent.addWidget(self.listNavigationMenu)
@@ -417,44 +418,6 @@ class Ui_MainWindow(object):
         self.btnMinimize.setIconSize(QtCore.QSize(12, 12))
         self.btnMinimize.setObjectName("btnMinimize")
         self.layoutHeaderBar.addWidget(self.btnMinimize)
-        self.btnMaximize = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
-        self.btnMaximize.setMinimumSize(QtCore.QSize(36, 36))
-        self.btnMaximize.setMaximumSize(QtCore.QSize(36, 36))
-        self.btnMaximize.setStyleSheet("QToolButton {\n"
-"    border: none;\n"
-"    padding: 4px;\n"
-"    border-radius: 12px;\n"
-"    background: rgba(255, 255, 255, 0);\n"
-"    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);\n"
-"}\n"
-"\n"
-"QToolButton:hover {\n"
-"    background: qlineargradient(\n"
-"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 30),\n"
-"        stop:1 rgba(255, 255, 255, 10)\n"
-"    );\n"
-"    border: 1px solid rgba(255, 255, 255, 40);\n"
-"    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);\n"
-"    transform: translateY(-1px);\n"
-"}\n"
-"\n"
-"QToolButton:pressed {\n"
-"    background: qlineargradient(\n"
-"        spread:pad, x1:0, y1:0, x2:1, y2:1,\n"
-"        stop:0 rgba(255, 255, 255, 60),\n"
-"        stop:1 rgba(255, 255, 255, 30)\n"
-"    );\n"
-"    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);\n"
-"    transform: translateY(0);\n"
-"}")
-        self.btnMaximize.setText("")
-        icon7 = QtGui.QIcon()
-        icon7.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/最大化.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnMaximize.setIcon(icon7)
-        self.btnMaximize.setIconSize(QtCore.QSize(12, 12))
-        self.btnMaximize.setObjectName("btnMaximize")
-        self.layoutHeaderBar.addWidget(self.btnMaximize)
         self.btnClose = QtWidgets.QToolButton(parent=self.frameAppHeaderBar)
         self.btnClose.setMinimumSize(QtCore.QSize(36, 36))
         self.btnClose.setMaximumSize(QtCore.QSize(36, 36))
@@ -487,9 +450,9 @@ class Ui_MainWindow(object):
 "    transform: translateY(0);\n"
 "}")
         self.btnClose.setText("")
-        icon8 = QtGui.QIcon()
-        icon8.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/关闭.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnClose.setIcon(icon8)
+        icon7 = QtGui.QIcon()
+        icon7.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/窗口控制/关闭.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnClose.setIcon(icon7)
         self.btnClose.setIconSize(QtCore.QSize(12, 12))
         self.btnClose.setObjectName("btnClose")
         self.layoutHeaderBar.addWidget(self.btnClose)
@@ -646,7 +609,7 @@ class Ui_MainWindow(object):
 "    background: rgba(255, 255, 255, 85);\n"
 "    backdrop-filter: blur(8px);\n"
 "    padding: 8px;\n"
-"    border-radius: 8px;\n"
+"    border-radius: 6px;\n"
 "    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);\n"
 "}\n"
 "\n"
@@ -708,7 +671,7 @@ class Ui_MainWindow(object):
 "    );\n"
 "    color: white;\n"
 "    border: 1px solid rgba(164, 149, 255, 0.5);\n"
-"    border-radius: 8px;\n"
+"    border-radius: 4px;\n"
 "    padding: 6px 12px;\n"
 "    font-weight: 500;\n"
 "    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
@@ -749,7 +712,7 @@ class Ui_MainWindow(object):
 "    background: rgba(255, 255, 255, 85);\n"
 "    backdrop-filter: blur(8px);\n"
 "    padding: 8px;\n"
-"    border-radius: 8px;\n"
+"    border-radius: 6px;\n"
 "    box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);\n"
 "}\n"
 "\n"
@@ -811,7 +774,7 @@ class Ui_MainWindow(object):
 "    );\n"
 "    color: white;\n"
 "    border: 1px solid rgba(164, 149, 255, 0.5);\n"
-"    border-radius: 8px;\n"
+"    border-radius: 4px;\n"
 "    padding: 6px 12px;\n"
 "    font-weight: 500;\n"
 "    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);\n"
@@ -1634,7 +1597,7 @@ class Ui_MainWindow(object):
 "                              stop:0 rgb(251, 253, 254), \n"
 "                              stop:0.4 rgb(248, 250, 251), \n"
 "                              stop:1 rgb(246, 248, 249));\n"
-"    border-radius: 6px;\n"
+"    border-radius: 4px;\n"
 "    border: 1px solid rgba(230, 235, 240, 0.8);\n"
 "}")
         self.frameRename.setFrameShape(QtWidgets.QFrame.Shape.StyledPanel)
@@ -2015,9 +1978,9 @@ class Ui_MainWindow(object):
 "  box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.2);\n"
 "  transform: translateY(2px);\n"
 "}")
-        icon9 = QtGui.QIcon()
-        icon9.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_2/位置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnAddressTag.setIcon(icon9)
+        icon8 = QtGui.QIcon()
+        icon8.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_2/位置.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnAddressTag.setIcon(icon8)
         self.btnAddressTag.setObjectName("btnAddressTag")
         self.layoutTagsInput.addWidget(self.btnAddressTag)
         self.btnCustomizeTag = QtWidgets.QPushButton(parent=self.frameRenameTags)
@@ -2597,7 +2560,7 @@ class Ui_MainWindow(object):
 "    color: white;\n"
 "    border: none;\n"
 "    padding: 6px 6px;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 4px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"
@@ -2654,7 +2617,7 @@ class Ui_MainWindow(object):
 "    );\n"
 "    background: rgb(245, 249, 254);\n"
 "    padding: 8px;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 4px;\n"
 "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
 "    font-size: 14px;\n"
 "    color: #333;\n"
@@ -2790,7 +2753,7 @@ class Ui_MainWindow(object):
 "    color: white;\n"
 "    border: none;\n"
 "    padding: 6px 10px;\n"
-"    border-radius: 5px;\n"
+"    border-radius: 4px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"
@@ -2973,7 +2936,7 @@ class Ui_MainWindow(object):
 "    color: white;\n"
 "    border: none;\n"
 "    padding: 6px 10px;\n"
-"    border-radius: 5px;\n"
+"    border-radius: 4px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"
@@ -3010,7 +2973,7 @@ class Ui_MainWindow(object):
 "    color: white;\n"
 "    border: none;\n"
 "    padding: 6px 10px;\n"
-"    border-radius: 5px;\n"
+"    border-radius: 4px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(244, 67, 54, 255),\n"
@@ -3140,12 +3103,12 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar1.setText("")
-        icon10 = QtGui.QIcon()
-        icon10.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_4/星级_暗.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
-        self.btnStar1.setIcon(icon10)
+        icon9 = QtGui.QIcon()
+        icon9.addPixmap(QtGui.QPixmap(get_resource_path("resources/img/page_4/星级_暗.svg")), QtGui.QIcon.Mode.Normal, QtGui.QIcon.State.Off)
+        self.btnStar1.setIcon(icon9)
         self.btnStar1.setIconSize(QtCore.QSize(20, 20))
         self.btnStar1.setObjectName("btnStar1")
         self.starLayout.addWidget(self.btnStar1)
@@ -3159,10 +3122,10 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar2.setText("")
-        self.btnStar2.setIcon(icon10)
+        self.btnStar2.setIcon(icon9)
         self.btnStar2.setIconSize(QtCore.QSize(20, 20))
         self.btnStar2.setObjectName("btnStar2")
         self.starLayout.addWidget(self.btnStar2)
@@ -3176,10 +3139,10 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar3.setText("")
-        self.btnStar3.setIcon(icon10)
+        self.btnStar3.setIcon(icon9)
         self.btnStar3.setIconSize(QtCore.QSize(20, 20))
         self.btnStar3.setObjectName("btnStar3")
         self.starLayout.addWidget(self.btnStar3)
@@ -3193,10 +3156,10 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar4.setText("")
-        self.btnStar4.setIcon(icon10)
+        self.btnStar4.setIcon(icon9)
         self.btnStar4.setIconSize(QtCore.QSize(20, 20))
         self.btnStar4.setObjectName("btnStar4")
         self.starLayout.addWidget(self.btnStar4)
@@ -3210,10 +3173,10 @@ class Ui_MainWindow(object):
 "}\n"
 "\n"
 "QPushButton:hover {\n"
-"    image: url(" + get_resource_path("resources/img/page_4/星级_亮.svg") + ");\n"
+"    image: url(resources/img/page_4/星级_亮.svg);\n"
 "}")
         self.btnStar5.setText("")
-        self.btnStar5.setIcon(icon10)
+        self.btnStar5.setIcon(icon9)
         self.btnStar5.setIconSize(QtCore.QSize(20, 20))
         self.btnStar5.setObjectName("btnStar5")
         self.starLayout.addWidget(self.btnStar5)
@@ -4057,7 +4020,7 @@ class Ui_MainWindow(object):
 "    color: white;\n"
 "    border: none;\n"
 "    padding: 6px 6px;\n"
-"    border-radius: 6px;\n"
+"    border-radius: 4px;\n"
 "    background-color: qradialgradient(\n"
 "        cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,\n"
 "        stop:0.66 rgba(134, 119, 253, 255),\n"

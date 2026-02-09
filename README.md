@@ -1,4 +1,4 @@
-# LeafSort —— 轻羽媒体整理
+# LeafSort 轻羽媒体整理 - 图片管理，智能整理、文件去重、EXIF编辑和批量处理
 
 <div align="center">
 

@@ -15,10 +15,9 @@ class FileScanThread(QtCore.QThread):
     scan_completed = QtCore.pyqtSignal(list)
     error_occurred = QtCore.pyqtSignal(str)
     
-    def __init__(self, folder_path, filters=None):
+    def __init__(self, folder_path):
         super().__init__()
         self.folder_path = folder_path
-        self.filters = filters or []
         self._stop_flag = False
         self._file_cache = {}
         self._cache_lock = threading.RLock()
@@ -335,10 +334,7 @@ class FileScanThread(QtCore.QThread):
             pass
         
         return duplicate_groups
-    
-    def stop(self):
-        self._stop_flag = True
-    
+
 class FileDeduplicateThread(QtCore.QThread):
     
     progress_updated = QtCore.pyqtSignal(int, str)

@@ -22,7 +22,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.duplicate_groups = []
         self.current_group_index = -1
         self.selected_files = set()
-        self.filters = []
         
         self._setup_ui()
         self._connect_signals()
@@ -79,7 +78,7 @@ class FileDeduplicationManager(QtWidgets.QWidget):
         self.parent.btnStartDeduplication.setEnabled(False)
         self.parent.btnStartDeduplication.setText("扫描中...")
         
-        self.scan_thread = FileScanThread(folders, self.filters)
+        self.scan_thread = FileScanThread(folders)
         self.scan_thread.progress_updated.connect(self.on_scan_progress)
         self.scan_thread.scan_completed.connect(self.on_scan_completed)
         self.scan_thread.error_occurred.connect(self.on_scan_error)
@@ -170,14 +169,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             self.selected_files.add(file_path)
         else:
             self.selected_files.discard(file_path)
-        
-        self._update_selection_status()
-    
-    def _update_selection_status(self):
-        if hasattr(self.parent, 'statusBar'):
-            status_bar = self.parent.statusBar()
-            if status_bar:
-                status_bar.showMessage(f"已选择 {len(self.selected_files)} 个文件待删除")
     
     def on_file_selection_changed(self, row, column):
         if column != 0 or self.current_group_index < 0:
@@ -256,12 +247,3 @@ class FileDeduplicationManager(QtWidgets.QWidget):
     def on_deduplicate_error(self, error_message):
         QtWidgets.QMessageBox.critical(self.parent, "去重错误", error_message)
         logger.error(f"去重错误: {error_message}")
-    
-    def stop_scan(self):
-        if self.scan_thread and self.scan_thread.isRunning():
-            self.scan_thread.stop()
-            self.scan_thread.wait()
-        
-        if self.deduplicate_thread and self.deduplicate_thread.isRunning():
-            self.deduplicate_thread.stop()
-            self.deduplicate_thread.wait()

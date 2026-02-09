@@ -269,7 +269,7 @@ QListView::item {
     background-color: transparent;
     padding: 12px 16px;
     margin: 3px 0;
-    border-radius: 8px;
+    border-radius: 6px;
     color: #4b5563;
     font-size: 14px;
     border: 1px solid transparent;
@@ -489,7 +489,7 @@ box-shadow: 0 6px 24px rgba(139, 92, 246, 0.45),
             <property name="frameShadow">
              <enum>QFrame::Raised</enum>
             </property>
-            <layout class="QHBoxLayout" name="layoutHeaderBar" stretch="0,0,0,0,0,0">
+            <layout class="QHBoxLayout" name="layoutHeaderBar" stretch="0,0,0,0,0">
              <property name="spacing">
               <number>9</number>
              </property>
@@ -688,65 +688,6 @@ QToolButton:pressed {
                <property name="icon">
                 <iconset>
                  <normaloff>resources/img/窗口控制/最小化.svg</normaloff>resources/img/窗口控制/最小化.svg</iconset>
-               </property>
-               <property name="iconSize">
-                <size>
-                 <width>12</width>
-                 <height>12</height>
-                </size>
-               </property>
-              </widget>
-             </item>
-             <item>
-              <widget class="QToolButton" name="btnMaximize">
-               <property name="minimumSize">
-                <size>
-                 <width>36</width>
-                 <height>36</height>
-                </size>
-               </property>
-               <property name="maximumSize">
-                <size>
-                 <width>36</width>
-                 <height>36</height>
-                </size>
-               </property>
-               <property name="styleSheet">
-                <string notr="true">QToolButton {
-    border: none;
-    padding: 4px;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0);
-    transition: all 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
-}
-
-QToolButton:hover {
-    background: qlineargradient(
-        spread:pad, x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(255, 255, 255, 30),
-        stop:1 rgba(255, 255, 255, 10)
-    );
-    border: 1px solid rgba(255, 255, 255, 40);
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    transform: translateY(-1px);
-}
-
-QToolButton:pressed {
-    background: qlineargradient(
-        spread:pad, x1:0, y1:0, x2:1, y2:1,
-        stop:0 rgba(255, 255, 255, 60),
-        stop:1 rgba(255, 255, 255, 30)
-    );
-    box-shadow: inset 0 1px 3px rgba(0, 0, 0, 0.15);
-    transform: translateY(0);
-}</string>
-               </property>
-               <property name="text">
-                <string/>
-               </property>
-               <property name="icon">
-                <iconset>
-                 <normaloff>resources/img/窗口控制/最大化.svg</normaloff>resources/img/窗口控制/最大化.svg</iconset>
                </property>
                <property name="iconSize">
                 <size>
@@ -1086,7 +1027,7 @@ border-bottom-left-radius:0px;</string>
     background: rgba(255, 255, 255, 85);
     backdrop-filter: blur(8px);
     padding: 8px;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -1184,7 +1125,7 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
     );
     color: white;
     border: 1px solid rgba(164, 149, 255, 0.5);
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 6px 12px;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -1232,7 +1173,7 @@ QPushButton:pressed {
     background: rgba(255, 255, 255, 85);
     backdrop-filter: blur(8px);
     padding: 8px;
-    border-radius: 8px;
+    border-radius: 6px;
     box-shadow: 0 3px 12px rgba(0, 0, 0, 0.06);
 }
 
@@ -1330,7 +1271,7 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
     );
     color: white;
     border: 1px solid rgba(164, 149, 255, 0.5);
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 6px 12px;
     font-weight: 500;
     transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
@@ -2542,7 +2483,7 @@ background:rgb(255, 255, 255);</string>
                               stop:0 rgb(251, 253, 254), 
                               stop:0.4 rgb(248, 250, 251), 
                               stop:1 rgb(246, 248, 249));
-    border-radius: 6px;
+    border-radius: 4px;
     border: 1px solid rgba(230, 235, 240, 0.8);
 }</string>
                           </property>
@@ -4075,7 +4016,7 @@ QProgressBar::chunk {
     color: white;
     border: none;
     padding: 6px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
         stop:0.66 rgba(134, 119, 253, 255),
@@ -4165,7 +4106,7 @@ border-bottom-left-radius:0px;</string>
     );
     background: rgb(245, 249, 254);
     padding: 8px;
-    border-radius: 6px;
+    border-radius: 4px;
     font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
     font-size: 14px;
     color: #333;
@@ -4372,7 +4313,7 @@ QProgressBar::chunk {
     color: white;
     border: none;
     padding: 6px 10px;
-    border-radius: 5px;
+    border-radius: 4px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
         stop:0.66 rgba(134, 119, 253, 255),
@@ -4604,7 +4545,7 @@ QScrollBar::handle:horizontal:hover {
     color: white;
     border: none;
     padding: 6px 10px;
-    border-radius: 5px;
+    border-radius: 4px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
         stop:0.66 rgba(134, 119, 253, 255),
@@ -4657,7 +4598,7 @@ QToolButton:pressed {
     color: white;
     border: none;
     padding: 6px 10px;
-    border-radius: 5px;
+    border-radius: 4px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
         stop:0.66 rgba(244, 67, 54, 255),
@@ -6125,7 +6066,7 @@ QProgressBar::chunk {
     color: white;
     border: none;
     padding: 6px 6px;
-    border-radius: 6px;
+    border-radius: 4px;
     background-color: qradialgradient(
         cx:0.5, cy:0.5, radius:1, fx:0.5, fy:0.5,
         stop:0.66 rgba(134, 119, 253, 255),

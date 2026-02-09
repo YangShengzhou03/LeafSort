@@ -14,31 +14,6 @@ import pillow_heif
 from common import get_resource_path, get_file_type
 from config_manager import config_manager, logger
 
-IMAGE_EXTENSIONS = (
-    '.jpg', '.jpeg', '.png', '.webp', '.heic', '.bmp', '.gif', '.svg',
-    '.cr2', '.cr3', '.nef', '.arw', '.orf', '.sr2', '.raf', '.dng',
-    '.tiff', '.tif', '.psd', '.rw2', '.pef', '.nrw'
-)
-
-VIDEO_EXTENSIONS = (
-    '.mp4', '.avi', '.mov', '.mkv', '.flv', '.wmv', '.m4v', '.webm'
-)
-
-AUDIO_EXTENSIONS = (
-    '.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a'
-)
-
-DOCUMENT_EXTENSIONS = (
-    '.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx',
-    '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log'
-)
-
-ARCHIVE_EXTENSIONS = (
-    '.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar'
-)
-
-SUPPORTED_EXTENSIONS = IMAGE_EXTENSIONS + VIDEO_EXTENSIONS + AUDIO_EXTENSIONS + DOCUMENT_EXTENSIONS + ARCHIVE_EXTENSIONS
-
 class SmartArrangeThread(QtCore.QThread):
     log_signal = QtCore.pyqtSignal(str, str)
     progress_signal = QtCore.pyqtSignal(int)
@@ -53,7 +28,6 @@ class SmartArrangeThread(QtCore.QThread):
         
         super().__init__(parent)
         self._lock = threading.RLock()
-        self.log_counter = 0
         self.parent = parent
         self.folders = folders or []
         self.classification_structure = classification_structure or []
@@ -62,7 +36,6 @@ class SmartArrangeThread(QtCore.QThread):
         self.separator = separator if separator else "-"
         self.time_derive = time_derive if time_derive else "文件创建时间"
         self.operation_type = operation_type
-        self._is_running = True
         self._stop_flag = False
         self.total_files = 0
         self.processed_files = 0
@@ -450,7 +423,7 @@ class SmartArrangeThread(QtCore.QThread):
         
         try:
             cmd = [exiftool_path, file_path]
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode != 0:
                 return None
@@ -543,7 +516,7 @@ class SmartArrangeThread(QtCore.QThread):
                 except (ValueError, IndexError):
                     pass
         
-        if gps_lat is not None and gps_lon is not None:
+        if gps_lat and gps_lon:
             exif_data['GPS GPSLatitude'] = gps_lat
             exif_data['GPS GPSLongitude'] = gps_lon
 

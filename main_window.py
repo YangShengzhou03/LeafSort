@@ -71,7 +71,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
 
     def _connect_signals(self):
         self.btnMinimize.clicked.connect(self.showMinimized)
-        self.btnMaximize.clicked.connect(self._toggle_maximize)
         self.btnClose.clicked.connect(self._hide_to_tray)
         self.btnGithub.clicked.connect(self._open_github)
         self.btnBadge.clicked.connect(self._open_microsoft)
@@ -88,7 +87,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 not self._drag_position.isNull()):
             if self.isMaximized():
                 self.showNormal()
-                self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/最大化.svg')))
                 screen = QtWidgets.QApplication.primaryScreen().availableGeometry()
                 window_rect = self.frameGeometry()
                 center_point = screen.center()
@@ -107,7 +105,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
         self.tray_icon.show()
         self.tray_icon.showMessage(
             "LeafSort",
-            "应用在后台继续运行",
+            "轻羽在后台继续运行",
             QtWidgets.QSystemTrayIcon.MessageIcon.Information,
             3000
         )
@@ -126,14 +124,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
                 self._show_window()
             else:
                 self._hide_to_tray()
-
-    def _toggle_maximize(self):
-        if self.isMaximized():
-            self.showNormal()
-            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/最大化.svg')))
-        else:
-            self.showMaximized()
-            self.btnMaximize.setIcon(QtGui.QIcon(get_resource_path('_internal/resources/img/窗口控制/还原.svg')))
 
     def changeEvent(self, event):
         if event.type() == QtCore.QEvent.Type.WindowStateChange:

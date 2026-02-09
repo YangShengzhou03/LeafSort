@@ -187,43 +187,6 @@ class WriteExifThread(QThread):
         
         return image_paths
     
-    def _process_folder_with_subfolders(self, folder_path, image_extensions, image_paths):
-        try:
-            for root, _, files in os.walk(folder_path):
-                if self.isInterruptionRequested():
-                    break
-                self._process_folder_content(root, files, image_extensions, image_paths)
-        except (OSError, IOError) as e:
-            error_msg = f"遍历文件夹时出错: {str(e)}"
-            logger.error(error_msg)
-            self.log("ERROR", error_msg)
-    
-    def _process_folder_without_subfolders(self, folder_path, image_extensions, image_paths):
-        try:
-            if os.path.isdir(folder_path):
-                files = os.listdir(folder_path)
-                self._process_folder_content(folder_path, files, image_extensions, image_paths)
-        except PermissionError as e:
-            error_msg = f"没有权限访问文件夹 {folder_path}: {str(e)}"
-            logger.error(error_msg)
-            self.log("ERROR", f"没有权限访问文件夹 {os.path.basename(folder_path)}")
-        except (OSError, IOError) as e:
-            error_msg = f"列出文件夹 {folder_path} 内容时出错: {str(e)}"
-            logger.error(error_msg)
-            self.log("ERROR", f"列出文件夹 {os.path.basename(folder_path)} 内容时出错: {str(e)}")
-    
-    def _process_folder_content(self, root, files, image_extensions, image_paths):
-        try:
-            image_paths.extend(
-                os.path.join(root, file)
-                for file in files
-                if file.lower().endswith(image_extensions)
-            )
-        except (OSError, IOError) as e:
-            error_msg = f"处理文件夹 {root} 内容时出错: {str(e)}"
-            logger.error(error_msg)
-            self.log("ERROR", error_msg)
-
     def process_image(self, image_path):
         try:
             if self.isInterruptionRequested():
@@ -1137,7 +1100,7 @@ class WriteExifThread(QThread):
             cmd_parts, updated_fields, exiftool_path = self._prepare_exiftool_command(original_file_path)
             cmd_parts.append(file_path_normalized)
             
-            result = subprocess.run(cmd_parts, capture_output=True, text=False, shell=False, check=False)
+            result = subprocess.run(cmd_parts, capture_output=True, text=False, shell=False, check=False, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode != 0:
                 error_msg = self._decode_subprocess_output(result.stderr) if result.stderr else "未知错误"
@@ -1158,7 +1121,7 @@ class WriteExifThread(QThread):
                 self.log("INFO", f"写入并复制 {os.path.basename(original_file_path)}")
             
             verify_cmd = [exiftool_path, '-CreateDate', '-CreationDate', '-MediaCreateDate', '-DateTimeOriginal', file_path_normalized]
-            subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False)
+            subprocess.run(verify_cmd, capture_output=True, text=False, shell=False, check=False, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             return True
             
@@ -1256,7 +1219,7 @@ class WriteExifThread(QThread):
         cmd = [exiftool_path, "-overwrite_original"] + commands + [image_path]
         
         try:
-            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30, check=False)
+            result = subprocess.run(cmd, capture_output=True, text=False, timeout=30, check=False, creationflags=subprocess.CREATE_NO_WINDOW if os.name == 'nt' else 0)
             
             if result.returncode == 0:
                 if updated_fields:

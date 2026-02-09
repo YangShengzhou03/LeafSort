@@ -98,34 +98,6 @@ class SmartArrangeManager(QObject):
     def update_progress_bar(self, value):
         self.parent.classificationProgressBar.setValue(value)
 
-    def select_destination_folder(self) -> bool:
-        try:
-            if self.folder_page and hasattr(self.folder_page, 'get_target_folder'):
-                try:
-                    target_folder = self.folder_page.get_target_folder()
-                    if target_folder and self.validate_destination(target_folder):
-                        self.destination_root = target_folder
-                        return True
-                except Exception:
-                    pass
-
-            folder = QFileDialog.getExistingDirectory(
-                self.parent,
-                "Select destination folder",
-                options=QFileDialog.Option.ShowDirsOnly
-            )
-
-            if not folder:
-                return False
-
-            if self.validate_destination(folder):
-                self.destination_root = folder
-                return True
-
-            return False
-        except Exception:
-            return False
-
     def validate_destination(self, destination: str) -> bool:
         try:
             if not os.path.exists(destination):
