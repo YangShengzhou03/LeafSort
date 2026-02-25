@@ -19,7 +19,7 @@ VSVersionInfo(
             StringStruct('FileDescription', 'LeafSort'),
             StringStruct('FileVersion', '2.0.2.0'),
             StringStruct('InternalName', 'LeafSort'),
-            StringStruct('LegalCopyright', 'Copyright © 2025 YangShengzhou 版权所有'),
+            StringStruct('LegalCopyright', 'Copyright © 2026 YangShengzhou 版权所有'),
             StringStruct('OriginalFilename', 'LeafSort.exe'),
             StringStruct('ProductName', 'LeafSort'),
             StringStruct('ProductVersion', '2.0.2.0')

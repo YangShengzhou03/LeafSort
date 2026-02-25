@@ -2,6 +2,8 @@ import json
 import logging
 import os
 from datetime import datetime
+
+from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize, QDateTime
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QMessageBox
@@ -178,9 +180,9 @@ class WriteExifManager(QObject):
 
     def update_button_state(self):
         if self.is_running:
-            self.parent.btnStartExif.setText("停止写入EXIF信息")
+            self.parent.btnStartExif.setText("停止写入EXIF数据")
         else:
-            self.parent.btnStartExif.setText("开始写入EXIF信息")
+            self.parent.btnStartExif.setText("开始写入EXIF数据")
 
     def toggle_exif_writing(self):
         if not self.folder_page:
@@ -370,7 +372,7 @@ class WriteExifManager(QObject):
 
         self.save_exif_settings()
 
-        operation_summary = f"操作类型: EXIF信息写入"
+        operation_summary = f"操作类型: EXIF数据写入"
         if exif_config.get('title'):
             operation_summary += f", 标题: {exif_config['title']}"
         if exif_config.get('author'):
@@ -467,11 +469,11 @@ class WriteExifManager(QObject):
                     QtWidgets.QSystemTrayIcon.MessageIcon.Warning
                 )
         else:
-            message = "EXIF信息写入操作已成功完成！"
+            message = "EXIF数据写入操作已成功完成！"
             QMessageBox.information(
                 self.parent,
                 "操作完成",
-                f"{message}\n\n所有选定的图片文件已成功更新EXIF信息。\n\n"
+                f"{message}\n\n所有选定的图片文件已成功更新EXIF数据。\n\n"
                 "您可以在原文件夹中查看更新后的文件。"
             )
             # 显示托盘通知

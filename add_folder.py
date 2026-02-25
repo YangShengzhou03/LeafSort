@@ -1,6 +1,6 @@
 import os
 import logging
-from PyQt6 import QtWidgets
+from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import Qt
 from config_manager import config_manager
 
@@ -15,6 +15,7 @@ class FolderPage(QtWidgets.QWidget):
 
         
         self._load_saved_folders()
+        self._setup_drag_drop()
 
         self.parent.btnBrowseSource.clicked.connect(
             lambda: self._browse_directory("选择源文件夹", self.parent.inputSourceFolder))
@@ -26,6 +27,56 @@ class FolderPage(QtWidgets.QWidget):
             lambda: self._save_folder_path("source_folder", self.parent.inputSourceFolder.text()))
         self.parent.inputTargetFolder.textChanged.connect(
             lambda: self._save_folder_path("target_folder", self.parent.inputTargetFolder.text()))
+    
+    def _setup_drag_drop(self):
+        self.parent.frameSourceFolderGroup.setAcceptDrops(True)
+        self.parent.frameTargetFolderGroup.setAcceptDrops(True)
+        
+        def create_drag_drop_handlers(folder_type):
+            def dragEnterEvent(event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+                else:
+                    event.ignore()
+            
+            def dragMoveEvent(event):
+                if event.mimeData().hasUrls():
+                    event.acceptProposedAction()
+                else:
+                    event.ignore()
+            
+            def dropEvent(event):
+                urls = event.mimeData().urls()
+                if urls:
+                    file_path = urls[0].toLocalFile()
+                    if os.path.isdir(file_path):
+                        title = "选择源文件夹" if folder_type == "source" else "选择目标文件夹"
+                        line_edit = self.parent.inputSourceFolder if folder_type == "source" else self.parent.inputTargetFolder
+                        
+                        if self._validate_folder_selection(file_path, title, line_edit.text(), line_edit):
+                            line_edit.setText(file_path)
+                            if folder_type == "source":
+                                self._update_folder_info_display(file_path)
+                            self._update_import_status(title)
+                            logger.info(f"通过拖放导入{title}: {file_path}")
+                        event.acceptProposedAction()
+                    else:
+                        QtWidgets.QMessageBox.warning(self, "拖放错误", "请拖放文件夹而不是文件")
+                        event.ignore()
+                else:
+                    event.ignore()
+            
+            return dragEnterEvent, dragMoveEvent, dropEvent
+        
+        source_dragEnter, source_dragMove, source_drop = create_drag_drop_handlers("source")
+        target_dragEnter, target_dragMove, target_drop = create_drag_drop_handlers("target")
+        
+        self.parent.frameSourceFolderGroup.dragEnterEvent = source_dragEnter
+        self.parent.frameSourceFolderGroup.dragMoveEvent = source_dragMove
+        self.parent.frameSourceFolderGroup.dropEvent = source_drop
+        self.parent.frameTargetFolderGroup.dragEnterEvent = target_dragEnter
+        self.parent.frameTargetFolderGroup.dragMoveEvent = target_dragMove
+        self.parent.frameTargetFolderGroup.dropEvent = target_drop
     
     def _load_saved_folders(self):
         try:
@@ -95,7 +146,7 @@ class FolderPage(QtWidgets.QWidget):
             try:
                 items = os.listdir(selected_path)
                 if items:
-                    QtWidgets.QMessageBox.warning(self, "请注意，这不是一个空文件夹", "目标文件夹不是一个空文件夹，但不影响您继续。",
+                    QtWidgets.QMessageBox.warning(self, "请注意，这不是一个空文件夹", "目标文件夹不是空文件夹，但这不影响您继续。",
                                                   QtWidgets.QMessageBox.StandardButton.Ok)
             except Exception as e:
                 logger.warning(f"检查目标文件夹是否为空时出错: {str(e)}")
@@ -196,6 +247,6 @@ class FolderPage(QtWidgets.QWidget):
 
         info_lines.extend(["", "-" * 20 + "注意！会递归遍历处理子文件夹" + "-" * 20, "顶层内容统计",
                            f"顶层文件数量：{file_count}       顶层文件夹数量：{directory_count}       总计：{total_items}",
-                           "-" * 75, " LeafSort（轻羽媒体整理） © 2025 Yangshengzhou.All Rights Reserved "])
+                           "-" * 75, " LeafSort（轻羽媒体整理） © 2026 Yangshengzhou.All Rights Reserved "])
 
         return '\n'.join(info_lines)

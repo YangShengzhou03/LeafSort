@@ -1059,11 +1059,13 @@ QFrame:focus {
                          </property>
                          <property name="styleSheet">
                           <string notr="true">QLabel {
+    color:rgb(0, 0, 0);
     qproperty-alignment: AlignRight;
+    border: none;
 }</string>
                          </property>
                          <property name="text">
-                          <string>源文件夹：</string>
+                          <string>处理文件夹：</string>
                          </property>
                         </widget>
                        </item>
@@ -1205,7 +1207,9 @@ QFrame:focus {
                          </property>
                          <property name="styleSheet">
                           <string notr="true">QLabel {
+    color:rgb(0, 0, 0);
     qproperty-alignment: AlignRight;
+    border: none;
 }</string>
                          </property>
                          <property name="text">
@@ -3197,7 +3201,7 @@ QPushButton:pressed {
                              <property name="minimumSize">
                               <size>
                                <width>66</width>
-                               <height>26</height>
+                               <height>22</height>
                               </size>
                              </property>
                              <property name="maximumSize">
@@ -3219,7 +3223,7 @@ QPushButton:pressed {
     background-color: #ffffff;
     border: 1px solid #d1d5db;
     border-radius: 6px;
-    padding: 4px 4px;
+    padding: 2px 4px;
     color: #374151;
     font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
     font-size: 13px;
@@ -3421,7 +3425,7 @@ QComboBox:focus {
                              <string notr="true">QComboBox {
     background-color: rgba(255, 255, 255, 85);
     border: 1px solid #a5b4fc;
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 6px 12px;
     color: #374151;
     font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
@@ -3595,7 +3599,7 @@ QComboBox:focus {
                              <string notr="true">QComboBox {
     background-color: rgba(255, 255, 255, 85);
     border: 1px solid #a5b4fc;
-    border-radius: 8px;
+    border-radius: 4px;
     padding: 6px 12px;
     color: #374151;
     font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
@@ -5591,7 +5595,7 @@ QLineEdit:disabled {
 }</string>
                         </property>
                         <property name="placeholderText">
-                         <string>©2024 LeafSort</string>
+                         <string>©2026 LeafSort</string>
                         </property>
                        </widget>
                       </item>
@@ -6092,7 +6096,7 @@ QToolButton:pressed {
 }</string>
                       </property>
                       <property name="text">
-                       <string>开始写入EXIF信息</string>
+                       <string>开始写入EXIF数据</string>
                       </property>
                       <property name="iconSize">
                        <size>
