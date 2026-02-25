@@ -2,7 +2,7 @@
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/stargazers)&nbsp;[![GitHub forks](https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/network/members)&nbsp;[![GitHub issues](https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/issues)&nbsp;[![GitHub license](https://img.shields.io/github/license/YangShengzhou03/LeafSort?style=for-the-badge)](https://github.com/YangShengzhou03/LeafSort/blob/main/LICENSE)&nbsp;[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)&nbsp;[![PyQt6](https://img.shields.io/badge/PyQt6-6.5.0+-41CD52?style=for-the-badge&logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
+[![GitHub stars](https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/stargazers)&nbsp;[![GitHub forks](https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/network/members)&nbsp;[![GitHub issues](https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/issues)&nbsp;[![GitHub license](https://img.shields.io/github/license/YangShengzhou03/LeafSort?style=for-the-badge)](https://github.com/YangShengzhou03/LeafSort/LICENSE)&nbsp;[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)&nbsp;[![PyQt6](https://img.shields.io/badge/PyQt6-6.5.0+-41CD52?style=for-the-badge&logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
 
 <a href="https://apps.microsoft.com/detail/9p3mkv4xslj8?referrer=appbadge&mode=direct">
  <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
@@ -74,7 +74,8 @@ LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，�
 ### 环境要求
 
 #### 开发环境
-- **Python**: 3.11+ 
+
+- **Python**: 3.11+
 - **PyQt6**: 6.5.0+ (GUI 框架)
 - **Pillow**: 11.3.0+ (图像处理)
 - **piexif**: 1.1.3+ (EXIF 处理)
@@ -83,6 +84,7 @@ LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，�
 - **requests**: 2.31.0+ (HTTP 请求)
 
 #### 生产环境
+
 - **操作系统**: Windows 10/11
 - **内存**: 4GB+ RAM
 - **存储**: 2GB+ 可用空间
@@ -90,17 +92,21 @@ LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，�
 ### 环境配置说明
 
 #### Python 环境配置
+
 Python 3.11+ 是软件开发的基础环境，PyQt6 6.5.0+ 框架要求 Python 3.11 或更高版本。安装 Python 3.11 后，需要配置 PATH 环境变量，将 Python 的 Scripts 目录添加到 PATH 中。可以通过运行 `python --version` 命令验证 Python 是否正确安装。
 
 #### PyQt6 环境配置
+
 PyQt6 6.5.0+ 是软件开发的基础 GUI 框架，用于构建现代化的用户界面。安装 PyQt6 后，可以通过运行 `pip list` 命令检查 PyQt6 是否正确安装。PyQt6 支持 Windows、macOS、Linux 等多个平台。
 
 #### 依赖库配置
+
 项目依赖多个第三方库，包括图像处理库（Pillow）、EXIF 处理库（piexif、exifread）、HTTP 请求库（requests）等。安装依赖库后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
 
 ## 安装部署
 
 ### 1. 克隆项目
+
 ```bash
 git clone https://github.com/YangShengzhou03/LeafSort.git
 cd LeafSort
@@ -109,6 +115,7 @@ cd LeafSort
 克隆项目后，项目目录包含多个 Python 源文件、资源文件、配置文件等。主要文件包括 App.py（应用入口）、main_window.py（主窗口）、smart_arrange.py（智能整理）、write_exif.py（EXIF 编辑）、file_deduplication.py（文件去重）等。
 
 ### 2. 创建虚拟环境（推荐）
+
 ```bash
 python -m venv venv
 venv\Scripts\activate
@@ -117,6 +124,7 @@ venv\Scripts\activate
 创建虚拟环境可以隔离项目依赖，避免与其他项目的依赖冲突。激活虚拟环境后，命令行提示符会显示虚拟环境名称，表示当前已进入虚拟环境。
 
 ### 3. 安装依赖
+
 ```bash
 pip install -r requirements.txt
 ```
@@ -124,6 +132,7 @@ pip install -r requirements.txt
 requirements.txt 文件列出了项目依赖的所有第三方库及其版本要求。运行该命令会自动下载并安装所有依赖库。安装完成后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
 
 ### 4. 运行应用
+
 ```bash
 python App.py
 ```
@@ -163,6 +172,7 @@ python App.py
 ## 技术架构
 
 ### 系统架构图
+
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   用户界面层     │    │   业务逻辑层     │    │   数据处理层     │
@@ -185,15 +195,15 @@ python App.py
 
 ### 技术栈详情
 
-| 技术 | 版本 | 用途 |
-|------|------|------|
-| Python | 3.11+ | 编程语言 |
-| PyQt6 | 6.5.0+ | GUI 框架 |
-| Pillow | 11.3.0+ | 图像处理 |
-| piexif | 1.1.3+ | EXIF 处理 |
-| exifread | 3.0.0+ | EXIF 读取 |
+| 技术        | 版本    | 用途           |
+| ----------- | ------- | -------------- |
+| Python      | 3.11+   | 编程语言       |
+| PyQt6       | 6.5.0+  | GUI 框架       |
+| Pillow      | 11.3.0+ | 图像处理       |
+| piexif      | 1.1.3+  | EXIF 处理      |
+| exifread    | 3.0.0+  | EXIF 读取      |
 | pillow-heif | 0.16.0+ | HEIC/HEIF 支持 |
-| requests | 2.31.0+ | HTTP 请求 |
+| requests    | 2.31.0+ | HTTP 请求      |
 
 ### 项目结构
 
@@ -277,7 +287,7 @@ LeafSort/
 
 ### 代码规范
 
-类名使用 PascalCase 命名规范，如 SmartArrangeManager。函数名使用小写字母加下划线，如 get_exif_data。变量名使用小写字母加下划线，如 file_path。常量使用大写字母加下划线，如 IMAGE_EXTENSIONS。私有方法使用单下划线前缀，如 _process_file。
+类名使用 PascalCase 命名规范，如 SmartArrangeManager。函数名使用小写字母加下划线，如 get_exif_data。变量名使用小写字母加下划线，如 file_path。常量使用大写字母加下划线，如 IMAGE_EXTENSIONS。私有方法使用单下划线前缀，如 \_process_file。
 
 ### 错误处理
 
@@ -293,7 +303,7 @@ LeafSort/
 
 ## 许可证
 
-本项目采用 MIT 许可证，详见 [LICENSE](LICENSE) 文件。
+本项目采用 Academic Free License (AFL) v. 3.0 许可证，详见 [LICENSE](LICENSE) 文件。
 
 ## 贡献指南
 
@@ -308,6 +318,7 @@ LeafSort/
 ## 更新日志
 
 ### v2.0.2 (2025-02-08)
+
 - 优化文件处理逻辑，改为边处理边移动/复制，提升性能
 - 优化内存使用，减少记录的数据量
 - 修复停止按钮响应慢的问题
@@ -315,11 +326,13 @@ LeafSort/
 - 修复 smart_arrange.py 中的 QtWidgets 导入错误
 
 ### v2.0.1 (2025-01-15)
+
 - 修复地理编码功能
 - 优化文件去重算法
 - 改进用户界面响应速度
 
 ### v2.0.0 (2025-01-01)
+
 - 初始版本发布
 - 支持智能整理功能
 - 支持 EXIF 编辑功能
