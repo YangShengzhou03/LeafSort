@@ -1,3 +1,4 @@
+import logging
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import Qt, QPoint
@@ -8,9 +9,7 @@ from write_exif import WriteExifManager
 from file_deduplication import FileDeduplicationManager
 from update_dialog import check_update
 from common import get_resource_path
-import logging
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
@@ -125,11 +124,6 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             else:
                 self._hide_to_tray()
 
-    def changeEvent(self, event):
-        if event.type() == QtCore.QEvent.Type.WindowStateChange:
-            pass
-        super().changeEvent(event)
-    
     def closeEvent(self, event):
         if self._exit_requested:
             event.accept()

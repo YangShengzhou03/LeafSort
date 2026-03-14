@@ -12,7 +12,7 @@ from common import get_resource_path
 logger = logging.getLogger(__name__)
 
 class UpdateDialog(QDialog):
-    def __init__(self, url, title, content, version="", necessary=False):
+    def __init__(self, url, title, content):
         super().__init__()
         self.ui = Ui_UpdateDialog()
         self.ui.setupUi(self)
@@ -24,17 +24,12 @@ class UpdateDialog(QDialog):
         self.ui.lblTitle.setText(title)
         self.ui.lblContent.setText(content)
         
-        
         self.ui.btnDownload.clicked.connect(self.download_update)
         self.ui.btnCancel.clicked.connect(self.close)
     
     def download_update(self):
         QDesktopServices.openUrl(QUrl(self.url))
         self.close()
-    
-    def closeEvent(self, event):
-        
-        super().closeEvent(event)
 
 def check_update():
     url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafSort/versionInfo'
@@ -66,7 +61,7 @@ def check_update():
         
         if latest_version > current_version:
             version_text = f"LeafSort v{latest_version_str}"
-            dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description, version_text, False)
+            dialog = UpdateDialog(download_link, f"发现新版本 {version_text}", description)
             dialog.exec()
 
     except requests.exceptions.RequestException as e:

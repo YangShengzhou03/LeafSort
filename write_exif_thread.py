@@ -14,6 +14,8 @@ from common import get_resource_path
 
 logger = logging.getLogger(__name__)
 
+MAX_IMAGE_SIZE_TO_PROCESS = 500 * 1024 * 1024
+
 try:
     from pillow_heif import open_heif, register_heif_opener
     PILLOW_HEIF_AVAILABLE = True
@@ -117,7 +119,7 @@ class WriteExifThread(QThread):
                 
             try:
                 file_size = os.path.getsize(path)
-                if file_size > 500 * 1024 * 1024:
+                if file_size > MAX_IMAGE_SIZE_TO_PROCESS:
                     self.log("ERROR", f"文件 {os.path.basename(path)} 太大了(超过500MB)，暂不支持处理")
                     error_count += 1
                     continue

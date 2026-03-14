@@ -1,10 +1,9 @@
-import os
 import logging
+import os
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import Qt
 from config_manager import config_manager
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 

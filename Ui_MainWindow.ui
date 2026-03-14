@@ -1609,6 +1609,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -1788,6 +1789,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -1967,6 +1969,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -2146,6 +2149,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -2325,6 +2329,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -3289,6 +3294,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -3498,6 +3504,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -3672,6 +3679,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -5096,6 +5104,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -5297,6 +5306,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {
@@ -5741,6 +5751,7 @@ QComboBox QAbstractItemView::item {
     margin: 0 4px;
     border-radius: 3px;
     border-left: 1px solid transparent;
+    color: #374151;
 }
 
 QComboBox QAbstractItemView::item:hover {

@@ -4,7 +4,7 @@ import os
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import QObject, pyqtSignal
-from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QFileDialog, QInputDialog
+from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QInputDialog
 
 from smart_arrange_thread import SmartArrangeThread
 

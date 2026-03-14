@@ -3,7 +3,7 @@ import logging
 import os
 import threading
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any
 
 def get_app_data_path():
     local_app_data = os.environ.get('LOCALAPPDATA')
@@ -37,9 +37,7 @@ class ConfigManager:
         self._validate_and_migrate_config()
     
     def _ensure_config_exists(self) -> None:
-
         os.makedirs(self.internal_dir, exist_ok=True)
-        
 
         if not os.path.exists(self.config_file):
             default_config = self._get_default_config()

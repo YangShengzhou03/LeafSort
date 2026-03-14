@@ -525,8 +525,6 @@ class WriteExifManager(QObject):
                 self.parent.shootTimeSource.setCurrentIndex(int(shoot_time_source))
             except (ValueError, TypeError):
                 logger.warning(f"无法转换拍摄时间来源: {shoot_time_source}")
-        
-        pass
 
     def save_exif_settings(self):
         try:

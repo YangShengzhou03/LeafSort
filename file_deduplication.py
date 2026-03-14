@@ -5,7 +5,6 @@ from PyQt6 import QtWidgets, QtCore
 
 from file_deduplication_thread import FileScanThread, FileDeduplicateThread
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FileDeduplicationManager(QtWidgets.QWidget):
@@ -123,10 +122,6 @@ class FileDeduplicationManager(QtWidgets.QWidget):
             self.parent.duplicateItemsListWidget.setCurrentRow(0)
             self.on_group_selected(0)
             QtWidgets.QMessageBox.information(self.parent, "扫描完成", "未找到重复文件，每一个文件都是独一无二的")
-        
-        self.parent.btnStartDeduplication.setEnabled(True)
-        self.parent.btnStartDeduplication.setText("开始查重")
-        self.parent.contrastProgressBar.setValue(100)
     
     def on_scan_error(self, error_message):
         self.parent.btnStartDeduplication.setEnabled(True)

@@ -6,7 +6,6 @@ import threading
 from concurrent.futures import ThreadPoolExecutor
 from PyQt6 import QtCore
 
-logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 class FileScanThread(QtCore.QThread):
@@ -63,7 +62,7 @@ class FileScanThread(QtCore.QThread):
                     }
                 return empty_hash
             
-            if file_size < 5 * 1024 * 1024:
+            if file_size < SMALL_FILE_THRESHOLD:
                 try:
                     with open(file_path, 'rb') as f:
                         content = f.read()
@@ -239,7 +238,7 @@ class FileScanThread(QtCore.QThread):
                         file_size = os.path.getsize(file_path)
                         if file_size == 0:
                             continue
-                        if file_size > 10 * 1024 * 1024 * 1024:
+                        if file_size > MAX_FILE_SIZE_TO_SCAN:
                             continue
                     except (OSError, IOError, PermissionError) as e:
                         continue
