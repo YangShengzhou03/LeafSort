@@ -1,16 +1,6 @@
-# LeafSort Dependencies
-# 基础GUI框架
-PyQt6>=6.5.0
-
-# 图像处理
-Pillow>=11.3.0
-
-# EXIF处理
-piexif>=1.1.3
-exifread>=3.0.0
-
-# HEIC/HEIF格式支持
-pillow-heif>=0.16.0
-
-# 其他工具
-requests>=2.31.0
+PyQt6==6.10.2
+Pillow==11.3.0
+piexif==1.1.3
+exifread==3.0.0
+pillow-heif==0.16.0
+requests==2.31.0

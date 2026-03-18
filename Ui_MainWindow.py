@@ -67,6 +67,7 @@ class Ui_MainWindow(object):
         self.layoutSidebarLogo.setObjectName("layoutSidebarLogo")
         self.btnHome = QtWidgets.QPushButton(parent=self.frameSidebarLogo)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(20)
         self.btnHome.setFont(font)
         self.btnHome.setStyleSheet("QPushButton {\n"
@@ -134,7 +135,7 @@ class Ui_MainWindow(object):
         self.listNavigationMenu.setMinimumSize(QtCore.QSize(0, 0))
         self.listNavigationMenu.setMaximumSize(QtCore.QSize(16777215, 16777215))
         font = QtGui.QFont()
-        font.setFamily("Segoe UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.listNavigationMenu.setFont(font)
         self.listNavigationMenu.setFocusPolicy(QtCore.Qt.FocusPolicy.NoFocus)
@@ -145,7 +146,7 @@ class Ui_MainWindow(object):
                                               "    border-radius: 12px;\n"
                                               "    padding: 4px;\n"
                                               "    outline: 0;\n"
-                                              "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+                                              "    font-family: \'Microsoft YaHei UI Light\';\n"
                                               "}\n"
                                               "\n"
                                               "QListView::item {\n"
@@ -564,7 +565,7 @@ class Ui_MainWindow(object):
         self.layoutImportHeader.setObjectName("layoutImportHeader")
         self.lblImportTitle = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(14)
         font.setBold(True)
         self.lblImportTitle.setFont(font)
@@ -573,7 +574,7 @@ class Ui_MainWindow(object):
         self.layoutImportHeader.addWidget(self.lblImportTitle)
         self.lblImportRoute = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         self.lblImportRoute.setFont(font)
         self.lblImportRoute.setStyleSheet("color: #666666;")
@@ -584,7 +585,7 @@ class Ui_MainWindow(object):
         self.layoutImportHeader.addItem(spacerItem1)
         self.lblImportSeparator = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         self.lblImportSeparator.setFont(font)
         self.lblImportSeparator.setStyleSheet("color: #999999;")
@@ -592,7 +593,7 @@ class Ui_MainWindow(object):
         self.layoutImportHeader.addWidget(self.lblImportSeparator)
         self.importStatus = QtWidgets.QLabel(parent=self.frameImportHeader)
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         self.importStatus.setFont(font)
         self.importStatus.setStyleSheet("color: #666666;")
@@ -643,7 +644,7 @@ class Ui_MainWindow(object):
         self.lblSourceFolder = QtWidgets.QLabel(parent=self.frameSourceFolderGroup)
         self.lblSourceFolder.setMinimumSize(QtCore.QSize(80, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         self.lblSourceFolder.setFont(font)
         self.lblSourceFolder.setStyleSheet("QLabel {\n"
@@ -656,7 +657,7 @@ class Ui_MainWindow(object):
         self.inputSourceFolder = QtWidgets.QLineEdit(parent=self.frameSourceFolderGroup)
         self.inputSourceFolder.setMinimumSize(QtCore.QSize(482, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.inputSourceFolder.setFont(font)
         self.inputSourceFolder.setStyleSheet("border: 1px solid rgba(221, 225, 229, 0.8);\n"
@@ -676,7 +677,7 @@ class Ui_MainWindow(object):
         self.btnBrowseSource = QtWidgets.QPushButton(parent=self.frameSourceFolderGroup)
         self.btnBrowseSource.setMinimumSize(QtCore.QSize(80, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         font.setBold(False)
         self.btnBrowseSource.setFont(font)
@@ -748,7 +749,7 @@ class Ui_MainWindow(object):
         self.lblTargetFolder = QtWidgets.QLabel(parent=self.frameTargetFolderGroup)
         self.lblTargetFolder.setMinimumSize(QtCore.QSize(80, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         self.lblTargetFolder.setFont(font)
         self.lblTargetFolder.setStyleSheet("QLabel {\n"
@@ -761,7 +762,7 @@ class Ui_MainWindow(object):
         self.inputTargetFolder = QtWidgets.QLineEdit(parent=self.frameTargetFolderGroup)
         self.inputTargetFolder.setMinimumSize(QtCore.QSize(482, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.inputTargetFolder.setFont(font)
         self.inputTargetFolder.setStyleSheet("border: 1px solid rgba(221, 225, 229, 0.8);\n"
@@ -781,7 +782,7 @@ class Ui_MainWindow(object):
         self.btnBrowseTarget = QtWidgets.QPushButton(parent=self.frameTargetFolderGroup)
         self.btnBrowseTarget.setMinimumSize(QtCore.QSize(80, 0))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(10)
         font.setBold(False)
         self.btnBrowseTarget.setFont(font)
@@ -827,7 +828,7 @@ class Ui_MainWindow(object):
                                                    "    background: rgba(255, 255, 255, 95);\n"
                                                    "    border-radius: 8px;\n"
                                                    "    padding: 12px;\n"
-                                                   "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+                                                   "    font-family: \'Microsoft YaHei UI Light\';\n"
                                                    "    font-size: 13px;\n"
                                                    "    color: #4b5563;\n"
                                                    "    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);\n"
@@ -916,7 +917,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.setObjectName("layoutClassificationHeader")
         self.lblClassification = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         font.setBold(False)
         self.lblClassification.setFont(font)
@@ -925,13 +926,14 @@ class Ui_MainWindow(object):
                                              "    border: none;\n"
                                              "    background: transparent;\n"
                                              "    padding: 2px 4px;\n"
-                                             "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                             "    font-family: \"Microsoft YaHei UI Light\";\n"
                                              "    font-weight: 400;\n"
                                              "}")
         self.lblClassification.setObjectName("lblClassification")
         self.layoutClassificationHeader.addWidget(self.lblClassification)
         self.lblRoute = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblRoute.setFont(font)
         self.lblRoute.setStyleSheet("QLabel {\n"
@@ -942,6 +944,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.addWidget(self.lblRoute)
         self.lblSeparator = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator.setFont(font)
         self.lblSeparator.setStyleSheet("QLabel {\n"
@@ -953,7 +956,7 @@ class Ui_MainWindow(object):
         self.comboClassificationLevel1 = QtWidgets.QComboBox(parent=self.frameClassificationHeader)
         self.comboClassificationLevel1.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.comboClassificationLevel1.setFont(font)
         self.comboClassificationLevel1.setStyleSheet("QComboBox {\n"
@@ -962,7 +965,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 6px;\n"
                                                      "    padding: 6px 12px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -1017,7 +1020,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -1072,6 +1075,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.addWidget(self.comboClassificationLevel1)
         self.lblSeparator2 = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator2.setFont(font)
         self.lblSeparator2.setStyleSheet("QLabel {\n"
@@ -1083,7 +1087,7 @@ class Ui_MainWindow(object):
         self.comboClassificationLevel2 = QtWidgets.QComboBox(parent=self.frameClassificationHeader)
         self.comboClassificationLevel2.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.comboClassificationLevel2.setFont(font)
         self.comboClassificationLevel2.setStyleSheet("QComboBox {\n"
@@ -1092,7 +1096,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 6px;\n"
                                                      "    padding: 6px 12px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -1147,7 +1151,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -1202,6 +1206,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.addWidget(self.comboClassificationLevel2)
         self.lblSeparator3 = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator3.setFont(font)
         self.lblSeparator3.setStyleSheet("QLabel {\n"
@@ -1213,7 +1218,7 @@ class Ui_MainWindow(object):
         self.comboClassificationLevel3 = QtWidgets.QComboBox(parent=self.frameClassificationHeader)
         self.comboClassificationLevel3.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.comboClassificationLevel3.setFont(font)
         self.comboClassificationLevel3.setStyleSheet("QComboBox {\n"
@@ -1222,7 +1227,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 6px;\n"
                                                      "    padding: 6px 12px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -1277,7 +1282,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -1332,6 +1337,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.addWidget(self.comboClassificationLevel3)
         self.lblSeparator4 = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator4.setFont(font)
         self.lblSeparator4.setStyleSheet("QLabel {\n"
@@ -1343,7 +1349,7 @@ class Ui_MainWindow(object):
         self.comboClassificationLevel4 = QtWidgets.QComboBox(parent=self.frameClassificationHeader)
         self.comboClassificationLevel4.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.comboClassificationLevel4.setFont(font)
         self.comboClassificationLevel4.setStyleSheet("QComboBox {\n"
@@ -1352,7 +1358,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 6px;\n"
                                                      "    padding: 6px 12px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -1407,7 +1413,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -1462,6 +1468,7 @@ class Ui_MainWindow(object):
         self.layoutClassificationHeader.addWidget(self.comboClassificationLevel4)
         self.lblSeparator5 = QtWidgets.QLabel(parent=self.frameClassificationHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator5.setFont(font)
         self.lblSeparator5.setStyleSheet("QLabel {\n"
@@ -1473,7 +1480,7 @@ class Ui_MainWindow(object):
         self.comboClassificationLevel5 = QtWidgets.QComboBox(parent=self.frameClassificationHeader)
         self.comboClassificationLevel5.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.comboClassificationLevel5.setFont(font)
         self.comboClassificationLevel5.setStyleSheet("QComboBox {\n"
@@ -1482,7 +1489,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 6px;\n"
                                                      "    padding: 6px 12px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -1537,7 +1544,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -1605,6 +1612,7 @@ class Ui_MainWindow(object):
         self.layoutRenameHeader.setObjectName("layoutRenameHeader")
         self.lblBuildName = QtWidgets.QLabel(parent=self.renameFrame)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblBuildName.setFont(font)
         self.lblBuildName.setStyleSheet("QLabel {\n"
@@ -1659,6 +1667,7 @@ class Ui_MainWindow(object):
         self.layoutRenameHeader.addWidget(self.btnRemoveDuplicates)
         self.lblPoint = QtWidgets.QLabel(parent=self.renameFrame)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblPoint.setFont(font)
         self.lblPoint.setStyleSheet("QLabel {\n"
@@ -1707,6 +1716,7 @@ class Ui_MainWindow(object):
         self.lblRenamingTags = QtWidgets.QLabel(parent=self.frameTags)
         self.lblRenamingTags.setMinimumSize(QtCore.QSize(0, 40))
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblRenamingTags.setFont(font)
         self.lblRenamingTags.setStyleSheet("QLabel {\n"
@@ -2050,6 +2060,7 @@ class Ui_MainWindow(object):
         self.tagsActionLayout.addItem(spacerItem4)
         self.lblSeparator1 = QtWidgets.QLabel(parent=self.frameTags)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblSeparator1.setFont(font)
         self.lblSeparator1.setStyleSheet("QLabel {\n"
@@ -2062,7 +2073,7 @@ class Ui_MainWindow(object):
         self.fileNameSeparator.setMinimumSize(QtCore.QSize(66, 26))
         self.fileNameSeparator.setMaximumSize(QtCore.QSize(87, 16777215))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         font.setBold(False)
         font.setItalic(False)
@@ -2073,7 +2084,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 4px;\n"
                                                      "    padding: 2px 4px;\n"
                                                      "    color: #374151;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "    min-width: 56px;\n"
                                                      "    min-height: 16px;\n"
@@ -2128,7 +2139,7 @@ class Ui_MainWindow(object):
                                                      "    outline: none;\n"
                                                      "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                                      "    min-width: 88px;\n"
-                                                     "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                                     "    font-family: \"Microsoft YaHei UI Light\";\n"
                                                      "    font-size: 13px;\n"
                                                      "}\n"
                                                      "\n"
@@ -2193,6 +2204,7 @@ class Ui_MainWindow(object):
         self.timeSourceLayout.setObjectName("timeSourceLayout")
         self.timeSource = QtWidgets.QLabel(parent=self.renameFrame)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.timeSource.setFont(font)
         self.timeSource.setStyleSheet("QLabel {\n"
@@ -2204,7 +2216,7 @@ class Ui_MainWindow(object):
         self.timeSource1 = QtWidgets.QComboBox(parent=self.renameFrame)
         self.timeSource1.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         font.setBold(False)
         font.setItalic(False)
@@ -2215,7 +2227,7 @@ class Ui_MainWindow(object):
                                        "    border-radius: 8px;\n"
                                        "    padding: 6px 12px;\n"
                                        "    color: #374151;\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 14px;\n"
                                        "    min-width: 56px;\n"
                                        "    min-height: 16px;\n"
@@ -2276,7 +2288,7 @@ class Ui_MainWindow(object):
                                        "    outline: none;\n"
                                        "    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n"
                                        "    min-width: 88px;\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 13px;\n"
                                        "}\n"
                                        "\n"
@@ -2331,6 +2343,7 @@ class Ui_MainWindow(object):
         self.operationLayout.setObjectName("operationLayout")
         self.operation = QtWidgets.QLabel(parent=self.renameFrame)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.operation.setFont(font)
         self.operation.setStyleSheet("QLabel {\n"
@@ -2342,7 +2355,7 @@ class Ui_MainWindow(object):
         self.fileOperation = QtWidgets.QComboBox(parent=self.renameFrame)
         self.fileOperation.setMinimumSize(QtCore.QSize(82, 30))
         font = QtGui.QFont()
-        font.setFamily("Microsoft YaHei")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         font.setBold(False)
         font.setItalic(False)
@@ -2353,7 +2366,7 @@ class Ui_MainWindow(object):
                                          "    border-radius: 8px;\n"
                                          "    padding: 6px 12px;\n"
                                          "    color: #374151;\n"
-                                         "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                         "    font-family: \"Microsoft YaHei UI Light\";\n"
                                          "    font-size: 14px;\n"
                                          "    min-width: 56px;\n"
                                          "    min-height: 16px;\n"
@@ -2414,7 +2427,7 @@ class Ui_MainWindow(object):
                                          "    outline: none;\n"
                                          "    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);\n"
                                          "    min-width: 88px;\n"
-                                         "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                         "    font-family: \"Microsoft YaHei UI Light\";\n"
                                          "    font-size: 13px;\n"
                                          "}\n"
                                          "\n"
@@ -2492,6 +2505,7 @@ class Ui_MainWindow(object):
         self.copyRoute.setMinimumSize(QtCore.QSize(0, 0))
         self.copyRoute.setMaximumSize(QtCore.QSize(200, 16777215))
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.copyRoute.setFont(font)
         self.copyRoute.setStyleSheet("QLabel {\n"
@@ -2507,6 +2521,7 @@ class Ui_MainWindow(object):
         self.previewRoute.setMinimumSize(QtCore.QSize(0, 0))
         self.previewRoute.setMaximumSize(QtCore.QSize(280, 16777215))
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.previewRoute.setFont(font)
         self.previewRoute.setStyleSheet("QLabel {\n"
@@ -2519,8 +2534,8 @@ class Ui_MainWindow(object):
         self.arrangeLayout.addWidget(self.previewRoute)
         self.separatorLabel2 = QtWidgets.QLabel(parent=self.renameFrame2)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
-        font.setBold(False)
         self.separatorLabel2.setFont(font)
         self.separatorLabel2.setStyleSheet("QLabel {\n"
                                            "    color: rgb(255, 85, 127);\n"
@@ -2532,6 +2547,7 @@ class Ui_MainWindow(object):
         self.previewName.setMinimumSize(QtCore.QSize(0, 0))
         self.previewName.setMaximumSize(QtCore.QSize(280, 16777215))
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.previewName.setFont(font)
         self.previewName.setStyleSheet("QLabel {\n"
@@ -2636,7 +2652,7 @@ class Ui_MainWindow(object):
         self.txtSmartArrangeLog = QtWidgets.QTextEdit(parent=self.horizontalFrame_2)
         self.txtSmartArrangeLog.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
-        font.setFamily("Segoe UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.txtSmartArrangeLog.setFont(font)
         self.txtSmartArrangeLog.setStyleSheet("QTextEdit {\n"
@@ -2651,7 +2667,7 @@ class Ui_MainWindow(object):
                                               "    background: rgb(245, 249, 254);\n"
                                               "    padding: 8px;\n"
                                               "    border-radius: 4px;\n"
-                                              "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+                                              "    font-family: \'Microsoft YaHei UI Light\';\n"
                                               "    font-size: 14px;\n"
                                               "    color: #333;\n"
                                               "    selection-background-color: rgba(134, 119, 253, 0.5);\n"
@@ -2836,7 +2852,7 @@ class Ui_MainWindow(object):
                                                     "    border: none;\n"
                                                     "    border-radius: 2px;\n"
                                                     "    outline: none;\n"
-                                                    "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+                                                    "    font-family: \'Microsoft YaHei UI Light\';\n"
                                                     "}\n"
                                                     "\n"
                                                     "QListWidget::item {\n"
@@ -2905,7 +2921,7 @@ class Ui_MainWindow(object):
                                                      "    border-radius: 0px;\n"
                                                      "    gridline-color: rgba(0, 0, 0, 0.03);\n"
                                                      "    outline: none;\n"
-                                                     "    font-family: \'Microsoft YaHei Light\', \'Microsoft YaHei\', sans-serif;\n"
+                                                     "    font-family: \'Microsoft YaHei UI Light\';\n"
                                                      "    font-weight: 300;\n"
                                                      "}\n"
                                                      "\n"
@@ -2915,7 +2931,7 @@ class Ui_MainWindow(object):
                                                      "    color: #374151;\n"
                                                      "    font-size: 12px;\n"
                                                      "    background-color: transparent;\n"
-                                                     "    font-family: \'Microsoft YaHei Light\', \'Microsoft YaHei\', sans-serif;\n"
+                                                     "    font-family: \'Microsoft YaHei UI Light\';\n"
                                                      "    font-weight: 300;\n"
                                                      "}\n"
                                                      "QScrollBar:vertical {\n"
@@ -3064,6 +3080,7 @@ class Ui_MainWindow(object):
         self.titleInputLayout.setObjectName("titleInputLayout")
         self.title = QtWidgets.QLabel(parent=self.horizontalFrame_9)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.title.setFont(font)
         self.title.setStyleSheet("QLabel {\n"
@@ -3116,6 +3133,7 @@ class Ui_MainWindow(object):
         self.ratingInputLayout.setObjectName("ratingInputLayout")
         self.star = QtWidgets.QLabel(parent=self.horizontalFrame_9)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.star.setFont(font)
         self.star.setStyleSheet("QLabel {\n"
@@ -3228,6 +3246,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.brand.sizePolicy().hasHeightForWidth())
         self.brand.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.brand.setFont(font)
         self.brand.setStyleSheet("QLabel {\n"
@@ -3244,7 +3263,7 @@ class Ui_MainWindow(object):
                                        "    border-radius: 6px;\n"
                                        "    padding: 6px 12px;\n"
                                        "    color: rgb(0, 0, 0);\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 13px;\n"
                                        "    min-width: 56px;\n"
                                        "    min-height: 16px;\n"
@@ -3299,7 +3318,7 @@ class Ui_MainWindow(object):
                                        "    outline: none;\n"
                                        "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                        "    min-width: 88px;\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 13px;\n"
                                        "    color: black;\n"
                                        "}\n"
@@ -3408,6 +3427,7 @@ class Ui_MainWindow(object):
         self.keywordsInputLayout.setObjectName("keywordsInputLayout")
         self.model = QtWidgets.QLabel(parent=self.horizontalFrame_9)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.model.setFont(font)
         self.model.setStyleSheet("QLabel {\n"
@@ -3424,7 +3444,7 @@ class Ui_MainWindow(object):
                                        "    border-radius: 6px;\n"
                                        "    padding: 6px 12px;\n"
                                        "    color: rgb(0, 0, 0);\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 13px;\n"
                                        "    min-width: 56px;\n"
                                        "    min-height: 16px;\n"
@@ -3479,7 +3499,7 @@ class Ui_MainWindow(object):
                                        "    outline: none;\n"
                                        "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                        "    min-width: 88px;\n"
-                                       "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                       "    font-family: \"Microsoft YaHei UI Light\";\n"
                                        "    font-size: 13px;\n"
                                        "    color: black;\n"
                                        "}\n"
@@ -3598,6 +3618,7 @@ class Ui_MainWindow(object):
         self.locationInputLayout.setObjectName("locationInputLayout")
         self.author = QtWidgets.QLabel(parent=self.horizontalFrame_8)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.author.setFont(font)
         self.author.setStyleSheet("QLabel {\n"
@@ -3643,6 +3664,7 @@ class Ui_MainWindow(object):
         self.contactInputLayout.setObjectName("contactInputLayout")
         self.theme = QtWidgets.QLabel(parent=self.horizontalFrame_8)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.theme.setFont(font)
         self.theme.setStyleSheet("QLabel {\n"
@@ -3688,6 +3710,7 @@ class Ui_MainWindow(object):
         self.descriptionInputLayout.setObjectName("descriptionInputLayout")
         self.copyright = QtWidgets.QLabel(parent=self.horizontalFrame_8)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.copyright.setFont(font)
         self.copyright.setStyleSheet("QLabel {\n"
@@ -3747,6 +3770,7 @@ class Ui_MainWindow(object):
         self.exifControlLayout.setObjectName("exifControlLayout")
         self.shootTime = QtWidgets.QLabel(parent=self.horizontalFrame_10)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.shootTime.setFont(font)
         self.shootTime.setStyleSheet("QLabel {\n"
@@ -3763,7 +3787,7 @@ class Ui_MainWindow(object):
                                            "    border-radius: 6px;\n"
                                            "    padding: 6px 12px;\n"
                                            "    color: rgb(0, 0, 0);\n"
-                                           "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                           "    font-family: \"Microsoft YaHei UI Light\";\n"
                                            "    font-size: 13px;\n"
                                            "    min-width: 56px;\n"
                                            "    min-height: 16px;\n"
@@ -3818,7 +3842,7 @@ class Ui_MainWindow(object):
                                            "    outline: none;\n"
                                            "    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);\n"
                                            "    min-width: 88px;\n"
-                                           "    font-family: \"Microsoft YaHei\", \"微软雅黑\", sans-serif;\n"
+                                           "    font-family: \"Microsoft YaHei UI Light\";\n"
                                            "    font-size: 13px;\n"
                                            "    color: black;\n"
                                            "}\n"
@@ -3875,6 +3899,7 @@ class Ui_MainWindow(object):
         sizePolicy.setHeightForWidth(self.dateTimeEdit_shootTime.sizePolicy().hasHeightForWidth())
         self.dateTimeEdit_shootTime.setSizePolicy(sizePolicy)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.dateTimeEdit_shootTime.setFont(font)
         self.dateTimeEdit_shootTime.setStyleSheet("QDateTimeEdit {\n"
@@ -3927,6 +3952,7 @@ class Ui_MainWindow(object):
         self.windowControlLayout.setObjectName("windowControlLayout")
         self.label_41 = QtWidgets.QLabel(parent=self.horizontalFrame_10)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.label_41.setFont(font)
         self.label_41.setStyleSheet("QLabel {\n"
@@ -4103,6 +4129,7 @@ class Ui_MainWindow(object):
         self.exifMainLayout_2.setObjectName("exifMainLayout_2")
         self.lblDefault = QtWidgets.QLabel(parent=self.verticalFrame_16)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         self.lblDefault.setFont(font)
         self.lblDefault.setStyleSheet("color: #4B5563;\n"
@@ -4128,7 +4155,7 @@ class Ui_MainWindow(object):
         self.txtWriteEXIFLog = QtWidgets.QTextEdit(parent=self.horizontalFrame_log)
         self.txtWriteEXIFLog.setMinimumSize(QtCore.QSize(0, 0))
         font = QtGui.QFont()
-        font.setFamily("Segoe UI")
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(-1)
         self.txtWriteEXIFLog.setFont(font)
         self.txtWriteEXIFLog.setStyleSheet("QTextEdit {\n"
@@ -4143,7 +4170,7 @@ class Ui_MainWindow(object):
                                            "    background: rgb(245, 249, 254);\n"
                                            "    padding: 8px;\n"
                                            "    border-radius: 6px;\n"
-                                           "    font-family: \'Segoe UI\', \'Microsoft YaHei\', sans-serif;\n"
+                                           "    font-family: \'Microsoft YaHei UI Light\';\n"
                                            "    font-size: 14px;\n"
                                            "    color: #333;\n"
                                            "    selection-background-color: rgba(134, 119, 253, 0.5);\n"

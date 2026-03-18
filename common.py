@@ -1,5 +1,7 @@
 import logging
 import os
+from datetime import datetime
+from typing import Dict, Optional, Literal
 
 logger = logging.getLogger(__name__)
 
@@ -9,9 +11,23 @@ AUDIO_EXTENSIONS = ['.mp3', '.wav', '.flac', '.aac', '.ogg', '.wma', '.m4a']
 DOCUMENT_EXTENSIONS = ['.pdf', '.doc', '.docx', '.txt', '.rtf', '.xls', '.xlsx', '.ppt', '.pptx', '.csv', '.html', '.htm', '.xml', '.epub', '.md', '.log']
 ARCHIVE_EXTENSIONS = ['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.xz', '.iso', '.jar']
 
+LOG_COLOR_MAP: Dict[str, str] = {
+    'ERROR': '#FF0000',
+    'WARNING': '#FFA500',
+    'INFO': '#8677FD',
+    'DEBUG': '#006400'
+}
+
+def get_current_time_str() -> str:
+    return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
+
+def format_log_html(level: str, message: str) -> str:
+    color = LOG_COLOR_MAP.get(level, '#006400')
+    return f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};"><span style="color:{color};">{message}</span></div>'
+
 class ResourceManager:
     @staticmethod
-    def get_resource_path(relative_path):
+    def get_resource_path(relative_path: str) -> Optional[str]:
         base_path = os.path.dirname(os.path.abspath(__file__))
         
         if relative_path.startswith('_internal/resources/'):
@@ -36,10 +52,10 @@ class ResourceManager:
 
 _resource_manager = ResourceManager()
 
-def get_resource_path(relative_path):
+def get_resource_path(relative_path: str) -> Optional[str]:
     return _resource_manager.get_resource_path(relative_path)
 
-def detect_media_type(file_path):
+def detect_media_type(file_path: str) -> Dict[str, Optional[str]]:
     if not os.path.isfile(file_path):
         return {"valid": False, "type": None}
     
@@ -54,7 +70,7 @@ def detect_media_type(file_path):
     else:
         return {"valid": False, "type": None}
 
-def get_file_type(file_path):
+def get_file_type(file_path: str) -> str:
     file_path_str = str(file_path)
     file_ext = os.path.splitext(file_path_str)[1].lower()
     

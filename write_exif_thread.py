@@ -10,7 +10,7 @@ import piexif
 from PIL import Image, PngImagePlugin
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from common import get_resource_path
+from common import get_resource_path, get_current_time_str
 
 logger = logging.getLogger(__name__)
 
@@ -51,7 +51,7 @@ class WriteExifThread(QThread):
             try:
                 error_msg = f"Failed to record log: {str(e)}"
                 logger.error(error_msg)
-            except:
+            except Exception:
                 pass
     
     def _decode_subprocess_output(self, output_data):
@@ -379,9 +379,6 @@ class WriteExifThread(QThread):
             return
         
         try:
-            if "Exif" not in exif_dict:
-                exif_dict["Exif"] = {}
-            
             if lens_brand:
                 exif_dict["Exif"][piexif.ExifIFD.LensMake] = lens_brand.encode('utf-8')
                 updated_fields.append(f"镜头品牌: {lens_brand}")
@@ -541,31 +538,27 @@ class WriteExifThread(QThread):
             self.log("ERROR", f"写入EXIF数据失败 {os.path.basename(image_path)}: {str(e)}")
 
     def _handle_shoot_time(self, exif_dict, image_path, updated_fields, shoot_time):
+        self._ensure_exif_sections(exif_dict)
+        
         if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(image_path)
             if date_from_filename:
-                if "Exif" not in exif_dict:
-                    exif_dict["Exif"] = {}
-                exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = date_from_filename.strftime(
-                    "%Y:%m:%d %H:%M:%S").encode('utf-8')
-                updated_fields.append(
-                    f"文件名识别拍摄时间: {date_from_filename.strftime('%Y:%m:%d %H:%M:%S')}")
+                time_str = date_from_filename.strftime("%Y:%m:%d %H:%M:%S")
+                exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = time_str.encode('utf-8')
+                updated_fields.append(f"文件名识别拍摄时间: {time_str}")
             else:
                 logger.warning("无法从文件名提取时间: %s", image_path)
                 self.log("WARNING", f"无法从文件名提取时间: {os.path.basename(image_path)}")
         elif shoot_time == 2:
-            if "Exif" not in exif_dict:
-                exif_dict["Exif"] = {}
-            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = datetime.now().strftime("%Y:%m:%d %H:%M:%S").encode('utf-8')
-            updated_fields.append(f"拍摄时间: {datetime.now().strftime('%Y:%m:%d %H:%M:%S')}")
+            current_time = datetime.now().strftime("%Y:%m:%d %H:%M:%S")
+            exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = current_time.encode('utf-8')
+            updated_fields.append(f"拍摄时间: {current_time}")
         elif shoot_time == 3:
             logger.warning("拍摄时间选项3未实现: %s", shoot_time)
             self.log("WARNING", "拍摄时间选项3未实现")
         else:
             try:
                 datetime.strptime(shoot_time, "%Y:%m:%d %H:%M:%S")
-                if "Exif" not in exif_dict:
-                    exif_dict["Exif"] = {}
                 exif_dict["Exif"][piexif.ExifIFD.DateTimeOriginal] = shoot_time.encode('utf-8')
                 updated_fields.append(f"拍摄时间: {shoot_time}")
             except ValueError:
@@ -724,7 +717,8 @@ class WriteExifThread(QThread):
                     pass
         
     def _update_heic_exif_fields(self, exif_dict, image_path):
-
+        self._ensure_exif_sections(exif_dict)
+        
         updated_fields = []
         
         self._update_heic_basic_fields(exif_dict, updated_fields)
@@ -736,10 +730,6 @@ class WriteExifThread(QThread):
         return updated_fields
     
     def _update_heic_basic_fields(self, exif_dict, updated_fields):
-
-        if "0th" not in exif_dict:
-            exif_dict["0th"] = {}
-        
         field_mappings = [
             ('title', piexif.ImageIFD.ImageDescription, "标题: {}", 'utf-8'),
             ('author', 315, "作者: {}", 'utf-8'),
@@ -762,9 +752,6 @@ class WriteExifThread(QThread):
         rating = self.exif_config.get('rating')
         if rating:
             try:
-                if "0th" not in exif_dict:
-                    exif_dict["0th"] = {}
-                
                 rating_value = int(rating)
                 exif_dict["0th"][piexif.ImageIFD.Rating] = rating_value
                 updated_fields.append(f"评分: {rating}星")
@@ -777,9 +764,6 @@ class WriteExifThread(QThread):
         
         if not (lens_brand or lens_model):
             return
-            
-        if "Exif" not in exif_dict:
-            exif_dict["Exif"] = {}
         
         if lens_brand:
             try:
@@ -799,9 +783,6 @@ class WriteExifThread(QThread):
         shoot_time = self.exif_config.get('shoot_time', 0)
         if shoot_time == 0:
             return
-        
-        if "Exif" not in exif_dict:
-            exif_dict["Exif"] = {}
         
         if shoot_time == 1:
             date_from_filename = self.get_date_from_filename(image_path)

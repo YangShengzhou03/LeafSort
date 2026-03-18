@@ -210,7 +210,7 @@
     color: white;
     border: none;
     border-radius: 8px;
-    font-family: 'Microsoft YaHei';
+    font-family: 'Microsoft YaHei UI Light';
     font-size: 12px;
 }
 
@@ -247,7 +247,7 @@ QPushButton#btnCancel:pressed {
     color: white;
     border: none;
     border-radius: 8px;
-    font-family: 'Microsoft YaHei';
+    font-family: 'Microsoft YaHei UI Light';
     font-size: 12px;
 }
 

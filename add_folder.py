@@ -1,5 +1,6 @@
 import logging
 import os
+from typing import List, Optional
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import Qt
 from config_manager import config_manager
@@ -172,7 +173,7 @@ class FolderPage(QtWidgets.QWidget):
         except Exception as e:
             logger.error(f"更新导入状态时出错: {str(e)}")
 
-    def _check_folder_relationship(self, folder1, folder2):
+    def _check_folder_relationship(self, folder1: str, folder2: str) -> bool:
         if not folder1 or not folder2:
             return True
 
@@ -196,7 +197,7 @@ class FolderPage(QtWidgets.QWidget):
 
         return True
 
-    def get_all_folders(self):
+    def get_all_folders(self) -> List[str]:
         source_path = self.parent.inputSourceFolder.text().strip()
         if source_path and os.path.exists(source_path) and os.path.isdir(source_path):
             return [source_path]

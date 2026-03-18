@@ -7,6 +7,7 @@ from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QInputDialog
 
 from smart_arrange_thread import SmartArrangeThread
+from common import get_current_time_str, format_log_html
 
 logger = logging.getLogger('SmartArrangeManager')
 logger.setLevel(logging.DEBUG)
@@ -135,9 +136,9 @@ class SmartArrangeManager(QObject):
             try:
                 self.SmartArrange_thread.stop()
                 self.log("DEBUG", "用户停止了操作")
-                self.parent.btnStartSmartArrange.setText("开始整理")
             except Exception as e:
                 self.log("ERROR", f"停止线程时出错: {str(e)}")
+            finally:
                 self.parent.btnStartSmartArrange.setText("开始整理")
         else:
             self.parent.btnStartSmartArrange.setEnabled(True)
@@ -467,22 +468,9 @@ class SmartArrangeManager(QObject):
     def handle_log_signal(self, level, message):
         message_str = str(message)
 
-        color_map = {
-            'ERROR': '#FF0000',
-            'WARNING': '#FFA500',
-            'INFO': '#8677FD',
-            'DEBUG': '#006400'
-        }
-
-        color = color_map.get(level, '#006400')
-
         try:
             if hasattr(self.parent, 'txtSmartArrangeLog'):
-                self.parent.txtSmartArrangeLog.append(
-                    f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">' \
-                    f'<span style="color:{color};">{message_str}</span>' \
-                    f'</div>'
-                )
+                self.parent.txtSmartArrangeLog.append(format_log_html(level, message_str))
                 self.parent.txtSmartArrangeLog.verticalScrollBar().setValue(
                     self.parent.txtSmartArrangeLog.verticalScrollBar().maximum()
                 )
@@ -501,8 +489,7 @@ class SmartArrangeManager(QObject):
             if level not in valid_levels:
                 level = 'INFO'
 
-            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            log_message = f"[{current_time}] {level}: {message}"
+            log_message = f"[{get_current_time_str()}] {level}: {message}"
 
             self.log_signal.emit(level, log_message)
 
@@ -511,7 +498,7 @@ class SmartArrangeManager(QObject):
             try:
                 error_msg = f"日志记录失败: {str(e)}"
                 logger.error(error_msg)
-            except:
+            except Exception:
                 pass
 
     def move_tag_back(self, button):

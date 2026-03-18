@@ -8,6 +8,9 @@ from PyQt6 import QtCore
 
 logger = logging.getLogger(__name__)
 
+SMALL_FILE_THRESHOLD = 100 * 1024 * 1024
+MAX_FILE_SIZE_TO_SCAN = 10 * 1024 * 1024 * 1024
+
 class FileScanThread(QtCore.QThread):
     
     progress_updated = QtCore.pyqtSignal(int, str)

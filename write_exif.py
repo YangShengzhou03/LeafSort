@@ -7,7 +7,7 @@ from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize, QDateTime
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QMessageBox
-from common import get_resource_path
+from common import get_resource_path, get_current_time_str, format_log_html
 from config_manager import config_manager
 from write_exif_thread import WriteExifThread
 
@@ -412,15 +412,9 @@ class WriteExifManager(QObject):
 
     def _update_log_display(self, level, message):
         message_str = str(message)
-        color_map = {'ERROR': '#FF0000', 'WARNING': '#FFA500', 'INFO': '#8677FD', 'DEBUG': '#006400'}
-        color = color_map.get(level, '#006400')
             
         try:
-            self.parent.txtWriteEXIFLog.append(
-                f'<div style="margin: 2px 0; padding: 2px 4px; border-left: 3px solid {color};">'
-                f'<span style="color:{color};">{message_str}</span>'
-                f'</div>'
-            )
+            self.parent.txtWriteEXIFLog.append(format_log_html(level, message_str))
             self.parent.txtWriteEXIFLog.verticalScrollBar().setValue(
                 self.parent.txtWriteEXIFLog.verticalScrollBar().maximum()
             )
@@ -429,8 +423,7 @@ class WriteExifManager(QObject):
 
     def log(self, level, message):
         try:
-            current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-            log_message = f"[{current_time}] {level}: {message}"
+            log_message = f"[{get_current_time_str()}] {level}: {message}"
             
             self.log_signal.emit(level, log_message)
             
@@ -447,7 +440,7 @@ class WriteExifManager(QObject):
             try:
                 error_msg = f"日志记录失败: {str(e)}"
                 logger.error(error_msg)
-            except:
+            except Exception:
                 pass
 
     def on_finished(self):

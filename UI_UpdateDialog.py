@@ -48,6 +48,7 @@ class Ui_UpdateDialog(object):
         self.layoutDialogElements.setObjectName("layoutDialogElements")
         self.lblTitle = QtWidgets.QLabel(parent=self.widgetHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(22)
         font.setBold(True)
         self.lblTitle.setFont(font)
@@ -60,6 +61,7 @@ class Ui_UpdateDialog(object):
         self.layoutDialogElements.addWidget(self.lblTitle)
         self.lblContent = QtWidgets.QLabel(parent=self.widgetHeader)
         font = QtGui.QFont()
+        font.setFamily("Microsoft YaHei UI Light")
         font.setPointSize(12)
         font.setBold(False)
         self.lblContent.setFont(font)
@@ -83,7 +85,7 @@ class Ui_UpdateDialog(object):
 "    color: white;\n"
 "    border: none;\n"
 "    border-radius: 8px;\n"
-"    font-family: \'Microsoft YaHei\';\n"
+"    font-family: \'Microsoft YaHei UI Light\';\n"
 "    font-size: 12px;\n"
 "}\n"
 "\n"
@@ -104,7 +106,7 @@ class Ui_UpdateDialog(object):
 "    color: white;\n"
 "    border: none;\n"
 "    border-radius: 8px;\n"
-"    font-family: \'Microsoft YaHei\';\n"
+"    font-family: \'Microsoft YaHei UI Light\';\n"
 "    font-size: 12px;\n"
 "}\n"
 "\n"

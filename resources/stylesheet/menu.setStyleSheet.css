@@ -4,7 +4,7 @@ QMenu {
     /* 使用多层边框模拟阴影效果 */
     border: 1px solid rgba(0, 0, 0, 0.1);
     font-size: 14px;
-    font-family: 'Microsoft YaHei Light', 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     border-radius: 6px;
     margin: 4px;
 }

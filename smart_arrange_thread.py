@@ -11,7 +11,7 @@ from PyQt6 import QtCore
 from PIL import Image
 import exifread
 import pillow_heif
-from common import get_resource_path, get_file_type
+from common import get_resource_path, get_file_type, get_current_time_str
 from config_manager import config_manager, logger
 
 class SmartArrangeThread(QtCore.QThread):
@@ -346,8 +346,7 @@ class SmartArrangeThread(QtCore.QThread):
         return False
 
     def log(self, level: str, message: str) -> None:
-        current_time = datetime.now().strftime('%Y-%m-%d %H:%M:%S')
-        log_message = f"[{current_time}] {level}: {message}"
+        log_message = f"[{get_current_time_str()}] {level}: {message}"
         if hasattr(self, 'log_signal'):
             self.log_signal.emit(level, log_message)
     
@@ -784,7 +783,7 @@ class SmartArrangeThread(QtCore.QThread):
             
         try:
             return modify_time.strftime('%Y-%m-%d %H:%M:%S') if modify_time else ""
-        except:
+        except (ValueError, AttributeError):
             return ""
 
     def _extract_gps_and_camera_info(self, tags, exif_data):
@@ -963,7 +962,7 @@ class SmartArrangeThread(QtCore.QThread):
                                 source_type = info_data['source_type']
                                 if 'douyin' in source_type:
                                     return 'ByteDance'
-                    except:
+                    except (json.JSONDecodeError, KeyError, TypeError):
                         pass
         
         return None
@@ -997,7 +996,7 @@ class SmartArrangeThread(QtCore.QThread):
                                 return 'iOS Device'
                             else:
                                 return f"{os_info.title()} Device"
-            except:
+            except (json.JSONDecodeError, KeyError, TypeError):
                 pass
         
         return None

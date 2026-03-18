@@ -247,7 +247,7 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
                 </property>
                 <property name="font">
                  <font>
-                  <family>Segoe UI</family>
+                  <family>Microsoft YaHei UI Light</family>
                   <pointsize>12</pointsize>
                  </font>
                 </property>
@@ -262,7 +262,7 @@ QScrollBar::add-page:vertical,QScrollBar::sub-page:vertical
     border-radius: 12px;
     padding: 4px;
     outline: 0;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
 }
 
 QListView::item {
@@ -910,7 +910,7 @@ border-bottom-left-radius:0px;</string>
                      <widget class="QLabel" name="lblImportTitle">
                       <property name="font">
                        <font>
-                        <family>Microsoft YaHei UI</family>
+                        <family>Microsoft YaHei UI Light</family>
                         <pointsize>14</pointsize>
                         <bold>true</bold>
                        </font>
@@ -927,7 +927,7 @@ border-bottom-left-radius:0px;</string>
                      <widget class="QLabel" name="lblImportRoute">
                       <property name="font">
                        <font>
-                        <family>Microsoft YaHei UI</family>
+                        <family>Microsoft YaHei UI Light</family>
                         <pointsize>10</pointsize>
                        </font>
                       </property>
@@ -956,7 +956,7 @@ border-bottom-left-radius:0px;</string>
                      <widget class="QLabel" name="lblImportSeparator">
                       <property name="font">
                        <font>
-                        <family>Microsoft YaHei UI</family>
+                        <family>Microsoft YaHei UI Light</family>
                         <pointsize>10</pointsize>
                        </font>
                       </property>
@@ -972,7 +972,7 @@ border-bottom-left-radius:0px;</string>
                      <widget class="QLabel" name="importStatus">
                       <property name="font">
                        <font>
-                        <family>Microsoft YaHei UI</family>
+                        <family>Microsoft YaHei UI Light</family>
                         <pointsize>10</pointsize>
                        </font>
                       </property>
@@ -1053,7 +1053,7 @@ QFrame:focus {
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>10</pointsize>
                           </font>
                          </property>
@@ -1079,7 +1079,7 @@ QFrame:focus {
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>-1</pointsize>
                           </font>
                          </property>
@@ -1114,7 +1114,7 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>10</pointsize>
                            <bold>false</bold>
                           </font>
@@ -1201,7 +1201,7 @@ QFrame:focus {
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>10</pointsize>
                           </font>
                          </property>
@@ -1227,7 +1227,7 @@ QFrame:focus {
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>-1</pointsize>
                           </font>
                          </property>
@@ -1262,7 +1262,7 @@ box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);</string>
                          </property>
                          <property name="font">
                           <font>
-                           <family>Microsoft YaHei UI</family>
+                           <family>Microsoft YaHei UI Light</family>
                            <pointsize>10</pointsize>
                            <bold>false</bold>
                           </font>
@@ -1322,7 +1322,7 @@ QPushButton:pressed {
     background: rgba(255, 255, 255, 95);
     border-radius: 8px;
     padding: 12px;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     font-size: 13px;
     color: #4b5563;
     box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.05);
@@ -1468,7 +1468,7 @@ border-radius: 0px;</string>
                        <widget class="QLabel" name="lblClassification">
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>12</pointsize>
                           <bold>false</bold>
                          </font>
@@ -1479,7 +1479,7 @@ border-radius: 0px;</string>
     border: none;
     background: transparent;
     padding: 2px 4px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-weight: 400;
 }</string>
                         </property>
@@ -1534,7 +1534,7 @@ border-radius: 0px;</string>
                         </property>
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -1545,7 +1545,7 @@ border-radius: 0px;</string>
     border-radius: 6px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -1600,7 +1600,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -1714,7 +1714,7 @@ QComboBox:focus {
                         </property>
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -1725,7 +1725,7 @@ QComboBox:focus {
     border-radius: 6px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -1780,7 +1780,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -1894,7 +1894,7 @@ QComboBox:focus {
                         </property>
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -1905,7 +1905,7 @@ QComboBox:focus {
     border-radius: 6px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -1960,7 +1960,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -2074,7 +2074,7 @@ QComboBox:focus {
                         </property>
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -2085,7 +2085,7 @@ QComboBox:focus {
     border-radius: 6px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -2140,7 +2140,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -2254,7 +2254,7 @@ QComboBox:focus {
                         </property>
                         <property name="font">
                          <font>
-                          <family>Microsoft YaHei</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -2265,7 +2265,7 @@ QComboBox:focus {
     border-radius: 6px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -2320,7 +2320,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -3217,7 +3217,7 @@ QPushButton:pressed {
                              </property>
                              <property name="font">
                               <font>
-                               <family>Microsoft YaHei</family>
+                               <family>Microsoft YaHei UI Light</family>
                                <pointsize>-1</pointsize>
                                <italic>false</italic>
                                <bold>false</bold>
@@ -3230,7 +3230,7 @@ QPushButton:pressed {
     border-radius: 6px;
     padding: 2px 4px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -3285,7 +3285,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -3421,7 +3421,7 @@ QComboBox:focus {
                             </property>
                             <property name="font">
                              <font>
-                              <family>Microsoft YaHei</family>
+                              <family>Microsoft YaHei UI Light</family>
                               <pointsize>-1</pointsize>
                               <italic>false</italic>
                               <bold>false</bold>
@@ -3434,7 +3434,7 @@ QComboBox:focus {
     border-radius: 4px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 14px;
     min-width: 56px;
     min-height: 16px;
@@ -3495,7 +3495,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -3596,7 +3596,7 @@ QComboBox:focus {
                             </property>
                             <property name="font">
                              <font>
-                              <family>Microsoft YaHei</family>
+                              <family>Microsoft YaHei UI Light</family>
                               <pointsize>-1</pointsize>
                               <italic>false</italic>
                               <bold>false</bold>
@@ -3609,7 +3609,7 @@ QComboBox:focus {
     border-radius: 4px;
     padding: 6px 12px;
     color: #374151;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 14px;
     min-width: 56px;
     min-height: 16px;
@@ -3670,7 +3670,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
 }
 
@@ -4102,7 +4102,7 @@ border-bottom-left-radius:0px;</string>
                         </property>
                         <property name="font">
                          <font>
-                          <family>Segoe UI</family>
+                          <family>Microsoft YaHei UI Light</family>
                           <pointsize>-1</pointsize>
                          </font>
                         </property>
@@ -4119,7 +4119,7 @@ border-bottom-left-radius:0px;</string>
     background: rgb(245, 249, 254);
     padding: 8px;
     border-radius: 4px;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     font-size: 14px;
     color: #333;
     selection-background-color: rgba(134, 119, 253, 0.5);
@@ -4401,7 +4401,7 @@ border-bottom-left-radius:0px;</string>
     border: none;
     border-radius: 2px;
     outline: none;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
 }
 
 QListWidget::item {
@@ -4480,7 +4480,7 @@ QScrollBar::handle:vertical:hover {
     border-radius: 0px;
     gridline-color: rgba(0, 0, 0, 0.03);
     outline: none;
-    font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     font-weight: 300;
 }
 
@@ -4490,7 +4490,7 @@ QTableWidget::item {
     color: #374151;
     font-size: 12px;
     background-color: transparent;
-    font-family: 'Microsoft YaHei Light', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     font-weight: 300;
 }
 QScrollBar:vertical {
@@ -5039,7 +5039,7 @@ QPushButton:hover {
     border-radius: 6px;
     padding: 6px 12px;
     color: rgb(0, 0, 0);
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -5094,7 +5094,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     color: black;
 }
@@ -5241,7 +5241,7 @@ QComboBox QAbstractItemView QScrollBar::sub-line:horizontal {
     border-radius: 6px;
     padding: 6px 12px;
     color: rgb(0, 0, 0);
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -5296,7 +5296,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     color: black;
 }
@@ -5686,7 +5686,7 @@ border-bottom-left-radius:0px;</string>
     border-radius: 6px;
     padding: 6px 12px;
     color: rgb(0, 0, 0);
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     min-width: 56px;
     min-height: 16px;
@@ -5741,7 +5741,7 @@ QComboBox QAbstractItemView {
     outline: none;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
     min-width: 88px;
-    font-family: &quot;Microsoft YaHei&quot;, &quot;微软雅黑&quot;, sans-serif;
+    font-family: "Microsoft YaHei UI Light";
     font-size: 13px;
     color: black;
 }
@@ -6203,7 +6203,7 @@ border-bottom-left-radius:0px;</string>
                       </property>
                       <property name="font">
                        <font>
-                        <family>Segoe UI</family>
+                        <family>Microsoft YaHei UI Light</family>
                         <pointsize>-1</pointsize>
                        </font>
                       </property>
@@ -6220,7 +6220,7 @@ border-bottom-left-radius:0px;</string>
     background: rgb(245, 249, 254);
     padding: 8px;
     border-radius: 6px;
-    font-family: 'Segoe UI', 'Microsoft YaHei', sans-serif;
+    font-family: 'Microsoft YaHei UI Light';
     font-size: 14px;
     color: #333;
     selection-background-color: rgba(134, 119, 253, 0.5);
