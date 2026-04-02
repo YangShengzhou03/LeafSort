@@ -1,0 +1,15 @@
+{
+  "Canon": ["EOS R6 Mark III", "EOS R3 Mark II", "EOS R5 Mark II", "EOS R5", "EOS R6 Mark II", "EOS R50 V", "EOS R8", "EOS R6", "EOS R3", "EOS R50 Mark II", "EOS R50", "EOS R10 Mark II", "EOS R10", "EOS RP II", "EOS 850D", "EOS 90D"],
+  "Nikon": ["ZR", "Zf", "Z9 II", "Z8", "Z7 III", "Z6 III", "Z7 II", "Z6 II", "Z50 II", "Z50", "Z30", "Zfc", "Z5", "Z9", "Z6", "Z7"],
+  "Sony": ["A1 II", "A9 III", "A7C III", "A7R V", "A7S III", "A7 IV", "A7 III", "A7C II", "A7C", "A1", "A6700", "ZV-E10 Mark II", "ZV-E10", "FX30", "FX3", "ZV-1 II"],
+  "Fujifilm": ["GFX100RF", "X-Half", "X100VII", "X-M5", "X-T5 II", "X-T4", "X-T40", "X-T30 III", "X-T30 II", "X100VI", "X100V", "X-S20", "X-S10", "X-E5", "X-E4", "GFX Eterna"],
+  "Leica": ["Q3", "Q3 43", "Q2", "M11 Monochrom", "M11", "SL3", "SL2-S", "CL2", "CL", "M10-R", "Q2 Monochrom", "M9-P", "SL2", "TL2", "X Vario", "C-Lux"],
+  "Panasonic": ["S1R II", "S1H II", "GH7", "GH6", "GH5 II", "G9 II", "G9", "S5 II", "S5 IIX", "S5", "S1", "S1R", "G85", "GX9", "ZS220", "LX100 II"],
+  "Xiaomi": ["17 Pro Max", "17 Pro", "17", "REDMI Turbo4 Pro", "REDMI K80 Ultra", "Civi6 Pro", "16 Ultra", "16 Pro", "16", "15 Pro", "15", "REDMI Note 13 Pro", "Civi 5", "14 Ultra", "14 Pro", "14"],
+  "Huawei": ["Mate 80 Pro Max", "Mate 80 Pro", "Mate 80", "Mate 80 RS", "Mate X7", "Mate 70 Air", "nova Flip", "Pura 70 Ultra", "Mate 70 Pro", "Mate 70", "nova 13", "nova 13 Pro", "P60 Pro", "P60", "Mate X6", "Mate 60 Pro"],
+  "Apple": ["iPhone 17 Pro Max", "iPhone 17 Pro", "iPhone 17", "iPhone Air", "iPhone 16 Pro Max", "iPhone 16 Pro", "iPhone 16 Plus", "iPhone 16", "iPhone SE 3", "iPhone 15 Pro Max", "iPhone 15 Pro", "iPhone 15 Plus", "iPhone 15", "iPhone 14 Pro Max", "iPhone 14 Pro", "iPhone 14"],
+  "Samsung": ["Galaxy S25 Ultra", "Galaxy S25+", "Galaxy S25", "Galaxy S25 FE", "Galaxy Z Fold7", "Galaxy Z Flip7", "Galaxy Z Fold6", "Galaxy Z Flip6", "Galaxy S24 Ultra", "Galaxy S24+", "Galaxy S24", "Galaxy A55", "Galaxy A35", "Galaxy Tab S9 Ultra", "Galaxy Watch 7", "Galaxy Buds3"],
+  "OPPO": ["Find X8 Ultra", "Find X8 Pro", "Find X8", "Find X7 Ultra", "Find X7 Pro", "Find X7", "Reno13 Pro+", "Reno13 Pro", "Reno13", "Reno12 Pro", "Reno12", "A2 Pro", "K12", "F25 Pro", "N3 Flip", "Reno13 Lite"],
+  "vivo": ["X200 Ultra", "X200 Pro", "X200 Pro mini", "X200", "X100 Ultra", "X100 Pro", "X100", "S18 Pro", "S18", "S17 Pro", "S17", "iQOO 12 Pro", "iQOO 12", "T2x", "Y78+", "Y100"],
+  "OnePlus": ["13", "13T", "Ace 5", "Ace 5 Pro", "12R", "12", "11", "11R", "10 Pro", "10", "9 Pro", "9", "Nord 3", "Nord CE 3", "Ace 3", "Ace 2 Pro"]
+}
