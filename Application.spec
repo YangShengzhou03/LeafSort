@@ -1,13 +1,35 @@
 block_cipher = None
 
 a = Analysis(
-    ['App.py'],
+    ['Application.py'],
     pathex=[],
     binaries=[],
     datas=[
         ('resources', 'resources')
     ],
-    hiddenimports=['numpy.core._multiarray_tests', 'numpy.core._multiarray_umath'],
+    hiddenimports=[
+        'numpy.core._multiarray_tests',
+        'numpy.core._multiarray_umath',
+        'app',
+        'app.main_window',
+        'app.pages',
+        'app.pages.add_folder',
+        'app.pages.smart_arrange',
+        'app.pages.write_exif',
+        'app.pages.file_deduplication',
+        'app.dialogs',
+        'app.dialogs.update_dialog',
+        'app.dialogs.UI_UpdateDialog',
+        'core',
+        'core.common',
+        'core.config_manager',
+        'threads',
+        'threads.smart_arrange_thread',
+        'threads.write_exif_thread',
+        'threads.file_deduplication_thread',
+        'ui',
+        'ui.Ui_MainWindow'
+    ],
     hookspath=[],
     hooksconfig={},
     runtime_hooks=[],

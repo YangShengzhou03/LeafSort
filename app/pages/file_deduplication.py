@@ -3,7 +3,7 @@ import os
 
 from PyQt6 import QtWidgets, QtCore
 
-from file_deduplication_thread import FileScanThread, FileDeduplicateThread
+from threads.file_deduplication_thread import FileScanThread, FileDeduplicateThread
 
 logger = logging.getLogger(__name__)
 

@@ -6,8 +6,8 @@ import os
 from PyQt6.QtWidgets import QApplication, QMessageBox
 from PyQt6.QtCore import QCoreApplication
 from PyQt6.QtGui import QFontDatabase, QFont
-from main_window import MainWindow
-from common import get_resource_path
+from app.main_window import MainWindow
+from core.common import get_resource_path
 
 CUSTOM_FONT_FAMILY = None
 
@@ -60,7 +60,7 @@ def handle_exception(exc_type, exc_value, exc_traceback):
 def main():
     try:
         QCoreApplication.setApplicationName("LeafSort（轻羽媒体整理）")
-        QCoreApplication.setApplicationVersion("2.0.2")
+        QCoreApplication.setApplicationVersion("1.0")
         global lock_socket
         lock_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:

@@ -1,15 +1,14 @@
 import json
 import logging
 import os
-from datetime import datetime
 
 from PyQt6 import QtWidgets
 from PyQt6.QtCore import pyqtSignal, QObject, pyqtSlot, QSize, QDateTime
 from PyQt6.QtGui import QIcon, QPixmap
 from PyQt6.QtWidgets import QMessageBox
-from common import get_resource_path, get_current_time_str, format_log_html
-from config_manager import config_manager
-from write_exif_thread import WriteExifThread
+from core.common import get_resource_path, get_current_time_str, format_log_html
+from core.config_manager import config_manager
+from threads.write_exif_thread import WriteExifThread
 
 logger = logging.getLogger('WriteExifManager')
 logger.setLevel(logging.DEBUG)
@@ -58,7 +57,7 @@ class WriteExifManager(QObject):
 
     def load_camera_lens_mapping(self):
         data_path = get_resource_path('_internal/resources/json/camera_lens_mapping.json')
-        if os.path.exists(data_path):
+        if data_path and os.path.exists(data_path):
             try:
                 with open(data_path, 'r', encoding='utf-8') as f:
                     self.camera_lens_mapping = json.load(f)
@@ -147,7 +146,7 @@ class WriteExifManager(QObject):
     def _load_camera_data(self):
         try:
             data_path = get_resource_path('_internal/resources/json/camera_brand_model.json')
-            if os.path.exists(data_path):
+            if data_path and os.path.exists(data_path):
                 with open(data_path, 'r', encoding='utf-8') as f:
                     return json.load(f)
         except Exception as e:

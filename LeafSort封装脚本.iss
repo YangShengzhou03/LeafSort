@@ -1,8 +1,8 @@
-﻿; 脚本由 Inno Setup 脚本向导 生成！
+; 脚本由 Inno Setup 脚本向导 生成！
 ; 有关创建 Inno Setup 脚本文件的详细资料请查阅帮助文档！
 
 #define MyAppName "LeafSort"
-#define MyAppVersion "2.0.2.0"
+#define MyAppVersion "1.0.0.0"
 #define MyAppPublisher "Yangshengzhou"
 #define MyAppURL "https://gitee.com/Yangshengzhou/leaf-sort"
 #define AppSupportURL "https://gitee.com/Yangshengzhou/leaf-sort"
@@ -20,7 +20,7 @@ AppPublisher={#MyAppPublisher}
 AppPublisherURL={#MyAppURL}
 AppSupportURL={#AppSupportURL}
 AppUpdatesURL={#MyAppURL}
-VersionInfoVersion=2.0.2.0
+VersionInfoVersion=1.0.0.0
 DefaultDirName={autopf}\{#MyAppName}
 DisableProgramGroupPage=yes
 LicenseFile=D:\Code\python\LeafSort\license.txt

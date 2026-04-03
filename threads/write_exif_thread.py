@@ -10,7 +10,7 @@ import piexif
 from PIL import Image, PngImagePlugin
 from PyQt6.QtCore import QThread, pyqtSignal
 
-from common import get_resource_path, get_current_time_str, RAW_EXTENSIONS, EXIF_IMAGE_EXTENSIONS, EXIF_VIDEO_EXTENSIONS
+from core.common import get_resource_path, get_current_time_str, RAW_EXTENSIONS, EXIF_IMAGE_EXTENSIONS, EXIF_VIDEO_EXTENSIONS
 
 logger = logging.getLogger(__name__)
 
@@ -161,7 +161,7 @@ class WriteExifThread(QThread):
     def _log_completion_summary(self, success_count, error_count, total_files):
         self.log("DEBUG", "="*40)
         self.log("DEBUG", f"文件写入完成：成功写入了 {success_count} 张，失败了 {error_count} 张，共 {total_files}。")
-        self.log("DEBUG", "="*3+"LeafSort（轻羽媒体整理） © 2026 Yangshengzhou.All Rights Reserved"+"="*3)
+        self.log("DEBUG", "="*3+f"LeafSort（轻羽媒体整理） © {datetime.now().year} Yangshengzhou.All Rights Reserved"+"="*3)
 
     def _collect_image_paths(self):
         all_extensions = tuple(EXIF_IMAGE_EXTENSIONS + EXIF_VIDEO_EXTENSIONS + RAW_EXTENSIONS)
@@ -398,7 +398,7 @@ class WriteExifThread(QThread):
     def _check_exif_support(self, image_path):
         try:
             exiftool_path = get_resource_path('_internal/resources\\exiftool\\exiftool.exe')
-            if not os.path.exists(exiftool_path):
+            if not exiftool_path or not os.path.exists(exiftool_path):
                 logger.warning("ExifTool path not found, skipping EXIF check")
                 return True
             

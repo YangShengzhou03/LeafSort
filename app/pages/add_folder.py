@@ -1,9 +1,10 @@
 import logging
 import os
-from typing import List, Optional
+from datetime import datetime
+from typing import List
 from PyQt6 import QtWidgets, QtCore
 from PyQt6.QtCore import Qt
-from config_manager import config_manager
+from core.config_manager import config_manager
 
 logger = logging.getLogger(__name__)
 
@@ -247,6 +248,6 @@ class FolderPage(QtWidgets.QWidget):
 
         info_lines.extend(["", "-" * 20 + "注意！会递归遍历处理子文件夹" + "-" * 20, "顶层内容统计",
                            f"顶层文件数量：{file_count}       顶层文件夹数量：{directory_count}       总计：{total_items}",
-                           "-" * 75, " LeafSort（轻羽媒体整理） © 2026 Yangshengzhou.All Rights Reserved "])
+                           "-" * 75, f" LeafSort（轻羽媒体整理） © {datetime.now().year} Yangshengzhou.All Rights Reserved "])
 
         return '\n'.join(info_lines)

@@ -3,6 +3,7 @@ import hashlib
 import logging
 import time
 import threading
+from datetime import datetime
 from collections import OrderedDict
 from concurrent.futures import ThreadPoolExecutor
 from PyQt6 import QtCore
@@ -440,7 +441,7 @@ class FileDeduplicateThread(QtCore.QThread):
                         total_files += 1
             
             logger.info(f"去重完成: 成功删除 {total_deleted} 个文件, 失败 {failed_deletions} 个文件, 共处理 {total_files} 个文件")
-            logger.info(f"="*3+"LeafSort © 2025 Yangshengzhou.All Rights Reserved"+"="*3)
+            logger.info(f"="*3+f"LeafSort © {datetime.now().year} Yangshengzhou.All Rights Reserved"+"="*3)
             
             self.deduplicate_completed.emit(total_deleted, total_files)
             

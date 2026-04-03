@@ -1,7 +1,8 @@
 import logging
 import os
+import sys
 from datetime import datetime
-from typing import Dict, Optional, Literal
+from typing import Dict, Optional
 
 logger = logging.getLogger(__name__)
 
@@ -33,18 +34,28 @@ def format_log_html(level: str, message: str) -> str:
 class ResourceManager:
     @staticmethod
     def get_resource_path(relative_path: str) -> Optional[str]:
-        base_path = os.path.dirname(os.path.abspath(__file__))
-        
         if relative_path.startswith('_internal/resources/'):
-            resource_path = relative_path.replace('_internal/', '', 1)
-            path = os.path.join(base_path, resource_path)
+            relative_path = relative_path.replace('_internal/resources/', 'resources/', 1)
+        
+        if getattr(sys, 'frozen', False):
+            exe_dir = os.path.dirname(sys.executable)
+            internal_dir = os.path.join(exe_dir, '_internal')
+            
+            path = os.path.join(internal_dir, relative_path)
             if os.path.exists(path):
                 return path
             
-            path = os.path.join(os.getcwd(), resource_path)
+            path = os.path.join(exe_dir, relative_path)
             if os.path.exists(path):
                 return path
+            
+            if hasattr(sys, '_MEIPASS'):
+                path = os.path.join(sys._MEIPASS, relative_path)
+                if os.path.exists(path):
+                    return path
         else:
+            base_path = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+            
             path = os.path.join(base_path, relative_path)
             if os.path.exists(path):
                 return path
@@ -59,21 +70,6 @@ _resource_manager = ResourceManager()
 
 def get_resource_path(relative_path: str) -> Optional[str]:
     return _resource_manager.get_resource_path(relative_path)
-
-def detect_media_type(file_path: str) -> Dict[str, Optional[str]]:
-    if not os.path.isfile(file_path):
-        return {"valid": False, "type": None}
-    
-    _, ext = os.path.splitext(file_path.lower())
-    
-    if ext in IMAGE_EXTENSIONS:
-        return {"valid": True, "type": "image"}
-    elif ext in VIDEO_EXTENSIONS:
-        return {"valid": True, "type": "video"}
-    elif ext in AUDIO_EXTENSIONS:
-        return {"valid": True, "type": "audio"}
-    else:
-        return {"valid": False, "type": None}
 
 def get_file_type(file_path: str) -> str:
     file_path_str = str(file_path)

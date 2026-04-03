@@ -2,13 +2,13 @@ import logging
 import os
 from PyQt6 import QtWidgets, QtCore, QtGui
 from PyQt6.QtCore import Qt, QPoint
-from Ui_MainWindow import Ui_MainWindow
-from add_folder import FolderPage
-from smart_arrange import SmartArrangeManager
-from write_exif import WriteExifManager
-from file_deduplication import FileDeduplicationManager
-from update_dialog import check_update
-from common import get_resource_path
+from ui.Ui_MainWindow import Ui_MainWindow
+from app.pages.add_folder import FolderPage
+from app.pages.smart_arrange import SmartArrangeManager
+from app.pages.write_exif import WriteExifManager
+from app.pages.file_deduplication import FileDeduplicationManager
+from app.dialogs.update_dialog import check_update
+from core.common import get_resource_path
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +132,7 @@ class MainWindow(QtWidgets.QMainWindow, Ui_MainWindow):
             self._hide_to_tray()
 
     def _open_github(self):
-        url = QtCore.QUrl("https://gitee.com/Yangshengzhou/leaf-sort")
+        url = QtCore.QUrl("https://github.com/YangShengzhou03/LeafSort")
         if not QtGui.QDesktopServices.openUrl(url):
             QtWidgets.QMessageBox.information(self, "信息",
                                               "无法打开GitHub页面，请手动访问")

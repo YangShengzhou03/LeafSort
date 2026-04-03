@@ -6,8 +6,8 @@ from PyQt6.QtCore import QUrl
 from PyQt6.QtGui import QDesktopServices
 from PyQt6.QtWidgets import QDialog
 
-from UI_UpdateDialog import Ui_UpdateDialog
-from common import get_resource_path
+from .UI_UpdateDialog import Ui_UpdateDialog
+from core.common import get_resource_path
 
 logger = logging.getLogger(__name__)
 
@@ -33,7 +33,7 @@ class UpdateDialog(QDialog):
 
 def check_update():
     url = 'https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafSort/versionInfo'
-    current_version = 2.02
+    current_version = 1.0
     logger.info(f"当前应用版本: {current_version}")
     
     try:

@@ -6,8 +6,8 @@ from PyQt6 import QtWidgets
 from PyQt6.QtCore import QObject, pyqtSignal
 from PyQt6.QtWidgets import QMessageBox, QPushButton, QLineEdit, QInputDialog
 
-from smart_arrange_thread import SmartArrangeThread
-from common import get_current_time_str, format_log_html
+from threads.smart_arrange_thread import SmartArrangeThread
+from core.common import get_current_time_str, format_log_html
 
 logger = logging.getLogger('SmartArrangeManager')
 logger.setLevel(logging.DEBUG)

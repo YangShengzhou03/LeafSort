@@ -1,365 +1,355 @@
-# LeafSort 轻羽媒体整理 - 图片管理，智能整理、文件去重、EXIF编辑和批量处理
+# LeafSort - Image Management, Smart Organization, File Deduplication, EXIF Editing & Batch Processing
 
 <div align="center">
 
-[![GitHub stars](https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/stargazers)&nbsp;[![GitHub forks](https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/network/members)&nbsp;[![GitHub issues](https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/issues)&nbsp;[![GitHub license](https://img.shields.io/github/license/YangShengzhou03/LeafSort?style=for-the-badge)](https://github.com/YangShengzhou03/LeafSort/LICENSE)&nbsp;[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)&nbsp;[![PyQt6](https://img.shields.io/badge/PyQt6-6.5.0+-41CD52?style=for-the-badge&logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
+[![GitHub stars](https://img.shields.io/github/stars/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/stargazers)&nbsp;[![GitHub forks](https://img.shields.io/github/forks/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/network/members)&nbsp;[![GitHub issues](https://img.shields.io/github/issues/YangShengzhou03/LeafSort?style=for-the-badge&logo=github)](https://github.com/YangShengzhou03/LeafSort/issues)&nbsp;[![GitHub license](https://img.shields.io/github/license/YangShengzhou03/LeafSort?style=for-the-badge)](https://github.com/YangShengzhou03/LeafSort/LICENSE)&nbsp;[![Python](https://img.shields.io/badge/Python-3.11+-3776AB?style=for-the-badge&logo=python)](https://www.python.org/)&nbsp;[![PyQt6](https://img.shields.io/badge/PyQt6-6.10.2-41CD52?style=for-the-badge&logo=qt)](https://www.riverbankcomputing.com/software/pyqt/)
 
 <a href="https://apps.microsoft.com/detail/9p3mkv4xslj8?referrer=appbadge&mode=direct">
  <img src="https://get.microsoft.com/images/en-us%20dark.svg" width="200"/>
 </a>
 
 <div align="center">
-  <h3>一个现代化的媒体文件管理工具，专注于高效管理和智能整理</h3>
-  <p>支持多种图像格式的快速浏览和管理，提供基于时间、地点、设备、类型的自动分类和整理</p>
+  <h3>A modern media file management tool focused on efficient management and smart organization</h3>
+  <p>Supports fast browsing and management of multiple image formats, provides automatic classification and organization based on time, location, device, and type</p>
 </div>
 
-[快速开始](#快速开始) • [功能特性](#功能特性) • [技术架构](#技术架构) • [使用指南](#使用指南)
+[Quick Start](#quick-start) • [Features](#features) • [Technical Architecture](#technical-architecture) • [User Guide](#user-guide)
 
 </div>
 
-## 项目简介
+## Introduction
 
-![LeafSort海报](https://gitee.com/Yangshengzhou/yang-shengzhou/raw/master/LeafSort/assets/LeafSort_poster.jpg)
+![LeafSort Poster](https://raw.githubusercontent.com/YangShengzhou03/LeafSort/master/assets/LeafSort_poster.jpg)
 
-LeafSort（轻羽媒体整理）是一个基于 Python 的图像管理工具，专注于高效管理、智能整理和批量处理各种图像文件。软件支持快速浏览和管理多种图像格式，提供基于拍摄时间、GPS 位置、拍摄设备、文件类型等多个维度的自动分类和整理功能，支持基于 MD5 哈希算法的文件去重，支持查看和编辑 EXIF 元数据，以及地理编码操作。
+LeafSort is a Python-based image management tool focused on efficient management, smart organization, and batch processing of various image files. The software supports fast browsing and management of multiple image formats, provides automatic classification and organization based on multiple dimensions such as capture time, GPS location, capture device, and file type. It supports file deduplication based on MD5 hash algorithm, viewing and editing EXIF metadata, and geocoding operations.
 
-本软件采用三层架构设计，包括用户界面层、业务逻辑层和数据处理层。用户界面层基于 PyQt6 构建现代化 GUI 界面，业务逻辑层处理核心业务逻辑和功能实现，数据处理层负责文件操作、元数据处理和配置管理。通过现代化的技术架构和人性化的交互设计，为用户提供便捷、高效、安全的媒体文件管理服务。
+The software adopts a three-layer architecture design, including the user interface layer, business logic layer, and data processing layer. The user interface layer builds a modern GUI based on PyQt6, the business logic layer handles core business logic and feature implementation, and the data processing layer is responsible for file operations, metadata processing, and configuration management. Through modern technical architecture and user-friendly interaction design, it provides users with convenient, efficient, and secure media file management services.
 
-软件的设计理念是简单、高效、智能。简单体现在用户界面简洁明了，操作流程清晰易懂，用户无需复杂的学习成本即可快速上手。高效体现在文件处理速度快，支持多线程并发处理，能够快速处理大量文件。智能体现在自动识别图像元数据，智能分类和整理，减少人工操作。
+The software's design philosophy is simple, efficient, and intelligent. Simplicity is reflected in the clean and clear user interface, clear and easy-to-understand operation process, users can quickly get started without complex learning costs. Efficiency is reflected in fast file processing speed, support for multi-threaded concurrent processing, able to quickly process large numbers of files. Intelligence is reflected in automatic recognition of image metadata, smart classification and organization, reducing manual operations.
 
-软件的技术架构采用模块化设计，将系统划分为多个独立的功能模块，每个模块负责特定的功能。这种架构设计使得系统具有良好的可扩展性和可维护性，可以方便地添加新功能或修改现有功能。
+The software's technical architecture adopts modular design, dividing the system into multiple independent functional modules, each responsible for specific functions. This architecture design makes the system have good scalability and maintainability, can easily add new features or modify existing features.
 
-软件致力于为摄影爱好者和专业摄影师提供一个免费、高效的媒体文件管理工具，帮助用户快速整理和管理大量的照片和视频文件，提高工作效率。软件支持多种图像格式，包括 JPEG、PNG、WebP、HEIC、HEIF 等主流格式，能够快速加载和显示大量图像文件。
+The software is committed to providing a free and efficient media file management tool for photography enthusiasts and professional photographers, helping users quickly organize and manage large numbers of photos and video files, improving work efficiency. The software supports multiple image formats, including mainstream formats such as JPEG, PNG, WebP, HEIC, HEIF, and can quickly load and display large numbers of image files.
 
-## 功能特性
+## Features
 
-### 图像管理
+### Image Management
 
-支持快速浏览和管理多种图像格式，包括 JPEG、PNG、WebP、HEIC、HEIF 等主流格式，能够快速加载和显示大量图像文件。
+Supports fast browsing and management of multiple image formats, including mainstream formats such as JPEG, PNG, WebP, HEIC, HEIF, able to quickly load and display large numbers of image files.
 
-![媒体导入](https://gitee.com/Yangshengzhou/leaf-sort/raw/master/assets/media_import.png)
+![Media Import](https://raw.githubusercontent.com/YangShengzhou03/LeafSort/master/assets/media_import.png)
 
-### 智能整理
+### Smart Organization
 
-提供智能整理功能，可以基于图像拍摄时间、GPS 位置、拍摄设备、文件类型等多个维度自动分类和整理文件。用户可以自定义分类规则和文件命名规则。软件自动读取图像 EXIF 元数据，构建目标路径和文件名，执行文件复制或移动操作。
+Provides smart organization features, can automatically classify and organize files based on multiple dimensions such as image capture time, GPS location, capture device, and file type. Users can customize classification rules and file naming rules. The software automatically reads image EXIF metadata, builds target paths and filenames, and performs file copy or move operations.
 
-![智能整理](https://gitee.com/Yangshengzhou/leaf-sort/raw/master/assets/smart_organize.png)
+![Smart Organize](https://raw.githubusercontent.com/YangShengzhou03/LeafSort/master/assets/smart_organize.png)
 
-支持按时间维度分类，包括年、年-月、年-月-日、年-月-日-时-分-秒等多种格式。支持按地理位置分类，包括省、市、区等不同层级。支持按设备类型分类，包括相机品牌、型号等。支持按文件类型分类，包括图像、视频、音频、文档等不同类型。
+Supports classification by time dimension, including year, year-month, year-month-day, year-month-day-hour-minute-second and other formats. Supports classification by geographic location, including province, city, district and other levels. Supports classification by device type, including camera brand, model, etc. Supports classification by file type, including image, video, audio, document and other types.
 
-### 文件去重
+### File Deduplication
 
-基于 MD5 哈希算法高精度识别完全相同的文件。支持两阶段过滤机制：第一阶段按文件大小分组，快速排除非重复文件；第二阶段仅对相同大小的文件计算 MD5，显著减少计算量。使用线程池并发计算 MD5，支持缓存已计算的哈希值，提高处理效率。
-![文件去重](https://gitee.com/Yangshengzhou/leaf-sort/raw/master/assets/file_deduplication.png)
-支持批量去重，可以扫描整个文件夹或指定文件夹，自动识别重复文件。支持手动选择保留的文件，或让软件随机选择。支持预览重复文件，查看文件详情，确保删除正确的文件。
+High-precision identification of identical files based on MD5 hash algorithm. Supports two-stage filtering mechanism: the first stage groups by file size, quickly excluding non-duplicate files; the second stage only calculates MD5 for files of the same size, significantly reducing computation. Uses thread pool for concurrent MD5 calculation, supports caching of calculated hash values, improving processing efficiency.
 
-### EXIF 编辑
+![File Deduplication](https://raw.githubusercontent.com/YangShengzhou03/LeafSort/master/assets/file_deduplication.png)
 
-支持查看和修改图像 EXIF 元数据信息，包括标题、作者、评级、相机品牌、型号、镜头信息等。软件内置相机品牌型号数据库和镜头型号数据库，可以自动匹配镜头信息。支持 JPEG、PNG、WebP 等多种格式的 EXIF 读写，对于复杂格式使用 exiftool 作为备用方案。
+Supports batch deduplication, can scan entire folders or specified folders, automatically identify duplicate files. Supports manual selection of files to keep, or let the software randomly select. Supports preview of duplicate files, view file details, ensure correct files are deleted.
 
-![EXIF 编辑](https://gitee.com/Yangshengzhou/leaf-sort/raw/master/assets/attribute_write.png)
+### EXIF Editing
 
-支持批量编辑 EXIF，可以一次性修改多个文件的 EXIF 信息。支持自定义字段，包括标题、作者、关键词、描述等。支持评级系统，可以为文件设置 1-5 星评级。支持查看完整的 EXIF 信息，包括拍摄参数、GPS 位置、相机设置等。
+Supports viewing and modifying image EXIF metadata information, including title, author, rating, camera brand, model, lens information, etc. The software has built-in camera brand model database and lens model database, can automatically match lens information. Supports EXIF reading and writing for multiple formats such as JPEG, PNG, WebP, uses exiftool as a backup solution for complex formats.
 
-### 地理编码
+![EXIF Editing](https://raw.githubusercontent.com/YangShengzhou03/LeafSort/master/assets/attribute_write.png)
 
-使用离线地理数据将 GPS 坐标转换为地址信息。支持批量处理相同位置的文件，提高处理效率。
+Supports batch EXIF editing, can modify EXIF information of multiple files at once. Supports custom fields, including title, author, keywords, description, etc. Supports rating system, can set 1-5 star rating for files. Supports viewing complete EXIF information, including shooting parameters, GPS location, camera settings, etc.
 
-支持反向地理编码，将经纬度坐标转换为省、市、区等地址信息。支持批量处理，可以一次性处理多个文件的 GPS 信息。支持自定义地址格式，包括省、市、区、街道等不同层级。
+### Geocoding
 
-### 多格式支持
+Uses offline geographic data to convert GPS coordinates to address information. Supports batch processing of files with the same location, improving processing efficiency.
 
-除了图像格式，还支持管理和处理视频、音频、文档、压缩包等其他文件类型。支持文件类型检测，自动识别文件类型。支持文件扩展名过滤，可以按文件类型筛选文件。
+Supports reverse geocoding, converting latitude and longitude coordinates to address information such as province, city, district. Supports batch processing, can process GPS information of multiple files at once. Supports custom address format, including province, city, district, street and other levels.
 
-## 快速开始
+### Multi-Format Support
 
-### 环境要求
+In addition to image formats, also supports management and processing of video, audio, document, archive and other file types. Supports file type detection, automatically identifies file types. Supports file extension filtering, can filter files by file type.
 
-#### 开发环境
+## Download
+
+| Platform | Link |
+| --- | --- |
+| Microsoft Store | [https://apps.microsoft.com/detail/9p3mkv4xslj8](https://apps.microsoft.com/detail/9p3mkv4xslj8) |
+| Onlinedown | [https://www.onlinedown.net/soft/20269802.htm](https://www.onlinedown.net/soft/20269802.htm) |
+| Lenovo App Store | [https://lestore.lenovo.com/detail/L120850](https://lestore.lenovo.com/detail/L120850) |
+
+## Quick Start
+
+### Requirements
+
+#### Development Environment
 
 - **Python**: 3.11+
-- **PyQt6**: 6.5.0+ (GUI 框架)
-- **Pillow**: 11.3.0+ (图像处理)
-- **piexif**: 1.1.3+ (EXIF 处理)
-- **exifread**: 3.0.0+ (EXIF 读取)
-- **pillow-heif**: 0.16.0+ (HEIC/HEIF 支持)
-- **requests**: 2.31.0+ (HTTP 请求)
+- **PyQt6**: 6.10.2 (GUI Framework)
+- **Pillow**: 11.3.0 (Image Processing)
+- **piexif**: 1.1.3 (EXIF Processing)
+- **exifread**: 3.0.0 (EXIF Reading)
+- **pillow-heif**: 0.16.0 (HEIC/HEIF Support)
+- **requests**: 2.31.0 (HTTP Requests)
 
-#### 生产环境
+#### Production Environment
 
-- **操作系统**: Windows 10/11
-- **内存**: 4GB+ RAM
-- **存储**: 2GB+ 可用空间
+- **Operating System**: Windows 10/11
+- **Memory**: 4GB+ RAM
+- **Storage**: 2GB+ available space
 
-### 环境配置说明
+### Environment Configuration
 
-#### Python 环境配置
+#### Python Environment Configuration
 
-Python 3.11+ 是软件开发的基础环境，PyQt6 6.5.0+ 框架要求 Python 3.11 或更高版本。安装 Python 3.11 后，需要配置 PATH 环境变量，将 Python 的 Scripts 目录添加到 PATH 中。可以通过运行 `python --version` 命令验证 Python 是否正确安装。
+Python 3.11+ is the basic environment for software development, PyQt6 6.10.2 framework requires Python 3.11 or higher version. After installing Python 3.11, you need to configure the PATH environment variable, add Python's Scripts directory to PATH. You can verify if Python is correctly installed by running the `python --version` command.
 
-#### PyQt6 环境配置
+#### PyQt6 Environment Configuration
 
-PyQt6 6.5.0+ 是软件开发的基础 GUI 框架，用于构建现代化的用户界面。安装 PyQt6 后，可以通过运行 `pip list` 命令检查 PyQt6 是否正确安装。PyQt6 支持 Windows、macOS、Linux 等多个平台。
+PyQt6 6.10.2 is the basic GUI framework for software development, used to build modern user interfaces. After installing PyQt6, you can check if PyQt6 is correctly installed by running the `pip list` command. PyQt6 supports multiple platforms including Windows, macOS, Linux.
 
-#### 依赖库配置
+#### Dependency Library Configuration
 
-项目依赖多个第三方库，包括图像处理库（Pillow）、EXIF 处理库（piexif、exifread）、HTTP 请求库（requests）等。安装依赖库后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
+The project depends on multiple third-party libraries, including image processing libraries (Pillow), EXIF processing libraries (piexif, exifread), HTTP request libraries (requests), etc. After installing dependency libraries, you can check if all dependency libraries are correctly installed by running the `pip list` command.
 
-## 安装部署
+## Installation
 
-### 1. 克隆项目
+### 1. Clone the Project
 
 ```bash
 git clone https://github.com/YangShengzhou03/LeafSort.git
 cd LeafSort
 ```
 
-克隆项目后，项目目录包含多个 Python 源文件、资源文件、配置文件等。主要文件包括 App.py（应用入口）、main_window.py（主窗口）、smart_arrange.py（智能整理）、write_exif.py（EXIF 编辑）、file_deduplication.py（文件去重）等。
+After cloning the project, the project directory contains multiple Python source files, resource files, configuration files, etc. Main files include App.py (application entry), main_window.py (main window), smart_arrange.py (smart organization), write_exif.py (EXIF editing), file_deduplication.py (file deduplication), etc.
 
-### 2. 创建虚拟环境（推荐）
+### 2. Create Virtual Environment (Recommended)
 
 ```bash
 python -m venv venv
 venv\Scripts\activate
 ```
 
-创建虚拟环境可以隔离项目依赖，避免与其他项目的依赖冲突。激活虚拟环境后，命令行提示符会显示虚拟环境名称，表示当前已进入虚拟环境。
+Creating a virtual environment can isolate project dependencies and avoid conflicts with dependencies of other projects. After activating the virtual environment, the command line prompt will display the virtual environment name, indicating that you have entered the virtual environment.
 
-### 3. 安装依赖
+### 3. Install Dependencies
 
 ```bash
 pip install -r requirements.txt
 ```
 
-requirements.txt 文件列出了项目依赖的所有第三方库及其版本要求。运行该命令会自动下载并安装所有依赖库。安装完成后，可以通过运行 `pip list` 命令检查所有依赖库是否正确安装。
+The requirements.txt file lists all third-party libraries that the project depends on and their version requirements. Running this command will automatically download and install all dependency libraries. After installation is complete, you can check if all dependency libraries are correctly installed by running the `pip list` command.
 
-### 4. 运行应用
+### 4. Run the Application
 
 ```bash
 python App.py
 ```
 
-运行该命令会启动应用程序，显示主窗口。应用程序会自动检查更新，如果有新版本，会提示用户下载和安装。应用程序支持单实例运行，如果已经有一个实例在运行，新的实例会自动退出。
+Running this command will start the application and display the main window. The application will automatically check for updates, if there is a new version, it will prompt the user to download and install. The application supports single instance running, if an instance is already running, the new instance will automatically exit.
 
-## 使用指南
+## User Guide
 
-### 文件夹管理
+### Folder Management
 
-启动软件后，首先需要设置源文件夹和目标文件夹。点击"浏览"按钮，选择包含要整理图像的文件夹作为源文件夹，选择整理后的图像存储位置作为目标文件夹。软件会显示文件夹的基本信息，包括文件数量。
+After starting the software, you first need to set the source folder and destination folder. Click the "Browse" button, select the folder containing the images to be organized as the source folder, and select the storage location for the organized images as the destination folder. The software will display basic information about the folder, including the number of files.
 
-### 智能整理
+### Smart Organization
 
-在智能整理页面，可以配置分类规则和文件命名规则。支持按时间维度分类，包括年、年-月、年-月-日、年-月-日-时-分-秒等格式。支持按地理位置分类，包括省、市、区等不同层级。支持按设备类型分类，包括相机品牌、型号等。支持按文件类型分类，包括图像、视频、音频、文档等不同类型。
+On the smart organization page, you can configure classification rules and file naming rules. Supports classification by time dimension, including year, year-month, year-month-day, year-month-day-hour-minute-second and other formats. Supports classification by geographic location, including province, city, district and other levels. Supports classification by device type, including camera brand, model, etc. Supports classification by file type, including image, video, audio, document and other types.
 
-配置完成后，点击"开始整理"按钮，软件会自动遍历文件夹，读取图像 EXIF 元数据，构建目标路径和文件名，执行文件复制或移动操作。整理过程中，软件会显示进度信息，包括已处理文件数、总文件数、处理速度等。
+After configuration is complete, click the "Start Organization" button, the software will automatically traverse the folder, read image EXIF metadata, build target paths and filenames, and perform file copy or move operations. During the organization process, the software will display progress information, including processed file count, total file count, processing speed, etc.
 
-### EXIF 编辑
+### EXIF Editing
 
-在 EXIF 编辑页面，可以为图像添加或修改 EXIF 元数据。支持设置标题、作者、评级、相机品牌、型号、镜头信息等。软件内置相机品牌型号数据库和镜头型号数据库，选择相机品牌和型号后，会自动匹配镜头信息。
+On the EXIF editing page, you can add or modify EXIF metadata for images. Supports setting title, author, rating, camera brand, model, lens information, etc. The software has built-in camera brand model database and lens model database, after selecting camera brand and model, it will automatically match lens information.
 
-配置完成后，点击"开始写入"按钮，软件会遍历文件夹，更新图像 EXIF 数据。写入过程中，软件会显示进度信息，包括已处理文件数、总文件数、处理速度等。
+After configuration is complete, click the "Start Writing" button, the software will traverse the folder and update image EXIF data. During the writing process, the software will display progress information, including processed file count, total file count, processing speed, etc.
 
-### 文件去重
+### File Deduplication
 
-在文件去重页面，可以查找和删除重复文件。点击"开始查重"按钮，软件会扫描文件夹，计算文件 MD5 哈希值，查找完全相同的文件。去重完成后，会显示重复文件列表。用户可以手动选择保留的文件，或让软件随机选择。
+On the file deduplication page, you can find and delete duplicate files. Click the "Start Deduplication" button, the software will scan the folder, calculate file MD5 hash values, and find identical files. After deduplication is complete, the duplicate file list will be displayed. Users can manually select files to keep, or let the software randomly select.
 
-选择完成后，点击"移动到回收站"按钮，软件会将选中的重复文件移动到回收站。移动过程中，软件会显示进度信息，包括已移动文件数、总文件数、移动速度等。
+After selection is complete, click the "Move to Recycle Bin" button, the software will move the selected duplicate files to the recycle bin. During the moving process, the software will display progress information, including moved file count, total file count, moving speed, etc.
 
-### 地理编码
+### Geocoding
 
-软件自动将图像 GPS 坐标转换为地址信息。使用离线地理数据进行反向地理编码。
+The software automatically converts image GPS coordinates to address information. Uses offline geographic data for reverse geocoding.
 
-支持反向地理编码，将经纬度坐标转换为省、市、区等地址信息。支持批量处理，可以一次性处理多个文件的 GPS 信息。支持自定义地址格式，包括省、市、区、街道等不同层级。
+Supports reverse geocoding, converting latitude and longitude coordinates to address information such as province, city, district. Supports batch processing, can process GPS information of multiple files at once. Supports custom address format, including province, city, district, street and other levels.
 
-## 技术架构
+## Technical Architecture
 
-### 系统架构图
+### System Architecture Diagram
 
 ```
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   用户界面层     │    │   业务逻辑层     │    │   数据处理层     │
+│  User Interface │    │ Business Logic  │    │ Data Processing │
+│      Layer      │    │      Layer      │    │      Layer      │
 │                 │    │                 │    │                 │
-│  PyQt6 6.5.0    │◄──►│  Python 3.11+   │◄──►│  文件系统       │
-│  Qt Designer    │    │  多线程处理     │    │  EXIF 数据      │
+│  PyQt6 6.10.2   │◄──►│  Python 3.11+   │◄──►│  File System    │
+│  Qt Designer    │    │ Multi-threading │    │  EXIF Data      │
 │                 │    │                 │    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                        │                        │
          │                        │                        │
          ▼                        ▼                        ▼
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
-│   图形界面       │    │   核心功能       │    │   外部服务       │
+│  Graphical UI   │    │  Core Features  │    │ External Services│
 │                 │    │                 │    │                 │
-│  主窗口         │    │  智能整理       │    │  ExifTool       │
-│  文件夹管理     │    │  EXIF 编辑      │    │                 │
-│  进度显示       │    │  文件去重       │    │                 │
+│  Main Window    │    │ Smart Organize  │    │   ExifTool      │
+│Folder Management│    │  EXIF Editing   │    │                 │
+│Progress Display │    │File Deduplication│    │                 │
 └─────────────────┘    └─────────────────┘    └─────────────────┘
 ```
 
-### 技术栈详情
+### Technology Stack Details
 
-| 技术        | 版本    | 用途           |
-| ----------- | ------- | -------------- |
-| Python      | 3.11+   | 编程语言       |
-| PyQt6       | 6.5.0+  | GUI 框架       |
-| Pillow      | 11.3.0+ | 图像处理       |
-| piexif      | 1.1.3+  | EXIF 处理      |
-| exifread    | 3.0.0+  | EXIF 读取      |
-| pillow-heif | 0.16.0+ | HEIC/HEIF 支持 |
-| requests    | 2.31.0+ | HTTP 请求      |
+| Technology  | Version  | Purpose          |
+| ----------- | -------- | ---------------- |
+| Python      | 3.11+    | Programming Language |
+| PyQt6       | 6.10.2   | GUI Framework    |
+| Pillow      | 11.3.0  | Image Processing |
+| piexif      | 1.1.3   | EXIF Processing  |
+| exifread    | 3.0.0   | EXIF Reading     |
+| pillow-heif | 0.16.0  | HEIC/HEIF Support|
+| requests    | 2.31.0  | HTTP Requests    |
 
-### 项目结构
+### Project Structure
 
 ```
 LeafSort/
-├── App.py                          # 应用入口
-├── main_window.py                  # 主窗口实现
-├── Ui_MainWindow.py                # UI 界面文件（自动生成）
-├── Ui_MainWindow.ui                # Qt Designer 界面文件
-├── add_folder.py                   # 文件夹管理功能
-├── smart_arrange.py                # 智能整理服务管理器
-├── smart_arrange_thread.py         # 智能整理工作线程
-├── write_exif.py                   # EXIF 编辑管理器
-├── write_exif_thread.py            # EXIF 写入工作线程
-├── file_deduplication.py           # 文件去重管理器
-├── file_deduplication_thread.py    # 文件去重工作线程
-├── common.py                       # 通用函数和工具类
-├── config_manager.py               # 配置管理器（线程安全）
-├── update_dialog.py                # 更新检查对话框
-├── UI_UpdateDialog.py              # 更新对话框 UI（自动生成）
-├── UI_UpdateDialog.ui              # Qt Designer 界面文件
-├── requirements.txt                # Python 依赖列表
-├── App.spec                        # PyInstaller 打包配置
-├── README.md                       # 项目文档（中文）
-├── README_EN.md                    # 项目文档（英文）
-├── license.txt                     # 许可证文本
-├── .gitignore                      # Git 忽略文件配置
-├── License/                        # 数字签名相关文件
-│   ├── Y.cer                       # 证书文件
-│   ├── Y.pfx                       # 私钥文件
-│   ├── Y.pvk                       # 私钥容器
-│   ├── Y.spc                       # 软件发布者证书
-│   ├── cert2spc.exe                # 证书转换工具
-│   └── certmgr.exe                 # 证书管理工具
-└── resources/                      # 资源文件
-    ├── exiftool/                   # EXIF 工具
-    │   ├── exiftool.exe            # EXIF 工具可执行文件
-    │   ├── exiftool(-k).exe        # EXIF 工具（保持窗口）
-    │   └── exiftool_files/         # EXIF 工具依赖文件
-    ├── img/                        # 图像资源
-    │   ├── list/                   # 列表图标
-    │   ├── page_0/                 # 页面 0 图标
-    │   ├── page_1/                 # 页面 1 图标
-    │   ├── page_2/                 # 页面 2 图标
-    │   ├── page_3/                 # 页面 3 图标
-    │   ├── page_4/                 # 页面 4 图标
-    │   ├── 头标/                   # 会员徽章
-    │   ├── 窗口控制/               # 窗口控制图标
-    │   ├── icon.ico                # 应用图标
-    │   └── setup.ico               # 安装图标
-    ├── json/                       # JSON 数据文件
-    │   ├── City_Reverse_Geocode.json         # 城市地理编码数据
-    │   ├── Province_Reverse_Geocode.json     # 省份地理编码数据
-    │   ├── camera_brand_model.json           # 相机品牌型号数据库
-    │   ├── camera_lens_mapping.json          # 相机镜头映射数据库
-    │   └── lens_model.json                  # 镜头型号数据库
-    └── stylesheet/                 # 样式表文件
-        └── menu.setStyleSheet.css  # 菜单样式表
+├── Application.py                  # Application entry
+├── Application.spec                # PyInstaller packaging config
+├── requirements.txt                # Python dependency list
+├── README.md                       # Project documentation (Chinese)
+├── README_EN.md                    # Project documentation (English)
+├── LICENSE                         # License file
+├── .gitignore                      # Git ignore file config
+├── app/                            # Application layer
+│   ├── __init__.py
+│   ├── main_window.py              # Main window implementation
+│   ├── dialogs/                    # Dialogs
+│   │   ├── __init__.py
+│   │   ├── update_dialog.py        # Update check dialog
+│   │   ├── UI_UpdateDialog.py      # Update dialog UI (auto-generated)
+│   │   └── UI_UpdateDialog.ui      # Qt Designer interface file
+│   └── pages/                      # Feature pages
+│       ├── __init__.py
+│       ├── add_folder.py           # Folder management feature
+│       ├── smart_arrange.py        # Smart organization service manager
+│       ├── write_exif.py           # EXIF editing manager
+│       └── file_deduplication.py   # File deduplication manager
+├── core/                           # Core layer
+│   ├── __init__.py
+│   ├── common.py                   # Common functions and utilities
+│   └── config_manager.py           # Configuration manager (thread-safe)
+├── threads/                        # Thread layer
+│   ├── __init__.py
+│   ├── smart_arrange_thread.py     # Smart organization worker thread
+│   ├── write_exif_thread.py        # EXIF writing worker thread
+│   └── file_deduplication_thread.py # File deduplication worker thread
+├── ui/                             # UI layer
+│   ├── __init__.py
+│   ├── Ui_MainWindow.py            # UI interface file (auto-generated)
+│   └── Ui_MainWindow.ui            # Qt Designer interface file
+├── cer/                            # Digital signature files
+│   ├── Y.cer                       # Certificate file
+│   ├── Y.pfx                       # Private key file
+│   ├── Y.pvk                       # Private key container
+│   ├── Y.spc                       # Software publisher certificate
+│   ├── cert2spc.exe                # Certificate conversion tool
+│   └── certmgr.exe                 # Certificate management tool
+└── resources/                      # Resource files
+    ├── exiftool/                   # EXIF tool
+    │   ├── exiftool.exe            # EXIF tool executable
+    │   ├── exiftool(-k).exe        # EXIF tool (keep window)
+    │   └── exiftool_files/         # EXIF tool dependencies
+    ├── fonts/                      # Font files
+    │   └── Microsoft YaHei UI Light.ttf
+    ├── img/                        # Image resources
+    │   ├── list/                   # List icons
+    │   ├── page_2/                 # Page icons
+    │   ├── page_4/                 # Page icons
+    │   ├── 窗口控制/               # Window control icons
+    │   ├── icon.ico                # Application icon
+    │   └── setup.ico               # Installation icon
+    ├── json/                       # JSON data files
+    │   ├── City_Reverse_Geocode.json         # City geocoding data
+    │   ├── Province_Reverse_Geocode.json     # Province geocoding data
+    │   ├── camera_brand_model.json           # Camera brand model database
+    │   └── camera_lens_mapping.json          # Camera lens mapping database
+    └── stylesheet/                 # Stylesheet files
+        └── menu.setStyleSheet.css  # Menu stylesheet
 ```
 
-### 核心模块说明
+### Core Module Description
 
-- **App.py**: 应用入口，负责初始化 QApplication、创建主窗口实例、设置全局异常处理和单实例检测
-- **main_window.py**: 主窗口控制器，管理所有功能页面，处理窗口事件，管理系统托盘图标
-- **add_folder.py**: 文件夹管理页面，管理源文件夹和目标文件夹选择，验证文件夹路径有效性
-- **smart_arrange.py**: 智能整理业务逻辑管理器，管理智能整理 UI 交互，收集用户配置
-- **smart_arrange_thread.py**: 智能整理工作线程，在独立线程中执行整理任务，避免阻塞 UI
-- **write_exif.py**: EXIF 编辑业务逻辑管理器，管理 EXIF 编辑 UI 交互，收集用户配置
-- **write_exif_thread.py**: EXIF 写入工作线程，在独立线程中执行 EXIF 写入任务
-- **file_deduplication.py**: 文件去重业务逻辑管理器，管理文件去重 UI 交互
-- **file_deduplication_thread.py**: 文件去重工作线程，扫描文件并计算 MD5，删除重复文件
-- **common.py**: 通用工具库，提供资源路径管理、文件类型检测、媒体类型检测等功能
-- **config_manager.py**: 配置管理器，线程安全的配置读写操作
-- **update_dialog.py**: 更新检查对话框，检查 GitHub 上的最新版本
+- **Application.py**: Application entry, responsible for initializing QApplication, creating main window instance, setting up global exception handling and single instance detection
+- **app/main_window.py**: Main window controller, manages all feature pages, handles window events, manages system tray icon
+- **app/pages/add_folder.py**: Folder management page, manages source folder and destination folder selection, validates folder path validity
+- **app/pages/smart_arrange.py**: Smart organization business logic manager, manages smart organization UI interaction, collects user configuration
+- **threads/smart_arrange_thread.py**: Smart organization worker thread, executes organization tasks in separate thread, avoids blocking UI
+- **app/pages/write_exif.py**: EXIF editing business logic manager, manages EXIF editing UI interaction, collects user configuration
+- **threads/write_exif_thread.py**: EXIF writing worker thread, executes EXIF writing tasks in separate thread
+- **app/pages/file_deduplication.py**: File deduplication business logic manager, manages file deduplication UI interaction
+- **threads/file_deduplication_thread.py**: File deduplication worker thread, scans files and calculates MD5, deletes duplicate files
+- **core/common.py**: Common utility library, provides resource path management, file type detection, media type detection and other functions
+- **core/config_manager.py**: Configuration manager, thread-safe configuration read/write operations
+- **app/dialogs/update_dialog.py**: Update check dialog, checks for latest version on GitHub
 
-### 线程模型
+### Threading Model
 
-软件使用 Qt 信号槽机制进行线程通信。主线程处理所有 UI 交互和响应，工作线程执行耗时的文件操作任务。所有工作线程继承自 QThread，支持随时停止操作，保持 UI 响应性。
+The software uses Qt signal-slot mechanism for thread communication. The main thread handles all UI interactions and responses, worker threads execute time-consuming file operation tasks. All worker threads inherit from QThread, support stopping operations at any time, maintain UI responsiveness.
 
-## 开发指南
+## Development Guide
 
-### 代码规范
+### Code Standards
 
-类名使用 PascalCase 命名规范，如 SmartArrangeManager。函数名使用小写字母加下划线，如 get_exif_data。变量名使用小写字母加下划线，如 file_path。常量使用大写字母加下划线，如 IMAGE_EXTENSIONS。私有方法使用单下划线前缀，如 \_process_file。
+Class names use PascalCase naming convention, such as SmartArrangeManager. Function names use lowercase letters with underscores, such as get_exif_data. Variable names use lowercase letters with underscores, such as file_path. Constants use uppercase letters with underscores, such as IMAGE_EXTENSIONS. Private methods use single underscore prefix, such as \_process_file.
 
-### 错误处理
+### Error Handling
 
-所有可能抛出异常的操作都应该使用 try-except 块进行捕获和处理。异常信息应该记录到日志中，并在必要时向用户显示友好的错误提示。对于关键操作失败，应该提供重试机制或回滚机制。
+All operations that may throw exceptions should be caught and handled using try-except blocks. Exception information should be logged and, when necessary, displayed to users with friendly error messages. For critical operation failures, retry mechanisms or rollback mechanisms should be provided.
 
-### 日志记录
+### Logging
 
-使用 Python 标准库 logging 进行日志记录。日志级别分为 DEBUG、INFO、WARNING、ERROR、CRITICAL 五个级别。DEBUG 级别用于详细的调试信息，INFO 级别用于一般信息，WARNING 级别用于警告信息，ERROR 级别用于错误信息，CRITICAL 级别用于严重错误信息。
+Use Python standard library logging for log recording. Log levels are divided into DEBUG, INFO, WARNING, ERROR, CRITICAL five levels. DEBUG level is used for detailed debugging information, INFO level is used for general information, WARNING level is used for warning information, ERROR level is used for error information, CRITICAL level is used for serious error information.
 
-### 测试建议
+### Testing Recommendations
 
-在开发新功能时，应该编写单元测试和集成测试。测试应该覆盖正常流程和异常流程。测试数据应该使用模拟数据，避免使用真实用户数据。
+When developing new features, unit tests and integration tests should be written. Tests should cover normal flows and exception flows. Test data should use mock data, avoid using real user data.
 
-## 许可证
+## License
 
-本项目采用 Academic Free License (AFL) v. 3.0 许可证，详见 [LICENSE](LICENSE) 文件。
+This project is licensed under the Academic Free License (AFL) v. 3.0, see [LICENSE](LICENSE) file for details.
 
-## 贡献指南
+## Contributing Guide
 
-欢迎提交 Issue 和 Pull Request。提交 Issue 时，请详细描述问题现象、复现步骤、期望结果等信息。提交 Pull Request 时，请确保代码符合项目的代码规范，并通过所有测试。
+We welcome all forms of contributions, including but not limited to:
 
-## 联系方式
+- Submitting bug reports or feature suggestions
+- Submitting code improvements or new features
+- Improving documentation
+- Sharing usage experience
 
-- **GitHub**: https://github.com/YangShengzhou03/LeafSort
-- **Gitee**: https://gitee.com/Yangshengzhou/leaf-sort
-- **Microsoft Store**: https://apps.microsoft.com/detail/9p3mkv4xslj8
+### How to Contribute
 
-## 更新日志
+1. Fork this repository
+2. Create a new branch (`git checkout -b feature/amazing-feature`)
+3. Commit your changes (`git commit -m 'Add some amazing feature'`)
+4. Push to the branch (`git push origin feature/amazing-feature`)
+5. Create a Pull Request
 
-### v2.0.2 (2025-02-08)
+## Acknowledgments
 
-- 优化文件处理逻辑，改为边处理边移动/复制，提升性能
-- 优化内存使用，减少记录的数据量
-- 修复停止按钮响应慢的问题
-- 移除未使用的依赖包和资源文件
-- 修复 smart_arrange.py 中的 QtWidgets 导入错误
-
-### v2.0.1 (2025-01-15)
-
-- 修复地理编码功能
-- 优化文件去重算法
-- 改进用户界面响应速度
-
-### v2.0.0 (2025-01-01)
-
-- 初始版本发布
-- 支持智能整理功能
-- 支持 EXIF 编辑功能
-- 支持文件去重功能
-- 支持地理编码功能
-
-## 致谢
-
-感谢所有为本项目做出贡献的开发者和用户。特别感谢以下开源项目：
-
-- [PyQt6](https://www.riverbankcomputing.com/software/pyqt/) - Python GUI 框架
-- [Pillow](https://python-pillow.org/) - Python 图像处理库
-- [piexif](https://github.com/hMatoba/Piexif) - EXIF 处理库
-- [exifread](https://github.com/ianare/exifread) - EXIF 读取库
-- [pillow-heif](https://github.com/bigcat88/pillow_heif) - HEIC/HEIF 支持库
-- [ExifTool](https://exiftool.org/) - EXIF 工具
-
-## 关于作者
-
-杨圣洲，来自江西吉安县。2022 年参加江西省职教高考，以 559 分的成绩获得全省第一名，考入江西科技师范大学信息管理与信息系统专业。在校期间系统学习了 Linux、Docker、K8S 等 DevOps 与运维相关技术，专注于 Windows 桌面工具、自动化解决方案及企业级系统的研发与落地，开发了多款不同场景的项目。
-
-在众多项目中，Jobs_helper（海投助手）是一款聚焦 Boss 直聘平台的浏览器脚本插件，具备自动化简历投递、AI 智能回复 HR 消息等功能。LeafSort（轻羽媒体整理）融合深度学习算法与多线程处理能力，可对海量照片与视频进行整理、归类及去重，已通过微软应用商店、联想应用商店分发，适配 Windows 系统。LeafPan 是基于 Vue 3 和 Spring Boot 3 构建的企业级文件管理平台。LeafBoss 专注于卡密全生命周期管理与安全验证服务。Lucky_SMS 是教育类开源系统，具备多角色权限控制，适用于毕业设计、商业应用及教育管理场景，后续更新了用户信息脱敏功能。HiTutor 好会帮则是一个基于 Flutter 和 Spring Boot 的家教信息对接共享平台，为学生和家教老师提供免费、公平、透明的信息对接服务。
+Thanks to all developers who contributed to this project, and all open source projects that provide support.
 
 ---
 
 <div align="center">
-  <p>Made with ❤️ by Yangshengzhou</p>
+  <p>© 2026 Yangshengzhou. All Rights Reserved.</p>
 </div>

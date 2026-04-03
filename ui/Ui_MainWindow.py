@@ -8,7 +8,7 @@
 
 from PyQt6 import QtCore, QtGui, QtWidgets
 
-from common import get_resource_path
+from core.common import get_resource_path
 
 
 class Ui_MainWindow(object):

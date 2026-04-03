@@ -23,14 +23,12 @@ def _thread_safe_method(func):
     return wrapper
 
 class ConfigManager:
-    CONFIG_VERSION = "1.1"
+    CONFIG_VERSION = "1.0"
     
     def __init__(self):
         self._lock = threading.RLock()
         self.app_data_path = get_app_data_path()
         self.internal_dir = os.path.join(self.app_data_path, '_internal')
-        os.makedirs(self.internal_dir, exist_ok=True)
-        
         self.config_file = os.path.join(self.internal_dir, 'config.json')
         self._ensure_config_exists()
         self.config = self._load_file()

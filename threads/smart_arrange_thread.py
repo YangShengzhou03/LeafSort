@@ -11,8 +11,8 @@ from PyQt6 import QtCore
 from PIL import Image
 import exifread
 import pillow_heif
-from common import get_resource_path, get_file_type, get_current_time_str
-from config_manager import config_manager, logger
+from core.common import get_resource_path, get_file_type, get_current_time_str
+from core.config_manager import config_manager, logger
 
 _geo_data_cache = {
     'city_data': None,
@@ -172,7 +172,7 @@ class SmartArrangeThread(QtCore.QThread):
                 
                 self.log("DEBUG", "="*40)
                 self.log("DEBUG", f"文件整理完成：成功处理 {self.success_count} 个文件，失败 {self.fail_count} 个文件")
-                self.log("DEBUG", "="*3+"LeafSort © 2026 Yangshengzhou.All Rights Reserved"+"="*3)
+                self.log("DEBUG", "="*3+f"LeafSort © {datetime.now().year} Yangshengzhou.All Rights Reserved"+"="*3)
 
             else:
                 self.log("WARNING", "您已经取消了整理文件的操作")
